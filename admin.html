@@ -4014,6 +4014,31 @@ Primero evaluamos cómo está el cuerpo ahora, luego tratamos, luego te enseñam
           </div>
         </div>
 
+        <!-- Copiar y compartir información de gestión -->
+        <div class="card" style="margin-bottom:16px;border-color:rgba(27,191,176,.28);box-shadow:0 14px 40px rgba(27,191,176,.08)">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:12px">
+            <div>
+              <div class="card-title" style="margin-bottom:4px">Copiar y compartir información</div>
+              <p style="font-size:.84rem;color:var(--muted);margin:0;line-height:1.5">
+                Exporta el análisis como texto limpio para WhatsApp, documentos o asesoría externa. No copia código ni datos clínicos sensibles.
+              </p>
+            </div>
+            <span id="copyGestionStatus" style="display:none;padding:7px 10px;border-radius:999px;background:rgba(16,185,129,.12);color:#047857;font-size:.78rem;font-weight:700">Información copiada correctamente</span>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn btn-teal btn-sm" onclick="copyGestionTexto('completo')">Copiar resumen completo</button>
+            <button class="btn btn-ghost btn-sm" onclick="copyGestionTexto('ejecutivo')">Copiar resumen ejecutivo</button>
+            <button class="btn btn-ghost btn-sm" onclick="copyGestionTexto('indicadores')">Copiar indicadores</button>
+            <button class="btn btn-ghost btn-sm" onclick="copyGestionTexto('diagnostico')">Copiar diagnóstico</button>
+            <button class="btn btn-ghost btn-sm" onclick="copyGestionTexto('estrategias')">Copiar estrategias recomendadas</button>
+            <button class="btn btn-ghost btn-sm" onclick="copyGestionTexto('plan')">Copiar plan de acción</button>
+            <button class="btn btn-ghost btn-sm" onclick="abrirCopiarListaGestion()">Copiar lista seleccionada</button>
+            <button class="btn btn-ghost btn-sm" onclick="copiarInfoPersonaGestion()">Copiar información de una persona</button>
+            <button class="btn btn-ghost btn-sm" onclick="abrirMensajeWAGestion()">Copiar mensaje para WhatsApp</button>
+            <button class="btn btn-teal btn-sm" onclick="copyGestionTexto('asesor')">Copiar información para el asesor</button>
+          </div>
+        </div>
+
         <!-- Dashboard KPIs calculados -->
         <div id="kpiTableroResult"></div>
       </div>
@@ -19665,6 +19690,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (fechaInp && !fechaInp.value) fechaInp.value = today();
 });
 </script>
+<script src="admin-copy-tools.js"></script>
 </body>
 </html>
 
