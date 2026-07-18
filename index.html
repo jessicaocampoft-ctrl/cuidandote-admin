@@ -54,7 +54,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-b);min-height
   padding:48px 40px;width:100%;max-width:400px;text-align:center;
   box-shadow:0 0 60px var(--glow);
 }
-.login-card img{margin-bottom:28px}
+.login-card > img{margin-bottom:28px}
 .login-card h1{font-family:var(--font-h);font-size:1.6rem;font-weight:600;margin-bottom:8px}
 .login-card p{color:var(--muted);font-size:.9rem;margin-bottom:28px}
 .login-input{
@@ -96,7 +96,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-b);min-height
 [data-theme="dark"] .pro-card,[data-theme="dark"] .team-panel,[data-theme="dark"] .team-card{background:rgba(26,29,36,.92)}
 .pro-card{padding:28px}
 .pro-login-card{max-width:430px;margin:8vh auto;text-align:center}
-.pro-login-card img{height:64px;margin-bottom:22px}
+.pro-login-card > img{height:64px;margin-bottom:22px}
 .pro-login-card h1{font-family:var(--font-h);font-size:1.8rem;margin-bottom:6px}
 .pro-login-card p{color:var(--muted);font-size:.92rem;line-height:1.5;margin-bottom:20px}
 .pro-input,.team-input{
@@ -106,7 +106,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-b);min-height
 .pro-input:focus,.team-input:focus{border-color:var(--primary);box-shadow:0 0 0 3px var(--glow)}
 .pro-header{display:flex;justify-content:space-between;align-items:center;gap:14px;margin-bottom:18px;flex-wrap:wrap}
 .pro-brand{display:flex;align-items:center;gap:14px}
-.pro-brand img{height:52px}
+.pro-brand > img{height:52px}
 .pro-brand h1{font-family:var(--font-h);font-size:1.9rem;line-height:1}
 .pro-brand small{color:var(--muted)}
 .pro-toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
@@ -239,7 +239,68 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-b);min-height
 #sidebar.sb-collapsed .sb-collapse-btn svg{transform:rotate(180deg)}
 
 .sb-logo{padding:0 8px 20px;border-bottom:1px solid var(--border);margin-bottom:8px}
-.sb-logo img{height:56px}
+.sb-logo > img{height:56px}
+.brand-lockup{
+  --brand-w:160px;
+  --brand-signature-size:.82rem;
+  --brand-gap:-2px;
+  --brand-signature-x:22px;
+  display:inline-flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  line-height:1;
+  text-decoration:none;
+}
+.brand-lockup img{
+  display:block;
+  width:var(--brand-w);
+  height:auto;
+  max-width:100%;
+  object-fit:contain;
+}
+.brand-signature{
+  display:block;
+  margin-top:var(--brand-gap);
+  transform:translateX(var(--brand-signature-x));
+  color:var(--primary);
+  font:italic 400 var(--brand-signature-size)/1 var(--font-h);
+  letter-spacing:.01em;
+  white-space:nowrap;
+}
+.brand-lockup--login{
+  --brand-w:172px;
+  --brand-signature-size:1.02rem;
+  --brand-gap:-1px;
+  --brand-signature-x:28px;
+  margin:0 auto 26px;
+}
+.brand-lockup--pro-login{
+  --brand-w:164px;
+  --brand-signature-size:.98rem;
+  --brand-gap:-1px;
+  --brand-signature-x:26px;
+  margin:0 auto 20px;
+}
+.brand-lockup--pro{
+  --brand-w:148px;
+  --brand-signature-size:.74rem;
+  --brand-gap:-3px;
+  --brand-signature-x:20px;
+}
+.brand-lockup--sidebar{
+  --brand-w:158px;
+  --brand-signature-size:.76rem;
+  --brand-gap:-3px;
+  --brand-signature-x:22px;
+}
+.brand-lockup--topbar{
+  --brand-w:118px;
+  --brand-signature-size:.58rem;
+  --brand-gap:-4px;
+  --brand-signature-x:16px;
+}
+#sidebar.sb-collapsed .sb-logo .brand-lockup{display:none}
 .sb-link{
   display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:8px;
   color:var(--muted);font-size:.88rem;font-weight:500;cursor:pointer;
@@ -626,7 +687,7 @@ tr.evt-row:hover td{background:rgba(139,92,246,.07)}
   background:var(--s1);border-bottom:1px solid var(--border);z-index:99;
   align-items:center;padding:0 16px;gap:12px;
 }
-#topbar img{height:30px}
+#topbar > img{height:30px}
 #menuBtn{background:none;border:none;cursor:pointer;color:var(--text);margin-left:auto}
 
 /* ── TOAST ── */
@@ -1634,7 +1695,10 @@ button:disabled{cursor:not-allowed;opacity:.58}
 ══════════════════════════════════════════ -->
 <div id="loginScreen">
   <div class="login-card">
-    <img src="LogoCuidandote/logo-apilado.png" height="72" alt="Cuidándote Fisioterapia">
+    <div class="brand-lockup brand-lockup--login" aria-label="Cuidándote Fisioterapia by Jessica Ocampo">
+      <img src="LogoCuidandote/logo-horizontal-web.png" alt="" aria-hidden="true">
+      <span class="brand-signature">by Jessica Ocampo</span>
+    </div>
     <h1>Panel de Administración</h1>
     <p>Acceso exclusivo para Jessica Ocampo Fisioterapeuta</p>
     <label class="sr-only" for="pwInput">Contraseña de administración</label>
@@ -1653,7 +1717,10 @@ button:disabled{cursor:not-allowed;opacity:.58}
 ══════════════════════════════════════════ -->
 <div id="proLoginScreen">
   <div class="pro-card pro-login-card">
-    <img src="LogoCuidandote/logo-apilado.png" alt="Cuidándote Fisioterapia">
+    <div class="brand-lockup brand-lockup--pro-login" aria-label="Cuidándote Fisioterapia by Jessica Ocampo">
+      <img src="LogoCuidandote/logo-horizontal-web.png" alt="" aria-hidden="true">
+      <span class="brand-signature">by Jessica Ocampo</span>
+    </div>
     <h1>Portal del Fisioterapeuta</h1>
     <p>Agenda privada del equipo. Cada profesional solo ve sus citas asignadas y autorizadas.</p>
     <div style="display:grid;gap:10px;text-align:left">
@@ -1679,7 +1746,10 @@ button:disabled{cursor:not-allowed;opacity:.58}
   <div class="pro-shell">
     <div class="pro-header">
       <div class="pro-brand">
-        <img src="LogoCuidandote/logo-horizontal.png" alt="Cuidándote Fisioterapia">
+        <div class="brand-lockup brand-lockup--pro" aria-label="Cuidándote Fisioterapia by Jessica Ocampo">
+          <img src="LogoCuidandote/logo-horizontal-web.png" alt="" aria-hidden="true">
+          <span class="brand-signature">by Jessica Ocampo</span>
+        </div>
         <div>
           <h1>Mi agenda clínica</h1>
           <small id="proWelcome">Portal del equipo</small>
@@ -1705,7 +1775,10 @@ button:disabled{cursor:not-allowed;opacity:.58}
 
   <!-- Mobile topbar -->
   <div id="topbar">
-    <img src="LogoCuidandote/logo-horizontal.png" alt="Cuidándote Fisioterapia">
+    <div class="brand-lockup brand-lockup--topbar" aria-label="Cuidándote Fisioterapia by Jessica Ocampo">
+      <img src="LogoCuidandote/logo-horizontal-web.png" alt="" aria-hidden="true">
+      <span class="brand-signature">by Jessica Ocampo</span>
+    </div>
     <button id="menuBtn" onclick="toggleSidebar()">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
     </button>
@@ -1713,7 +1786,12 @@ button:disabled{cursor:not-allowed;opacity:.58}
 
   <!-- Sidebar -->
   <nav id="sidebar">
-    <div class="sb-logo"><img src="LogoCuidandote/logo-horizontal.png" alt="Cuidándote Fisioterapia"></div>
+    <div class="sb-logo">
+      <div class="brand-lockup brand-lockup--sidebar" aria-label="Cuidándote Fisioterapia by Jessica Ocampo">
+        <img src="LogoCuidandote/logo-horizontal-web.png" alt="" aria-hidden="true">
+        <span class="brand-signature">by Jessica Ocampo</span>
+      </div>
+    </div>
     <button class="sb-collapse-btn" onclick="toggleSidebarCollapse()" title="Colapsar/expandir menú">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/><polyline points="9 18 3 12 9 6"/></svg>
       <span class="sb-link-label">Colapsar</span>
