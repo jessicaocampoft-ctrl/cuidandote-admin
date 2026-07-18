@@ -327,12 +327,11 @@
 
   function copyOk() {
     if (typeof toast === 'function') toast('Información copiada correctamente', 'ok');
-    const el = document.getElementById('copyGestionStatus');
-    if (el) {
+    document.querySelectorAll('[id="copyGestionStatus"]').forEach(el => {
       el.style.display = 'inline-flex';
       clearTimeout(W._copyGestionStatusTimer);
       W._copyGestionStatusTimer = setTimeout(() => { el.style.display = 'none'; }, 2400);
-    }
+    });
   }
 
   function fallback(text, title='Copiar manualmente') {
