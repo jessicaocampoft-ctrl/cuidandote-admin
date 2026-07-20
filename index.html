@@ -2999,7 +2999,7 @@ Primero evaluamos cómo está el cuerpo ahora, luego tratamos, luego te enseñam
               </div>
               <div class="field">
                 <label>Hora *</label>
-                <input type="time" id="ncTime" class="nc-input" min="07:00" max="20:00" style="width:100%" oninput="checkTimeConflict(); _updateDuoTime(); updateTimeHelp('ncTime','ncTimeHelp')" onchange="checkTimeConflict(); _updateDuoTime(); updateTimeHelp('ncTime','ncTimeHelp')">
+                <input type="time" id="ncTime" class="nc-input" style="width:100%" oninput="checkTimeConflict(); _updateDuoTime(); updateTimeHelp('ncTime','ncTimeHelp')" onchange="checkTimeConflict(); _updateDuoTime(); updateTimeHelp('ncTime','ncTimeHelp')">
                 <div id="ncTimeHelp" class="time-help">Tip: 12 del mediodía es <strong>12:00</strong>. La franja <strong>00:00–00:59</strong> es medianoche y no se guardará.</div>
                 <div id="ncConflictWarn" style="display:none;margin-top:6px;padding:8px 12px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.4);border-radius:8px;font-size:.82rem;color:#991b1b"></div>
               </div>
@@ -3016,7 +3016,7 @@ Primero evaluamos cómo está el cuerpo ahora, luego tratamos, luego te enseñam
                 </div>
                 <div class="field" style="width:120px;margin:0">
                   <label>Hora</label>
-                  <input type="time" id="multiTime" min="07:00" max="20:00" oninput="updateTimeHelp('multiTime','multiTimeHelp')" onchange="updateTimeHelp('multiTime','multiTimeHelp')">
+                  <input type="time" id="multiTime" oninput="updateTimeHelp('multiTime','multiTimeHelp')" onchange="updateTimeHelp('multiTime','multiTimeHelp')">
                   <div id="multiTimeHelp" class="time-help">12:00 = mediodía</div>
                 </div>
                 <button type="button" onclick="_addMultiDate()" class="btn btn-teal" style="padding:9px 16px;height:fit-content">+ Agregar</button>
@@ -3036,7 +3036,7 @@ Primero evaluamos cómo está el cuerpo ahora, luego tratamos, luego te enseñam
                 </div>
                 <div class="field" style="margin:0">
                   <label>Hora *</label>
-                  <input type="time" id="recHora" min="07:00" max="20:00" oninput="_updateRecPreview(); updateTimeHelp('recHora','recTimeHelp')" onchange="_updateRecPreview(); updateTimeHelp('recHora','recTimeHelp')">
+                  <input type="time" id="recHora" oninput="_updateRecPreview(); updateTimeHelp('recHora','recTimeHelp')" onchange="_updateRecPreview(); updateTimeHelp('recHora','recTimeHelp')">
                   <div id="recTimeHelp" class="time-help">12:00 = mediodía · 00:00–00:59 = medianoche</div>
                 </div>
                 <div class="field" style="margin:0">
@@ -8552,8 +8552,8 @@ function validateBusinessSchedule(date, time, service, modality, contexto='guard
     return start >= adminTimeToMinutes(from) && end <= adminTimeToMinutes(to);
   });
   if (fits) return true;
-  toast('Ese horario no está permitido: la cita no cabe dentro de la jornada. No se permiten citas a las 9:00 p.m.', 'err');
-  return false;
+  toast('Horario fuera de la jornada habitual. Se guardará como cita manual especial.', 'warn');
+  return true;
 }
 
 function _addMultiDate() {
@@ -11094,6 +11094,9 @@ function checkTimeConflict() {
   const warn = document.getElementById('ncConflictWarn');
   if (!date || !time) { warn.style.display = 'none'; return; }
   if (isMidnightTime(time)) {
+    warn.style.background = 'rgba(239,68,68,.1)';
+    warn.style.borderColor = 'rgba(239,68,68,.4)';
+    warn.style.color = '#991b1b';
     warn.innerHTML = '⚠️ Esa hora está en la franja 00:00–00:59 (medianoche). Si la cita es a las 12 del mediodía, selecciona 12:00.';
     warn.style.display = 'block';
     return;
@@ -11106,7 +11109,10 @@ function checkTimeConflict() {
     return start >= adminTimeToMinutes(from) && start + duration <= adminTimeToMinutes(to);
   });
   if (!fitsSchedule) {
-    warn.innerHTML = '⚠️ Ese horario no está permitido: la cita no cabe dentro de la jornada. No se permiten citas a las 9:00 p.m.';
+    warn.style.background = 'rgba(245,158,11,.12)';
+    warn.style.borderColor = 'rgba(245,158,11,.45)';
+    warn.style.color = '#92400e';
+    warn.innerHTML = '⚠️ Horario fuera de la jornada habitual. Puedes guardarlo como cita manual especial; quedará visible en agenda y reportes.';
     warn.style.display = 'block';
     return;
   }
@@ -11118,6 +11124,9 @@ function checkTimeConflict() {
 
   if (conflicts.length) {
     const lista = conflicts.map(c => `<strong>${c.nombre}</strong> (${c.servicio})`).join(', ');
+    warn.style.background = 'rgba(239,68,68,.1)';
+    warn.style.borderColor = 'rgba(239,68,68,.4)';
+    warn.style.color = '#991b1b';
     warn.innerHTML = `⚠️ Conflicto de horario: ya hay cita a las ${time} — ${lista}`;
     warn.style.display = 'block';
   } else {
@@ -12718,20 +12727,9 @@ async function limpiarCitasSinHora() {
 }
 
 async function limpiarHorariosInvalidosAuto() {
-  if (!TOKEN) return;
-  const key = 'cleanInvalidCitaTimes_' + today();
-  if (sessionStorage.getItem(key) === '1') return;
-  sessionStorage.setItem(key, '1');
-  try {
-    const r = await fetch(`${APPS_SCRIPT_URL}?action=cleanInvalidCitaTimes&token=${encodeURIComponent(TOKEN)}`);
-    const d = await r.json();
-    if (d.ok && d.deleted > 0) {
-      toast(`✓ Se eliminó ${d.deleted} cita fuera de jornada. Ya no se permiten horarios como 9:00 p.m.`, 'ok');
-      await reload();
-    }
-  } catch(e) {
-    console.warn('No se pudo limpiar horarios inválidos automáticamente', e);
-  }
+  // Ya no se eliminan automáticamente citas fuera de jornada.
+  // Administración puede agendar horarios especiales manualmente y deben permanecer visibles.
+  return;
 }
 
 function exportarSeguimientoCSV() {
