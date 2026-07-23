@@ -7091,6 +7091,14 @@ async function verifyPayment(id, status) {
 function renderPagos() {
   fillPaymentSelectors(document.getElementById('payCitaId')?.value || '');
   const pagos = operationsData.pagos || [];
+  const pagosUnicos = [];
+  const seenPayments = new Set();
+  pagos.forEach(p => {
+    const key = p.CitaID ? `cita:${p.CitaID}` : `pago:${p.ID}`;
+    if (seenPayments.has(key)) return;
+    seenPayments.add(key);
+    pagosUnicos.push(p);
+  });
   const cuentas = operationsData.cuentas || [];
   const porVerificar = pagos.filter(p => ['Por verificar','COMPROBANTE_RECIBIDO'].includes(p.EstadoPago || '')).length;
   const aprobados = pagos.filter(p => ['Aprobado','PAGO_APROBADO'].includes(p.EstadoPago || '')).length;
@@ -7109,7 +7117,7 @@ function renderPagos() {
       <div class="team-muted" style="margin-top:8px"><strong>Titular:</strong> ${esc(a.Titular)}</div>
     </div>`).join('') : '<div class="empty"><p>No hay cuentas configuradas.</p></div>';
 
-  document.getElementById('paymentsList').innerHTML = pagos.length ? pagos.slice(0, 40).map(p => {
+  document.getElementById('paymentsList').innerHTML = pagosUnicos.length ? pagosUnicos.slice(0, 40).map(p => {
     const tone = ['Aprobado','PAGO_APROBADO'].includes(p.EstadoPago || '') ? 'ok' : (['Rechazado','PAGO_RECHAZADO'].includes(p.EstadoPago || '') ? 'warn' : 'info');
     return `<div class="team-card">
       <div class="team-card-head">
