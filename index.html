@@ -36,6 +36,9 @@
 }
 html{font-size:16px;scroll-behavior:smooth}
 body{background:var(--bg);color:var(--text);font-family:var(--font-b);min-height:100vh;overflow-x:hidden}
+.badge{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--border);border-radius:999px;padding:4px 8px;background:var(--s2);color:var(--muted);font-size:.72rem;font-weight:700}
+.badge.ok{background:rgba(22,163,74,.1);border-color:rgba(22,163,74,.25);color:var(--ok)}
+.badge.danger{background:rgba(220,38,38,.1);border-color:rgba(220,38,38,.25);color:var(--err)}
 
 /* ── SCROLLBAR ── */
 ::-webkit-scrollbar{width:5px;height:5px}
@@ -1821,6 +1824,14 @@ button:disabled{cursor:not-allowed;opacity:.58}
       <span id="badgeTareas" style="display:none;background:#059669;color:#fff;border-radius:99px;font-size:.68rem;font-weight:700;padding:1px 7px;line-height:1.6">0</span>
     </button>
 
+    <button class="sb-link" id="sb-operaciondiaria" data-tooltip="Control diario" onclick="showView('operaciondiaria')" style="justify-content:space-between">
+      <span style="display:flex;align-items:center;gap:10px">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M3 12h4"/><path d="M3 6h10"/><path d="M3 18h10"/></svg>
+        Control diario
+      </span>
+      <span id="badgeOperacion" style="display:none;background:#0f766e;color:#fff;border-radius:99px;font-size:.68rem;font-weight:700;padding:1px 7px;line-height:1.6">0</span>
+    </button>
+
     <button class="sb-link" id="sb-agenda" data-tooltip="Agenda" onclick="showView('agenda')" style="justify-content:space-between">
       <span style="display:flex;align-items:center;gap:10px">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
@@ -2721,6 +2732,53 @@ Primero evaluamos cómo está el cuerpo ahora, luego tratamos, luego te enseñam
 
     </section>
     <!-- ── FIN GUIONES WA ── -->
+
+    <!-- ── CONTROL DIARIO DE AGENDA ── -->
+    <section id="vOperaciondiaria" style="display:none">
+      <div class="page-header">
+        <h1 class="page-title"><em>Control diario</em> de agenda</h1>
+        <p class="page-sub">Preparar mañana y revisar hoy desde una sola pantalla.</p>
+      </div>
+
+      <div class="card" style="padding:18px;border-radius:20px;margin-bottom:18px">
+        <div style="display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap">
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn btn-teal" id="dailyModeTomorrow" onclick="setDailyOpsMode('manana')">Preparar mañana</button>
+            <button class="btn btn-ghost" id="dailyModeToday" onclick="setDailyOpsMode('hoy')">Revisión de hoy</button>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <input class="nc-input" type="date" id="dailyOpsDate" onchange="renderDailyOps()" style="max-width:170px">
+            <button class="btn btn-ghost btn-sm" onclick="loadDailyOps(true)">Actualizar</button>
+          </div>
+        </div>
+        <div id="dailyOpsPrepInfo" style="margin-top:12px;color:var(--muted);font-size:.9rem"></div>
+      </div>
+
+      <div id="dailyOpsSummary" class="kpi-grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin-bottom:18px"></div>
+      <div id="dailyOpsAlerts" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:18px"></div>
+
+      <div class="card" style="padding:18px;border-radius:20px;margin-bottom:18px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px">
+          <div>
+            <h2 style="font-family:var(--font-a);font-size:1.35rem;margin:0;color:var(--text)">Citas filtradas</h2>
+            <p id="dailyOpsFilterLabel" style="margin:4px 0 0;color:var(--muted);font-size:.88rem">Todas las citas de la fecha seleccionada.</p>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn btn-ghost btn-sm" onclick="copyDailyAvailableSlots()">Copiar horarios disponibles</button>
+            <button class="btn btn-ghost btn-sm" onclick="copyDailyReport()">Copiar reporte</button>
+          </div>
+        </div>
+        <div id="dailyOpsList" style="display:grid;gap:12px"></div>
+      </div>
+
+      <div class="card" style="padding:18px;border-radius:20px">
+        <h2 style="font-family:var(--font-a);font-size:1.35rem;margin:0 0 8px;color:var(--text)">Finalizar revisión</h2>
+        <p style="margin:0 0 12px;color:var(--muted);font-size:.9rem">Puedes finalizar aunque queden pendientes, pero deja una observación para Jessica.</p>
+        <textarea id="dailyOpsObservation" class="nc-input" rows="3" placeholder="Observación de la preparación o revisión..." style="width:100%;resize:vertical;margin-bottom:12px"></textarea>
+        <div id="dailyOpsPendingBeforeClose" style="color:var(--muted);font-size:.86rem;margin-bottom:12px"></div>
+        <button class="btn btn-teal" onclick="finishDailyPreparation()">Marcar agenda como revisada</button>
+      </div>
+    </section>
 
     <!-- ── AGENDA ── -->
     <section id="vAgenda" style="display:none">
@@ -6271,6 +6329,10 @@ let TOKEN  = sessionStorage.getItem('adminToken') || '';
 let allData = {citas: [], bloqueos: [], eventos: []};
 let operationsData = {cuentas: [], pagos: [], config: [], historialEstados: [], plantillasPlanes: []};
 let teamData = {profesionales: [], asignaciones: [], novedades: [], auditoria: [], cuentas: []};
+let dailyOpsMode = 'manana';
+let dailyOpsFilter = 'todas';
+let dailyOpsData = {citas: [], counts: {}, horariosDisponibles: []};
+const DAILY_OPS_LAB_MODE = false;
 let PROFESSIONAL_TOKEN = sessionStorage.getItem('professionalToken') || '';
 let professionalSession = null;
 let professionalAgenda = [];
@@ -6284,6 +6346,10 @@ function esc(s) {
     .replace(/&/g,'&amp;').replace(/</g,'&lt;')
     .replace(/>/g,'&gt;').replace(/"/g,'&quot;')
     .replace(/'/g,'&#39;');
+}
+
+function copyText(text) {
+  navigator.clipboard.writeText(String(text || '')).then(() => toast('Copiado')).catch(() => toast('No se pudo copiar', 'err'));
 }
 
 const APPOINTMENT_STATUSES = [
@@ -6965,7 +7031,7 @@ async function saveManualPayment(mode = 'verify') {
     cuentaReceptora: accountId,
     fechaPago: document.getElementById('payFechaPago').value || today(),
     comprobante: ref,
-    estadoPago: 'Por verificar',
+    estadoPago: 'COMPROBANTE_RECIBIDO',
     observaciones: document.getElementById('payObservaciones').value.trim(),
     proofFile: proofFile || null
   };
@@ -6976,7 +7042,7 @@ async function saveManualPayment(mode = 'verify') {
   if (d.ok) {
     if (mode === 'approve') {
       const obs = payload.observaciones || 'Pago confirmado desde registro de comprobante';
-      const v = await fetch(`${APPS_SCRIPT_URL}?action=verifyPayment&token=${encodeURIComponent(TOKEN)}&id=${encodeURIComponent(d.id)}&estado=Aprobado&observaciones=${encodeURIComponent(obs)}`).then(r => r.json());
+      const v = await fetch(`${APPS_SCRIPT_URL}?action=verifyPayment&token=${encodeURIComponent(TOKEN)}&id=${encodeURIComponent(d.id)}&estado=PAGO_APROBADO&observaciones=${encodeURIComponent(obs)}`).then(r => r.json());
       if (!v.ok) return toast(v.error || 'El comprobante se subió, pero no se pudo aprobar', 'err');
       toast('Pago confirmado y cita autorizada');
     } else {
@@ -7006,12 +7072,12 @@ function readPaymentProofFile() {
 }
 
 async function verifyPayment(id, status) {
-  const label = status === 'Aprobado' ? 'aprobar este pago y autorizar la cita' : `marcar este pago como ${status}`;
+  const label = status === 'PAGO_APROBADO' ? 'aprobar este pago y autorizar la cita' : `marcar este pago como ${status}`;
   if (!confirm(`¿Confirmas ${label}?`)) return;
   const obs = prompt('Observación opcional para auditoría:', '') || '';
   const d = await fetch(`${APPS_SCRIPT_URL}?action=verifyPayment&token=${encodeURIComponent(TOKEN)}&id=${encodeURIComponent(id)}&estado=${encodeURIComponent(status)}&observaciones=${encodeURIComponent(obs)}`).then(r => r.json());
   if (d.ok) {
-    toast(status === 'Aprobado' ? 'Pago aprobado y cita autorizada' : 'Pago actualizado');
+    toast(status === 'PAGO_APROBADO' ? 'Pago aprobado y cita autorizada' : 'Pago actualizado');
     await reload();
     await loadOperationsData();
     renderPagos();
@@ -7022,9 +7088,9 @@ function renderPagos() {
   fillPaymentSelectors(document.getElementById('payCitaId')?.value || '');
   const pagos = operationsData.pagos || [];
   const cuentas = operationsData.cuentas || [];
-  const porVerificar = pagos.filter(p => (p.EstadoPago || '') === 'Por verificar').length;
-  const aprobados = pagos.filter(p => (p.EstadoPago || '') === 'Aprobado').length;
-  const rechazados = pagos.filter(p => (p.EstadoPago || '') === 'Rechazado').length;
+  const porVerificar = pagos.filter(p => ['Por verificar','COMPROBANTE_RECIBIDO'].includes(p.EstadoPago || '')).length;
+  const aprobados = pagos.filter(p => ['Aprobado','PAGO_APROBADO'].includes(p.EstadoPago || '')).length;
+  const rechazados = pagos.filter(p => ['Rechazado','PAGO_RECHAZADO'].includes(p.EstadoPago || '')).length;
   document.getElementById('pagosStats').innerHTML = [
     ['Por verificar', porVerificar],
     ['Aprobados', aprobados],
@@ -7040,7 +7106,7 @@ function renderPagos() {
     </div>`).join('') : '<div class="empty"><p>No hay cuentas configuradas.</p></div>';
 
   document.getElementById('paymentsList').innerHTML = pagos.length ? pagos.slice(0, 40).map(p => {
-    const tone = (p.EstadoPago || '') === 'Aprobado' ? 'ok' : ((p.EstadoPago || '') === 'Rechazado' ? 'warn' : 'info');
+    const tone = ['Aprobado','PAGO_APROBADO'].includes(p.EstadoPago || '') ? 'ok' : (['Rechazado','PAGO_RECHAZADO'].includes(p.EstadoPago || '') ? 'warn' : 'info');
     return `<div class="team-card">
       <div class="team-card-head">
         <div>
@@ -7053,9 +7119,9 @@ function renderPagos() {
       ${p.Comprobante ? `<div class="team-muted">Comprobante/ref: ${String(p.Comprobante).startsWith('http') ? `<a href="${esc(p.Comprobante)}" target="_blank" rel="noopener">Ver comprobante</a>` : esc(p.Comprobante)}</div>` : ''}
       ${p.Observaciones ? `<div class="team-muted">Obs: ${esc(p.Observaciones)}</div>` : ''}
       <div class="team-card-actions">
-        ${(p.EstadoPago || '') !== 'Aprobado' ? `<button class="btn btn-teal btn-sm" onclick="verifyPayment('${esc(p.ID)}','Aprobado')">Aprobar</button>` : ''}
-        ${(p.EstadoPago || '') !== 'Rechazado' ? `<button class="btn btn-danger btn-sm" onclick="verifyPayment('${esc(p.ID)}','Rechazado')">Rechazar</button>` : ''}
-        <button class="btn btn-ghost btn-sm" onclick="verifyPayment('${esc(p.ID)}','Por verificar')">Pedir revisión</button>
+        ${!['Aprobado','PAGO_APROBADO'].includes(p.EstadoPago || '') ? `<button class="btn btn-teal btn-sm" onclick="verifyPayment('${esc(p.ID)}','PAGO_APROBADO')">Aprobar</button>` : ''}
+        ${!['Rechazado','PAGO_RECHAZADO'].includes(p.EstadoPago || '') ? `<button class="btn btn-danger btn-sm" onclick="verifyPayment('${esc(p.ID)}','PAGO_RECHAZADO')">Rechazar</button>` : ''}
+        <button class="btn btn-ghost btn-sm" onclick="verifyPayment('${esc(p.ID)}','COMPROBANTE_RECIBIDO')">Pedir revisión</button>
       </div>
     </div>`;
   }).join('') : '<div class="empty"><p>No hay pagos registrados aún.</p></div>';
@@ -7826,7 +7892,7 @@ function toggleKPIFavorite(e,id){e.stopPropagation();const fav=JSON.parse(localS
 function applyKPIFavorites(){let fav=[];try{fav=JSON.parse(localStorage.getItem('kpiFavorites')||'[]')}catch(e){}document.querySelectorAll('.kpi-live-card').forEach(c=>{const on=fav.includes(c.dataset.kpi);c.classList.toggle('is-favorite',on);const b=c.querySelector('.kpi-fav-btn');if(b){b.classList.toggle('active',on);b.textContent=on?'★':'☆';b.setAttribute('aria-label',on?'Quitar de favoritos':'Agregar a favoritos')}})}
 
 function showView(v) {
-  ['dashboard','acciones','espera','automatizaciones','tareas','tareasConfig','agenda','nueva','calendario','bloquear','pacientes','equipo','basedatos','codigos','paquetes','recordatorios','finanzas','pagos','guiakpis','presupuesto','seguimiento','mensajes','empresas','pasaporte','comisiones','guioneswa','recuperacion'].forEach(id => {
+  ['dashboard','acciones','espera','automatizaciones','tareas','operaciondiaria','tareasConfig','agenda','nueva','calendario','bloquear','pacientes','equipo','basedatos','codigos','paquetes','recordatorios','finanzas','pagos','guiakpis','presupuesto','seguimiento','mensajes','empresas','pasaporte','comisiones','guioneswa','recuperacion'].forEach(id => {
     const sec = document.getElementById('v' + id.charAt(0).toUpperCase() + id.slice(1));
     const sb  = document.getElementById('sb-' + id);
     if (sec) sec.style.display = 'none';
@@ -7885,6 +7951,7 @@ function showView(v) {
   if (v === 'pagos')          { loadOperationsData().then(renderPagos); }
   if (v === 'seguimiento')    renderSeguimiento();
   if (v === 'tareas')         renderTareas();
+  if (v === 'operaciondiaria') loadDailyOps(true);
   if (v === 'tareasConfig')   initTareasConfig();
   if (v === 'paquetes')       renderPaquetes();
   if (v === 'mensajes')       renderMensajes();
@@ -7920,6 +7987,262 @@ function _actionIcon(type) {
 
 function _opsItem({level='normal',type='paciente',title,sub,actions=''}) {
   return `<div class="ops-item" data-level="${level}"><div class="ops-icon">${_actionIcon(type)}</div><div class="ops-copy"><div class="ops-title">${title}</div><div class="ops-sub">${sub}</div></div><div class="ops-actions">${actions}</div></div>`;
+}
+
+function setDailyOpsMode(mode) {
+  dailyOpsMode = mode === 'hoy' ? 'hoy' : 'manana';
+  dailyOpsFilter = dailyOpsMode === 'hoy' ? 'proximas' : 'todas';
+  const input = document.getElementById('dailyOpsDate');
+  if (input) input.value = dailyOpsMode === 'hoy' ? today() : addDays(today(), 1);
+  loadDailyOps(true);
+}
+
+function addDays(dateStr, days) {
+  const d = new Date((dateStr || today()) + 'T00:00:00');
+  d.setDate(d.getDate() + Number(days || 0));
+  return d.toISOString().slice(0,10);
+}
+
+function dailyPaymentState(c) {
+  return c.estadoPago || c.EstadoPago || (
+    /pago por verificar/i.test(c.estado || '') ? 'COMPROBANTE_RECIBIDO' :
+    /pago rechazado/i.test(c.estado || '') ? 'PAGO_RECHAZADO' :
+    /autorizada|atendida|pago verificado/i.test(c.estado || '') ? 'PAGO_APROBADO' :
+    /cortes/i.test(c.estado || '') ? 'NO_REQUIERE_PAGO' :
+    /reembol/i.test(c.estado || '') ? 'REEMBOLSADO' :
+    'PENDIENTE_PAGO'
+  );
+}
+
+function dailyAppointmentState(c, assigned) {
+  if (c.estadoCita || c.EstadoCita) return c.estadoCita || c.EstadoCita;
+  const e = c.estado || '';
+  if (/no asisti/i.test(e)) return 'NO_ASISTIO';
+  if (/cancel|reembol/i.test(e)) return 'CANCELADA';
+  if (/atendida|cerrada/i.test(e)) return 'ATENDIDA';
+  if (assigned) return 'ASIGNADA';
+  if (/autorizada|pago verificado|cortes/i.test(e)) return 'AUTORIZADA';
+  return 'RESERVADA';
+}
+
+function dailyOpsDateTimeValue(dateValue, timeValue='') {
+  const raw = `${dateValue || ''} ${timeValue || ''}`.trim();
+  if (!raw) return 0;
+  const normalized = raw.includes('T') ? raw : raw.replace(/\//g,'-').replace(' ', 'T');
+  const d = new Date(normalized);
+  return isNaN(d.getTime()) ? 0 : d.getTime();
+}
+
+function buildDailyOpsLocal(date, mode) {
+  const assignments = {};
+  (teamData.asignaciones || []).forEach(a => { assignments[String(a.CitaID || a.citaId || '')] = a; });
+  const reminders = {};
+  (operationsData.recordatoriosCita || []).forEach(r => { reminders[String(r.CitaID || r.citaId || '')] = r; });
+  const prep = (operationsData.agendaPreparacion || []).find(p => String(p.FechaObjetivo || p.fechaObjetivo || '') === date);
+  const prepTime = prep ? Math.max(
+    dailyOpsDateTimeValue(prep.Actualizado || prep.actualizado),
+    dailyOpsDateTimeValue(prep.FechaRevision || prep.fechaRevision, prep.HoraRevision || prep.horaRevision)
+  ) : 0;
+  const now = new Date();
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+  const citas = (allData.citas || []).filter(c => normDate(c.fecha) === date).sort((a,b) => String(a.hora||'').localeCompare(String(b.hora||''))).map(c => {
+    const id = String(c.id || c.ID || '');
+    const asg = assignments[id] || {};
+    const pago = dailyPaymentState(c);
+    const cita = dailyAppointmentState(c, !!(asg.ProfesionalID || asg.profesionalId));
+    const h = String(c.hora || '').slice(0,5);
+    const hm = h.split(':').map(Number);
+    const minutes = (hm[0] || 0) * 60 + (hm[1] || 0);
+    const closed = ['ATENDIDA','NO_ASISTIO','CANCELADA'].includes(cita);
+    const lastChangeTime = Math.max(
+      dailyOpsDateTimeValue(c.Actualizado || c.actualizado || c.updatedAt || c.fechaActualizacion),
+      dailyOpsDateTimeValue(c.Creado || c.creado || c.createdAt || c.fechaCreacion)
+    );
+    return {
+      ...c, id, hora:h, nombre:c.nombre || '', telefono:c.telefono || '', servicio:c.servicio || '',
+      sede:c.sede || c.modalidad || '', modalidad:c.modalidad || '', valor:c.precio || '',
+      estadoPago:pago, estadoCita:cita,
+      confirmadaVisual:['PAGO_APROBADO','NO_REQUIERE_PAGO'].includes(pago) && ['AUTORIZADA','ASIGNADA'].includes(cita),
+      fisioterapeuta:asg.ProfesionalNombre || asg.profesionalNombre || '',
+      observaciones:c.notaAdmin || c.notas || '',
+      reprogramaciones:c.Reprogramaciones || c.reprogramaciones || 0,
+      plan:/plan|paquete|combo/i.test(c.servicio || '') || !!c.PlanClienteID,
+      recordatorio:reminders[id] ? 'ENVIADO' : 'PENDIENTE',
+      proximaTresHoras:mode === 'hoy' && normDate(date) === today() && minutes >= nowMin && minutes <= nowMin + 180,
+      pendienteCierre:mode === 'hoy' && normDate(date) === today() && minutes < nowMin && !closed,
+      cambioPosteriorPreparacion:!!(prepTime && lastChangeTime && lastChangeTime > prepTime)
+    };
+  });
+  const counts = {
+    total:citas.length,
+    autorizadas:citas.filter(c => c.confirmadaVisual).length,
+    pendientesPago:citas.filter(c => c.estadoPago === 'PENDIENTE_PAGO').length,
+    comprobantes:citas.filter(c => c.estadoPago === 'COMPROBANTE_RECIBIDO').length,
+    sinFisioterapeuta:citas.filter(c => !c.fisioterapeuta && !['CANCELADA','NO_ASISTIO'].includes(c.estadoCita)).length,
+    recordatoriosPendientes:citas.filter(c => c.recordatorio !== 'ENVIADO').length,
+    pendientesCierre:citas.filter(c => c.pendienteCierre).length,
+    atendidas:citas.filter(c => c.estadoCita === 'ATENDIDA').length,
+    noAsistio:citas.filter(c => c.estadoCita === 'NO_ASISTIO').length,
+    canceladas:citas.filter(c => c.estadoCita === 'CANCELADA').length,
+    cambiosPosteriores:citas.filter(c => c.cambioPosteriorPreparacion).length,
+    listasAtender:citas.filter(c => c.confirmadaVisual && c.fisioterapeuta).length,
+    datosIncompletos:citas.filter(c => !c.telefono || !c.servicio || !c.hora).length,
+    novedades:citas.filter(c => c.pendienteCierre || c.cambioPosteriorPreparacion).length
+  };
+  return {ok:true, mode, fecha:date, preparacion:prep || null, citas, counts, horariosDisponibles:[]};
+}
+
+async function loadDailyOps(force=false) {
+  await Promise.all([loadTeamData().catch(()=>{}), loadOperationsData().catch(()=>{})]);
+  const input = document.getElementById('dailyOpsDate');
+  if (input && !input.value) input.value = dailyOpsMode === 'hoy' ? today() : addDays(today(), 1);
+  const date = input?.value || today();
+  try {
+    const d = await fetch(`${APPS_SCRIPT_URL}?action=dailyOpsData&token=${encodeURIComponent(TOKEN)}&mode=${encodeURIComponent(dailyOpsMode)}&date=${encodeURIComponent(date)}`).then(r => r.json());
+    dailyOpsData = d.ok ? d : buildDailyOpsLocal(date, dailyOpsMode);
+  } catch(e) {
+    dailyOpsData = buildDailyOpsLocal(date, dailyOpsMode);
+  }
+  renderDailyOps();
+}
+
+function renderDailyOps() {
+  const input = document.getElementById('dailyOpsDate');
+  if (!input) return;
+  if (!input.value) input.value = dailyOpsMode === 'hoy' ? today() : addDays(today(), 1);
+  if (!dailyOpsData || dailyOpsData.fecha !== input.value || dailyOpsData.mode !== dailyOpsMode) dailyOpsData = buildDailyOpsLocal(input.value, dailyOpsMode);
+  document.getElementById('dailyModeTomorrow').className = dailyOpsMode === 'manana' ? 'btn btn-teal' : 'btn btn-ghost';
+  document.getElementById('dailyModeToday').className = dailyOpsMode === 'hoy' ? 'btn btn-teal' : 'btn btn-ghost';
+  const c = dailyOpsData.counts || {};
+  const prep = dailyOpsData.preparacion;
+  document.getElementById('dailyOpsPrepInfo').textContent = prep
+    ? `Última preparación: ${prep.UsuarioNombre || prep.usuarioNombre || 'Equipo'} · ${prep.FechaRevision || ''} ${prep.HoraRevision || ''} · ${prep.EstadoPreparacion || ''}`
+    : (dailyOpsMode === 'hoy' ? 'Aún no hay preparación registrada para esta fecha.' : 'Agenda pendiente por marcar como revisada.');
+  const summary = dailyOpsMode === 'hoy'
+    ? [['Próximas citas', (dailyOpsData.citas||[]).filter(x=>x.proximaTresHoras).length], ['Pendientes de pago', c.pendientesPago || 0], ['Comprobantes', c.comprobantes || 0], ['Sin fisioterapeuta', c.sinFisioterapeuta || 0], ['Cambios después', c.cambiosPosteriores || 0], ['Pendientes cierre', c.pendientesCierre || 0]]
+    : [['Total citas', c.total || 0], ['Pendientes de pago', c.pendientesPago || 0], ['Comprobantes', c.comprobantes || 0], ['Autorizadas', c.autorizadas || 0], ['Sin fisioterapeuta', c.sinFisioterapeuta || 0], ['Recordatorios', c.recordatoriosPendientes || 0], ['Horarios libres', (dailyOpsData.horariosDisponibles || []).length]];
+  document.getElementById('dailyOpsSummary').innerHTML = summary.map(([label,val]) => `<div class="kpi-card"><div class="kpi-label">${esc(label)}</div><div class="kpi-value">${esc(val)}</div></div>`).join('');
+  const alerts = dailyOpsMode === 'hoy'
+    ? [['proximas','Próximas 3 horas',(dailyOpsData.citas||[]).filter(x=>x.proximaTresHoras).length], ['pendientesPago','Pendientes de pago',c.pendientesPago], ['comprobantes','Comprobantes por verificar',c.comprobantes], ['sinFisio','Sin fisioterapeuta',c.sinFisioterapeuta], ['cierre','Pendientes de cierre',c.pendientesCierre], ['todas','Todas',c.total]]
+    : [['todas','Todas',c.total], ['pendientesPago','Pendientes de pago',c.pendientesPago], ['comprobantes','Comprobantes por verificar',c.comprobantes], ['sinFisio','Sin fisioterapeuta',c.sinFisioterapeuta], ['recordatorios','Recordatorios pendientes',c.recordatoriosPendientes]];
+  document.getElementById('dailyOpsAlerts').innerHTML = alerts.map(([key,label,val]) => `<button class="btn ${dailyOpsFilter===key?'btn-teal':'btn-ghost'}" style="justify-content:space-between;padding:12px 14px" onclick="dailyOpsFilter='${key}';renderDailyOps()"><span>${esc(label)}</span><strong>${val || 0}</strong></button>`).join('');
+  renderDailyOpsList();
+}
+
+function renderDailyOpsList() {
+  let list = dailyOpsData.citas || [];
+  const map = {pendientesPago:x=>x.estadoPago==='PENDIENTE_PAGO', comprobantes:x=>x.estadoPago==='COMPROBANTE_RECIBIDO', sinFisio:x=>!x.fisioterapeuta, recordatorios:x=>x.recordatorio!=='ENVIADO', listas:x=>x.confirmadaVisual && x.fisioterapeuta, datos:x=>!x.telefono || !x.servicio || !x.hora, proximas:x=>x.proximaTresHoras, cierre:x=>x.pendienteCierre};
+  if (map[dailyOpsFilter]) list = list.filter(map[dailyOpsFilter]);
+  const labels = {todas:'Todas las citas', pendientesPago:'Pendientes de pago', comprobantes:'Comprobantes por verificar', sinFisio:'Sin fisioterapeuta', recordatorios:'Recordatorios pendientes', listas:'Listas para atender', datos:'Datos incompletos', proximas:'Próximas 3 horas', cierre:'Pendientes de cierre'};
+  document.getElementById('dailyOpsFilterLabel').textContent = `${labels[dailyOpsFilter] || 'Filtro'} · ${list.length} cita(s)`;
+  document.getElementById('dailyOpsPendingBeforeClose').textContent = `Pendientes: ${dailyOpsData.counts?.pendientesPago || 0} sin pago · ${dailyOpsData.counts?.comprobantes || 0} comprobantes · ${dailyOpsData.counts?.sinFisioterapeuta || 0} sin fisio · ${dailyOpsData.counts?.recordatoriosPendientes || 0} recordatorios.`;
+  document.getElementById('dailyOpsList').innerHTML = list.length ? list.map(c => dailyOpsCard(c)).join('') : '<div class="empty-state">No hay citas para este filtro.</div>';
+}
+
+function dailyOpsCard(c) {
+  const phone = String(c.telefono||'').replace(/\D/g,'').replace(/^57/,'');
+  const wa = `https://wa.me/57${phone}?text=${encodeURIComponent(buildDailyReminderMessage(c))}`;
+  return `<div class="card" style="padding:16px;border-left:4px solid ${c.pendienteCierre?'#dc2626':c.estadoPago==='PENDIENTE_PAGO'?'#f59e0b':'var(--teal)'}">
+    <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap">
+      <div>
+        <div style="font-family:var(--font-a);font-size:1.15rem;color:var(--text)">${esc(c.hora)} · ${esc(c.nombre)}</div>
+        <div style="color:var(--muted);font-size:.88rem;margin-top:4px">${esc(c.servicio)}</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px">
+          <span class="badge">${esc(c.estadoPago)}</span>
+          <span class="badge">${esc(c.estadoCita)}</span>
+          ${c.confirmadaVisual?'<span class="badge ok">Confirmada</span>':''}
+          <span class="badge">${c.fisioterapeuta ? 'Fis: '+esc(c.fisioterapeuta) : 'Sin fisioterapeuta'}</span>
+          <span class="badge">Recordatorio: ${esc(c.recordatorio)}</span>
+          ${c.pendienteCierre?'<span class="badge danger">Pendiente de cierre</span>':''}
+        </div>
+      </div>
+      <div style="display:flex;gap:7px;flex-wrap:wrap;align-items:flex-start">
+        <button class="btn btn-ghost btn-sm" onclick="verDetalle('${esc(c.id)}')">Ver cita</button>
+        <a class="btn btn-wa btn-sm" href="${wa}" target="_blank">Abrir WhatsApp</a>
+        <button class="btn btn-ghost btn-sm" onclick="abrirPagoCita('${esc(c.id)}')">Registrar comprobante</button>
+        <a class="btn btn-ghost btn-sm" href="${wa}" target="_blank" onclick="logDailyReminder('${esc(c.id)}')">Enviar recordatorio</a>
+        <button class="btn btn-ghost btn-sm" onclick="abrirAsignarPro('${esc(c.id)}')">Asignar fisio</button>
+        <button class="btn btn-ghost btn-sm" onclick="addDailyObservationPrompt('${esc(c.id)}')">Observación</button>
+      </div>
+    </div>
+    ${c.observaciones?`<div style="margin-top:10px;color:var(--muted);font-size:.86rem">Obs: ${esc(c.observaciones)}</div>`:''}
+  </div>`;
+}
+
+function buildDailyReminderMessage(c) {
+  return `Hola ${c.nombre || ''}, te escribimos de Cuidándote Fisioterapia para recordarte tu cita:\n\n📅 Fecha: ${dailyOpsData.fecha}\n⏰ Hora: ${c.hora}\n🌿 Servicio: ${c.servicio}\n📍 Sede/modalidad: ${c.sede || c.modalidad || 'Por confirmar'}\n\nTe recomendamos llegar con unos minutos de anticipación. Si necesitas reprogramar, por favor avísanos con mínimo 12 horas.${c.estadoPago === 'PENDIENTE_PAGO' ? '\n\n⚠️ Tenemos tu pago pendiente. Para autorizar la atención, por favor envíanos el comprobante.' : ''}`;
+}
+
+async function logDailyReminder(id) {
+  const c = (dailyOpsData.citas || []).find(x => x.id === id);
+  if (!c) return;
+  if (DAILY_OPS_LAB_MODE) {
+    const logs = JSON.parse(localStorage.getItem('dailyOpsReminderLogs_TEST') || '[]');
+    logs.push({id, fecha: dailyOpsData.fecha, savedAt: new Date().toISOString(), pendientePago: c.estadoPago === 'PENDIENTE_PAGO'});
+    localStorage.setItem('dailyOpsReminderLogs_TEST', JSON.stringify(logs.slice(-200)));
+    return;
+  }
+  try { await fetch(`${APPS_SCRIPT_URL}?action=logDailyReminder&token=${encodeURIComponent(TOKEN)}&citaId=${encodeURIComponent(id)}&fecha=${encodeURIComponent(dailyOpsData.fecha)}&pendientePago=${c.estadoPago==='PENDIENTE_PAGO'}&mensaje=${encodeURIComponent(buildDailyReminderMessage(c))}`); } catch(e) {}
+}
+
+async function addDailyObservationPrompt(id) {
+  const c = (dailyOpsData.citas || []).find(x => x.id === id);
+  if (!c) return;
+  const detalle = prompt('Observación para esta cita:', c.observaciones || '');
+  if (!detalle) return;
+  if (DAILY_OPS_LAB_MODE) {
+    const logs = JSON.parse(localStorage.getItem('dailyOpsObservationLogs_TEST') || '[]');
+    logs.push({id, fecha: dailyOpsData.fecha, detalle, savedAt: new Date().toISOString()});
+    localStorage.setItem('dailyOpsObservationLogs_TEST', JSON.stringify(logs.slice(-200)));
+    c.observaciones = detalle;
+    renderDailyOpsList();
+    toast('Modo prueba: observación guardada localmente');
+    return;
+  }
+  try {
+    const d = await fetch(`${APPS_SCRIPT_URL}?action=addDailyObservation&token=${encodeURIComponent(TOKEN)}&citaId=${encodeURIComponent(id)}&fecha=${encodeURIComponent(dailyOpsData.fecha)}&detalle=${encodeURIComponent(detalle)}`).then(r=>r.json());
+    toast(d.ok ? 'Observación guardada' : (d.error || 'No se pudo guardar'));
+    await loadDailyOps(true);
+  } catch(e) {
+    toast('No se pudo guardar la observación', 'err');
+  }
+}
+
+function copyDailyReport() {
+  const c = dailyOpsData.counts || {};
+  if (dailyOpsMode === 'hoy') {
+    copyText(`Cierre del día.\n\nFecha: ${dailyOpsData.fecha}\nAtendidas: ${c.atendidas || 0}\nNo asistieron: ${c.noAsistio || 0}\nCanceladas: ${c.canceladas || 0}\nPendientes de cierre: ${c.pendientesCierre || 0}\nNovedades: ${c.novedades || 0}`);
+    return;
+  }
+  copyText(`Agenda de mañana revisada.\n\nFecha: ${dailyOpsData.fecha}\nCitas: ${c.total || 0}\nAutorizadas: ${c.autorizadas || 0}\nPendientes de pago: ${c.pendientesPago || 0}\nComprobantes por verificar: ${c.comprobantes || 0}\nSin fisioterapeuta: ${c.sinFisioterapeuta || 0}\nNovedades: ${c.novedades || 0}`);
+}
+
+function copyDailyAvailableSlots() {
+  const slots = dailyOpsData.horariosDisponibles || [];
+  copyText(slots.length ? `Horarios disponibles para ${dailyOpsData.fecha}:\n${slots.map(s=>'• '+s).join('\n')}` : `Horarios disponibles para ${dailyOpsData.fecha}: pendiente de cálculo automático por duración/profesional.`);
+}
+
+async function finishDailyPreparation() {
+  const obs = document.getElementById('dailyOpsObservation').value.trim();
+  const payload = {fechaObjetivo:dailyOpsData.fecha, tipo:dailyOpsMode, observaciones:obs};
+  if (DAILY_OPS_LAB_MODE) {
+    const pending = dailyOpsData.counts || {};
+    const estado = (pending.pendientesPago || pending.comprobantes || pending.sinFisioterapeuta || pending.recordatoriosPendientes)
+      ? 'CON_PENDIENTES'
+      : 'LISTA';
+    localStorage.setItem('dailyOpsDraft_'+dailyOpsData.fecha, JSON.stringify({payload, estado, counts:dailyOpsData.counts, savedAt:new Date().toISOString()}));
+    toast(`Modo prueba: agenda marcada localmente como ${estado}`);
+    await loadDailyOps(true);
+    return;
+  }
+  try {
+    const d = await fetch(`${APPS_SCRIPT_URL}?action=saveDailyPreparation&token=${encodeURIComponent(TOKEN)}&data=${encodeURIComponent(JSON.stringify(payload))}`).then(r=>r.json());
+    toast(d.ok ? `Agenda marcada: ${d.estado || 'revisada'}` : (d.error || 'No se pudo guardar'));
+  } catch(e) {
+    localStorage.setItem('dailyOpsDraft_'+dailyOpsData.fecha, JSON.stringify({payload, counts:dailyOpsData.counts, savedAt:new Date().toISOString()}));
+    toast('Guardado localmente como borrador de prueba');
+  }
+  await loadDailyOps(true);
 }
 
 function renderCentroAcciones() {
