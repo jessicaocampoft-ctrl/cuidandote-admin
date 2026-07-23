@@ -8150,6 +8150,10 @@ function renderDailyOpsList() {
 function dailyOpsCard(c) {
   const phone = String(c.telefono||'').replace(/\D/g,'').replace(/^57/,'');
   const wa = `https://wa.me/57${phone}?text=${encodeURIComponent(buildDailyReminderMessage(c))}`;
+  const pago = (operationsData.pagos || []).find(p => String(p.CitaID || '') === String(c.id) && ['COMPROBANTE_RECIBIDO','Por verificar'].includes(p.EstadoPago || ''));
+  const pagoActions = pago ? `
+        <button class="btn btn-teal btn-sm" onclick="verifyDailyPayment('${esc(pago.ID)}','PAGO_APROBADO')">Aprobar pago</button>
+        <button class="btn btn-danger btn-sm" onclick="verifyDailyPayment('${esc(pago.ID)}','PAGO_RECHAZADO')">Rechazar</button>` : '';
   return `<div class="card" style="padding:16px;border-left:4px solid ${c.pendienteCierre?'#dc2626':c.estadoPago==='PENDIENTE_PAGO'?'#f59e0b':'var(--teal)'}">
     <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap">
       <div>
@@ -8168,6 +8172,7 @@ function dailyOpsCard(c) {
         <button class="btn btn-ghost btn-sm" onclick="verDetalle('${esc(c.id)}')">Ver cita</button>
         <a class="btn btn-wa btn-sm" href="${wa}" target="_blank">Abrir WhatsApp</a>
         <button class="btn btn-ghost btn-sm" onclick="abrirPagoCita('${esc(c.id)}')">Registrar comprobante</button>
+        ${pagoActions}
         <a class="btn btn-ghost btn-sm" href="${wa}" target="_blank" onclick="logDailyReminder('${esc(c.id)}')">Enviar recordatorio</a>
         <button class="btn btn-ghost btn-sm" onclick="abrirAsignarPro('${esc(c.id)}')">Asignar fisio</button>
         <button class="btn btn-ghost btn-sm" onclick="addDailyObservationPrompt('${esc(c.id)}')">Observación</button>
@@ -8175,6 +8180,11 @@ function dailyOpsCard(c) {
     </div>
     ${c.observaciones?`<div style="margin-top:10px;color:var(--muted);font-size:.86rem">Obs: ${esc(c.observaciones)}</div>`:''}
   </div>`;
+}
+
+async function verifyDailyPayment(id, status) {
+  await verifyPayment(id, status);
+  await loadDailyOps(true);
 }
 
 function buildDailyReminderMessage(c) {
