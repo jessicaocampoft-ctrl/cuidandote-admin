@@ -8093,16 +8093,12 @@ function buildDailyOpsLocal(date, mode) {
 }
 
 async function loadDailyOps(force=false) {
+  if (force || !(allData.citas || []).length) await reload().catch(()=>{});
   await Promise.all([loadTeamData().catch(()=>{}), loadOperationsData().catch(()=>{})]);
   const input = document.getElementById('dailyOpsDate');
   if (input && !input.value) input.value = dailyOpsMode === 'hoy' ? today() : addDays(today(), 1);
   const date = input?.value || today();
-  try {
-    const d = await fetch(`${APPS_SCRIPT_URL}?action=dailyOpsData&token=${encodeURIComponent(TOKEN)}&mode=${encodeURIComponent(dailyOpsMode)}&date=${encodeURIComponent(date)}`).then(r => r.json());
-    dailyOpsData = d.ok ? d : buildDailyOpsLocal(date, dailyOpsMode);
-  } catch(e) {
-    dailyOpsData = buildDailyOpsLocal(date, dailyOpsMode);
-  }
+  dailyOpsData = buildDailyOpsLocal(date, dailyOpsMode);
   renderDailyOps();
 }
 
