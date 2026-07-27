@@ -6268,6 +6268,7 @@ window.addEventListener('beforeunload', () => {
 });
 
 let TOKEN  = sessionStorage.getItem('adminToken') || '';
+let currentAdminUser = JSON.parse(sessionStorage.getItem('adminUser') || 'null');
 let allData = {citas: [], bloqueos: [], eventos: []};
 let operationsData = {cuentas: [], pagos: [], config: [], historialEstados: [], plantillasPlanes: []};
 let teamData = {profesionales: [], asignaciones: [], novedades: [], auditoria: [], cuentas: []};
@@ -6798,6 +6799,7 @@ async function authorizeAssignPro() {
 }
 
 async function markPayablePaid(id) {
+  if (!canAdminApprovePayments()) return toast('Tu rol no puede marcar comisiones o cuentas por pagar.', 'err');
   if (!confirm('¿Marcar esta cuenta como pagada?')) return;
   const d = await fetch(`${APPS_SCRIPT_URL}?action=markPayablePaid&token=${encodeURIComponent(TOKEN)}&id=${encodeURIComponent(id)}`).then(r => r.json());
   if (d.ok) { await loadTeamData(); renderEquipo(); toast('Cuenta marcada como pagada'); }
@@ -6945,6 +6947,7 @@ function abrirPagoCita(id) {
 }
 
 async function saveManualPayment(mode = 'verify') {
+  if (mode === 'approve' && !canAdminApprovePayments()) return toast('Tu rol puede registrar comprobantes, pero no aprobar pagos.', 'err');
   const citaId = document.getElementById('payCitaId').value;
   if (!citaId) return toast('Selecciona una cita', 'err');
   const c = (allData.citas || []).find(x => String(x.id) === String(citaId));
@@ -7006,6 +7009,7 @@ function readPaymentProofFile() {
 }
 
 async function verifyPayment(id, status) {
+  if (!canAdminApprovePayments()) return toast('Tu rol puede registrar comprobantes, pero no aprobar ni rechazar pagos.', 'err');
   const label = status === 'Aprobado' ? 'aprobar este pago y autorizar la cita' : `marcar este pago como ${status}`;
   if (!confirm(`¿Confirmas ${label}?`)) return;
   const obs = prompt('Observación opcional para auditoría:', '') || '';
@@ -7291,13 +7295,14 @@ async function doLogin() {
     return;
   }
   const pw  = document.getElementById('pwInput').value.trim();
+  const user = (document.getElementById('userInput')?.value || '').trim();
   const btn = document.getElementById('loginBtn');
   if (!pw) return;
   btn.textContent = 'Verificando...'; btn.disabled = true;
   try {
     const r = await fetch(APPS_SCRIPT_URL, {
       method: 'POST',
-      body: JSON.stringify({action: 'adminLogin', password: pw})
+      body: JSON.stringify({action: 'adminLogin', user, password: pw})
     });
     const d = await r.json();
     if (d.ok) {
@@ -7824,6 +7829,27 @@ function closeKPIExplorer(){document.getElementById('kpiExplorer')?.classList.re
 function saveKPINote(){if(!_activeKPIExplorer)return;localStorage.setItem('kpiNote_'+_activeKPIExplorer,document.getElementById('kpiNote').value.trim());toast('Nota del indicador guardada')}
 function toggleKPIFavorite(e,id){e.stopPropagation();const fav=JSON.parse(localStorage.getItem('kpiFavorites')||'[]');const ix=fav.indexOf(id);if(ix>=0)fav.splice(ix,1);else fav.push(id);localStorage.setItem('kpiFavorites',JSON.stringify(fav));applyKPIFavorites()}
 function applyKPIFavorites(){let fav=[];try{fav=JSON.parse(localStorage.getItem('kpiFavorites')||'[]')}catch(e){}document.querySelectorAll('.kpi-live-card').forEach(c=>{const on=fav.includes(c.dataset.kpi);c.classList.toggle('is-favorite',on);const b=c.querySelector('.kpi-fav-btn');if(b){b.classList.toggle('active',on);b.textContent=on?'★':'☆';b.setAttribute('aria-label',on?'Quitar de favoritos':'Agregar a favoritos')}})}
+
+
+function currentAdminRoleKey() {
+  return String(currentAdminUser?.rol || 'Superadministradora').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+}
+function isAuxAdmin() { return currentAdminRoleKey().includes('aux'); }
+function canAdminApprovePayments() { return !isAuxAdmin(); }
+function canOpenAdminView(v) {
+  if (!isAuxAdmin()) return true;
+  return ['operaciondiaria','agenda','pagos','recordatorios','seguimiento','pacientes'].includes(v);
+}
+function applyRoleRestrictions() {
+  if (!isAuxAdmin()) return;
+  ['dashboard','acciones','espera','automatizaciones','tareas','tareasConfig','nueva','calendario','bloquear','equipo','basedatos','codigos','paquetes','finanzas','guiakpis','presupuesto','mensajes','empresas','pasaporte','comisiones','guioneswa','recuperacion'].forEach(id => {
+    const sb=document.getElementById('sb-'+id); if(sb) sb.style.display='none';
+    const mb=document.getElementById('mobBtn-'+id); if(mb) mb.style.display='none';
+  });
+  document.querySelectorAll('[onclick*="verifyPayment"], [onclick*="authorizeCourtesy"], [onclick*="createCreditBalance"], [onclick*="applyCreditBalance"], [onclick*="markPayablePaid"], [onclick*="showView(\'finanzas\'"], [onclick*="showView(\'comisiones\'"], [onclick*="showView(\'presupuesto\'"]').forEach(el => {
+    el.style.display='none';
+  });
+}
 
 function showView(v) {
   ['dashboard','acciones','espera','automatizaciones','tareas','tareasConfig','agenda','nueva','calendario','bloquear','pacientes','equipo','basedatos','codigos','paquetes','recordatorios','finanzas','pagos','guiakpis','presupuesto','seguimiento','mensajes','empresas','pasaporte','comisiones','guioneswa','recuperacion'].forEach(id => {
