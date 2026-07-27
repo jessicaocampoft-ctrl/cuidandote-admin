@@ -1619,7 +1619,7 @@ button:disabled{cursor:not-allowed;opacity:.58}
     animation-iteration-count:1!important;transition-duration:.01ms!important}
 }
 </style>
-<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 <body>
 
@@ -18321,16 +18321,36 @@ async function generarLinkPasaporte() {
   const msg = `Hola ${nombre.split(' ')[0]}! \uD83D\uDC4B\nTe dejo tu Pasaporte de Beneficios — ahi vas a ver tu progreso despues de cada sesion.\n${link}\n\n\u2B50 *Como ganar beneficios?*\nCada sesion sumas avances. Al llegar a:\n\n\u2705 *4 sesiones:* Descarga Localizada 10 min (zona de tu eleccion)\n\u2705 *8 sesiones:* Valoracion Funcional Express 10 min + PDF con resultados\n\u2705 *12 sesiones:* Movilidad Asistida 10 min + Botas de Compresion\n\u2705 *16 sesiones:* Kinesiotape + Tens 15 min (Readaptacion completa)\n\nGuardalo y nos vemos pronto! \uD83D\uDE0A`;
   document.getElementById('pasWhatsApp').href = tel + '?text=' + encodeURIComponent(msg);
 
-  if (typeof QRCode !== 'undefined' && QRCode.toCanvas) {
-    QRCode.toCanvas(document.getElementById('pasQR'), link, { width: 112, margin: 1, color: { dark: '#0A1A12', light: '#F7F8FA' } });
-  } else {
-    const canvas = document.getElementById('pasQR');
-    const ctx = canvas.getContext('2d');
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-    ctx.fillStyle = '#F7F8FA'; ctx.fillRect(0,0,canvas.width,canvas.height);
-    ctx.fillStyle = '#0A1A12'; ctx.font = '11px Arial'; ctx.fillText('QR no disponible', 14, 58);
-  }
+  renderPasaporteQR(link);
   renderPasaporteAdminTools();
+}
+
+function renderPasaporteQR(link) {
+  const canvas = document.getElementById('pasQR');
+  if (!canvas) return;
+  let box = document.getElementById('pasQRBox');
+  if (!box) {
+    box = document.createElement('div');
+    box.id = 'pasQRBox';
+    box.style.cssText = 'width:112px;height:112px;border-radius:10px;border:1px solid var(--border);overflow:hidden;background:#F7F8FA;display:grid;place-items:center;flex-shrink:0';
+    canvas.insertAdjacentElement('afterend', box);
+  }
+  box.innerHTML = '';
+  canvas.style.display = 'none';
+  if (typeof QRCode !== 'undefined') {
+    if (QRCode.toCanvas) {
+      canvas.style.display = 'block';
+      box.style.display = 'none';
+      QRCode.toCanvas(canvas, link, { width: 112, margin: 1, color: { dark: '#0A1A12', light: '#F7F8FA' } });
+    } else {
+      box.style.display = 'grid';
+      new QRCode(box, { text: link, width: 112, height: 112, colorDark: '#0A1A12', colorLight: '#F7F8FA', correctLevel: QRCode.CorrectLevel.M });
+    }
+  } else {
+    box.textContent = 'QR no disponible';
+    box.style.fontSize = '11px';
+    box.style.color = 'var(--muted)';
+  }
 }
 
 function abrirPasaporte() {
