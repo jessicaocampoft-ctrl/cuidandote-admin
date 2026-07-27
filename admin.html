@@ -6801,7 +6801,6 @@ async function authorizeAssignPro() {
 }
 
 async function markPayablePaid(id) {
-  if (!canAdminApprovePayments()) return toast('Tu rol no puede marcar comisiones o cuentas por pagar.', 'err');
   if (!confirm('¿Marcar esta cuenta como pagada?')) return;
   const d = await fetch(`${APPS_SCRIPT_URL}?action=markPayablePaid&token=${encodeURIComponent(TOKEN)}&id=${encodeURIComponent(id)}`).then(r => r.json());
   if (d.ok) { await loadTeamData(); renderEquipo(); toast('Cuenta marcada como pagada'); }
@@ -6949,7 +6948,6 @@ function abrirPagoCita(id) {
 }
 
 async function saveManualPayment(mode = 'verify') {
-  if (mode === 'approve' && !canAdminApprovePayments()) return toast('Tu rol puede registrar comprobantes, pero no aprobar pagos.', 'err');
   const citaId = document.getElementById('payCitaId').value;
   if (!citaId) return toast('Selecciona una cita', 'err');
   const c = (allData.citas || []).find(x => String(x.id) === String(citaId));
@@ -7011,7 +7009,6 @@ function readPaymentProofFile() {
 }
 
 async function verifyPayment(id, status) {
-  if (!canAdminApprovePayments()) return toast('Tu rol puede registrar comprobantes, pero no aprobar ni rechazar pagos.', 'err');
   const label = status === 'Aprobado' ? 'aprobar este pago y autorizar la cita' : `marcar este pago como ${status}`;
   if (!confirm(`¿Confirmas ${label}?`)) return;
   const obs = prompt('Observación opcional para auditoría:', '') || '';
@@ -7837,22 +7834,9 @@ function currentAdminRoleKey() {
   return String(currentAdminUser?.rol || 'Superadministradora').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
 }
 function isAuxAdmin() { return currentAdminRoleKey().includes('aux'); }
-function canAdminApprovePayments() { return !isAuxAdmin(); }
-function canOpenAdminView(v) {
-  if (!isAuxAdmin()) return true;
-  return ['operaciondiaria','agenda','pagos','recordatorios','seguimiento','pacientes'].includes(v);
-}
 function applyRoleRestrictions() {
-  if (!isAuxAdmin()) return;
-  ['dashboard','acciones','espera','automatizaciones','tareas','tareasConfig','nueva','calendario','bloquear','equipo','basedatos','codigos','paquetes','finanzas','guiakpis','presupuesto','mensajes','empresas','pasaporte','comisiones','guioneswa','recuperacion'].forEach(id => {
-    const sb=document.getElementById('sb-'+id); if(sb) sb.style.display='none';
-    const mb=document.getElementById('mobBtn-'+id); if(mb) mb.style.display='none';
-  });
-  document.querySelectorAll('[onclick*="verifyPayment"], [onclick*="authorizeCourtesy"], [onclick*="createCreditBalance"], [onclick*="applyCreditBalance"], [onclick*="markPayablePaid"], [onclick*="showView(\'finanzas\'"], [onclick*="showView(\'comisiones\'"], [onclick*="showView(\'presupuesto\'"]').forEach(el => {
-    el.style.display='none';
-  });
+  // Auxiliar operativo: acceso completo. Exclusivos de propietaria se bloquean en backend.
 }
-
 function showView(v) {
   ['dashboard','acciones','espera','automatizaciones','tareas','tareasConfig','agenda','nueva','calendario','bloquear','pacientes','equipo','basedatos','codigos','paquetes','recordatorios','finanzas','pagos','guiakpis','presupuesto','seguimiento','mensajes','empresas','pasaporte','comisiones','guioneswa','recuperacion'].forEach(id => {
     const sec = document.getElementById('v' + id.charAt(0).toUpperCase() + id.slice(1));
