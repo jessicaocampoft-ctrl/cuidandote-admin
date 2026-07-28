@@ -1702,7 +1702,8 @@ button:disabled{cursor:not-allowed;opacity:.58}
     <h1>Panel de Administración</h1>
     <p>Acceso exclusivo para Cuidándote Fisioterapia</p>
     <label class="sr-only" for="userInput">Usuario de equipo</label>
-    <input class="login-input" type="text" id="userInput" placeholder="Usuario de equipo (solo auxiliar)" autocomplete="username">
+    <input class="login-input" type="text" id="userInput" placeholder="Déjalo vacío si eres administradora" autocomplete="username">
+    <div style="margin:-8px 0 10px;color:#697386;font-size:.82rem;text-align:left">Solo escribe usuario si vas a entrar como auxiliar o fisioterapeuta autorizado.</div>
     <label class="sr-only" for="pwInput">Contraseña de administración</label>
     <input class="login-input" type="password" id="pwInput" placeholder="Contraseña" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
     <button class="login-btn" id="loginBtn" onclick="doLogin()">Ingresar</button>
