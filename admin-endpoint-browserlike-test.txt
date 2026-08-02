@@ -1,0 +1,18 @@
+CURRENT_HTTP=200
+CURRENT_CURL_RC=0
+CURRENT_CONTENT_TYPE=application/json; charset=utf-8
+CURRENT_ACAO=*
+CURRENT_BODY={"ok":false,"error":"Credenciales incorrectas"}
+
+ADMIN_NEW_HTTP=200
+ADMIN_NEW_CURL_RC=0
+ADMIN_NEW_CONTENT_TYPE=application/json; charset=utf-8
+ADMIN_NEW_ACAO=*
+ADMIN_NEW_BODY={"ok":false,"error":"Credenciales incorrectas"}
+
+PUBLIC_HTTP=200
+PUBLIC_CURL_RC=0
+PUBLIC_CONTENT_TYPE=application/json; charset=utf-8
+PUBLIC_ACAO=*
+PUBLIC_BODY={"ok":false,"error":"Demasiados intentos fallidos. Espera 5 minutos."}
+
