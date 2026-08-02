@@ -9367,25 +9367,25 @@ function waBtn(tel, nombre, fecha, hora, serv, label, precio, modalidad) {
 }
 
 function pasaporteLink(nombre) {
-  return PASAPORTE_BASE + '?nombre=' + encodeURIComponent((nombre||'').trim());
+  return PASAPORTE_BASE;
 }
 
 function pasaporteLinkAdmin(nombre) {
-  return PASAPORTE_BASE + '?nombre=' + encodeURIComponent((nombre||'').trim()) + '&admin=' + PASAPORTE_TOKEN;
+  return PASAPORTE_BASE;
 }
 
 function waBtnPasaporte(tel, nombre) {
-  const linkPaciente = pasaporteLink(nombre);
-  const linkAdmin    = pasaporteLinkAdmin(nombre);
-  const t     = String(tel||'').replace(/\D/g,'');
-  const phone = t.length <= 10 ? '57'+t : t;
-  const primero = waNombre(nombre);
-  const msg = 'Hola ' + primero + '! \uD83D\uDC4B\nTe dejo tu Pasaporte de Beneficios — ahi vas a ver tu progreso despues de cada sesion.\n' + linkPaciente + '\n\n\u2B50 *Como ganar beneficios?*\nCada sesion sumas avances. Al llegar a:\n\n\u2705 *4 sesiones:* Descarga Localizada 10 min (zona de tu eleccion)\n\u2705 *8 sesiones:* Valoracion Funcional Express 10 min + PDF con resultados\n\u2705 *12 sesiones:* Movilidad Asistida 10 min + Botas de Compresion\n\u2705 *16 sesiones:* Kinesiotape + Tens 15 min (Readaptacion completa)\n\nGuardalo y nos vemos pronto! \uD83D\uDE0A';
-  const waUrl = t.length >= 7
-    ? 'https://wa.me/' + phone + '?text=' + encodeURIComponent(msg)
-    : 'https://wa.me/?text=' + encodeURIComponent(msg);
-  return '<a href="' + linkAdmin + '" target="_blank" class="btn btn-passport btn-sm" title="Abrir en modo admin">Pasaporte</a>'
-       + '<a href="' + waUrl + '" target="_blank" class="btn btn-teal btn-sm" title="Enviar link al paciente por WhatsApp" style="margin-left:4px">\uD83D\uDCF2</a>';
+  const safeName = String(nombre || '').replace(/'/g, "\\'");
+  return '<button type="button" class="btn btn-passport btn-sm" onclick="openPassportModuleFor(\'' + safeName + '\')" title="Generar enlace seguro">Pasaporte</button>';
+}
+
+function openPassportModuleFor(nombre) {
+  showView('pasaporte');
+  setTimeout(function() {
+    const input = document.getElementById('pasNombreInput');
+    const patient = Object.values(_pasGetDB()).find(function(p) { return p.nombre === nombre; });
+    if (input && patient) selectPasPatient(patient);
+  }, 0);
 }
 
 function toast(msg, type='ok') {
@@ -11630,7 +11630,7 @@ function renderPacientes() {
           ${waBtn(p.telefono,p.nombre,'','','','WA')}
           <button class="btn btn-ghost btn-sm" onclick="seguimientoWA('${p.telefono||''}','${p.nombre.replace(/'/g,"\\'")}','${(p.ultimoServicio||'').replace(/'/g,"\\'")}')">💬</button>
           ${(()=>{const u=waEncuesta(p.telefono,p.nombre);return u?`<a href="${u}" target="_blank" class="btn btn-ghost btn-sm" title="Enviar encuesta de satisfacción por WhatsApp">\u2B50 Encuesta</a>`:''})()}
-          <a href="https://cuidandotefisioterapia.com/pasaporte.html?nombre=${encodeURIComponent(p.nombre)}" target="_blank" class="btn btn-passport btn-sm">Pasaporte</a>
+          ${waBtnPasaporte(p.telefono,p.nombre)}
           <button class="btn btn-edit btn-sm" onclick="editarPacienteIdx(${idx})">✏️ Editar</button>
           <button class="btn btn-danger btn-sm" onclick="borrarPaciente(${idx})">🗑️ Eliminar</button>
         </div>
@@ -18559,9 +18559,9 @@ function exportarCSV(modo) {
 
 // ── PASAPORTE DE MOVIMIENTO ────────────────────────────────────
 const PASAPORTE_BASE  = 'https://cuidandotefisioterapia.com/pasaporte.html';
-const PASAPORTE_TOKEN = 'jof_pasaporte_admin_2026';
 let _pasTelefono = '';
 let _pasConfirmado = false;  // true solo cuando se seleccionó desde la BD
+let _pasCurrent = null;
 
 function _pasGetDB() {
   const map = {};
@@ -18642,13 +18642,28 @@ function limpiarPasBusqueda() {
   _pasSetConfirmed(false);
 }
 
-function generarLinkPasaporte() {
+async function generarLinkPasaporte() {
   if (!_pasConfirmado) return;
   const nombre = document.getElementById('pasNombreInput').value.trim();
   const card   = document.getElementById('pasLinkCard');
   if (!nombre) { card.style.display = 'none'; return; }
 
-  const link = PASAPORTE_BASE + '?nombre=' + encodeURIComponent(nombre);
+  const url = APPS_SCRIPT_URL + '?action=passportEnsure&token=' + encodeURIComponent(TOKEN)
+    + '&nombre=' + encodeURIComponent(nombre)
+    + '&telefono=' + encodeURIComponent(_pasTelefono || '');
+  let data;
+  try {
+    data = await fetch(url).then(function(response) { return response.json(); });
+  } catch (error) {
+    toast('No se pudo generar el pasaporte', 'error');
+    return;
+  }
+  if (!data.ok || !data.passport || !data.passport.link) {
+    toast(data.error || 'No se pudo generar el pasaporte', 'error');
+    return;
+  }
+  _pasCurrent = data.passport;
+  const link = _pasCurrent.link;
   document.getElementById('pasLinkTexto').textContent = link;
   card.style.display = 'block';
 
@@ -18665,8 +18680,9 @@ function generarLinkPasaporte() {
 
 function abrirPasaporte() {
   if (!_pasConfirmado) { toast('Selecciona un paciente de la lista primero', 'warn'); return; }
-  const nombre = document.getElementById('pasNombreInput').value.trim();
-  window.open(PASAPORTE_BASE + '?nombre=' + encodeURIComponent(nombre) + '&admin=' + PASAPORTE_TOKEN, '_blank');
+  const link = (_pasCurrent && _pasCurrent.link) || document.getElementById('pasLinkTexto').textContent;
+  if (!link) { toast('Genera primero el enlace seguro', 'warn'); return; }
+  window.open(link, '_blank');
 }
 
 function copiarLinkPas() {
