@@ -1,0 +1,6 @@
+=== SOURCE ===
+
+=== PUBLIC ROUTE ===
+{"ok":false,"error":"Este enlace no es válido o fue reemplazado. Solicita uno nuevo por WhatsApp."}
+=== ENSURE WITHOUT SESSION ===
+{"ok":false,"error":"Sin permiso"}
