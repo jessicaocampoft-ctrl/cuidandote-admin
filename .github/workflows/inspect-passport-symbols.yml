@@ -1,0 +1,31 @@
+name: Inspect passport symbols
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/inspect-passport-symbols.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Search passport backend symbols
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -RIn -A 120 -B 20 --exclude='index.html' --exclude='passport-*-diagnostics.txt' "passportEnsure\|ensurePassport\|PasaporteSeguro\|Pasaportes" . > passport-symbols-diagnostics.txt || true
+      - name: Commit result and remove workflow
+        run: |
+          rm -f .github/workflows/inspect-passport-symbols.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "chore(pasaporte): registrar símbolos del backend" || exit 0
+          git push
