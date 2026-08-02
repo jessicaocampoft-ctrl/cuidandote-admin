@@ -1,0 +1,52 @@
+name: Fix admin backend URL
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/fix-admin-backend-url.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Replace only obsolete Apps Script deployment
+        shell: python
+        run: |
+          from pathlib import Path
+          path = Path('index.html')
+          text = path.read_text(encoding='utf-8-sig')
+          old = 'https://script.google.com/macros/s/AKfycbzFlqrTerVorQDn0_u_D29rh3cTRstc1XBxYDAn5-2YyexMSpip0m2RPcjzJMK7VDjd/exec'
+          new = 'https://script.google.com/macros/s/AKfycbwYxtpVLIb5DH31Bvh8UemIGZ08l1UEMuIJPbFPXOW_X0yX5J756IZKzmYx5PYOdPDC/exec'
+          count = text.count(old)
+          if count != 1:
+              raise SystemExit(f'Expected exactly one obsolete URL, found {count}')
+          updated = text.replace(old, new, 1)
+          if updated.count(new) != 1:
+              raise SystemExit('New admin URL validation failed')
+          path.write_text(updated, encoding='utf-8')
+
+      - name: Verify new backend login route
+        shell: bash
+        run: |
+          url='https://script.google.com/macros/s/AKfycbwYxtpVLIb5DH31Bvh8UemIGZ08l1UEMuIJPbFPXOW_X0yX5J756IZKzmYx5PYOdPDC/exec'
+          response="$(curl -L -sS --max-time 35 -H 'Content-Type: text/plain;charset=utf-8' --data '{"action":"adminLogin","user":"","password":"__INVALID_DEPLOY_TEST__"}' "$url")"
+          printf '%s' "$response" | grep -Eq '"ok"[[:space:]]*:[[:space:]]*false'
+
+      - name: Clean diagnostics and commit fix
+        run: |
+          rm -f .github/workflows/fix-admin-backend-url.yml
+          rm -f .github/workflows/browser-test-admin-login.yml
+          rm -f admin-login-diagnostics.txt admin-endpoint-test.txt admin-endpoint-browserlike-test.txt admin-browser-test.txt
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "fix(login): conectar panel al despliegue administrador vigente"
+          git push
