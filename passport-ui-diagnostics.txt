@@ -1,0 +1,480 @@
+5383:         <div class="tbl-wrap">
+5384:           <table>
+5385:             <thead>
+5386:               <tr>
+5387:                 <th>Código</th>
+5388:                 <th>Paciente (nuevo referido)</th>
+5389:                 <th>Referido por</th>
+5390:                 <th>Fecha</th>
+5391:                 <th>Estado</th>
+5392:                 <th>Vinculado a</th>
+5393:                 <th>Acciones</th>
+5394:               </tr>
+5395:             </thead>
+5396:             <tbody id="codigosTbody">
+5397:               <tr><td colspan="7"><div class="loading-wrap"><div class="spinner"></div> Cargando...</div></td></tr>
+5398:             </tbody>
+5399:           </table>
+5400:         </div>
+5401:       </div>
+5402:     </section>
+5403: 
+5404:     <!-- ── PASAPORTE ── -->
+5405:     <section id="vPasaporte" style="display:none">
+5406:       <div class="page-header">
+5407:         <div>
+5408:           <h1 class="page-title">Pasaporte de <em>Movimiento</em></h1>
+5409:           <p class="page-sub">Genera el link de cada paciente y edita su progreso de sesiones</p>
+5410:         </div>
+5411:       </div>
+5412: 
+5413:       <!-- Buscador de paciente (solo desde base de datos) -->
+5414:       <div class="card" style="padding:24px;margin-bottom:16px">
+5415:         <label style="font-size:.75rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:10px">Buscar paciente</label>
+5416:         <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-start">
+5417:           <div style="position:relative;flex:1;min-width:200px">
+5418:             <input type="text" id="pasNombreInput" placeholder="Escribe para buscar en tu base de datos..."
+5419:               oninput="onPasInput(this.value)"
+5420:               autocomplete="off"
+5421:               style="width:100%;background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font-b);font-size:.95rem;padding:11px 44px 11px 16px;outline:none;transition:var(--tr)"
+5422:               onfocus="this.style.borderColor='var(--primary)'" onblur="setTimeout(()=>document.getElementById('pasDropdown').style.display='none',180)">
+5423:             <!-- Botón limpiar -->
+5424:             <button onclick="limpiarPasBusqueda()" title="Limpiar"
+5425:               style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;line-height:1;padding:4px">×</button>
+5426:             <div id="pasDropdown" style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--s1);border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.10);z-index:200;max-height:220px;overflow-y:auto"></div>
+5427:           </div>
+5428:           <button id="pasAbrirBtn" onclick="abrirPasaporte()" disabled
+5429:             style="background:var(--s3);color:var(--muted);border:none;border-radius:8px;padding:11px 22px;font-weight:700;font-size:.9rem;cursor:not-allowed;white-space:nowrap;transition:var(--tr)">
+5430:             Abrir y editar →
+5431:           </button>
+5432:         </div>
+5433:         <!-- Badge de confirmación -->
+5434:         <div id="pasConfirmBadge" style="display:none;margin-top:10px;align-items:center;gap:8px">
+5435:           <span style="background:rgba(27,191,176,.12);color:var(--primary);border:1px solid var(--border);border-radius:20px;font-size:.78rem;font-weight:700;padding:3px 10px">✓ Paciente en base de datos</span>
+5436:           <span id="pasPhoneBadge" style="font-size:.78rem;color:var(--muted)"></span>
+5437:         </div>
+5438:         <p id="pasWarning" style="display:none;margin-top:8px;font-size:.78rem;color:var(--err)">⚠ Selecciona un paciente de la lista — no se puede enviar a alguien que no esté en la base de datos.</p>
+5439:         <p style="font-size:.78rem;color:var(--muted);margin-top:8px">Solo puedes generar pasaportes para pacientes registrados en tu base de datos.</p>
+5440:       </div>
+5441: 
+5442:       <!-- Link + QR (se muestra al escribir el nombre) -->
+5443:       <div id="pasLinkCard" style="display:none" class="card">
+5444:         <div style="padding:24px;display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap">
+5445:           <canvas id="pasQR" width="112" height="112" style="border-radius:10px;border:1px solid var(--border);flex-shrink:0"></canvas>
+5446:           <div style="flex:1;min-width:180px">
+5447:             <p style="font-size:.75rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Link del paciente</p>
+5448:             <p id="pasLinkTexto" style="font-size:.8rem;color:var(--text);word-break:break-all;line-height:1.6;font-family:var(--font-m);margin-bottom:14px"></p>
+5449:             <div style="display:flex;gap:8px;flex-wrap:wrap">
+5450:               <button id="pasCopyBtn" onclick="copiarLinkPas()" style="background:var(--primary);color:#0D0D0D;border:none;border-radius:8px;padding:8px 16px;font-weight:600;font-size:.85rem;cursor:pointer">Copiar link</button>
+5451:               <a id="pasWhatsApp" href="#" target="_blank" style="background:#25D366;color:#fff;border:none;border-radius:8px;padding:8px 16px;font-weight:600;font-size:.85rem;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px">
+5452:                 <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+5453:                 Enviar por WhatsApp
+5454:               </a>
+5455:             </div>
+5456:           </div>
+5457:         </div>
+5458:       </div>
+5459: 
+5460:       <!-- Guía paso a paso -->
+5461:       <div class="card" style="padding:24px;margin-top:16px">
+5462:         <p style="font-size:.75rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:16px">Cómo funciona</p>
+5463:         <div style="display:flex;flex-direction:column;gap:14px">
+5464:           <div style="display:flex;gap:12px;align-items:flex-start">
+5465:             <span style="background:var(--primary);color:#0D0D0D;border-radius:50%;width:22px;height:22px;min-width:22px;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:800">1</span>
+5466:             <p style="font-size:.88rem;color:var(--text);line-height:1.5">Escribe el nombre del paciente → copia el link o el QR → <strong>envíaselo por WhatsApp una sola vez</strong>. Ellos lo guardan y pueden ver su progreso cuando quieran.</p>
+5467:           </div>
+5468:           <div style="display:flex;gap:12px;align-items:flex-start">
+5469:             <span style="background:var(--primary);color:#0D0D0D;border-radius:50%;width:22px;height:22px;min-width:22px;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:800">2</span>
+5470:             <p style="font-size:.88rem;color:var(--text);line-height:1.5">Haz clic en <strong>"Abrir y editar →"</strong> — el pasaporte se abre en modo administrador automáticamente. <strong>El paciente ve lo mismo</strong>, pero sin poder editar.</p>
+5471:           </div>
+5472:           <div style="display:flex;gap:12px;align-items:flex-start">
+5473:             <span style="background:var(--primary);color:#0D0D0D;border-radius:50%;width:22px;height:22px;min-width:22px;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:800">3</span>
+5474:             <p style="font-size:.88rem;color:var(--text);line-height:1.5">Toca el sello de la sesión completada. El progreso se guarda en la nube y el paciente lo ve al instante desde su celular.</p>
+5475:           </div>
+5476:           <div style="display:flex;gap:12px;align-items:flex-start">
+5477:             <span style="background:rgba(232,184,75,.25);color:#C9962A;border-radius:50%;width:22px;height:22px;min-width:22px;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:800">★</span>
+5478:             <p style="font-size:.88rem;color:var(--text);line-height:1.5">Al completar 4, 8, 12 o 16 sesiones, aparece la pantalla de beneficio desbloqueado con el nombre del paciente y la fecha.</p>
+5479:           </div>
+5480:         </div>
+5481:       </div>
+5482:     </section>
+5483: 
+5484:     <!-- ══ COMISIONES ══ -->
+5485:     <section id="vComisiones" style="display:none">
+5486:       <div class="page-header">
+5487:         <div>
+5488:           <h1 class="page-title">Plan de <em>Comisiones</em></h1>
+5489:           <p class="page-sub">Bonos calculados automáticamente desde citas y eventos del mes</p>
+5490:         </div>
+5491:         <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+5492:           <select id="comisMes" onchange="renderComisiones()" style="background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font-b);font-size:.85rem;padding:8px 12px;outline:none;cursor:pointer"></select>
+5493:           <button onclick="renderComisiones()" style="padding:8px 16px;background:var(--primary);color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:var(--font-b);font-size:.84rem">↺ Recalcular</button>
+5494:         </div>
+5495:       </div>
+5496: 
+5497:       <!-- Resumen -->
+5498:       <div class="co-resumen">
+5499:         <div class="co-res-item"><div class="co-res-label">Total a pagar</div><div class="co-res-val" id="coTotalGeneral">—</div></div>
+5500:         <div class="co-res-item"><div class="co-res-label">Auxiliar administrativa</div><div class="co-res-val" id="coTotalAux">—</div></div>
+5501:         <div class="co-res-item"><div class="co-res-label">Fisio de apoyo</div><div class="co-res-val" id="coTotalFisio">—</div></div>
+5502:         <div class="co-res-item"><div class="co-res-label" id="coVideoPersonaLabel">Persona del video</div><div class="co-res-val" id="coTotalVideo">—</div></div>
+5503:         <div class="co-res-item"><div class="co-res-label">Semanas llenas</div><div class="co-res-val" id="coSemanasRes">—</div></div>
+5504:       </div>
+5505: 
+5506:       <!-- Configuración -->
+5507:       <div style="margin-bottom:16px">
+5508:         <button class="co-cfg-btn" onclick="toggleComisConfig()">⚙️ Configurar montos y servicios</button>
+5509:       </div>
+5510:       <div class="co-cfg-panel" id="coConfigPanel" style="display:none">
+5511:         <div style="font-family:var(--font-h);font-size:1.05rem;font-weight:600;margin-bottom:4px">Configuración de bonos</div>
+5512:         <p style="font-size:.82rem;color:var(--muted);margin-bottom:14px">Se guarda en todos los dispositivos automáticamente.</p>
+5513: 
+5514:         <div style="font-size:.72rem;font-family:var(--font-m);color:var(--primary);text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px">Auxiliar Administrativa</div>
+5515:         <div class="co-cfg-grid">
+5516:           <div><label class="co-inp-label">Bono agenda llena (mes completo)</label><input class="co-inp" id="cfg_bono_agenda" type="number" placeholder="80000"></div>
+5517:           <div><label class="co-inp-label">Semanas meta (de 4 o 5)</label><input class="co-inp" id="cfg_semanas_meta" type="number" placeholder="4"></div>
+5518:           <div><label class="co-inp-label">Sesiones/semana = "llena" <span style="color:var(--primary);font-size:.65rem">↳ tomado de Meta KPI</span></label><input class="co-inp" id="cfg_ses_llena" type="number" disabled style="opacity:.6;cursor:not-allowed" title="Se sincroniza automáticamente con la meta de sesiones del KPI. Cámbiala en Guía de KPIs → Editar valores de referencia."></div>
+5519:           <div><label class="co-inp-label">Bono por reactivación (por paciente)</label><div style="display:flex;gap:6px;align-items:center"><input class="co-inp" id="cfg_bono_react" type="number" placeholder="15000" style="flex:1;min-width:0"><select class="co-inp" id="cfg_bono_react_tipo" style="width:110px;padding:6px 8px"><option value="fijo">$ Fijo</option><option value="pct">% servicio</option></select></div></div>
+5520:         </div>
+5521: 
+5522:         <div class="co-sep"></div>
+5523:         <div style="font-size:.72rem;font-family:var(--font-m);color:var(--primary);text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px">Fisioterapeuta de Apoyo</div>
+5524:         <div class="co-cfg-grid">
+5525:           <div><label class="co-inp-label">Comisión reventa (%)</label><input class="co-inp" id="cfg_pct_reventa" type="number" placeholder="5"></div>
+5526:           <div><label class="co-inp-label">Bono venta cruzada (por paciente)</label><input class="co-inp" id="cfg_bono_cruzada" type="number" placeholder="20000"></div>
+5527:           <div><label class="co-inp-label">Servicios de mantenimiento (separados por coma)</label><input class="co-inp" id="cfg_serv_mant" type="text" placeholder="Plan Activo,Plan Pro,Longevidad,Combo"></div>
+5528:           <div><label class="co-inp-label">Palabra clave descarga muscular</label><input class="co-inp" id="cfg_serv_descarga" type="text" placeholder="Descarga"></div>
+5529:         </div>
+5530: 
+5531:         <div class="co-sep"></div>
+5532:         <div style="font-size:.72rem;font-family:var(--font-m);color:var(--primary);text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px">Creador de Contenido</div>
+5533:         <div class="co-cfg-grid">
+5534:           <div><label class="co-inp-label">Bono total contenido (si cumple meta)</label><input class="co-inp" id="cfg_bono_contenido" type="number" placeholder="50000"></div>
+5535:           <div><label class="co-inp-label">% del bono que va a la Auxiliar</label><input class="co-inp" id="cfg_contenido_split_aux" type="number" placeholder="50"></div>
+5536:           <div><label class="co-inp-label">Nombre de la persona del video</label><input class="co-inp" id="cfg_contenido_persona" type="text" placeholder="Nombre"></div>
+5537:           <div><label class="co-inp-label">Meta mínima de leads para ganar el bono</label><input class="co-inp" id="cfg_contenido_leads_meta" type="number" placeholder="5"></div>
+5538:         </div>
+5539: 
+5540:         <div class="co-sep"></div>
+5541:         <div style="font-size:.72rem;font-family:var(--font-m);color:var(--primary);text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px">Todo el Equipo</div>
+5542:         <div class="co-cfg-grid">
+5543:           <div><label class="co-inp-label">Meta de calidad del servicio (NPS %)</label><input class="co-inp" id="cfg_equipo_nps_meta" type="number" placeholder="90"></div>
+5544:         </div>
+5545: 
+5546:         <button onclick="saveComisConfig()" style="padding:8px 20px;background:var(--primary);color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:var(--font-b);font-size:.83rem">Guardar configuración</button>
+5547:         <span id="coConfigMsg" style="font-size:.75rem;color:var(--ok);margin-left:10px;display:none">✓ Guardado</span>
+5548:       </div>
+5549: 
+5550:       <!-- Tarjetas principales (2-columnas) -->
+5551:       <div class="co-grid" id="coCards">
+5552:         <div style="color:var(--muted);font-size:.9rem;padding:40px 0;text-align:center;grid-column:1/-1">Cargando comisiones...</div>
+5553:       </div>
+5554: 
+5555:       <!-- Creador de Contenido (ancho completo) -->
+5556:       <div id="coContenidoWrap" style="margin-top:0"></div>
+5557: 
+5558:       <!-- Todo el Equipo -->
+5559:       <div id="coEquipoWrap" style="margin-top:14px"></div>
+9334:   const phone = t.length <= 10 ? '57'+t : t;
+9335:   const s = serv.toLowerCase();
+9336:   let det;
+9337:   if      (s.includes('descarga') && (s.includes('cuello') || s.includes('espalda'))) det = 'la sesión de descarga muscular en cuello y espalda';
+9338:   else if (s.includes('descarga') && s.includes('pierna'))  det = 'la sesión de descarga muscular en piernas';
+9339:   else if (s.includes('descarga')) det = 'la sesión de descarga muscular';
+9340:   else if (s.includes('readapt'))  det = 'la sesión de readaptación funcional';
+9341:   else if (s.includes('valorac'))  det = 'la sesión de valoración funcional';
+9342:   else if (s.includes('gimnasio')) det = 'la sesión de gimnasio';
+9343:   else if (s.includes('empresa'))  det = 'la sesión empresarial';
+9344:   else det = 'la sesión de ' + serv.toLowerCase();
+9345:   // Detectar nota de relación: si notaAdmin contiene [PARA: ...]
+9346:   const paraMatch = notaAdmin && notaAdmin.match(/\[PARA:\s*([^\]]+)\]/i);
+9347:   const paraQuien = paraMatch ? paraMatch[1].trim() : null;
+9348:   const msg = paraQuien
+9349:     ? 'Hola ' + waNombre(nombre) + '! \uD83D\uDC4B Espero que esten bien. ¿Como le fue a ' + paraQuien + ' con ' + det + '? Quedo atenta a cualquier duda o molestia. \uD83D\uDE4F\n\n— Cuidándote Fisioterapia'
+9350:     : 'Hola ' + waNombre(nombre) + '! \uD83D\uDC4B Espero que estes bien. ¿Como te fue con ' + det + '? Quedo atenta a cualquier duda o molestia. \uD83D\uDE4F\n\n— Cuidándote Fisioterapia';
+9351:   return 'https://wa.me/' + phone + '?text=' + encodeURIComponent(msg);
+9352: }
+9353: 
+9354: function waEncuesta(tel, nombre) {
+9355:   const t = String(tel||'').replace(/\D/g,'');
+9356:   if (!t || t.length < 7) return null;
+9357:   const phone = t.length <= 10 ? '57'+t : t;
+9358:   const primero = waNombre(nombre);
+9359:   const msg = 'Hola ' + primero + '! \uD83D\uDE0A Tu opinion me importa mucho. ¿Me regalas 2 minutos para contarme como fue tu experiencia? \uD83D\uDE4F\n\nhttps://forms.gle/srX1enyKN59n8TfQA\n\n\u2B50 *Premio!* Cuando termines la encuesta, enviame un pantallazo y en tu proxima sesion te regalo *10 min de Botas de Compresion* \uD83D\uDCAA\n\nGracias por confiar en mi! — Cuidándote Fisioterapia';
+9360:   return 'https://wa.me/' + phone + '?text=' + encodeURIComponent(msg);
+9361: }
+9362: 
+9363: function waBtn(tel, nombre, fecha, hora, serv, label, precio, modalidad) {
+9364:   const url = waLink(tel, nombre, fecha, hora, serv, precio, modalidad);
+9365:   if (!url) return '<span style="color:var(--muted);font-size:.75rem">Sin tel.</span>';
+9366:   return '<a href="' + url + '" target="_blank" class="btn btn-wa' + (label==='WA'?' btn-sm':'') + '">' + (label||'WA') + '</a>';
+9367: }
+9368: 
+9369: function pasaporteLink(nombre) {
+9370:   return PASAPORTE_BASE;
+9371: }
+9372: 
+9373: function pasaporteLinkAdmin(nombre) {
+9374:   return PASAPORTE_BASE;
+9375: }
+9376: 
+9377: function waBtnPasaporte(tel, nombre) {
+9378:   const safeName = String(nombre || '').replace(/'/g, "\\'");
+9379:   return '<button type="button" class="btn btn-passport btn-sm" onclick="openPassportModuleFor(\'' + safeName + '\')" title="Generar enlace seguro">Pasaporte</button>';
+9380: }
+9381: 
+9382: function openPassportModuleFor(nombre) {
+9383:   showView('pasaporte');
+9384:   setTimeout(function() {
+9385:     const input = document.getElementById('pasNombreInput');
+9386:     const patient = Object.values(_pasGetDB()).find(function(p) { return p.nombre === nombre; });
+9387:     if (input && patient) selectPasPatient(patient);
+9388:   }, 0);
+9389: }
+9390: 
+9391: function toast(msg, type='ok') {
+9392:   const t = document.createElement('div');
+9393:   t.className = 'toast-msg ' + type;
+9394:   t.textContent = msg;
+9395:   document.getElementById('toast').appendChild(t);
+9396:   setTimeout(() => t.remove(), 3500);
+9397: }
+9398: 
+9399: async function reload() {
+9400:   try {
+9401:     const r = await fetch(APPS_SCRIPT_URL + '?action=adminData&token=' + encodeURIComponent(TOKEN));
+9402:     if (!r.ok) { toast('Error del servidor (' + r.status + '). Recarga la página.', 'err'); return; }
+9403:     const d = await r.json();
+9404:     if (d.ok) {
+9405:       allData = d;
+9406:       await loadTeamData();
+9407:     }
+9408:     else if (d.error === 'Sin permiso') { toast('Sesión expirada. Volviendo al login...', 'warn'); setTimeout(logout, 1500); }
+9409:   } catch(e) {
+9410:     toast('Sin conexión. Verifica tu internet.', 'err');
+9411:   }
+9412: }
+9413: 
+9414: // ── HELPERS FINANCIEROS ──
+9415: const esRegistroServ = s => (s || '').toLowerCase().trim().startsWith('registro');
+9416: // Detecta sesiones tipo "Full" (90 min): Completa o cualquier paquete Full
+9417: const esSesionFull    = s => { const n = (s||'').toLowerCase(); return n.includes('full') || n.includes('completa'); };
+9418: // Detecta sesiones tipo individual corta: Cuello/Piernas/Express/Readap/Valoración
+9419: const esSesionIndiv   = s => { const n = (s||'').toLowerCase(); return n.includes('cuello') || n.includes('pierna') || n.includes('express') || n.includes('readap') || n.includes('valorac'); };
+9420: 
+9421: // esCobrada definida arriba junto a pagoBadge
+9422: function esCobrada_UNUSED(c) {
+9423:   return !!(c.pago) || c.estado === 'Atendida' || kvGet('pago_'+c.id) === '1';
+9424: }
+9425: 
+9426: // Citas reales (sin registros, sin canceladas, sin duplicados)
+9427: function citasReales() {
+9428:   const seen = new Set();
+9429:   const result = allData.citas.filter(c => {
+9430:     if (c.estado === 'Cancelada' || c.estado === 'Registro' || esRegistroServ(c.servicio)) return false;
+9431:     if (!c.hora || isMidnightTime(c.hora)) return false;
+9432:     const key = (c.nombre || '').toLowerCase().trim() + '|' + normDate(c.fecha) + '|' + (c.hora || '00:00');
+9433:     if (seen.has(key)) return false;
+9434:     seen.add(key);
+9435:     return true;
+9436:   });
+9437:   // Normalizar canal para citas antiguas que no lo tienen
+9438:   result.forEach(c => {
+9439:     if (!c.canal) {
+9440:       c.canal = (c.servicio || '').toLowerCase().includes('corporativ') ? 'Corporativo' : 'Directo';
+9441:     }
+9442:   });
+9443:   return result;
+9444: }
+9445: 
+9446: function smartPeso(v) {
+9447:   const n = Number(v || 0);
+9448:   return n > 0 ? '$' + n.toLocaleString('es-CO') : '—';
+9449: }
+9450: 
+9451: function smartDate(str) {
+9452:   const [y,m,d] = normDate(str).split('-').map(Number);
+9453:   return new Date(y, (m || 1) - 1, d || 1);
+9454: }
+9455: 
+9456: function smartWeekBounds(base = new Date()) {
+9457:   const start = new Date(base);
+9458:   const dow = start.getDay();
+9459:   start.setDate(start.getDate() - (dow === 0 ? 6 : dow - 1));
+9460:   start.setHours(0,0,0,0);
+9461:   const end = new Date(start);
+9462:   end.setDate(start.getDate() + 6);
+9463:   end.setHours(23,59,59,999);
+9464:   return { start, end, startStr:start.toLocalDateStr(), endStr:end.toLocalDateStr() };
+9465: }
+9466: 
+9467: function smartIsPaid(c) {
+9468:   if (!c) return false;
+18606: 
+18607: function selectPasPatient(p) {
+18608:   document.getElementById('pasNombreInput').value = p.nombre;
+18609:   document.getElementById('pasDropdown').style.display = 'none';
+18610:   _pasTelefono  = (p.telefono || '').replace(/\D/g, '');
+18611:   _pasConfirmado = true;
+18612:   _pasSetConfirmed(true, p);
+18613:   generarLinkPasaporte();
+18614: }
+18615: 
+18616: function _pasSetConfirmed(ok, p) {
+18617:   const btn     = document.getElementById('pasAbrirBtn');
+18618:   const badge   = document.getElementById('pasConfirmBadge');
+18619:   const phoneBadge = document.getElementById('pasPhoneBadge');
+18620:   const warning = document.getElementById('pasWarning');
+18621:   const card    = document.getElementById('pasLinkCard');
+18622:   if (ok && p) {
+18623:     btn.disabled = false;
+18624:     btn.style.cssText = 'background:var(--primary);color:#0D0D0D;border:none;border-radius:8px;padding:11px 22px;font-weight:700;font-size:.9rem;cursor:pointer;white-space:nowrap;transition:var(--tr)';
+18625:     badge.style.display = 'flex';
+18626:     phoneBadge.textContent = p.telefono ? '📞 ' + p.telefono : '';
+18627:     warning.style.display = 'none';
+18628:   } else {
+18629:     btn.disabled = true;
+18630:     btn.style.cssText = 'background:var(--s3);color:var(--muted);border:none;border-radius:8px;padding:11px 22px;font-weight:700;font-size:.9rem;cursor:not-allowed;white-space:nowrap;transition:var(--tr)';
+18631:     badge.style.display = 'none';
+18632:     card.style.display  = 'none';
+18633:     warning.style.display = 'none';
+18634:   }
+18635: }
+18636: 
+18637: function limpiarPasBusqueda() {
+18638:   document.getElementById('pasNombreInput').value = '';
+18639:   document.getElementById('pasDropdown').style.display = 'none';
+18640:   _pasConfirmado = false;
+18641:   _pasTelefono  = '';
+18642:   _pasSetConfirmed(false);
+18643: }
+18644: 
+18645: async function generarLinkPasaporte() {
+18646:   if (!_pasConfirmado) return;
+18647:   const nombre = document.getElementById('pasNombreInput').value.trim();
+18648:   const card   = document.getElementById('pasLinkCard');
+18649:   if (!nombre) { card.style.display = 'none'; return; }
+18650: 
+18651:   const url = APPS_SCRIPT_URL + '?action=passportEnsure&token=' + encodeURIComponent(TOKEN)
+18652:     + '&nombre=' + encodeURIComponent(nombre)
+18653:     + '&telefono=' + encodeURIComponent(_pasTelefono || '');
+18654:   let data;
+18655:   try {
+18656:     data = await fetch(url).then(function(response) { return response.json(); });
+18657:   } catch (error) {
+18658:     toast('No se pudo generar el pasaporte', 'error');
+18659:     return;
+18660:   }
+18661:   if (!data.ok || !data.passport || !data.passport.link) {
+18662:     toast(data.error || 'No se pudo generar el pasaporte', 'error');
+18663:     return;
+18664:   }
+18665:   _pasCurrent = data.passport;
+18666:   const link = _pasCurrent.link;
+18667:   document.getElementById('pasLinkTexto').textContent = link;
+18668:   card.style.display = 'block';
+18669: 
+18670:   const tel = _pasTelefono.length >= 7
+18671:     ? 'https://wa.me/57' + _pasTelefono.slice(-10)
+18672:     : 'https://wa.me/';
+18673:   const msg = `Hola ${nombre.split(' ')[0]}! \uD83D\uDC4B\nTe dejo tu Pasaporte de Beneficios — ahi vas a ver tu progreso despues de cada sesion.\n${link}\n\n\u2B50 *Como ganar beneficios?*\nCada sesion sumas avances. Al llegar a:\n\n\u2705 *4 sesiones:* Descarga Localizada 10 min (zona de tu eleccion)\n\u2705 *8 sesiones:* Valoracion Funcional Express 10 min + PDF con resultados\n\u2705 *12 sesiones:* Movilidad Asistida 10 min + Botas de Compresion\n\u2705 *16 sesiones:* Kinesiotape + Tens 15 min (Readaptacion completa)\n\nGuardalo y nos vemos pronto! \uD83D\uDE0A`;
+18674:   document.getElementById('pasWhatsApp').href = tel + '?text=' + encodeURIComponent(msg);
+18675: 
+18676:   if (typeof QRCode !== 'undefined') {
+18677:     QRCode.toCanvas(document.getElementById('pasQR'), link, { width: 112, margin: 1, color: { dark: '#0A1A12', light: '#F7F8FA' } });
+18678:   }
+18679: }
+18680: 
+18681: function abrirPasaporte() {
+18682:   if (!_pasConfirmado) { toast('Selecciona un paciente de la lista primero', 'warn'); return; }
+18683:   const link = (_pasCurrent && _pasCurrent.link) || document.getElementById('pasLinkTexto').textContent;
+18684:   if (!link) { toast('Genera primero el enlace seguro', 'warn'); return; }
+18685:   window.open(link, '_blank');
+18686: }
+18687: 
+18688: function copiarLinkPas() {
+18689:   const link = document.getElementById('pasLinkTexto').textContent;
+18690:   if (!link) return;
+18691:   navigator.clipboard.writeText(link).then(() => {
+18692:     const btn = document.getElementById('pasCopyBtn');
+18693:     const orig = btn.textContent;
+18694:     btn.textContent = '¡Copiado!';
+18695:     setTimeout(() => btn.textContent = orig, 2000);
+18696:   });
+18697: }
+18698: 
+18699: // ── Interceptor WA en desktop: muestra modal para copiar en vez de abrir wa.me ──
+18700: (function initWACopyInterceptor() {
+18701:   const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+18702:   if (isMobile) return; // en celular, el link funciona directo con la app nativa
+18703: 
+18704:   document.addEventListener('click', function(e) {
+18705:     const a = e.target.closest('a[href]');
+18706:     if (!a) return;
+18707:     const href = a.getAttribute('href') || '';
+18708:     if (!href.includes('wa.me')) return;
+18709:     if (a.dataset.noIntercept) return; // skip botones del propio modal
+18710:     // Hay un link de WhatsApp: interceptar en desktop
+18711:     e.preventDefault();
+18712:     try {
+18713:       const url    = new URL(href.startsWith('http') ? href : 'https:' + href);
+18714:       const rawMsg = url.searchParams.get('text') || '';
+18715:       const phone  = url.pathname.replace(/^\//, '');
+18716:       // Mostrar texto decodificado (los \uXXXX ya son Unicode real, encodeURIComponent los codifica)
+18717:       const msg    = decodeURIComponent(rawMsg);
+18718:       // "Abrir WhatsApp Web" abre el chat directo sin text= para evitar la corrupcion de emojis en el redirect
+18719:       const chatUrl = 'https://web.whatsapp.com/send?phone=' + phone;
+18720:       document.getElementById('waCopyText').textContent = msg;
+18721:       document.getElementById('waOpenLink').href        = chatUrl;
+18722:     } catch(_) {
+18723:       document.getElementById('waCopyText').textContent = '';
+18724:       document.getElementById('waOpenLink').href        = 'https://web.whatsapp.com';
+18725:     }
+18726:     document.getElementById('waCopyModal').style.display = 'flex';
+18727:   }); // bubble phase: los onclick inline (markWaSent, etc.) disparan primero, luego prevenimos la navegacion
+18728: })();
+18729: 
+18730: function cerrarWaCopyModal() {
+18731:   document.getElementById('waCopyModal').style.display = 'none';
+18732: }
+18733: 
+18734: function copiarMsgWA() {
+18735:   const txt = document.getElementById('waCopyText').textContent;
+18736:   navigator.clipboard.writeText(txt).then(() => {
+18737:     const btn = document.getElementById('waCopyBtn');
+18738:     const orig = btn.textContent;
+18739:     btn.textContent = '✅ ¡Copiado!';
+18740:     setTimeout(() => btn.textContent = orig, 2500);
+18741:     toast('Mensaje copiado. Pégalo en WhatsApp Web 💬', 'ok');
+18742:   }).catch(() => {
+18743:     // Fallback para navegadores sin clipboard API
+18744:     const ta = document.createElement('textarea');
+18745:     ta.value = txt;
+18746:     ta.style.position = 'fixed';
+18747:     ta.style.opacity  = '0';
+18748:     document.body.appendChild(ta);
+18749:     ta.select();
+18750:     document.execCommand('copy');
+18751:     document.body.removeChild(ta);
+18752:     toast('Mensaje copiado. Pégalo en WhatsApp Web 💬', 'ok');
+18753:   });
+18754: }
+18755: 
+18756: // ── GUÍA KPIs — acordeón ──
+18757: function toggleKPICard(el) {
+18758:   el.classList.toggle('open');
+18759: }
+18760: 
+18761: // ── BANNERS CONTEXTUALES — colapsar/expandir ──
+18762: function toggleHelpBanner(el) {
+18763:   el.classList.toggle('open');
+18764:   const id = el.getAttribute('data-help-id');
+18765:   if (id) {
+18766:     try {
+18767:       localStorage.setItem('helpBanner_' + id, el.classList.contains('open') ? '1' : '0');
+18768:     } catch(e) {}
+18769:   }
+18770: }
+18771: 
+18772: function restoreHelpBanners() {
+18773:   document.querySelectorAll('.help-banner[data-help-id]').forEach(el => {
