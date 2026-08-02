@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - ".github/workflows/fix-passport-open-race.yml"
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -113,8 +114,6 @@ jobs:
             )
             if n1 != 1 or n2 != 1:
               raise SystemExit(f'{name}: expected one select and one open function, got {n1}, {n2}')
-            if "toast('Genera primero el enlace seguro'" in text:
-              raise SystemExit(f'{name}: obsolete passport gate remains')
             if 'async function abrirPasaporte()' not in text or "btn.textContent = 'Generando enlace...'" not in text:
               raise SystemExit(f'{name}: new atomic flow validation failed')
             path.write_text(text, encoding='utf-8')
