@@ -1,0 +1,83 @@
+name: Verify admin after backend split
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/verify-admin-after-split.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install browser client
+        run: npm install puppeteer-core@24.15.0 --no-save
+      - name: Test published login and passport route
+        shell: bash
+        run: |
+          cat > /tmp/verify.js <<'NODE'
+          const puppeteer = require('puppeteer-core');
+          const fs = require('fs');
+          const https = require('https');
+          const out=[];
+          function get(url){
+            return new Promise((resolve,reject)=>{
+              https.get(url,r=>{
+                if(r.statusCode>=300&&r.statusCode<400&&r.headers.location){return resolve(get(r.headers.location));}
+                let b='';r.on('data',d=>b+=d);r.on('end',()=>resolve({status:r.statusCode,body:b,url}));
+              }).on('error',reject);
+            });
+          }
+          (async()=>{
+            let chrome='';
+            for(const c of ['/usr/bin/google-chrome','/usr/bin/google-chrome-stable','/usr/bin/chromium','/usr/bin/chromium-browser']){
+              if(fs.existsSync(c)){chrome=c;break;}
+            }
+            out.push('chrome='+chrome);
+            const browser=await puppeteer.launch({headless:true,executablePath:chrome,args:['--no-sandbox','--disable-setuid-sandbox']});
+            const page=await browser.newPage();
+            page.on('requestfailed',r=>out.push('request_failed='+r.method()+' '+r.url()+' '+(r.failure()?.errorText||'')));
+            await page.goto('https://admin.cuidandotefisioterapia.com/?verify=20260803-0258',{waitUntil:'networkidle2',timeout:90000});
+            await page.type('#userInput','diagnostico');
+            await page.type('#pwInput','__INVALID_VERIFY_SPLIT__');
+            await page.click('#loginBtn');
+            await new Promise(r=>setTimeout(r,12000));
+            const loginError=await page.$eval('#loginErr',e=>e.innerText);
+            const button=await page.$eval('#loginBtn',e=>e.innerText);
+            out.push('login_error='+loginError);
+            out.push('button='+button);
+            const loginPass=/Contraseña incorrecta|Credenciales incorrectas/.test(loginError)&&!/conectar|conexión|internet/i.test(loginError);
+            out.push('login_pass='+loginPass);
+            await browser.close();
+
+            const passport=await get('https://script.google.com/macros/s/AKfycbwYxtpVLIb5DH31Bvh8UemIGZ08l1UEMuIJPbFPXOW_X0yX5J756IZKzmYx5PYOdPDC/exec?action=getPassportSecure&id=__INVALID__&token=__INVALID__');
+            const passportPass=passport.status===200&&/"ok"\s*:\s*false/.test(passport.body);
+            out.push('passport_status='+passport.status);
+            out.push('passport_pass='+passportPass);
+            out.push('overall_pass='+(loginPass&&passportPass));
+            fs.writeFileSync('backend-split-verification.txt',out.join('\n')+'\n');
+          })().catch(e=>{
+            out.push('fatal='+String(e.stack||e));
+            out.push('overall_pass=false');
+            fs.writeFileSync('backend-split-verification.txt',out.join('\n')+'\n');
+          });
+          NODE
+          node /tmp/verify.js
+      - name: Commit verification and remove workflow
+        run: |
+          rm -rf node_modules package-lock.json package.json
+          rm -f .github/workflows/verify-admin-after-split.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "test(login): registrar verificación tras separar backends" || exit 0
+          git push
