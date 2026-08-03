@@ -1,0 +1,113 @@
+===== index.html =====
+
+async function doLogin() {
+  const ahora = Date.now();
+  if (_loginLockedUntil > ahora) {
+    const segs = Math.ceil((_loginLockedUntil - ahora) / 1000);
+    const errEl = document.getElementById('loginErr');
+    errEl.textContent = `Demasiados intentos. Espera ${segs} segundo${segs !== 1 ? 's' : ''}.`;
+    errEl.style.display = 'block';
+    return;
+  }
+  const pw  = document.getElementById('pwInput').value.trim();
+  const user = (document.getElementById('userInput')?.value || '').trim();
+  const btn = document.getElementById('loginBtn');
+  if (!pw) return;
+  btn.textContent = 'Verificando...'; btn.disabled = true;
+  try {
+    const r = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({action: 'adminLogin', user, password: pw})
+    });
+    const d = await r.json();
+    if (d.ok) {
+      _loginAttempts = 0;
+      TOKEN = d.sessionToken;
+      sessionStorage.setItem('adminToken', d.sessionToken);
+      _loginTime = Date.now();
+      document.getElementById('loginScreen').style.display = 'none';
+      document.getElementById('adminApp').style.display   = 'block';
+      allData = d;
+      await loadAdminKV();
+      await loadTeamData();
+      await limpiarHorariosInvalidosAuto();
+      reloadMetas();
+      _initSidebarState();
+      initDashboard();
+      await _runUrlRepairIfRequested();
+    } else {
+      _loginAttempts++;
+      const errEl = document.getElementById('loginErr');
+      if (_loginAttempts >= 5) {
+        _loginLockedUntil = Date.now() + 120000;
+        _loginAttempts = 0;
+        errEl.textContent = 'Demasiados intentos fallidos. Acceso bloqueado por 2 minutos.';
+      } else {
+        const restantes = 5 - _loginAttempts;
+        errEl.textContent = `Contraseña incorrecta. Intentos restantes: ${restantes}`;
+      }
+      errEl.style.display = 'block';
+    }
+  } catch(e) {
+    document.getElementById('loginErr').textContent = 'Error de conexión. Revisa tu internet.';
+    document.getElementById('loginErr').style.display = 'block';
+  }
+  btn.textContent = 'Ingresar'; btn.disabled = false;
+}
+
+===== admin.html =====
+
+async function doLogin() {
+  const ahora = Date.now();
+  if (_loginLockedUntil > ahora) {
+    const segs = Math.ceil((_loginLockedUntil - ahora) / 1000);
+    const errEl = document.getElementById('loginErr');
+    errEl.textContent = `Demasiados intentos. Espera ${segs} segundo${segs !== 1 ? 's' : ''}.`;
+    errEl.style.display = 'block';
+    return;
+  }
+  const pw  = document.getElementById('pwInput').value.trim();
+  const user = (document.getElementById('userInput')?.value || '').trim();
+  const btn = document.getElementById('loginBtn');
+  if (!pw) return;
+  btn.textContent = 'Verificando...'; btn.disabled = true;
+  try {
+    const r = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({action: 'adminLogin', user, password: pw})
+    });
+    const d = await r.json();
+    if (d.ok) {
+      _loginAttempts = 0;
+      TOKEN = d.sessionToken;
+      sessionStorage.setItem('adminToken', d.sessionToken);
+      _loginTime = Date.now();
+      document.getElementById('loginScreen').style.display = 'none';
+      document.getElementById('adminApp').style.display   = 'block';
+      allData = d;
+      await loadAdminKV();
+      await loadTeamData();
+      await limpiarHorariosInvalidosAuto();
+      reloadMetas();
+      _initSidebarState();
+      initDashboard();
+      await _runUrlRepairIfRequested();
+    } else {
+      _loginAttempts++;
+      const errEl = document.getElementById('loginErr');
+      if (_loginAttempts >= 5) {
+        _loginLockedUntil = Date.now() + 120000;
+        _loginAttempts = 0;
+        errEl.textContent = 'Demasiados intentos fallidos. Acceso bloqueado por 2 minutos.';
+      } else {
+        const restantes = 5 - _loginAttempts;
+        errEl.textContent = `Contraseña incorrecta. Intentos restantes: ${restantes}`;
+      }
+      errEl.style.display = 'block';
+    }
+  } catch(e) {
+    document.getElementById('loginErr').textContent = 'Error de conexión. Revisa tu internet.';
+    document.getElementById('loginErr').style.display = 'block';
+  }
+  btn.textContent = 'Ingresar'; btn.disabled = false;
+}
