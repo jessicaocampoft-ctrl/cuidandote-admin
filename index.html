@@ -7375,24 +7375,64 @@ async function doLogin() {
     errEl.style.display = 'block';
     return;
   }
-  const pw  = document.getElementById('pwInput').value.trim();
+
+  const pw = document.getElementById('pwInput').value.trim();
   const user = (document.getElementById('userInput')?.value || '').trim();
   const btn = document.getElementById('loginBtn');
+  const errEl = document.getElementById('loginErr');
   if (!pw) return;
-  btn.textContent = 'Verificando...'; btn.disabled = true;
+
+  errEl.textContent = '';
+  errEl.style.display = 'none';
+  btn.textContent = 'Verificando...';
+  btn.disabled = true;
+
   try {
-    const r = await fetch(APPS_SCRIPT_URL, {
-      method: 'POST',
-      body: JSON.stringify({action: 'adminLogin', user, password: pw})
-    });
-    const d = await r.json();
+    let d = null;
+    let lastError = null;
+
+    for (let intento = 1; intento <= 2; intento++) {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 20000);
+      try {
+        const separator = APPS_SCRIPT_URL.includes('?') ? '&' : '?';
+        const loginUrl = APPS_SCRIPT_URL + separator + '_login=' + Date.now() + '-' + intento;
+        const r = await fetch(loginUrl, {
+          method: 'POST',
+          mode: 'cors',
+          credentials: 'omit',
+          cache: 'no-store',
+          redirect: 'follow',
+          referrerPolicy: 'no-referrer',
+          headers: {'Content-Type': 'text/plain;charset=UTF-8'},
+          body: JSON.stringify({action: 'adminLogin', user, password: pw}),
+          signal: controller.signal
+        });
+        const raw = (await r.text()).replace(/^\uFEFF/, '').trim();
+        if (!raw) throw new Error('El servidor respondió vacío');
+        try {
+          d = JSON.parse(raw);
+        } catch (parseError) {
+          throw new Error('Respuesta inválida del servidor (' + r.status + ')');
+        }
+        break;
+      } catch (requestError) {
+        lastError = requestError;
+        if (intento < 2) await new Promise(resolve => setTimeout(resolve, 700));
+      } finally {
+        clearTimeout(timeout);
+      }
+    }
+
+    if (!d) throw lastError || new Error('No se recibió respuesta del servidor');
+
     if (d.ok) {
       _loginAttempts = 0;
       TOKEN = d.sessionToken;
       sessionStorage.setItem('adminToken', d.sessionToken);
       _loginTime = Date.now();
       document.getElementById('loginScreen').style.display = 'none';
-      document.getElementById('adminApp').style.display   = 'block';
+      document.getElementById('adminApp').style.display = 'block';
       allData = d;
       await loadAdminKV();
       await loadTeamData();
@@ -7403,22 +7443,26 @@ async function doLogin() {
       await _runUrlRepairIfRequested();
     } else {
       _loginAttempts++;
-      const errEl = document.getElementById('loginErr');
       if (_loginAttempts >= 5) {
         _loginLockedUntil = Date.now() + 120000;
         _loginAttempts = 0;
         errEl.textContent = 'Demasiados intentos fallidos. Acceso bloqueado por 2 minutos.';
       } else {
         const restantes = 5 - _loginAttempts;
-        errEl.textContent = `Contraseña incorrecta. Intentos restantes: ${restantes}`;
+        errEl.textContent = (d.error || 'Credenciales incorrectas') + `. Intentos restantes: ${restantes}`;
       }
       errEl.style.display = 'block';
     }
-  } catch(e) {
-    document.getElementById('loginErr').textContent = 'Error de conexión. Revisa tu internet.';
-    document.getElementById('loginErr').style.display = 'block';
+  } catch (e) {
+    console.error('Fallo de conexión durante adminLogin:', e);
+    errEl.textContent = e && e.name === 'AbortError'
+      ? 'El servidor tardó demasiado. Intenta nuevamente.'
+      : 'No fue posible conectar con el servidor. Intenta nuevamente.';
+    errEl.style.display = 'block';
+  } finally {
+    btn.textContent = 'Ingresar';
+    btn.disabled = false;
   }
-  btn.textContent = 'Ingresar'; btn.disabled = false;
 }
 
 function logout() {
