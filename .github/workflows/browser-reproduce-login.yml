@@ -1,0 +1,72 @@
+name: Browser reproduce login
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/browser-reproduce-login.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install Chromium
+        run: |
+          npm install playwright@1.55.0 --no-save
+          npx playwright install chromium
+      - name: Reproduce login
+        shell: bash
+        run: |
+          cat > /tmp/reproduce.js <<'NODE'
+          const { chromium } = require('playwright');
+          const fs = require('fs');
+          (async () => {
+            const out=[];
+            const browser=await chromium.launch({headless:true});
+            const page=await browser.newPage();
+            page.on('console',m=>out.push(`CONSOLE ${m.type()}: ${m.text()}`));
+            page.on('request',r=>{
+              if(r.url().includes('script.google.com')||r.url().includes('googleusercontent.com')) out.push(`REQUEST ${r.method()} ${r.url()}`);
+            });
+            page.on('requestfailed',r=>out.push(`FAILED ${r.method()} ${r.url()} :: ${r.failure()?.errorText||''}`));
+            page.on('response',async r=>{
+              if(r.url().includes('script.google.com')||r.url().includes('googleusercontent.com')) {
+                out.push(`RESPONSE ${r.status()} ${r.url()} CT=${r.headers()['content-type']||''} ACAO=${r.headers()['access-control-allow-origin']||''}`);
+              }
+            });
+            page.on('pageerror',e=>out.push(`PAGEERROR ${e.stack||e}`));
+            try {
+              await page.goto('https://admin.cuidandotefisioterapia.com/?browserdiag=20260802',{waitUntil:'networkidle',timeout:90000});
+              await page.locator('#userInput').fill('diagnostico');
+              await page.locator('#pwInput').fill('__INVALID_BROWSER_TEST__');
+              await page.locator('#loginBtn').click();
+              await page.waitForTimeout(12000);
+              out.push('BUTTON='+await page.locator('#loginBtn').innerText().catch(()=> 'MISSING'));
+              out.push('ERROR='+await page.locator('#loginErr').innerText().catch(()=> 'MISSING'));
+              out.push('ERROR_DISPLAY='+await page.locator('#loginErr').evaluate(el=>getComputedStyle(el).display).catch(()=> 'MISSING'));
+            } catch(e) {
+              out.push('TESTERROR '+(e.stack||e));
+            }
+            await browser.close();
+            fs.writeFileSync('browser-login-diagnostics.txt',out.join('\n')+'\n');
+          })();
+          NODE
+          node /tmp/reproduce.js
+      - name: Commit result and remove workflow
+        run: |
+          rm -rf node_modules package-lock.json package.json
+          rm -f .github/workflows/browser-reproduce-login.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "chore(login): registrar reproducción en navegador" || exit 0
+          git push
