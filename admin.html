@@ -6210,7 +6210,8 @@ Acción: enviar mensaje de reenganche a los 14 pacientes que solo vinieron una v
 
 <script>
 // ══════════════════════════════════════════════════════════════
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwPE46Z_7mnCPTE7KcthlluGXsuqwAofVBHS0jGXv7C8ekLpmPzHu5x0jFYB7yxEquw/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzFlqrTerVorQDn0_u_D29rh3cTRstc1XBxYDAn5-2YyexMSpip0m2RPcjzJMK7VDjd/exec';
+const PASSPORT_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwYxtpVLIb5DH31Bvh8UemIGZ08l1UEMuIJPbFPXOW_X0yX5J756IZKzmYx5PYOdPDC/exec';
 
 // ── KV SYNC — datos persistentes sincronizados en todos los dispositivos via GAS ──
 let _gasKV = {};
@@ -18365,7 +18366,7 @@ async function generarLinkPasaporte() {
   const card   = document.getElementById('pasLinkCard');
   if (!nombre) { card.style.display = 'none'; return; }
 
-  const url = APPS_SCRIPT_URL + '?action=passportEnsure&token=' + encodeURIComponent(TOKEN)
+  const url = PASSPORT_APPS_SCRIPT_URL + '?action=passportEnsure&token=' + encodeURIComponent(TOKEN)
     + '&nombre=' + encodeURIComponent(nombre)
     + '&telefono=' + encodeURIComponent(_pasTelefono || '');
   const data = await fetch(url).then(r => r.json());
@@ -18511,7 +18512,7 @@ async function guardarProgresoPasaporte() {
   document.querySelectorAll('.pasStamp').forEach(cb => passport.stamps[cb.dataset.n] = cb.checked);
   const descarga = {stamps:{}};
   document.querySelectorAll('.pasDescarga').forEach(cb => descarga.stamps[cb.dataset.n] = cb.checked);
-  const url = APPS_SCRIPT_URL + '?action=passportSaveProgress&token=' + encodeURIComponent(TOKEN)
+  const url = PASSPORT_APPS_SCRIPT_URL + '?action=passportSaveProgress&token=' + encodeURIComponent(TOKEN)
     + '&id=' + encodeURIComponent(_pasCurrent.id)
     + '&passport=' + encodeURIComponent(JSON.stringify(passport))
     + '&descarga=' + encodeURIComponent(JSON.stringify(descarga));
@@ -18525,7 +18526,7 @@ async function guardarProgresoPasaporte() {
 async function regenerarTokenPasaporte() {
   if (!_pasCurrent || !_pasCurrent.id) return;
   if (!confirm('¿Regenerar el enlace? El anterior dejará de funcionar.')) return;
-  const data = await fetch(APPS_SCRIPT_URL + '?action=passportRegenerateToken&token=' + encodeURIComponent(TOKEN) + '&id=' + encodeURIComponent(_pasCurrent.id)).then(r => r.json());
+  const data = await fetch(PASSPORT_APPS_SCRIPT_URL + '?action=passportRegenerateToken&token=' + encodeURIComponent(TOKEN) + '&id=' + encodeURIComponent(_pasCurrent.id)).then(r => r.json());
   if (!data.ok) { toast(data.error || 'No se pudo regenerar', 'error'); return; }
   _pasCurrent = data.passport;
   generarLinkPasaporte();
@@ -18535,7 +18536,7 @@ async function regenerarTokenPasaporte() {
 async function desactivarPasaporte() {
   if (!_pasCurrent || !_pasCurrent.id) return;
   if (!confirm('¿Desactivar este pasaporte?')) return;
-  const data = await fetch(APPS_SCRIPT_URL + '?action=passportDeactivate&token=' + encodeURIComponent(TOKEN) + '&id=' + encodeURIComponent(_pasCurrent.id)).then(r => r.json());
+  const data = await fetch(PASSPORT_APPS_SCRIPT_URL + '?action=passportDeactivate&token=' + encodeURIComponent(TOKEN) + '&id=' + encodeURIComponent(_pasCurrent.id)).then(r => r.json());
   if (!data.ok) { toast(data.error || 'No se pudo desactivar', 'error'); return; }
   _pasCurrent = data.passport || _pasCurrent;
   renderPasaporteAdminTools();
@@ -18545,7 +18546,7 @@ async function desactivarPasaporte() {
 async function reactivarPasaporte() {
   if (!_pasCurrent || !_pasCurrent.id) return;
   if (!confirm('¿Reactivar este pasaporte?')) return;
-  const data = await fetch(APPS_SCRIPT_URL + '?action=passportReactivate&token=' + encodeURIComponent(TOKEN) + '&id=' + encodeURIComponent(_pasCurrent.id)).then(r => r.json());
+  const data = await fetch(PASSPORT_APPS_SCRIPT_URL + '?action=passportReactivate&token=' + encodeURIComponent(TOKEN) + '&id=' + encodeURIComponent(_pasCurrent.id)).then(r => r.json());
   if (!data.ok) { toast(data.error || 'No se pudo reactivar', 'error'); return; }
   _pasCurrent = data.passport || _pasCurrent;
   renderPasaporteAdminTools();

@@ -6270,7 +6270,8 @@ Acción: enviar mensaje de reenganche a los 14 pacientes que solo vinieron una v
 
 <script>
 // ══════════════════════════════════════════════════════════════
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwYxtpVLIb5DH31Bvh8UemIGZ08l1UEMuIJPbFPXOW_X0yX5J756IZKzmYx5PYOdPDC/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzFlqrTerVorQDn0_u_D29rh3cTRstc1XBxYDAn5-2YyexMSpip0m2RPcjzJMK7VDjd/exec';
+const PASSPORT_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwYxtpVLIb5DH31Bvh8UemIGZ08l1UEMuIJPbFPXOW_X0yX5J756IZKzmYx5PYOdPDC/exec';
 
 // ── KV SYNC — datos persistentes sincronizados en todos los dispositivos via GAS ──
 let _gasKV = {};
@@ -18707,7 +18708,7 @@ async function generarLinkPasaporte() {
   const card   = document.getElementById('pasLinkCard');
   if (!nombre) { card.style.display = 'none'; return; }
 
-  const url = APPS_SCRIPT_URL + '?action=passportEnsure&token=' + encodeURIComponent(TOKEN)
+  const url = PASSPORT_APPS_SCRIPT_URL + '?action=passportEnsure&token=' + encodeURIComponent(TOKEN)
     + '&nombre=' + encodeURIComponent(nombre)
     + '&telefono=' + encodeURIComponent(_pasTelefono || '');
   let data;
