@@ -100,14 +100,14 @@ jobs:
             text = path.read_text(encoding='utf-8-sig')
             text, n1 = re.subn(
               r'function selectPasPatient\(p\) \{.*?\n\}\n\nfunction _pasSetConfirmed',
-              select_new,
+              lambda match: select_new,
               text,
               count=1,
               flags=re.S
             )
             text, n2 = re.subn(
               r'function abrirPasaporte\(\) \{.*?\n\}\n\nfunction copiarLinkPas',
-              open_new,
+              lambda match: open_new,
               text,
               count=1,
               flags=re.S
