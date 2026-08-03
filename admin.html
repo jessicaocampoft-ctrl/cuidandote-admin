@@ -7311,22 +7311,14 @@ async function doLogin() {
     let d = null;
     let lastError = null;
 
-    for (let intento = 1; intento <= 2; intento++) {
+    for (let intento = 1; intento <= 1; intento++) {
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 20000);
+      const timeout = setTimeout(() => controller.abort(), 120000);
       try {
-        const separator = APPS_SCRIPT_URL.includes('?') ? '&' : '?';
-        const loginUrl = APPS_SCRIPT_URL + separator + '_login=' + Date.now() + '-' + intento;
+        const loginUrl = APPS_SCRIPT_URL;
         const r = await fetch(loginUrl, {
           method: 'POST',
-          mode: 'cors',
-          credentials: 'omit',
-          cache: 'no-store',
-          redirect: 'follow',
-          referrerPolicy: 'no-referrer',
-          headers: {'Content-Type': 'text/plain;charset=UTF-8'},
-          body: JSON.stringify({action: 'adminLogin', user, password: pw}),
-          signal: controller.signal
+          body: JSON.stringify({action: 'adminLogin', user, password: pw})
         });
         const raw = (await r.text()).replace(/^\uFEFF/, '').trim();
         if (!raw) throw new Error('El servidor respondió vacío');
