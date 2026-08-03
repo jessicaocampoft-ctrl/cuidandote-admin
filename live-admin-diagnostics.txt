@@ -1,0 +1,145 @@
+status=200
+final=https://admin.cuidandotefisioterapia.com/?diag=20260802
+live_length=1175017
+repo_length=1175017
+live_sha256=9f092be6972d37e503afbec2386090a13129de3c67f1bb1cd776a8105bbb38ba
+repo_sha256=9f092be6972d37e503afbec2386090a13129de3c67f1bb1cd776a8105bbb38ba
+same=True
+live_apps_url=https://script.google.com/macros/s/AKfycbwYxtpVLIb5DH31Bvh8UemIGZ08l1UEMuIJPbFPXOW_X0yX5J756IZKzmYx5PYOdPDC/exec
+repo_apps_url=https://script.google.com/macros/s/AKfycbwYxtpVLIb5DH31Bvh8UemIGZ08l1UEMuIJPbFPXOW_X0yX5J756IZKzmYx5PYOdPDC/exec
+
+=== LIVE LOGIN ===
+async function doLogin() {
+  const ahora = Date.now();
+  if (_loginLockedUntil > ahora) {
+    const segs = Math.ceil((_loginLockedUntil - ahora) / 1000);
+    const errEl = document.getElementById('loginErr');
+    errEl.textContent = `Demasiados intentos. Espera ${segs} segundo${segs !== 1 ? 's' : ''}.`;
+    errEl.style.display = 'block';
+    return;
+  }
+  const pw  = document.getElementById('pwInput').value.trim();
+  const user = (document.getElementById('userInput')?.value || '').trim();
+  const btn = document.getElementById('loginBtn');
+  if (!pw) return;
+  btn.textContent = 'Verificando...'; btn.disabled = true;
+  try {
+    const r = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({action: 'adminLogin', user, password: pw})
+    });
+    const d = await r.json();
+    if (d.ok) {
+      _loginAttempts = 0;
+      TOKEN = d.sessionToken;
+      sessionStorage.setItem('adminToken', d.sessionToken);
+      _loginTime = Date.now();
+      document.getElementById('loginScreen').style.display = 'none';
+      document.getElementById('adminApp').style.display   = 'block';
+      allData = d;
+      await loadAdminKV();
+      await loadTeamData();
+      await limpiarHorariosInvalidosAuto();
+      reloadMetas();
+      _initSidebarState();
+      initDashboard();
+      await _runUrlRepairIfRequested();
+    } else {
+      _loginAttempts++;
+      const errEl = document.getElementById('loginErr');
+      if (_loginAttempts >= 5) {
+        _loginLockedUntil = Date.now() + 120000;
+        _loginAttempts = 0;
+        errEl.textContent = 'Demasiados intentos fallidos. Acceso bloqueado por 2 minutos.';
+      } else {
+        const restantes = 5 - _loginAttempts;
+        errEl.textContent = `Contraseña incorrecta. Intentos restantes: ${restantes}`;
+      }
+      errEl.style.display = 'block';
+    }
+  } catch(e) {
+    document.getElementById('loginErr').textContent = 'Error de conexión. Revisa tu internet.';
+    document.getElementById('loginErr').style.display = 'block';
+  }
+  btn.textContent = 'Ingresar'; btn.disabled = false;
+}
+
+=== REPO LOGIN ===
+async function doLogin() {
+  const ahora = Date.now();
+  if (_loginLockedUntil > ahora) {
+    const segs = Math.ceil((_loginLockedUntil - ahora) / 1000);
+    const errEl = document.getElementById('loginErr');
+    errEl.textContent = `Demasiados intentos. Espera ${segs} segundo${segs !== 1 ? 's' : ''}.`;
+    errEl.style.display = 'block';
+    return;
+  }
+  const pw  = document.getElementById('pwInput').value.trim();
+  const user = (document.getElementById('userInput')?.value || '').trim();
+  const btn = document.getElementById('loginBtn');
+  if (!pw) return;
+  btn.textContent = 'Verificando...'; btn.disabled = true;
+  try {
+    const r = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({action: 'adminLogin', user, password: pw})
+    });
+    const d = await r.json();
+    if (d.ok) {
+      _loginAttempts = 0;
+      TOKEN = d.sessionToken;
+      sessionStorage.setItem('adminToken', d.sessionToken);
+      _loginTime = Date.now();
+      document.getElementById('loginScreen').style.display = 'none';
+      document.getElementById('adminApp').style.display   = 'block';
+      allData = d;
+      await loadAdminKV();
+      await loadTeamData();
+      await limpiarHorariosInvalidosAuto();
+      reloadMetas();
+      _initSidebarState();
+      initDashboard();
+      await _runUrlRepairIfRequested();
+    } else {
+      _loginAttempts++;
+      const errEl = document.getElementById('loginErr');
+      if (_loginAttempts >= 5) {
+        _loginLockedUntil = Date.now() + 120000;
+        _loginAttempts = 0;
+        errEl.textContent = 'Demasiados intentos fallidos. Acceso bloqueado por 2 minutos.';
+      } else {
+        const restantes = 5 - _loginAttempts;
+        errEl.textContent = `Contraseña incorrecta. Intentos restantes: ${restantes}`;
+      }
+      errEl.style.display = 'block';
+    }
+  } catch(e) {
+    document.getElementById('loginErr').textContent = 'Error de conexión. Revisa tu internet.';
+    document.getElementById('loginErr').style.display = 'block';
+  }
+  btn.textContent = 'Ingresar'; btn.disabled = false;
+}
+
+=== LIVE HEADERS ===
+Connection: close
+Content-Length: 1194463
+Server: GitHub.com
+Content-Type: text/html; charset=utf-8
+Last-Modified: Mon, 03 Aug 2026 00:08:07 GMT
+Access-Control-Allow-Origin: *
+ETag: "6a6fdbe7-1239df"
+expires: Mon, 03 Aug 2026 00:18:38 GMT
+Cache-Control: max-age=600
+x-proxy-cache: MISS
+X-GitHub-Request-Id: 44A8:1A1EE5:3BCEB2E:40B63AE:6A6FDC06
+x-github-edge-region: iad
+Accept-Ranges: bytes
+Age: 0
+Date: Mon, 03 Aug 2026 00:08:38 GMT
+Via: 1.1 varnish
+X-Served-By: cache-iad-kiad7000129-IAD
+X-Cache: MISS
+X-Cache-Hits: 0
+X-Timer: S1785715719.720759,VS0,VE46
+Vary: Accept-Encoding
+X-Fastly-Request-ID: b1bb24df744de08b385278db13b6969f7cefe057
