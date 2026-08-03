@@ -1,0 +1,69 @@
+name: Smoke test admin login
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/smoke-test-login.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install browser client
+        run: npm install puppeteer-core@24.15.0 --no-save
+      - name: Test published login
+        shell: bash
+        run: |
+          cat > /tmp/smoke.js <<'NODE'
+          const puppeteer = require('puppeteer-core');
+          const fs = require('fs');
+          (async()=>{
+            const out=[];
+            let chrome='';
+            for (const c of ['/usr/bin/google-chrome','/usr/bin/google-chrome-stable','/usr/bin/chromium','/usr/bin/chromium-browser']) {
+              if (fs.existsSync(c)) { chrome=c; break; }
+            }
+            out.push('chrome='+chrome);
+            const browser=await puppeteer.launch({headless:true,executablePath:chrome,args:['--no-sandbox','--disable-setuid-sandbox']});
+            const page=await browser.newPage();
+            page.on('requestfailed',r=>out.push('failed='+r.method()+' '+r.url()+' '+(r.failure()?.errorText||'')));
+            page.on('console',m=>out.push('console='+m.type()+':'+m.text()));
+            await page.goto('https://admin.cuidandotefisioterapia.com/?smoke=20260803-1',{waitUntil:'networkidle2',timeout:90000});
+            await page.type('#userInput','diagnostico');
+            await page.type('#pwInput','__INVALID_BROWSER_SMOKE__');
+            await page.click('#loginBtn');
+            await new Promise(r=>setTimeout(r,12000));
+            const button=await page.$eval('#loginBtn',e=>e.innerText);
+            const error=await page.$eval('#loginErr',e=>e.innerText);
+            const display=await page.$eval('#loginErr',e=>getComputedStyle(e).display);
+            out.push('button='+button);
+            out.push('error='+error);
+            out.push('display='+display);
+            out.push('passed='+String(/Credenciales incorrectas|Contraseña incorrecta/.test(error) && !/conectar|conexión|internet/i.test(error)));
+            await browser.close();
+            fs.writeFileSync('login-smoke-result.txt',out.join('\n')+'\n');
+          })().catch(e=>{
+            fs.writeFileSync('login-smoke-result.txt','fatal='+String(e.stack||e)+'\npassed=false\n');
+            process.exitCode=0;
+          });
+          NODE
+          node /tmp/smoke.js
+      - name: Commit result and remove workflow
+        run: |
+          rm -rf node_modules package-lock.json package.json
+          rm -f .github/workflows/smoke-test-login.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "test(login): registrar prueba publicada" || exit 0
+          git push
