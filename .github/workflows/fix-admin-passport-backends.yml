@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - ".github/workflows/fix-admin-passport-backends.yml"
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -17,7 +18,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Restore stable admin backend and isolate passport backend
+      - name: Separate backends in admin files
         shell: python
         run: |
           from pathlib import Path
@@ -25,58 +26,66 @@ jobs:
 
           stable_admin = 'https://script.google.com/macros/s/AKfycbzFlqrTerVorQDn0_u_D29rh3cTRstc1XBxYDAn5-2YyexMSpip0m2RPcjzJMK7VDjd/exec'
           secure_passport = 'https://script.google.com/macros/s/AKfycbwYxtpVLIb5DH31Bvh8UemIGZ08l1UEMuIJPbFPXOW_X0yX5J756IZKzmYx5PYOdPDC/exec'
+          report = []
 
-          changed=[]
-          for name in ('index.html','admin.html'):
-            path=Path(name)
+          for name in ('index.html', 'admin.html'):
+            path = Path(name)
             if not path.exists():
+              report.append(f'{name}: ausente')
               continue
-            text=path.read_text(encoding='utf-8-sig')
 
-            text, n = re.subn(
-              r"const APPS_SCRIPT_URL = 'https://script\.google\.com/macros/s/[^']+/exec';(?:\nconst PASSPORT_APPS_SCRIPT_URL = 'https://script\.google\.com/macros/s/[^']+/exec';)?",
-              "const APPS_SCRIPT_URL = '" + stable_admin + "';\nconst PASSPORT_APPS_SCRIPT_URL = '" + secure_passport + "';",
-              text,
-              count=1
+            text = path.read_text(encoding='utf-8-sig')
+
+            config_pattern = re.compile(
+              r"const APPS_SCRIPT_URL\s*=\s*'https://script\.google\.com/macros/s/[^']+/exec';"
+              r"(?:\s*const PASSPORT_APPS_SCRIPT_URL\s*=\s*'https://script\.google\.com/macros/s/[^']+/exec';)?",
+              re.M
             )
-            if n != 1:
-              raise SystemExit(f'{name}: no se pudo actualizar la configuración de endpoints')
+            config = (
+              f"const APPS_SCRIPT_URL = '{stable_admin}';\n"
+              f"const PASSPORT_APPS_SCRIPT_URL = '{secure_passport}';"
+            )
+            text, config_count = config_pattern.subn(config, text, count=1)
+            if config_count != 1:
+              raise SystemExit(f'{name}: configuración APPS_SCRIPT_URL no localizada')
 
-            text = text.replace("APPS_SCRIPT_URL + '?action=passport", "PASSPORT_APPS_SCRIPT_URL + '?action=passport")
-            text = text.replace('`${APPS_SCRIPT_URL}?action=passport', '`${PASSPORT_APPS_SCRIPT_URL}?action=passport')
+            # Cambiar únicamente llamadas cuyo action comienza por passport.
+            text, plus_count = re.subn(
+              r'\bAPPS_SCRIPT_URL\b(?=\s*\+\s*[\'\"]\?action=passport)',
+              'PASSPORT_APPS_SCRIPT_URL',
+              text
+            )
+            text, template_count = re.subn(
+              r'\$\{APPS_SCRIPT_URL\}(?=\?action=passport)',
+              '${PASSPORT_APPS_SCRIPT_URL}',
+              text
+            )
 
             if f"const APPS_SCRIPT_URL = '{stable_admin}';" not in text:
-              raise SystemExit(f'{name}: backend estable no quedó configurado')
+              raise SystemExit(f'{name}: backend estable no configurado')
             if f"const PASSPORT_APPS_SCRIPT_URL = '{secure_passport}';" not in text:
-              raise SystemExit(f'{name}: backend seguro del pasaporte no quedó configurado')
-            if re.search(r'APPS_SCRIPT_URL\s*\+\s*[\'\"]\?action=passport', text):
-              raise SystemExit(f'{name}: quedó una acción de pasaporte usando el backend general')
-            if 'body: JSON.stringify({action: \'adminLogin\', user, password: pw})' not in text:
-              raise SystemExit(f'{name}: login fue alterado inesperadamente')
+              raise SystemExit(f'{name}: backend del pasaporte no configurado')
+            if "JSON.stringify({action: 'adminLogin', user, password: pw})" not in text:
+              raise SystemExit(f'{name}: flujo adminLogin no encontrado')
+            if re.search(r'\bAPPS_SCRIPT_URL\b\s*\+\s*[\'\"]\?action=passport', text):
+              raise SystemExit(f'{name}: quedó una llamada passport en el backend general')
+            if re.search(r'\$\{APPS_SCRIPT_URL\}\?action=passport', text):
+              raise SystemExit(f'{name}: quedó una plantilla passport en el backend general')
 
-            path.write_text(text,encoding='utf-8')
-            changed.append(name)
+            path.write_text(text, encoding='utf-8')
+            report.append(f'{name}: config=1 plus={plus_count} template={template_count}')
 
-          if not changed:
-            raise SystemExit('No se encontraron archivos de administrador')
-          print('Updated:', ', '.join(changed))
+          if not any(line.startswith('index.html:') for line in report):
+            raise SystemExit('index.html no fue procesado')
 
-      - name: Verify both deployments
-        shell: bash
-        run: |
-          set -euo pipefail
-          admin='https://script.google.com/macros/s/AKfycbzFlqrTerVorQDn0_u_D29rh3cTRstc1XBxYDAn5-2YyexMSpip0m2RPcjzJMK7VDjd/exec'
-          passport='https://script.google.com/macros/s/AKfycbwYxtpVLIb5DH31Bvh8UemIGZ08l1UEMuIJPbFPXOW_X0yX5J756IZKzmYx5PYOdPDC/exec'
-          admin_response="$(curl -L -sS --max-time 40 -H 'Content-Type: text/plain;charset=UTF-8' --data '{"action":"adminLogin","user":"diagnostico","password":"__INVALID_SPLIT_TEST__"}' "$admin")"
-          printf '%s' "$admin_response" | grep -Eq '"ok"[[:space:]]*:[[:space:]]*false'
-          passport_response="$(curl -L -sS --max-time 40 "$passport?action=passportEnsure&token=__INVALID_SPLIT_TEST__&nombre=Prueba")"
-          printf '%s' "$passport_response" | grep -Eq '"ok"[[:space:]]*:[[:space:]]*false'
+          Path('backend-split-result.txt').write_text('\n'.join(report) + '\n', encoding='utf-8')
+          print('\n'.join(report))
 
-      - name: Commit fix
+      - name: Commit corrected files
         run: |
           rm -f .github/workflows/fix-admin-passport-backends.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add index.html admin.html .github/workflows/fix-admin-passport-backends.yml
+          git add -A
           git commit -m "fix(login): restaurar backend estable y aislar pasaporte"
           git push
