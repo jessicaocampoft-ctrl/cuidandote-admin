@@ -1,4 +1,4 @@
-name: Inspect admin login backend
+name: Test admin login GET
 
 on:
   push:
@@ -16,25 +16,24 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Extract admin login backend code
-        shell: python
+      - name: Test GET login route
+        shell: bash
         run: |
-          from pathlib import Path
-          import re
-          p=Path('google-apps-script.js')
-          text=p.read_text(encoding='utf-8-sig')
-          lines=text.splitlines()
-          hits=set()
-          for i,line in enumerate(lines):
-            if re.search(r'adminLogin|doGet\s*\(|doPost\s*\(',line,re.I):
-              for j in range(max(0,i-35),min(len(lines),i+120)):
-                hits.add(j)
-          Path('admin-login-backend-diagnostics.txt').write_text('\n'.join(f'{j+1}: {lines[j]}' for j in sorted(hits))+'\n',encoding='utf-8')
+          set -euo pipefail
+          URL='https://script.google.com/macros/s/AKfycbwYxtpVLIb5DH31Bvh8UemIGZ08l1UEMuIJPbFPXOW_X0yX5J756IZKzmYx5PYOdPDC/exec?action=adminLogin&user=diagnostico&password=incorrecta'
+          {
+            echo '=== GET LOGIN ==='
+            curl -sS -L -D /tmp/get-headers.txt -o /tmp/get-body.txt "$URL" || true
+            cat /tmp/get-headers.txt
+            echo '--- BODY ---'
+            cat /tmp/get-body.txt
+            echo
+          } > admin-login-backend-diagnostics.txt 2>&1
       - name: Commit diagnostics and remove workflow
         run: |
           rm -f .github/workflows/inspect-admin-login-backend.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
-          git commit -m "chore(login): registrar rutas del backend" || exit 0
+          git commit -m "chore(login): registrar prueba GET del backend" || exit 0
           git push
