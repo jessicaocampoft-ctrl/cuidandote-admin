@@ -1,0 +1,60 @@
+name: Test login endpoint
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/test-login-endpoint.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Test Apps Script login response
+        shell: bash
+        run: |
+          set -euo pipefail
+          URL="https://script.google.com/macros/s/AKfycbwYxtpVLIb5DH31Bvh8UemIGZ08l1UEMuIJPbFPXOW_X0yX5J756IZKzmYx5PYOdPDC/exec"
+          {
+            echo "=== CURL POST ==="
+            curl -sS -L -D /tmp/headers.txt -o /tmp/body.txt \
+              -X POST \
+              --data-binary '{"action":"adminLogin","user":"diagnostico","password":"incorrecta"}' \
+              "$URL" || true
+            cat /tmp/headers.txt
+            echo "--- BODY ---"
+            cat /tmp/body.txt
+            echo
+            echo "=== NODE FETCH ==="
+            node - <<'NODE'
+          const url = 'https://script.google.com/macros/s/AKfycbwYxtpVLIb5DH31Bvh8UemIGZ08l1UEMuIJPbFPXOW_X0yX5J756IZKzmYx5PYOdPDC/exec';
+          (async () => {
+            try {
+              const r = await fetch(url, {
+                method: 'POST',
+                body: JSON.stringify({action:'adminLogin',user:'diagnostico',password:'incorrecta'})
+              });
+              console.log('status', r.status);
+              console.log('url', r.url);
+              console.log('content-type', r.headers.get('content-type'));
+              console.log('body', await r.text());
+            } catch (e) {
+              console.log('ERROR', e && e.stack || e);
+            }
+          })();
+          NODE
+          } > login-endpoint-diagnostics.txt 2>&1
+      - name: Commit diagnostics and remove workflow
+        run: |
+          rm -f .github/workflows/test-login-endpoint.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "chore(login): registrar respuesta del endpoint" || exit 0
+          git push
