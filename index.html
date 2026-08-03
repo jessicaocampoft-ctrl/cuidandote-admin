@@ -18604,13 +18604,28 @@ function searchPasPatient(q) {
   dd.style.display = 'block';
 }
 
-function selectPasPatient(p) {
+async function selectPasPatient(p) {
   document.getElementById('pasNombreInput').value = p.nombre;
   document.getElementById('pasDropdown').style.display = 'none';
   _pasTelefono  = (p.telefono || '').replace(/\D/g, '');
   _pasConfirmado = true;
   _pasSetConfirmed(true, p);
-  generarLinkPasaporte();
+
+  const btn = document.getElementById('pasAbrirBtn');
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Generando enlace...';
+    btn.style.cursor = 'wait';
+  }
+  try {
+    await generarLinkPasaporte();
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = 'Abrir y editar →';
+      btn.style.cursor = 'pointer';
+    }
+  }
 }
 
 function _pasSetConfirmed(ok, p) {
@@ -18678,11 +18693,44 @@ async function generarLinkPasaporte() {
   }
 }
 
-function abrirPasaporte() {
-  if (!_pasConfirmado) { toast('Selecciona un paciente de la lista primero', 'warn'); return; }
-  const link = (_pasCurrent && _pasCurrent.link) || document.getElementById('pasLinkTexto').textContent;
-  if (!link) { toast('Genera primero el enlace seguro', 'warn'); return; }
-  window.open(link, '_blank');
+async function abrirPasaporte() {
+  if (!_pasConfirmado) {
+    toast('Selecciona un paciente de la lista primero', 'warn');
+    return;
+  }
+
+  let link = (_pasCurrent && _pasCurrent.link) || document.getElementById('pasLinkTexto').textContent;
+  let popup = null;
+
+  if (!link) {
+    const btn = document.getElementById('pasAbrirBtn');
+    popup = window.open('', '_blank');
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = 'Generando enlace...';
+      btn.style.cursor = 'wait';
+    }
+    try {
+      await generarLinkPasaporte();
+    } catch (error) {
+      toast('No se pudo generar el enlace seguro', 'error');
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = 'Abrir y editar →';
+        btn.style.cursor = 'pointer';
+      }
+    }
+    link = (_pasCurrent && _pasCurrent.link) || document.getElementById('pasLinkTexto').textContent;
+  }
+
+  if (!link) {
+    if (popup && !popup.closed) popup.close();
+    return;
+  }
+
+  if (popup && !popup.closed) popup.location.replace(link);
+  else window.open(link, '_blank');
 }
 
 function copiarLinkPas() {
