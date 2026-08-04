@@ -35,26 +35,37 @@ for (const match of backend.matchAll(/\b(?:p|d)\.action\s*===\s*["']([A-Za-z][A-
 const requestedActions = unique(requested);
 const availableActions = unique(available);
 
-// createBooking es la ruta por defecto de POST cuando el formulario público no envía action.
+// Nombres usados dentro del panel para navegación o acciones locales, no para Apps Script.
 const localOnly = new Set([
-  'createBooking'
+  'createBooking',
+  'agenda',
+  'basedatos',
+  'finanzas',
+  'recuperacion'
 ]);
 
-const missing = requestedActions.filter(action => !availableActions.includes(action) && !localOnly.has(action));
-const unusedBackend = availableActions.filter(action => !requestedActions.includes(action));
+const apiRequestedActions = requestedActions.filter(action => !localOnly.has(action));
+const missing = apiRequestedActions.filter(action => !availableActions.includes(action));
+const unusedBackend = availableActions.filter(action => !apiRequestedActions.includes(action));
 
 const report = [
   '# Auditoría de contratos Panel ↔ Apps Script',
   '',
-  `- Acciones solicitadas por el panel: ${requestedActions.length}`,
+  `- Nombres action detectados en el panel: ${requestedActions.length}`,
+  `- Acciones locales excluidas: ${requestedActions.filter(action => localOnly.has(action)).length}`,
+  `- Acciones API solicitadas por el panel: ${apiRequestedActions.length}`,
   `- Acciones disponibles en el backend: ${availableActions.length}`,
-  `- Acciones solicitadas sin ruta encontrada: ${missing.length}`,
+  `- Acciones API sin ruta encontrada: ${missing.length}`,
   '',
-  '## Acciones solicitadas por el panel',
+  '## Acciones API solicitadas por el panel',
   '',
-  ...requestedActions.map(action => `- \`${action}\``),
+  ...apiRequestedActions.map(action => `- \`${action}\``),
   '',
-  '## Acciones solicitadas sin ruta encontrada',
+  '## Acciones internas de navegación excluidas',
+  '',
+  ...requestedActions.filter(action => localOnly.has(action)).map(action => `- \`${action}\``),
+  '',
+  '## Acciones API solicitadas sin ruta encontrada',
   '',
   ...(missing.length ? missing.map(action => `- **${action}**`) : ['Ninguna.']),
   '',
@@ -71,6 +82,8 @@ fs.writeFileSync('AUDIT_CONTRACTS.md', report, 'utf8');
 fs.mkdirSync('audit-output', { recursive: true });
 fs.writeFileSync('audit-output/contratos-panel-backend.json', JSON.stringify({
   requestedActions,
+  apiRequestedActions,
+  localOnly: requestedActions.filter(action => localOnly.has(action)),
   availableActions,
   missing,
   unusedBackend
