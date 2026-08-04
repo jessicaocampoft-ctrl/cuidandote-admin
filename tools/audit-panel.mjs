@@ -46,13 +46,25 @@ for (const [id, count] of idCounts) {
   }
 }
 
+// Algunos formularios se construyen con helpers de plantilla. Registrar sus IDs reales
+// evita marcar como ausentes elementos que sí se crean al renderizar la vista.
+const generatedIds = new Set();
+for (const match of html.matchAll(/\$\{inp\(\s*["']([^"']+)["']/g)) {
+  generatedIds.add(`pm_${match[1]}`);
+}
+for (const match of html.matchAll(/\$\{inpDoble\(\s*["']([^"']+)["']\s*,\s*["']([^"']+)["']/g)) {
+  generatedIds.add(`pm_${match[1]}`);
+  generatedIds.add(`pm_${match[2]}`);
+}
+const knownIds = new Set([...ids, ...generatedIds]);
+
 const directIdRefs = [
   ...html.matchAll(/getElementById\(\s*["']([^"']+)["']\s*\)/g),
   ...html.matchAll(/querySelector\(\s*["']#([A-Za-z][\w:.-]*)["']\s*\)/g)
 ].map(m => m[1]);
 for (const ref of unique(directIdRefs)) {
-  if (!idCounts.has(ref) && !new RegExp(`id\\s*=\\s*[\\"']${ref.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[\\"']`).test(html)) {
-    add('WARNING', 'MISSING_STATIC_ID', `El código consulta #${ref}, pero no existe un id literal con ese nombre.`, 'Puede ser un elemento generado dinámicamente; requiere revisión manual.');
+  if (!knownIds.has(ref) && !new RegExp(`id\\s*=\\s*[\\"']${ref.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[\\"']`).test(html)) {
+    add('WARNING', 'MISSING_STATIC_ID', `El código consulta #${ref}, pero no existe un id literal ni generado con ese nombre.`, 'Requiere revisión manual.');
   }
 }
 
@@ -126,6 +138,7 @@ const reportLines = [
   '',
   `- Archivo: \`${target}\``,
   `- IDs estáticos encontrados: ${ids.length}`,
+  `- IDs generados reconocidos: ${generatedIds.size}`,
   `- Secciones de menú detectadas: ${sectionTargets.length}`,
   `- Bloques JavaScript revisados: ${inlineScripts.length}`,
   `- Hallazgos críticos: ${critical.length}`,
@@ -147,7 +160,7 @@ if (findings.length === 0) {
 reportLines.push('', '## Alcance', '', 'Esta auditoría detecta regresiones estructurales y de contrato. Inicio de sesión, permisos, llamadas reales al backend, carga de archivos y persistencia deben validarse además con pruebas funcionales controladas.');
 
 fs.writeFileSync(path.join(outputDir, 'resultado-auditoria.md'), reportLines.join('\n'), 'utf8');
-fs.writeFileSync(path.join(outputDir, 'resultado-auditoria.json'), JSON.stringify({ target, critical, warnings, findings }, null, 2), 'utf8');
+fs.writeFileSync(path.join(outputDir, 'resultado-auditoria.json'), JSON.stringify({ target, critical, warnings, findings, generatedIds: [...generatedIds] }, null, 2), 'utf8');
 console.log(reportLines.join('\n'));
 
 process.exit(critical.length > 0 ? 1 : 0);
