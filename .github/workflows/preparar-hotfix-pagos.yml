@@ -1,0 +1,49 @@
+name: Preparar liberación limpia del hotfix de pagos
+
+on:
+  push:
+    branches:
+      - hotfix-pagos-2026-08-04
+    paths:
+      - HOTFIX_READY.md
+
+permissions:
+  contents: write
+
+jobs:
+  preparar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar hotfix probado
+        uses: actions/checkout@v4
+        with:
+          ref: hotfix-pagos-2026-08-04
+          fetch-depth: 0
+
+      - name: Verificar la corrección probada
+        run: |
+          test -s index.html
+          test -s PAYMENT_TEST_RESULT.md
+          grep -q "const valorRecibido = valorEl" index.html
+          grep -q "payActionStatus" index.html
+          grep -q "Aprobación.*OK" PAYMENT_TEST_RESULT.md
+
+      - name: Guardar temporalmente el panel corregido
+        run: |
+          mkdir -p /tmp/hotfix-pagos
+          cp index.html /tmp/hotfix-pagos/index.html
+
+      - name: Crear rama limpia desde producción
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin main
+          git checkout -B release-hotfix-pagos-2026-08-04 origin/main
+          cp /tmp/hotfix-pagos/index.html index.html
+          git add index.html
+          if git diff --cached --quiet; then
+            echo "Producción ya coincide con el hotfix."
+          else
+            git commit -m "Corregir el botón Confirmar pago y autorizar"
+          fi
+          git push --force-with-lease origin release-hotfix-pagos-2026-08-04
