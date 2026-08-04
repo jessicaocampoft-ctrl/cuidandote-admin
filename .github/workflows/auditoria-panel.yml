@@ -85,7 +85,10 @@ jobs:
 
       - name: Exigir contratos completos
         run: |
-          node -e "const r=require('./audit-output/contratos-panel-backend.json'); if(r.missing.length){console.error('Acciones sin backend:',r.missing.join(', ')); process.exit(1)} console.log('Contratos completos:',r.requestedActions.length,'acciones verificadas')"
+          node -e "const r=require('./audit-output/contratos-panel-backend.json'); if(r.missing.length){console.error('Acciones sin backend:',r.missing.join(', ')); process.exit(1)} console.log('Contratos completos:',r.apiRequestedActions.length,'acciones API verificadas')"
+
+      - name: Recorrer el panel en navegador aislado
+        run: node tools/browser-smoke.mjs index.html
 
       - name: Guardar informe incluso si hay errores
         if: always()
