@@ -1,7 +1,7 @@
 # Contexto técnico para correcciones del panel
 
 Archivo revisado: `index.html`
-Total de líneas: 20212
+Total de líneas: 20221
 
 ## Todas las apariciones de copyGestionStatus
 
@@ -14,7 +14,7 @@ Total de líneas: 20212
 3948:                 Exporta el análisis como texto limpio para WhatsApp, documentos o asesoría externa. No copia código ni datos clínicos sensibles.
 3949:               </p>
 3950:             </div>
-3951:             <span id="copyGestionStatus" style="display:none;padding:7px 10px;border-radius:999px;background:rgba(16,185,129,.12);color:#047857;font-size:.78rem;font-weight:700">Información copiada correctamente</span>
+3951:             <span id="copyGestionStatusPrincipal" class="copyGestionStatus" style="display:none;padding:7px 10px;border-radius:999px;background:rgba(16,185,129,.12);color:#047857;font-size:.78rem;font-weight:700">Información copiada correctamente</span>
 3952:           </div>
 3953:           <div style="display:flex;gap:8px;flex-wrap:wrap">
 3954:             <button class="btn btn-teal btn-sm" onclick="copyGestionTexto('completo')">Copiar resumen completo</button>
@@ -32,7 +32,7 @@ Total de líneas: 20212
 4011:               Exporta el análisis como texto limpio para WhatsApp, documentos o asesoría externa. No copia código ni datos clínicos sensibles.
 4012:             </p>
 4013:           </div>
-4014:           <span id="copyGestionStatus" style="display:none;padding:7px 10px;border-radius:999px;background:rgba(16,185,129,.12);color:#047857;font-size:.78rem;font-weight:700">Información copiada correctamente</span>
+4014:           <span id="copyGestionStatusSecundario" class="copyGestionStatus" style="display:none;padding:7px 10px;border-radius:999px;background:rgba(16,185,129,.12);color:#047857;font-size:.78rem;font-weight:700">Información copiada correctamente</span>
 4015:         </div>
 4016:         <div style="display:flex;gap:8px;flex-wrap:wrap">
 4017:           <button class="btn btn-teal btn-sm" onclick="copyGestionTexto('completo')">Copiar resumen completo</button>
@@ -41,22 +41,22 @@ Total de líneas: 20212
 4020:           <button class="btn btn-ghost btn-sm" onclick="copyGestionTexto('diagnostico')">Copiar diagnóstico</button>
 ```
 
-### Coincidencia 3 — línea 14110
+### Coincidencia 3 — línea 14103
 
 ```html
-14104:   _showCopyFallback(clean);
-14105:   return false;
-14106: }
-14107: 
-14108: function _copyOk() {
-14109:   toast('Información copiada correctamente', 'ok');
-14110:   const el = document.getElementById('copyGestionStatus');
-14111:   if (el) {
-14112:     el.style.display = 'inline-flex';
-14113:     clearTimeout(window._copyGestionStatusTimer);
-14114:     window._copyGestionStatusTimer = setTimeout(() => { el.style.display = 'none'; }, 2200);
-14115:   }
-14116: }
+14097:   _showCopyFallback(clean);
+14098:   return false;
+14099: }
+14100: 
+14101: function _copyOk() {
+14102:   toast('Información copiada correctamente', 'ok');
+14103:   const estados = document.querySelectorAll('.copyGestionStatus');
+14104:   estados.forEach(el => { el.style.display = 'inline-flex'; });
+14105:   clearTimeout(window._copyGestionStatusTimer);
+14106:   window._copyGestionStatusTimer = setTimeout(() => {
+14107:     estados.forEach(el => { el.style.display = 'none'; });
+14108:   }, 2200);
+14109: }
 ```
 
 ## ID duplicado: emCk_ventas_sem_1
@@ -79,60 +79,24 @@ Total de líneas: 20212
 4709:                 <button class="em-done-btn" id="emDB_ventas_sem" onclick="markEmDone('ventas_sem',5)">✓ Plan ejecutado</button>
 ```
 
-### Coincidencia 2 — línea 4730
-
-```html
-4724:             <div class="em-card-body" id="emBody_ventas_mes">
-4725:               <div class="em-symptom">💡 <strong>El mes está comprometido.</strong> Por debajo del 80% de la meta ya no alcanza con citas normales — se necesita una acción extraordinaria. La clave es calcular primero cuánto falta y cuántos días quedan, para saber si el gap es recuperable con citas extra, paquetes, o si hay que activar un plan de contingencia.</div>
-4726:               <div class="em-prog-meta" id="emPM_ventas_mes">0 de 6 pasos completados</div>
-4727:               <div class="em-prog-wrap"><div class="em-prog-fill" id="emPF_ventas_mes" style="width:0%"></div></div>
-4728:               <div class="em-steps">
-4729:                 <label class="em-step" id="emS_ventas_mes_0" onclick="handleEmStep(event,'ventas_mes',0)"><input type="checkbox" id="emCk_ventas_mes_0" onclick="event.stopPropagation()"><span class="em-step-n">01</span><span class="em-step-text"><strong>Calcular el gap real:</strong> abrir Finanzas, ver cuánto se ha facturado y cuánto falta. Dividirlo entre los días hábiles restantes del mes — ese es el ingreso diario necesario. Si son más de $600k/día extra, el plan de citas no es suficiente solo.</span><button class="em-goto" onclick="event.stopPropagation();showView('finanzas')">Ver Finanzas →</button></label>
-4730:                 <label class="em-step" id="emS_ventas_mes_1" onclick="handleEmStep(event,'ventas_mes',1)"><input type="checkbox" id="emCk_ventas_sem_1" onclick="event.stopPropagation()"><span class="em-step-n">02</span><span class="em-step-text"><strong>Campaña de paquetes con fecha límite:</strong> ofrecer a pacientes activos paquetes pre-pagados con vigencia de 60 días. El pago adelantado ingresa al mes actual aunque las citas se usen después — es la palanca más rápida para cerrar el gap.</span></label>
-4731:                 <label class="em-step" id="emS_ventas_mes_2" onclick="handleEmStep(event,'ventas_mes',2)"><input type="checkbox" id="emCk_ventas_mes_2" onclick="event.stopPropagation()"><span class="em-step-n">03</span><span class="em-step-text"><strong>Evento corporativo o grupal de emergencia:</strong> si hay contactos en empresas, gimnasios o equipos deportivos de la zona, ofrecer una jornada de valoraciones express (20–30 min c/u). 10 valoraciones a $80k = $800k en un día, sin costo de adquisición.</span></label>
-4732:                 <label class="em-step" id="emS_ventas_mes_3" onclick="handleEmStep(event,'ventas_mes',3)"><input type="checkbox" id="emCk_ventas_mes_3" onclick="event.stopPropagation()"><span class="em-step-n">04</span><span class="em-step-text"><strong>Campaña de referidos urgente:</strong> contactar a los 10 mejores pacientes del mes y pedirles que refieran a alguien. Ofrecer la primera sesión del referido con descuento — el ingreso parcial es mejor que el espacio vacío.</span></label>
-4733:                 <label class="em-step" id="emS_ventas_mes_4" onclick="handleEmStep(event,'ventas_mes',4)"><input type="checkbox" id="emCk_ventas_mes_4" onclick="event.stopPropagation()"><span class="em-step-n">05</span><span class="em-step-text"><strong>Pauta de cierre de mes:</strong> publicar un anuncio de 3–5 días con los horarios disponibles del mes y CTA urgente. El mensaje de escasez real ("quedan X espacios este mes") convierte mejor que cualquier descuento.</span></label>
-4734:                 <label class="em-step" id="emS_ventas_mes_5" onclick="handleEmStep(event,'ventas_mes',5)"><input type="checkbox" id="emCk_ventas_mes_5" onclick="event.stopPropagation()"><span class="em-step-n">06</span><span class="em-step-text"><strong>Revisar si hay membresías o paquetes vencidos:</strong> pacientes con paquetes expirados son los más fáciles de reconvertir. Guión: <em>"[Nombre], veo que tu paquete venció — ¿quieres renovarlo? Puedo guardarte el mismo horario que tenías."</em></span></label>
-4735:               </div>
-4736:               <div class="em-card-footer">
-```
-
 ## Declaraciones de globalSearch
 
-### Coincidencia 1 — línea 8715
+### Coincidencia 1 — línea 9498
 
 ```html
-8709:     if (_scheduleMode !== 'unica') { _multiDates = []; _renderMultiChips(); }
-8710:     clearNuevaCita();
-8711:   }
-8712: }
-8713: 
-8714: // ── BÚSQUEDA GLOBAL ──
-8715: function globalSearch(val) {
-8716:   showView('agenda');
-8717:   const fSearch = document.getElementById('fSearch');
-8718:   if (fSearch) { fSearch.value = val; renderAgenda(); }
-8719: }
-8720: 
-8721: // ── REAGENDAR RÁPIDO ──
-```
-
-### Coincidencia 2 — línea 9505
-
-```html
-9499:   document.getElementById('reporteMesTitulo').textContent = 'Cobros pendientes esta semana';
-9500:   document.getElementById('reporteMesBody').innerHTML = html;
-9501:   document.getElementById('modalReporteMes').style.display = 'flex';
-9502: }
-9503: 
-9504: // ── BÚSQUEDA GLOBAL EXPANDIDA ──
-9505: function globalSearch(val) {
-9506:   if (!val || !val.trim()) return;
-9507:   const q = val.trim().toLowerCase();
-9508: 
-9509:   // ¿Es un paciente?
-9510:   const esPaciente = (allData.citas || []).some(c =>
-9511:     (c.nombre || '').toLowerCase().includes(q) || (c.telefono || '').includes(q) || (c.email || '').toLowerCase().includes(q)
+9492:   document.getElementById('reporteMesTitulo').textContent = 'Cobros pendientes esta semana';
+9493:   document.getElementById('reporteMesBody').innerHTML = html;
+9494:   document.getElementById('modalReporteMes').style.display = 'flex';
+9495: }
+9496: 
+9497: // ── BÚSQUEDA GLOBAL EXPANDIDA ──
+9498: function globalSearch(val) {
+9499:   if (!val || !val.trim()) return;
+9500:   const q = val.trim().toLowerCase();
+9501: 
+9502:   // ¿Es un paciente?
+9503:   const esPaciente = (allData.citas || []).some(c =>
+9504:     (c.nombre || '').toLowerCase().includes(q) || (c.telefono || '').includes(q) || (c.email || '').toLowerCase().includes(q)
 ```
 
 ## Declaración de copyGestionTexto
@@ -141,26 +105,60 @@ No se encontraron coincidencias.
 
 ## Declaración de openPago
 
-No se encontraron coincidencias.
+### Coincidencia 1 — línea 17117
+
+```html
+17111:         <button class="btn btn-ghost btn-sm" onclick="openPago('${c.id}')">💳 Registrar pago</button>
+17112:       </div>
+17113:     </div>`;
+17114:   }).join('');
+17115: }
+17116: 
+17117: function openPago(citaId) {
+17118:   showView('pagos');
+17119:   setTimeout(() => {
+17120:     if (typeof fillPaymentSelectors === 'function') fillPaymentSelectors(citaId || '');
+17121:     const selector = document.getElementById('payCitaId');
+17122:     if (selector) {
+17123:       selector.value = citaId || '';
+```
 
 ## Referencias a openPago
 
-### Coincidencia 1 — línea 17118
+### Coincidencia 1 — línea 17111
 
 ```html
-17112:     const msg = `Hola ${(c.nombre || '').split(' ')[0]}! \u2757 Te recuerdo que queda pendiente el pago de tu sesion del ${fmtDate(normDate(c.fecha))} por ${c.precio}. ¿Cuando lo puedes hacer efectivo? \uD83D\uDE4F`;
-17113:     const wa  = tel.length >= 7 ? `https://wa.me/57${tel.slice(-10)}?text=${encodeURIComponent(msg)}` : null;
-17114:     return `<div style="display:flex;justify-content:space-between;align-items:center;font-size:.82rem;padding:7px 12px;background:rgba(255,255,255,.6);border-radius:7px;gap:10px;flex-wrap:wrap">
-17115:       <span><strong>${c.nombre || '—'}</strong> · ${fmtDate(normDate(c.fecha))} · <span style="color:#92400e;font-weight:600">${c.precio}</span></span>
-17116:       <div style="display:flex;gap:6px">
-17117:         ${wa ? `<a href="${wa}" target="_blank" class="btn btn-sm" style="background:#d97706;color:#fff;border:none;text-decoration:none">💬 Cobrar WA</a>` : ''}
-17118:         <button class="btn btn-ghost btn-sm" onclick="openPago('${c.id}')">💳 Registrar pago</button>
-17119:       </div>
-17120:     </div>`;
-17121:   }).join('');
-17122: }
-17123: 
-17124: // ── Alerta semana floja ──
+17105:     const msg = `Hola ${(c.nombre || '').split(' ')[0]}! \u2757 Te recuerdo que queda pendiente el pago de tu sesion del ${fmtDate(normDate(c.fecha))} por ${c.precio}. ¿Cuando lo puedes hacer efectivo? \uD83D\uDE4F`;
+17106:     const wa  = tel.length >= 7 ? `https://wa.me/57${tel.slice(-10)}?text=${encodeURIComponent(msg)}` : null;
+17107:     return `<div style="display:flex;justify-content:space-between;align-items:center;font-size:.82rem;padding:7px 12px;background:rgba(255,255,255,.6);border-radius:7px;gap:10px;flex-wrap:wrap">
+17108:       <span><strong>${c.nombre || '—'}</strong> · ${fmtDate(normDate(c.fecha))} · <span style="color:#92400e;font-weight:600">${c.precio}</span></span>
+17109:       <div style="display:flex;gap:6px">
+17110:         ${wa ? `<a href="${wa}" target="_blank" class="btn btn-sm" style="background:#d97706;color:#fff;border:none;text-decoration:none">💬 Cobrar WA</a>` : ''}
+17111:         <button class="btn btn-ghost btn-sm" onclick="openPago('${c.id}')">💳 Registrar pago</button>
+17112:       </div>
+17113:     </div>`;
+17114:   }).join('');
+17115: }
+17116: 
+17117: function openPago(citaId) {
+```
+
+### Coincidencia 2 — línea 17117
+
+```html
+17111:         <button class="btn btn-ghost btn-sm" onclick="openPago('${c.id}')">💳 Registrar pago</button>
+17112:       </div>
+17113:     </div>`;
+17114:   }).join('');
+17115: }
+17116: 
+17117: function openPago(citaId) {
+17118:   showView('pagos');
+17119:   setTimeout(() => {
+17120:     if (typeof fillPaymentSelectors === 'function') fillPaymentSelectors(citaId || '');
+17121:     const selector = document.getElementById('payCitaId');
+17122:     if (selector) {
+17123:       selector.value = citaId || '';
 ```
 
 ## Acción adminLogin
@@ -261,76 +259,76 @@ No se encontraron coincidencias.
 7227:     errEl.style.display = 'block';
 ```
 
-### Coincidencia 5 — línea 8847
+### Coincidencia 5 — línea 8840
 
 ```html
-8841: 
-8842: function ordinalES(n) {
-8843:   const s = ['','ra','da','ra','ta','ta','ta','ma','va','na','ma'];
-8844:   return n + (n <= 10 ? s[n] : 'ra');
-8845: }
-8846: 
-8847: function getInfoSesion(nombre, servicio, fecha) {
-8848:   const total = sesionesPorPaquete[servicio];
-8849:   if (!total) return null;
-8850:   const norm  = (nombre||'').toLowerCase().trim();
-8851:   const hasta = normDate(fecha);
-8852:   const lista = (allData && allData.citas) ? allData.citas : [];
-8853:   const numero = lista.filter(c =>
+8834: 
+8835: function ordinalES(n) {
+8836:   const s = ['','ra','da','ra','ta','ta','ta','ma','va','na','ma'];
+8837:   return n + (n <= 10 ? s[n] : 'ra');
+8838: }
+8839: 
+8840: function getInfoSesion(nombre, servicio, fecha) {
+8841:   const total = sesionesPorPaquete[servicio];
+8842:   if (!total) return null;
+8843:   const norm  = (nombre||'').toLowerCase().trim();
+8844:   const hasta = normDate(fecha);
+8845:   const lista = (allData && allData.citas) ? allData.citas : [];
+8846:   const numero = lista.filter(c =>
 ```
 
-### Coincidencia 6 — línea 10356
+### Coincidencia 6 — línea 10349
 
 ```html
-10350:     btn.style.color = 'var(--muted)';
-10351:     icon.textContent  = '🚫';
-10352:     label.textContent = 'Sin cobro de desplazamiento';
-10353:   }
-10354: }
-10355: 
-10356: function updateSesionesInfo() {
-10357:   const serv   = document.getElementById('ncService').value;
-10358:   const nombre = (document.getElementById('ncName').value||'').trim().toLowerCase();
-10359:   const el     = document.getElementById('ncSesionesInfo');
-10360:   if (!el) return;
-10361:   const n = sesionesPorPaquete[serv];
-10362:   if (n) {
+10343:     btn.style.color = 'var(--muted)';
+10344:     icon.textContent  = '🚫';
+10345:     label.textContent = 'Sin cobro de desplazamiento';
+10346:   }
+10347: }
+10348: 
+10349: function updateSesionesInfo() {
+10350:   const serv   = document.getElementById('ncService').value;
+10351:   const nombre = (document.getElementById('ncName').value||'').trim().toLowerCase();
+10352:   const el     = document.getElementById('ncSesionesInfo');
+10353:   if (!el) return;
+10354:   const n = sesionesPorPaquete[serv];
+10355:   if (n) {
 ```
 
-### Coincidencia 7 — línea 18140
+### Coincidencia 7 — línea 18149
 
 ```html
-18134:   const asignados = _getPkAsignados();
-18135:   asignados.push({ paciente, telefono:tel, nombre:pl.nombre, sesiones:+pl.sesiones, consumidas:0, precio:pl.precio, fechaCompra:fechaC, vencimiento:vigD.toLocalDateStr(), notas });
-18136:   _savePkAsignados(asignados);
-18137:   document.getElementById('modalPaquete').style.display='none';
-18138:   renderPaquetes(); toast('Paquete asignado ✓');
-18139: }
-18140: function usarSesion(idx) {
-18141:   const a = _getPkAsignados(); const p = a[idx]; if (!p) return;
-18142:   if ((p.consumidas||0) >= p.sesiones) { toast('Paquete agotado','err'); return; }
-18143:   p.consumidas = (p.consumidas||0)+1; _savePkAsignados(a);
-18144:   renderPaquetes(); toast(`Sesión registrada: ${p.consumidas}/${p.sesiones}`);
-18145: }
-18146: function ajustarSesiones(idx) {
+18143:   const asignados = _getPkAsignados();
+18144:   asignados.push({ paciente, telefono:tel, nombre:pl.nombre, sesiones:+pl.sesiones, consumidas:0, precio:pl.precio, fechaCompra:fechaC, vencimiento:vigD.toLocalDateStr(), notas });
+18145:   _savePkAsignados(asignados);
+18146:   document.getElementById('modalPaquete').style.display='none';
+18147:   renderPaquetes(); toast('Paquete asignado ✓');
+18148: }
+18149: function usarSesion(idx) {
+18150:   const a = _getPkAsignados(); const p = a[idx]; if (!p) return;
+18151:   if ((p.consumidas||0) >= p.sesiones) { toast('Paquete agotado','err'); return; }
+18152:   p.consumidas = (p.consumidas||0)+1; _savePkAsignados(a);
+18153:   renderPaquetes(); toast(`Sesión registrada: ${p.consumidas}/${p.sesiones}`);
+18154: }
+18155: function ajustarSesiones(idx) {
 ```
 
-### Coincidencia 8 — línea 18146
+### Coincidencia 8 — línea 18155
 
 ```html
-18140: function usarSesion(idx) {
-18141:   const a = _getPkAsignados(); const p = a[idx]; if (!p) return;
-18142:   if ((p.consumidas||0) >= p.sesiones) { toast('Paquete agotado','err'); return; }
-18143:   p.consumidas = (p.consumidas||0)+1; _savePkAsignados(a);
-18144:   renderPaquetes(); toast(`Sesión registrada: ${p.consumidas}/${p.sesiones}`);
-18145: }
-18146: function ajustarSesiones(idx) {
-18147:   const a = _getPkAsignados(); const p = a[idx]; if (!p) return;
-18148:   const val = prompt(`Sesiones consumidas de "${p.nombre}" (${p.paciente})\nActual: ${p.consumidas||0} de ${p.sesiones}`, p.consumidas||0);
-18149:   if (val === null) return;
-18150:   const n = parseInt(val, 10);
-18151:   if (isNaN(n) || n < 0) { toast('Número inválido','err'); return; }
-18152:   if (n > p.sesiones) { toast(`No puede superar el total (${p.sesiones})`, 'err'); return; }
+18149: function usarSesion(idx) {
+18150:   const a = _getPkAsignados(); const p = a[idx]; if (!p) return;
+18151:   if ((p.consumidas||0) >= p.sesiones) { toast('Paquete agotado','err'); return; }
+18152:   p.consumidas = (p.consumidas||0)+1; _savePkAsignados(a);
+18153:   renderPaquetes(); toast(`Sesión registrada: ${p.consumidas}/${p.sesiones}`);
+18154: }
+18155: function ajustarSesiones(idx) {
+18156:   const a = _getPkAsignados(); const p = a[idx]; if (!p) return;
+18157:   const val = prompt(`Sesiones consumidas de "${p.nombre}" (${p.paciente})\nActual: ${p.consumidas||0} de ${p.sesiones}`, p.consumidas||0);
+18158:   if (val === null) return;
+18159:   const n = parseInt(val, 10);
+18160:   if (isNaN(n) || n < 0) { toast('Número inválido','err'); return; }
+18161:   if (n > p.sesiones) { toast(`No puede superar el total (${p.sesiones})`, 'err'); return; }
 ```
 
 ## AbortController

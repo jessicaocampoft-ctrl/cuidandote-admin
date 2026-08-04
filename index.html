@@ -3948,7 +3948,7 @@ Primero evaluamos cómo está el cuerpo ahora, luego tratamos, luego te enseñam
                 Exporta el análisis como texto limpio para WhatsApp, documentos o asesoría externa. No copia código ni datos clínicos sensibles.
               </p>
             </div>
-            <span id="copyGestionStatus" style="display:none;padding:7px 10px;border-radius:999px;background:rgba(16,185,129,.12);color:#047857;font-size:.78rem;font-weight:700">Información copiada correctamente</span>
+            <span id="copyGestionStatusPrincipal" class="copyGestionStatus" style="display:none;padding:7px 10px;border-radius:999px;background:rgba(16,185,129,.12);color:#047857;font-size:.78rem;font-weight:700">Información copiada correctamente</span>
           </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
             <button class="btn btn-teal btn-sm" onclick="copyGestionTexto('completo')">Copiar resumen completo</button>
@@ -4011,7 +4011,7 @@ Primero evaluamos cómo está el cuerpo ahora, luego tratamos, luego te enseñam
               Exporta el análisis como texto limpio para WhatsApp, documentos o asesoría externa. No copia código ni datos clínicos sensibles.
             </p>
           </div>
-          <span id="copyGestionStatus" style="display:none;padding:7px 10px;border-radius:999px;background:rgba(16,185,129,.12);color:#047857;font-size:.78rem;font-weight:700">Información copiada correctamente</span>
+          <span id="copyGestionStatusSecundario" class="copyGestionStatus" style="display:none;padding:7px 10px;border-radius:999px;background:rgba(16,185,129,.12);color:#047857;font-size:.78rem;font-weight:700">Información copiada correctamente</span>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <button class="btn btn-teal btn-sm" onclick="copyGestionTexto('completo')">Copiar resumen completo</button>
@@ -4727,7 +4727,7 @@ Acción: enviar mensaje de reenganche a los 14 pacientes que solo vinieron una v
               <div class="em-prog-wrap"><div class="em-prog-fill" id="emPF_ventas_mes" style="width:0%"></div></div>
               <div class="em-steps">
                 <label class="em-step" id="emS_ventas_mes_0" onclick="handleEmStep(event,'ventas_mes',0)"><input type="checkbox" id="emCk_ventas_mes_0" onclick="event.stopPropagation()"><span class="em-step-n">01</span><span class="em-step-text"><strong>Calcular el gap real:</strong> abrir Finanzas, ver cuánto se ha facturado y cuánto falta. Dividirlo entre los días hábiles restantes del mes — ese es el ingreso diario necesario. Si son más de $600k/día extra, el plan de citas no es suficiente solo.</span><button class="em-goto" onclick="event.stopPropagation();showView('finanzas')">Ver Finanzas →</button></label>
-                <label class="em-step" id="emS_ventas_mes_1" onclick="handleEmStep(event,'ventas_mes',1)"><input type="checkbox" id="emCk_ventas_sem_1" onclick="event.stopPropagation()"><span class="em-step-n">02</span><span class="em-step-text"><strong>Campaña de paquetes con fecha límite:</strong> ofrecer a pacientes activos paquetes pre-pagados con vigencia de 60 días. El pago adelantado ingresa al mes actual aunque las citas se usen después — es la palanca más rápida para cerrar el gap.</span></label>
+                <label class="em-step" id="emS_ventas_mes_1" onclick="handleEmStep(event,'ventas_mes',1)"><input type="checkbox" id="emCk_ventas_mes_1" onclick="event.stopPropagation()"><span class="em-step-n">02</span><span class="em-step-text"><strong>Campaña de paquetes con fecha límite:</strong> ofrecer a pacientes activos paquetes pre-pagados con vigencia de 60 días. El pago adelantado ingresa al mes actual aunque las citas se usen después — es la palanca más rápida para cerrar el gap.</span></label>
                 <label class="em-step" id="emS_ventas_mes_2" onclick="handleEmStep(event,'ventas_mes',2)"><input type="checkbox" id="emCk_ventas_mes_2" onclick="event.stopPropagation()"><span class="em-step-n">03</span><span class="em-step-text"><strong>Evento corporativo o grupal de emergencia:</strong> si hay contactos en empresas, gimnasios o equipos deportivos de la zona, ofrecer una jornada de valoraciones express (20–30 min c/u). 10 valoraciones a $80k = $800k en un día, sin costo de adquisición.</span></label>
                 <label class="em-step" id="emS_ventas_mes_3" onclick="handleEmStep(event,'ventas_mes',3)"><input type="checkbox" id="emCk_ventas_mes_3" onclick="event.stopPropagation()"><span class="em-step-n">04</span><span class="em-step-text"><strong>Campaña de referidos urgente:</strong> contactar a los 10 mejores pacientes del mes y pedirles que refieran a alguien. Ofrecer la primera sesión del referido con descuento — el ingreso parcial es mejor que el espacio vacío.</span></label>
                 <label class="em-step" id="emS_ventas_mes_4" onclick="handleEmStep(event,'ventas_mes',4)"><input type="checkbox" id="emCk_ventas_mes_4" onclick="event.stopPropagation()"><span class="em-step-n">05</span><span class="em-step-text"><strong>Pauta de cierre de mes:</strong> publicar un anuncio de 3–5 días con los horarios disponibles del mes y CTA urgente. El mensaje de escasez real ("quedan X espacios este mes") convierte mejor que cualquier descuento.</span></label>
@@ -8709,13 +8709,6 @@ async function submitAdminBookingMulti() {
     if (_scheduleMode !== 'unica') { _multiDates = []; _renderMultiChips(); }
     clearNuevaCita();
   }
-}
-
-// ── BÚSQUEDA GLOBAL ──
-function globalSearch(val) {
-  showView('agenda');
-  const fSearch = document.getElementById('fSearch');
-  if (fSearch) { fSearch.value = val; renderAgenda(); }
 }
 
 // ── REAGENDAR RÁPIDO ──
@@ -14107,12 +14100,12 @@ async function _copyPlainText(text) {
 
 function _copyOk() {
   toast('Información copiada correctamente', 'ok');
-  const el = document.getElementById('copyGestionStatus');
-  if (el) {
-    el.style.display = 'inline-flex';
-    clearTimeout(window._copyGestionStatusTimer);
-    window._copyGestionStatusTimer = setTimeout(() => { el.style.display = 'none'; }, 2200);
-  }
+  const estados = document.querySelectorAll('.copyGestionStatus');
+  estados.forEach(el => { el.style.display = 'inline-flex'; });
+  clearTimeout(window._copyGestionStatusTimer);
+  window._copyGestionStatusTimer = setTimeout(() => {
+    estados.forEach(el => { el.style.display = 'none'; });
+  }, 2200);
 }
 
 function _showCopyFallback(text, title='Copiar manualmente') {
@@ -17119,6 +17112,22 @@ function _checkCobrosPendientes() {
       </div>
     </div>`;
   }).join('');
+}
+
+function openPago(citaId) {
+  showView('pagos');
+  setTimeout(() => {
+    if (typeof fillPaymentSelectors === 'function') fillPaymentSelectors(citaId || '');
+    const selector = document.getElementById('payCitaId');
+    if (selector) {
+      selector.value = citaId || '';
+      selector.dispatchEvent(new Event('change', { bubbles: true }));
+      selector.focus();
+      selector.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else {
+      toast('Se abrió Pagos, pero no se encontró la cita seleccionada', 'warn');
+    }
+  }, 100);
 }
 
 // ── Alerta semana floja ──
