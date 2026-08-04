@@ -1,17 +1,18 @@
 # Auditoría de contratos Panel ↔ Apps Script
 
-- Acciones solicitadas por el panel: 64
+- Nombres action detectados en el panel: 64
+- Acciones locales excluidas: 4
+- Acciones API solicitadas por el panel: 60
 - Acciones disponibles en el backend: 81
-- Acciones solicitadas sin ruta encontrada: 4
+- Acciones API sin ruta encontrada: 0
 
-## Acciones solicitadas por el panel
+## Acciones API solicitadas por el panel
 
 - `actualizarCodigo`
 - `addWaitlist`
 - `adminBook`
 - `adminData`
 - `adminLogin`
-- `agenda`
 - `assignProfessional`
 - `authorizeAppointment`
 - `automationQueue`
@@ -21,7 +22,6 @@
 - `automationSetup`
 - `automationStatus`
 - `availability`
-- `basedatos`
 - `block`
 - `cancelBooking`
 - `changePassword`
@@ -32,7 +32,6 @@
 - `editBooking`
 - `editPatient`
 - `eliminarEvento`
-- `finanzas`
 - `generarCodigo`
 - `getAdminKV`
 - `getCalEvents`
@@ -54,7 +53,6 @@
 - `professionalLogin`
 - `professionalMarkAttended`
 - `professionalReportIssue`
-- `recuperacion`
 - `registrarCodigo`
 - `removeWaitlist`
 - `repairRescheduledDuplicate`
@@ -71,12 +69,16 @@
 - `updateStatus`
 - `verifyPayment`
 
-## Acciones solicitadas sin ruta encontrada
+## Acciones internas de navegación excluidas
 
-- **agenda**
-- **basedatos**
-- **finanzas**
-- **recuperacion**
+- `agenda`
+- `basedatos`
+- `finanzas`
+- `recuperacion`
+
+## Acciones API solicitadas sin ruta encontrada
+
+Ninguna.
 
 ## Acciones del backend no detectadas en el panel principal
 
