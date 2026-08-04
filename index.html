@@ -1,17 +1,13 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow,noarchive">
 <meta http-equiv="X-Frame-Options" content="DENY">
-<meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests; default-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; connect-src 'self' https://script.google.com https://script.googleusercontent.com https://places.googleapis.com;">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; connect-src 'self' https://script.google.com https://script.googleusercontent.com https://places.googleapis.com;">
 <script>
 (function(){
-  if (location.protocol === 'http:' && location.hostname === 'admin.cuidandotefisioterapia.com') {
-    location.replace('https://' + location.host + location.pathname + location.search + location.hash);
-    return;
-  }
   var publicHosts = ['cuidandotefisioterapia.com', 'www.cuidandotefisioterapia.com'];
   if (publicHosts.indexOf(location.hostname) !== -1) {
     location.replace('/');
@@ -40,9 +36,6 @@
 }
 html{font-size:16px;scroll-behavior:smooth}
 body{background:var(--bg);color:var(--text);font-family:var(--font-b);min-height:100vh;overflow-x:hidden}
-.badge{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--border);border-radius:999px;padding:4px 8px;background:var(--s2);color:var(--muted);font-size:.72rem;font-weight:700}
-.badge.ok{background:rgba(22,163,74,.1);border-color:rgba(22,163,74,.25);color:var(--ok)}
-.badge.danger{background:rgba(220,38,38,.1);border-color:rgba(220,38,38,.25);color:var(--err)}
 
 /* ── SCROLLBAR ── */
 ::-webkit-scrollbar{width:5px;height:5px}
@@ -61,7 +54,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-b);min-height
   padding:48px 40px;width:100%;max-width:400px;text-align:center;
   box-shadow:0 0 60px var(--glow);
 }
-.login-card > img{margin-bottom:28px}
+.login-card img{margin-bottom:28px}
 .login-card h1{font-family:var(--font-h);font-size:1.6rem;font-weight:600;margin-bottom:8px}
 .login-card p{color:var(--muted);font-size:.9rem;margin-bottom:28px}
 .login-input{
@@ -103,7 +96,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-b);min-height
 [data-theme="dark"] .pro-card,[data-theme="dark"] .team-panel,[data-theme="dark"] .team-card{background:rgba(26,29,36,.92)}
 .pro-card{padding:28px}
 .pro-login-card{max-width:430px;margin:8vh auto;text-align:center}
-.pro-login-card > img{height:64px;margin-bottom:22px}
+.pro-login-card img{height:64px;margin-bottom:22px}
 .pro-login-card h1{font-family:var(--font-h);font-size:1.8rem;margin-bottom:6px}
 .pro-login-card p{color:var(--muted);font-size:.92rem;line-height:1.5;margin-bottom:20px}
 .pro-input,.team-input{
@@ -113,7 +106,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-b);min-height
 .pro-input:focus,.team-input:focus{border-color:var(--primary);box-shadow:0 0 0 3px var(--glow)}
 .pro-header{display:flex;justify-content:space-between;align-items:center;gap:14px;margin-bottom:18px;flex-wrap:wrap}
 .pro-brand{display:flex;align-items:center;gap:14px}
-.pro-brand > img{height:52px}
+.pro-brand img{height:52px}
 .pro-brand h1{font-family:var(--font-h);font-size:1.9rem;line-height:1}
 .pro-brand small{color:var(--muted)}
 .pro-toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
@@ -246,68 +239,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-b);min-height
 #sidebar.sb-collapsed .sb-collapse-btn svg{transform:rotate(180deg)}
 
 .sb-logo{padding:0 8px 20px;border-bottom:1px solid var(--border);margin-bottom:8px}
-.sb-logo > img{height:56px}
-.brand-lockup{
-  --brand-w:160px;
-  --brand-signature-size:.82rem;
-  --brand-gap:-2px;
-  --brand-signature-x:22px;
-  display:inline-flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-  line-height:1;
-  text-decoration:none;
-}
-.brand-lockup img{
-  display:block;
-  width:var(--brand-w);
-  height:auto;
-  max-width:100%;
-  object-fit:contain;
-}
-.brand-signature{
-  display:block;
-  margin-top:var(--brand-gap);
-  transform:translateX(var(--brand-signature-x));
-  color:var(--primary);
-  font:italic 400 var(--brand-signature-size)/1 var(--font-h);
-  letter-spacing:.01em;
-  white-space:nowrap;
-}
-.brand-lockup--login{
-  --brand-w:172px;
-  --brand-signature-size:1.02rem;
-  --brand-gap:-22px;
-  --brand-signature-x:28px;
-  margin:0 auto 26px;
-}
-.brand-lockup--pro-login{
-  --brand-w:164px;
-  --brand-signature-size:.98rem;
-  --brand-gap:-22px;
-  --brand-signature-x:26px;
-  margin:0 auto 20px;
-}
-.brand-lockup--pro{
-  --brand-w:148px;
-  --brand-signature-size:.74rem;
-  --brand-gap:-19px;
-  --brand-signature-x:20px;
-}
-.brand-lockup--sidebar{
-  --brand-w:158px;
-  --brand-signature-size:.76rem;
-  --brand-gap:-20px;
-  --brand-signature-x:22px;
-}
-.brand-lockup--topbar{
-  --brand-w:118px;
-  --brand-signature-size:.58rem;
-  --brand-gap:-15px;
-  --brand-signature-x:16px;
-}
-#sidebar.sb-collapsed .sb-logo .brand-lockup{display:none}
+.sb-logo img{height:56px}
 .sb-link{
   display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:8px;
   color:var(--muted);font-size:.88rem;font-weight:500;cursor:pointer;
@@ -694,7 +626,7 @@ tr.evt-row:hover td{background:rgba(139,92,246,.07)}
   background:var(--s1);border-bottom:1px solid var(--border);z-index:99;
   align-items:center;padding:0 16px;gap:12px;
 }
-#topbar > img{height:30px}
+#topbar img{height:30px}
 #menuBtn{background:none;border:none;cursor:pointer;color:var(--text);margin-left:auto}
 
 /* ── TOAST ── */
@@ -1626,7 +1558,7 @@ button:disabled{cursor:not-allowed;opacity:.58}
     animation-iteration-count:1!important;transition-duration:.01ms!important}
 }
 </style>
-<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 <body>
 
@@ -1702,14 +1634,12 @@ button:disabled{cursor:not-allowed;opacity:.58}
 ══════════════════════════════════════════ -->
 <div id="loginScreen">
   <div class="login-card">
-    <div class="brand-lockup brand-lockup--login" aria-label="Cuidándote Fisioterapia by Jessica Ocampo">
-      <img src="LogoCuidandote/logo-horizontal-web.png" alt="" aria-hidden="true">
-      <span class="brand-signature">by Jessica Ocampo</span>
-    </div>
+    <img src="LogoCuidandote/logo-apilado.png" height="72" alt="Cuidándote Fisioterapia">
     <h1>Panel de Administración</h1>
     <p>Acceso exclusivo para Cuidándote Fisioterapia</p>
     <label class="sr-only" for="userInput">Usuario de equipo</label>
-    <input class="login-input" type="text" id="userInput" placeholder="Usuario de equipo (solo auxiliar)" autocomplete="username">
+    <input class="login-input" type="text" id="userInput" placeholder="Déjalo vacío si eres administradora" autocomplete="username">
+    <div style="margin:-8px 0 10px;color:#697386;font-size:.82rem;text-align:left">Solo escribe usuario si vas a entrar como auxiliar o fisioterapeuta autorizado.</div>
     <label class="sr-only" for="pwInput">Contraseña de administración</label>
     <input class="login-input" type="password" id="pwInput" placeholder="Contraseña" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
     <button class="login-btn" id="loginBtn" onclick="doLogin()">Ingresar</button>
@@ -1726,10 +1656,7 @@ button:disabled{cursor:not-allowed;opacity:.58}
 ══════════════════════════════════════════ -->
 <div id="proLoginScreen">
   <div class="pro-card pro-login-card">
-    <div class="brand-lockup brand-lockup--pro-login" aria-label="Cuidándote Fisioterapia by Jessica Ocampo">
-      <img src="LogoCuidandote/logo-horizontal-web.png" alt="" aria-hidden="true">
-      <span class="brand-signature">by Jessica Ocampo</span>
-    </div>
+    <img src="LogoCuidandote/logo-apilado.png" alt="Cuidándote Fisioterapia">
     <h1>Portal del Fisioterapeuta</h1>
     <p>Agenda privada del equipo. Cada profesional solo ve sus citas asignadas y autorizadas.</p>
     <div style="display:grid;gap:10px;text-align:left">
@@ -1755,10 +1682,7 @@ button:disabled{cursor:not-allowed;opacity:.58}
   <div class="pro-shell">
     <div class="pro-header">
       <div class="pro-brand">
-        <div class="brand-lockup brand-lockup--pro" aria-label="Cuidándote Fisioterapia by Jessica Ocampo">
-          <img src="LogoCuidandote/logo-horizontal-web.png" alt="" aria-hidden="true">
-          <span class="brand-signature">by Jessica Ocampo</span>
-        </div>
+        <img src="LogoCuidandote/logo-horizontal.png" alt="Cuidándote Fisioterapia">
         <div>
           <h1>Mi agenda clínica</h1>
           <small id="proWelcome">Portal del equipo</small>
@@ -1784,10 +1708,7 @@ button:disabled{cursor:not-allowed;opacity:.58}
 
   <!-- Mobile topbar -->
   <div id="topbar">
-    <div class="brand-lockup brand-lockup--topbar" aria-label="Cuidándote Fisioterapia by Jessica Ocampo">
-      <img src="LogoCuidandote/logo-horizontal-web.png" alt="" aria-hidden="true">
-      <span class="brand-signature">by Jessica Ocampo</span>
-    </div>
+    <img src="LogoCuidandote/logo-horizontal.png" alt="Cuidándote Fisioterapia">
     <button id="menuBtn" onclick="toggleSidebar()">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
     </button>
@@ -1795,12 +1716,7 @@ button:disabled{cursor:not-allowed;opacity:.58}
 
   <!-- Sidebar -->
   <nav id="sidebar">
-    <div class="sb-logo">
-      <div class="brand-lockup brand-lockup--sidebar" aria-label="Cuidándote Fisioterapia by Jessica Ocampo">
-        <img src="LogoCuidandote/logo-horizontal-web.png" alt="" aria-hidden="true">
-        <span class="brand-signature">by Jessica Ocampo</span>
-      </div>
-    </div>
+    <div class="sb-logo"><img src="LogoCuidandote/logo-horizontal.png" alt="Cuidándote Fisioterapia"></div>
     <button class="sb-collapse-btn" onclick="toggleSidebarCollapse()" title="Colapsar/expandir menú">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/><polyline points="9 18 3 12 9 6"/></svg>
       <span class="sb-link-label">Colapsar</span>
@@ -1828,14 +1744,6 @@ button:disabled{cursor:not-allowed;opacity:.58}
         Tareas del día
       </span>
       <span id="badgeTareas" style="display:none;background:#059669;color:#fff;border-radius:99px;font-size:.68rem;font-weight:700;padding:1px 7px;line-height:1.6">0</span>
-    </button>
-
-    <button class="sb-link" id="sb-operaciondiaria" data-tooltip="Control diario" onclick="showView('operaciondiaria')" style="justify-content:space-between">
-      <span style="display:flex;align-items:center;gap:10px">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M3 12h4"/><path d="M3 6h10"/><path d="M3 18h10"/></svg>
-        Control diario
-      </span>
-      <span id="badgeOperacion" style="display:none;background:#0f766e;color:#fff;border-radius:99px;font-size:.68rem;font-weight:700;padding:1px 7px;line-height:1.6">0</span>
     </button>
 
     <button class="sb-link" id="sb-agenda" data-tooltip="Agenda" onclick="showView('agenda')" style="justify-content:space-between">
@@ -2739,53 +2647,6 @@ Primero evaluamos cómo está el cuerpo ahora, luego tratamos, luego te enseñam
     </section>
     <!-- ── FIN GUIONES WA ── -->
 
-    <!-- ── CONTROL DIARIO DE AGENDA ── -->
-    <section id="vOperaciondiaria" style="display:none">
-      <div class="page-header">
-        <h1 class="page-title"><em>Control diario</em> de agenda</h1>
-        <p class="page-sub">Preparar mañana y revisar hoy desde una sola pantalla.</p>
-      </div>
-
-      <div class="card" style="padding:18px;border-radius:20px;margin-bottom:18px">
-        <div style="display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap">
-          <div style="display:flex;gap:8px;flex-wrap:wrap">
-            <button class="btn btn-teal" id="dailyModeTomorrow" onclick="setDailyOpsMode('manana')">Preparar mañana</button>
-            <button class="btn btn-ghost" id="dailyModeToday" onclick="setDailyOpsMode('hoy')">Revisión de hoy</button>
-          </div>
-          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-            <input class="nc-input" type="date" id="dailyOpsDate" onchange="renderDailyOps()" style="max-width:170px">
-            <button class="btn btn-ghost btn-sm" onclick="loadDailyOps(true)">Actualizar</button>
-          </div>
-        </div>
-        <div id="dailyOpsPrepInfo" style="margin-top:12px;color:var(--muted);font-size:.9rem"></div>
-      </div>
-
-      <div id="dailyOpsSummary" class="kpi-grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin-bottom:18px"></div>
-      <div id="dailyOpsAlerts" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:18px"></div>
-
-      <div class="card" style="padding:18px;border-radius:20px;margin-bottom:18px">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px">
-          <div>
-            <h2 style="font-family:var(--font-a);font-size:1.35rem;margin:0;color:var(--text)">Citas filtradas</h2>
-            <p id="dailyOpsFilterLabel" style="margin:4px 0 0;color:var(--muted);font-size:.88rem">Todas las citas de la fecha seleccionada.</p>
-          </div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap">
-            <button class="btn btn-ghost btn-sm" onclick="copyDailyAvailableSlots()">Copiar horarios disponibles</button>
-            <button class="btn btn-ghost btn-sm" onclick="copyDailyReport()">Copiar reporte</button>
-          </div>
-        </div>
-        <div id="dailyOpsList" style="display:grid;gap:12px"></div>
-      </div>
-
-      <div class="card" style="padding:18px;border-radius:20px">
-        <h2 style="font-family:var(--font-a);font-size:1.35rem;margin:0 0 8px;color:var(--text)">Finalizar revisión</h2>
-        <p style="margin:0 0 12px;color:var(--muted);font-size:.9rem">Puedes finalizar aunque queden pendientes, pero deja una observación para Jessica.</p>
-        <textarea id="dailyOpsObservation" class="nc-input" rows="3" placeholder="Observación de la preparación o revisión..." style="width:100%;resize:vertical;margin-bottom:12px"></textarea>
-        <div id="dailyOpsPendingBeforeClose" style="color:var(--muted);font-size:.86rem;margin-bottom:12px"></div>
-        <button class="btn btn-teal" onclick="finishDailyPreparation()">Marcar agenda como revisada</button>
-      </div>
-    </section>
-
     <!-- ── AGENDA ── -->
     <section id="vAgenda" style="display:none">
       <div class="page-header">
@@ -3394,11 +3255,11 @@ Primero evaluamos cómo está el cuerpo ahora, luego tratamos, luego te enseñam
             </div>
             <div class="field">
               <label>Hora inicio *</label>
-              <input type="time" id="blStart" min="07:00" max="20:00">
+              <input type="time" id="blStart" min="07:00" max="21:00">
             </div>
             <div class="field">
               <label>Hora fin *</label>
-              <input type="time" id="blEnd" min="07:00" max="20:00">
+              <input type="time" id="blEnd" min="07:00" max="21:00">
             </div>
             <div class="field">
               <label>Motivo (opcional)</label>
@@ -3654,15 +3515,15 @@ Primero evaluamos cómo está el cuerpo ahora, luego tratamos, luego te enseñam
                   <select id="payMedioPago"></select>
                 </div>
                 <div class="field" style="grid-column:1/-1">
-                  <label>Pantallazo / comprobante opcional</label>
+                  <label>Pantallazo / comprobante</label>
                   <label for="payProofFile" style="display:flex;align-items:center;justify-content:center;min-height:92px;border:1.5px dashed var(--primary);border-radius:14px;background:rgba(20,184,166,.07);cursor:pointer;text-align:center;padding:16px">
-                    <span id="payProofLabel" style="color:var(--text);font-weight:700">Sin archivo adjunto</span>
+                    <span id="payProofLabel" style="color:var(--text);font-weight:700">Subir pantallazo del pago</span>
                   </label>
                   <input id="payProofFile" type="file" accept=".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf" onchange="updatePaymentProofLabel()" style="display:none">
-                  <small style="display:block;margin-top:6px;color:var(--muted)">Opcional · JPG, PNG o PDF · máximo 8 MB · solo visible para administración.</small>
+                  <small style="display:block;margin-top:6px;color:var(--muted)">JPG, PNG o PDF · máximo 8 MB · solo visible para administración.</small>
                 </div>
                 <div class="field" style="grid-column:1/-1">
-                  <label>Referencia u observación</label>
+                  <label>Referencia u observación opcional</label>
                   <input id="payComprobante" type="text" placeholder="Ej: pago enviado por Nequi, referencia 1234">
                 </div>
                 <div class="field" style="grid-column:1/-1">
@@ -3671,7 +3532,8 @@ Primero evaluamos cómo está el cuerpo ahora, luego tratamos, luego te enseñam
                 </div>
               </div>
               <div class="team-card-actions" style="gap:8px;flex-wrap:wrap">
-                <button class="btn btn-ghost" onclick="saveManualPayment('verify')">Enviar pago a revisión</button>
+                <button class="btn btn-ghost" onclick="saveManualPayment('verify')">Subir para revisar</button>
+                <button class="btn btn-teal" onclick="saveManualPayment('approve')">Confirmar pago y autorizar</button>
                 <button class="btn btn-ghost" onclick="clearPaymentForm()">Limpiar</button>
               </div>
             </div>
@@ -5463,15 +5325,15 @@ Acción: enviar mensaje de reenganche a los 14 pacientes que solo vinieron una v
         <div style="display:flex;flex-direction:column;gap:14px">
           <div style="display:flex;gap:12px;align-items:flex-start">
             <span style="background:var(--primary);color:#0D0D0D;border-radius:50%;width:22px;height:22px;min-width:22px;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:800">1</span>
-            <p style="font-size:.88rem;color:var(--text);line-height:1.5">Escribe el nombre del paciente → copia el link o el QR → <strong>envíaselo por WhatsApp una sola vez</strong>. Ellos lo guardan y pueden ver su progreso cuando quieran.</p>
+            <p style="font-size:.88rem;color:var(--text);line-height:1.5">Escribe el nombre del paciente → copia el link o el QR → <strong>envíaselo por WhatsApp una sola vez</strong>. Cada cita pagada marcada como atendida suma un sello automáticamente.</p>
           </div>
           <div style="display:flex;gap:12px;align-items:flex-start">
             <span style="background:var(--primary);color:#0D0D0D;border-radius:50%;width:22px;height:22px;min-width:22px;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:800">2</span>
-            <p style="font-size:.88rem;color:var(--text);line-height:1.5">Haz clic en <strong>"Abrir y editar →"</strong> — el pasaporte se abre en modo administrador automáticamente. <strong>El paciente ve lo mismo</strong>, pero sin poder editar.</p>
+            <p style="font-size:.88rem;color:var(--text);line-height:1.5">Haz clic en <strong>"Abrir y editar →"</strong> para revisar la vista privada del paciente. La edición de sellos se realiza aquí, dentro del panel administrativo.</p>
           </div>
           <div style="display:flex;gap:12px;align-items:flex-start">
             <span style="background:var(--primary);color:#0D0D0D;border-radius:50%;width:22px;height:22px;min-width:22px;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:800">3</span>
-            <p style="font-size:.88rem;color:var(--text);line-height:1.5">Toca el sello de la sesión completada. El progreso se guarda en la nube y el paciente lo ve al instante desde su celular.</p>
+            <p style="font-size:.88rem;color:var(--text);line-height:1.5">Usa los sellos solo para correcciones excepcionales. El cambio queda registrado y el paciente lo ve al instante desde su celular.</p>
           </div>
           <div style="display:flex;gap:12px;align-items:flex-start">
             <span style="background:rgba(232,184,75,.25);color:#C9962A;border-radius:50%;width:22px;height:22px;min-width:22px;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:800">★</span>
@@ -6233,7 +6095,7 @@ Acción: enviar mensaje de reenganche a los 14 pacientes que solo vinieron una v
       </div>
       <div>
         <label style="font-size:.78rem;color:var(--muted);display:block;margin-bottom:4px">Hora</label>
-        <input type="time" id="editHora" min="07:00" max="20:00" style="width:100%;background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font-b);font-size:.9rem;padding:10px 12px;outline:none">
+        <input type="time" id="editHora" style="width:100%;background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font-b);font-size:.9rem;padding:10px 12px;outline:none">
       </div>
       <div>
         <label style="font-size:.78rem;color:var(--muted);display:block;margin-bottom:4px">Valor</label>
@@ -6270,8 +6132,7 @@ Acción: enviar mensaje de reenganche a los 14 pacientes que solo vinieron una v
 
 <script>
 // ══════════════════════════════════════════════════════════════
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwPE46Z_7mnCPTE7KcthlluGXsuqwAofVBHS0jGXv7C8ekLpmPzHu5x0jFYB7yxEquw/exec';
-const PASSPORT_APPS_SCRIPT_URL = APPS_SCRIPT_URL;
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx7biQkVS9l1nU4AYQeOmQzbPcKebOUJ5UmX97vCJDaXg5s-9y0-mgSrE0ANZXZJ8Hd/exec';
 
 // ── KV SYNC — datos persistentes sincronizados en todos los dispositivos via GAS ──
 let _gasKV = {};
@@ -6336,10 +6197,6 @@ let currentAdminUser = JSON.parse(sessionStorage.getItem('adminUser') || 'null')
 let allData = {citas: [], bloqueos: [], eventos: []};
 let operationsData = {cuentas: [], pagos: [], config: [], historialEstados: [], plantillasPlanes: []};
 let teamData = {profesionales: [], asignaciones: [], novedades: [], auditoria: [], cuentas: []};
-let dailyOpsMode = 'manana';
-let dailyOpsFilter = 'todas';
-let dailyOpsData = {citas: [], counts: {}, horariosDisponibles: []};
-const DAILY_OPS_LAB_MODE = false;
 let PROFESSIONAL_TOKEN = sessionStorage.getItem('professionalToken') || '';
 let professionalSession = null;
 let professionalAgenda = [];
@@ -6353,10 +6210,6 @@ function esc(s) {
     .replace(/&/g,'&amp;').replace(/</g,'&lt;')
     .replace(/>/g,'&gt;').replace(/"/g,'&quot;')
     .replace(/'/g,'&#39;');
-}
-
-function copyText(text) {
-  navigator.clipboard.writeText(String(text || '')).then(() => toast('Copiado')).catch(() => toast('No se pudo copiar', 'err'));
 }
 
 const APPOINTMENT_STATUSES = [
@@ -6974,7 +6827,7 @@ function updateSelectedPaymentCard(c) {
 function updatePaymentProofLabel() {
   const file = document.getElementById('payProofFile')?.files?.[0];
   const label = document.getElementById('payProofLabel');
-  if (label) label.textContent = file ? `Archivo listo: ${file.name}` : 'Sin archivo adjunto';
+  if (label) label.textContent = file ? `Archivo listo: ${file.name}` : 'Subir pantallazo del pago';
 }
 
 function fillPaymentSelectors(selectedId = '') {
@@ -7026,24 +6879,19 @@ async function saveManualPayment(mode = 'verify') {
   const proofFile = await readPaymentProofFile();
   if (proofFile?.error) return toast(proofFile.error, 'err');
   const ref = document.getElementById('payComprobante').value.trim();
-  const valorRecibido = document.getElementById('payValorRecibido').value.trim();
-  const fechaPago = document.getElementById('payFechaPago').value || '';
-  const medioPago = medioEl?.value || '';
-  if (!valorRecibido) return toast('Escribe el valor recibido', 'err');
-  if (!fechaPago) return toast('Selecciona la fecha del pago', 'err');
-  if (!medioPago) return toast('Selecciona el medio de pago', 'err');
-  if (!proofFile && !ref) return toast('Sin archivo adjunto: escribe una referencia u observación del pago', 'err');
+  if (!proofFile && !ref) return toast('Sube el pantallazo o escribe una referencia del pago', 'err');
+  if (mode === 'approve' && !confirm('¿Confirmas que el dinero ya ingresó y quieres autorizar esta cita para atender?')) return;
   const payload = {
     citaId,
     cliente: c?.nombre || '',
     servicioPlan: c?.servicio || '',
     valorEsperado: c?.precio || '',
-    valorRecibido,
-    medioPago,
+    valorRecibido: document.getElementById('payValorRecibido').value.trim(),
+    medioPago: medioEl?.value || '',
     cuentaReceptora: accountId,
-    fechaPago,
-    comprobante: ref || 'Sin archivo adjunto',
-    estadoPago: 'COMPROBANTE_RECIBIDO',
+    fechaPago: document.getElementById('payFechaPago').value || today(),
+    comprobante: ref,
+    estadoPago: 'Por verificar',
     observaciones: document.getElementById('payObservaciones').value.trim(),
     proofFile: proofFile || null
   };
@@ -7054,7 +6902,7 @@ async function saveManualPayment(mode = 'verify') {
   if (d.ok) {
     if (mode === 'approve') {
       const obs = payload.observaciones || 'Pago confirmado desde registro de comprobante';
-      const v = await fetch(`${APPS_SCRIPT_URL}?action=verifyPayment&token=${encodeURIComponent(TOKEN)}&id=${encodeURIComponent(d.id)}&estado=PAGO_APROBADO&observaciones=${encodeURIComponent(obs)}`).then(r => r.json());
+      const v = await fetch(`${APPS_SCRIPT_URL}?action=verifyPayment&token=${encodeURIComponent(TOKEN)}&id=${encodeURIComponent(d.id)}&estado=Aprobado&observaciones=${encodeURIComponent(obs)}`).then(r => r.json());
       if (!v.ok) return toast(v.error || 'El comprobante se subió, pero no se pudo aprobar', 'err');
       toast('Pago confirmado y cita autorizada');
     } else {
@@ -7084,12 +6932,12 @@ function readPaymentProofFile() {
 }
 
 async function verifyPayment(id, status) {
-  const label = status === 'PAGO_APROBADO' ? 'aprobar este pago y autorizar la cita' : `marcar este pago como ${status}`;
+  const label = status === 'Aprobado' ? 'aprobar este pago y autorizar la cita' : `marcar este pago como ${status}`;
   if (!confirm(`¿Confirmas ${label}?`)) return;
   const obs = prompt('Observación opcional para auditoría:', '') || '';
   const d = await fetch(`${APPS_SCRIPT_URL}?action=verifyPayment&token=${encodeURIComponent(TOKEN)}&id=${encodeURIComponent(id)}&estado=${encodeURIComponent(status)}&observaciones=${encodeURIComponent(obs)}`).then(r => r.json());
   if (d.ok) {
-    toast(status === 'PAGO_APROBADO' ? 'Pago aprobado y cita autorizada' : 'Pago actualizado');
+    toast(status === 'Aprobado' ? 'Pago aprobado y cita autorizada' : 'Pago actualizado');
     await reload();
     await loadOperationsData();
     renderPagos();
@@ -7099,18 +6947,10 @@ async function verifyPayment(id, status) {
 function renderPagos() {
   fillPaymentSelectors(document.getElementById('payCitaId')?.value || '');
   const pagos = operationsData.pagos || [];
-  const pagosUnicos = [];
-  const seenPayments = new Set();
-  pagos.forEach(p => {
-    const key = p.CitaID ? `cita:${p.CitaID}` : `pago:${p.ID}`;
-    if (seenPayments.has(key)) return;
-    seenPayments.add(key);
-    pagosUnicos.push(p);
-  });
   const cuentas = operationsData.cuentas || [];
-  const porVerificar = pagos.filter(p => ['Por verificar','COMPROBANTE_RECIBIDO'].includes(p.EstadoPago || '')).length;
-  const aprobados = pagos.filter(p => ['Aprobado','PAGO_APROBADO'].includes(p.EstadoPago || '')).length;
-  const rechazados = pagos.filter(p => ['Rechazado','PAGO_RECHAZADO'].includes(p.EstadoPago || '')).length;
+  const porVerificar = pagos.filter(p => (p.EstadoPago || '') === 'Por verificar').length;
+  const aprobados = pagos.filter(p => (p.EstadoPago || '') === 'Aprobado').length;
+  const rechazados = pagos.filter(p => (p.EstadoPago || '') === 'Rechazado').length;
   document.getElementById('pagosStats').innerHTML = [
     ['Por verificar', porVerificar],
     ['Aprobados', aprobados],
@@ -7125,8 +6965,8 @@ function renderPagos() {
       <div class="team-muted" style="margin-top:8px"><strong>Titular:</strong> ${esc(a.Titular)}</div>
     </div>`).join('') : '<div class="empty"><p>No hay cuentas configuradas.</p></div>';
 
-  document.getElementById('paymentsList').innerHTML = pagosUnicos.length ? pagosUnicos.slice(0, 40).map(p => {
-    const tone = ['Aprobado','PAGO_APROBADO'].includes(p.EstadoPago || '') ? 'ok' : (['Rechazado','PAGO_RECHAZADO'].includes(p.EstadoPago || '') ? 'warn' : 'info');
+  document.getElementById('paymentsList').innerHTML = pagos.length ? pagos.slice(0, 40).map(p => {
+    const tone = (p.EstadoPago || '') === 'Aprobado' ? 'ok' : ((p.EstadoPago || '') === 'Rechazado' ? 'warn' : 'info');
     return `<div class="team-card">
       <div class="team-card-head">
         <div>
@@ -7139,9 +6979,9 @@ function renderPagos() {
       ${p.Comprobante ? `<div class="team-muted">Comprobante/ref: ${String(p.Comprobante).startsWith('http') ? `<a href="${esc(p.Comprobante)}" target="_blank" rel="noopener">Ver comprobante</a>` : esc(p.Comprobante)}</div>` : ''}
       ${p.Observaciones ? `<div class="team-muted">Obs: ${esc(p.Observaciones)}</div>` : ''}
       <div class="team-card-actions">
-        ${!['Aprobado','PAGO_APROBADO'].includes(p.EstadoPago || '') ? `<button class="btn btn-teal btn-sm" onclick="verifyPayment('${esc(p.ID)}','PAGO_APROBADO')">Aprobar</button>` : ''}
-        ${!['Rechazado','PAGO_RECHAZADO'].includes(p.EstadoPago || '') ? `<button class="btn btn-danger btn-sm" onclick="verifyPayment('${esc(p.ID)}','PAGO_RECHAZADO')">Rechazar</button>` : ''}
-        <button class="btn btn-ghost btn-sm" onclick="verifyPayment('${esc(p.ID)}','COMPROBANTE_RECIBIDO')">Pedir revisión</button>
+        ${(p.EstadoPago || '') !== 'Aprobado' ? `<button class="btn btn-teal btn-sm" onclick="verifyPayment('${esc(p.ID)}','Aprobado')">Aprobar</button>` : ''}
+        ${(p.EstadoPago || '') !== 'Rechazado' ? `<button class="btn btn-danger btn-sm" onclick="verifyPayment('${esc(p.ID)}','Rechazado')">Rechazar</button>` : ''}
+        <button class="btn btn-ghost btn-sm" onclick="verifyPayment('${esc(p.ID)}','Por verificar')">Pedir revisión</button>
       </div>
     </div>`;
   }).join('') : '<div class="empty"><p>No hay pagos registrados aún.</p></div>';
@@ -7376,86 +7216,49 @@ async function doLogin() {
     errEl.style.display = 'block';
     return;
   }
-
-  const pw = document.getElementById('pwInput').value.trim();
+  const pw  = document.getElementById('pwInput').value.trim();
   const user = (document.getElementById('userInput')?.value || '').trim();
   const btn = document.getElementById('loginBtn');
-  const errEl = document.getElementById('loginErr');
   if (!pw) return;
-
-  errEl.textContent = '';
-  errEl.style.display = 'none';
-  btn.textContent = 'Verificando...';
-  btn.disabled = true;
-
+  btn.textContent = 'Verificando...'; btn.disabled = true;
   try {
-    let d = null;
-    let lastError = null;
-
-    for (let intento = 1; intento <= 1; intento++) {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 120000);
-      try {
-        const loginUrl = APPS_SCRIPT_URL;
-        const r = await fetch(loginUrl, {
-          method: 'POST',
-          body: JSON.stringify({action: 'adminLogin', user, password: pw})
-        });
-        const raw = (await r.text()).replace(/^\uFEFF/, '').trim();
-        if (!raw) throw new Error('El servidor respondió vacío');
-        try {
-          d = JSON.parse(raw);
-        } catch (parseError) {
-          throw new Error('Respuesta inválida del servidor (' + r.status + ')');
-        }
-        break;
-      } catch (requestError) {
-        lastError = requestError;
-        if (intento < 2) await new Promise(resolve => setTimeout(resolve, 700));
-      } finally {
-        clearTimeout(timeout);
-      }
-    }
-
-    if (!d) throw lastError || new Error('No se recibió respuesta del servidor');
-
+    const r = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({action: 'adminLogin', user, password: pw})
+    });
+    const d = await r.json();
     if (d.ok) {
       _loginAttempts = 0;
       TOKEN = d.sessionToken;
       sessionStorage.setItem('adminToken', d.sessionToken);
       _loginTime = Date.now();
       document.getElementById('loginScreen').style.display = 'none';
-      document.getElementById('adminApp').style.display = 'block';
+      document.getElementById('adminApp').style.display   = 'block';
       allData = d;
       await loadAdminKV();
       await loadTeamData();
-      await limpiarHorariosInvalidosAuto();
       reloadMetas();
       _initSidebarState();
       initDashboard();
       await _runUrlRepairIfRequested();
     } else {
       _loginAttempts++;
+      const errEl = document.getElementById('loginErr');
       if (_loginAttempts >= 5) {
         _loginLockedUntil = Date.now() + 120000;
         _loginAttempts = 0;
         errEl.textContent = 'Demasiados intentos fallidos. Acceso bloqueado por 2 minutos.';
       } else {
         const restantes = 5 - _loginAttempts;
-        errEl.textContent = (d.error || 'Credenciales incorrectas') + `. Intentos restantes: ${restantes}`;
+        errEl.textContent = `Contraseña incorrecta. Intentos restantes: ${restantes}`;
       }
       errEl.style.display = 'block';
     }
-  } catch (e) {
-    console.error('Fallo de conexión durante adminLogin:', e);
-    errEl.textContent = e && e.name === 'AbortError'
-      ? 'El servidor tardó demasiado. Intenta nuevamente.'
-      : 'No fue posible conectar con el servidor. Intenta nuevamente.';
-    errEl.style.display = 'block';
-  } finally {
-    btn.textContent = 'Ingresar';
-    btn.disabled = false;
+  } catch(e) {
+    document.getElementById('loginErr').textContent = 'Error de conexión. Revisa tu internet.';
+    document.getElementById('loginErr').style.display = 'block';
   }
+  btn.textContent = 'Ingresar'; btn.disabled = false;
 }
 
 function logout() {
@@ -7512,7 +7315,6 @@ window.addEventListener('DOMContentLoaded', async () => {
         allData = d;
         await loadAdminKV();
         await loadTeamData();
-        await limpiarHorariosInvalidosAuto();
         reloadMetas();
         _initSidebarState();
         initDashboard();
@@ -7957,7 +7759,7 @@ function applyRoleRestrictions() {
   // Auxiliar operativo: acceso completo. Exclusivos de propietaria se bloquean en backend.
 }
 function showView(v) {
-  ['dashboard','acciones','espera','automatizaciones','tareas','operaciondiaria','tareasConfig','agenda','nueva','calendario','bloquear','pacientes','equipo','basedatos','codigos','paquetes','recordatorios','finanzas','pagos','guiakpis','presupuesto','seguimiento','mensajes','empresas','pasaporte','comisiones','guioneswa','recuperacion'].forEach(id => {
+  ['dashboard','acciones','espera','automatizaciones','tareas','tareasConfig','agenda','nueva','calendario','bloquear','pacientes','equipo','basedatos','codigos','paquetes','recordatorios','finanzas','pagos','guiakpis','presupuesto','seguimiento','mensajes','empresas','pasaporte','comisiones','guioneswa','recuperacion'].forEach(id => {
     const sec = document.getElementById('v' + id.charAt(0).toUpperCase() + id.slice(1));
     const sb  = document.getElementById('sb-' + id);
     if (sec) sec.style.display = 'none';
@@ -8016,7 +7818,6 @@ function showView(v) {
   if (v === 'pagos')          { loadOperationsData().then(renderPagos); }
   if (v === 'seguimiento')    renderSeguimiento();
   if (v === 'tareas')         renderTareas();
-  if (v === 'operaciondiaria') loadDailyOps(true);
   if (v === 'tareasConfig')   initTareasConfig();
   if (v === 'paquetes')       renderPaquetes();
   if (v === 'mensajes')       renderMensajes();
@@ -8052,268 +7853,6 @@ function _actionIcon(type) {
 
 function _opsItem({level='normal',type='paciente',title,sub,actions=''}) {
   return `<div class="ops-item" data-level="${level}"><div class="ops-icon">${_actionIcon(type)}</div><div class="ops-copy"><div class="ops-title">${title}</div><div class="ops-sub">${sub}</div></div><div class="ops-actions">${actions}</div></div>`;
-}
-
-function setDailyOpsMode(mode) {
-  dailyOpsMode = mode === 'hoy' ? 'hoy' : 'manana';
-  dailyOpsFilter = dailyOpsMode === 'hoy' ? 'proximas' : 'todas';
-  const input = document.getElementById('dailyOpsDate');
-  if (input) input.value = dailyOpsMode === 'hoy' ? today() : addDays(today(), 1);
-  loadDailyOps(true);
-}
-
-function addDays(dateStr, days) {
-  const d = new Date((dateStr || today()) + 'T00:00:00');
-  d.setDate(d.getDate() + Number(days || 0));
-  return d.toISOString().slice(0,10);
-}
-
-function dailyPaymentState(c) {
-  return c.estadoPago || c.EstadoPago || (
-    /pago por verificar/i.test(c.estado || '') ? 'COMPROBANTE_RECIBIDO' :
-    /pago rechazado/i.test(c.estado || '') ? 'PAGO_RECHAZADO' :
-    /autorizada|atendida|pago verificado/i.test(c.estado || '') ? 'PAGO_APROBADO' :
-    /cortes/i.test(c.estado || '') ? 'NO_REQUIERE_PAGO' :
-    /reembol/i.test(c.estado || '') ? 'REEMBOLSADO' :
-    'PENDIENTE_PAGO'
-  );
-}
-
-function dailyAppointmentState(c, assigned) {
-  if (c.estadoCita || c.EstadoCita) return c.estadoCita || c.EstadoCita;
-  const e = c.estado || '';
-  if (/no asisti/i.test(e)) return 'NO_ASISTIO';
-  if (/cancel|reembol/i.test(e)) return 'CANCELADA';
-  if (/atendida|cerrada/i.test(e)) return 'ATENDIDA';
-  if (assigned) return 'ASIGNADA';
-  if (/autorizada|pago verificado|cortes/i.test(e)) return 'AUTORIZADA';
-  return 'RESERVADA';
-}
-
-function dailyOpsDateTimeValue(dateValue, timeValue='') {
-  const raw = `${dateValue || ''} ${timeValue || ''}`.trim();
-  if (!raw) return 0;
-  const normalized = raw.includes('T') ? raw : raw.replace(/\//g,'-').replace(' ', 'T');
-  const d = new Date(normalized);
-  return isNaN(d.getTime()) ? 0 : d.getTime();
-}
-
-function buildDailyOpsLocal(date, mode) {
-  const assignments = {};
-  (teamData.asignaciones || []).forEach(a => { assignments[String(a.CitaID || a.citaId || '')] = a; });
-  const reminders = {};
-  (operationsData.recordatoriosCita || []).forEach(r => { reminders[String(r.CitaID || r.citaId || '')] = r; });
-  const prep = (operationsData.agendaPreparacion || []).find(p => String(p.FechaObjetivo || p.fechaObjetivo || '') === date);
-  const prepTime = prep ? Math.max(
-    dailyOpsDateTimeValue(prep.Actualizado || prep.actualizado),
-    dailyOpsDateTimeValue(prep.FechaRevision || prep.fechaRevision, prep.HoraRevision || prep.horaRevision)
-  ) : 0;
-  const now = new Date();
-  const nowMin = now.getHours() * 60 + now.getMinutes();
-  const citas = (allData.citas || []).filter(c => normDate(c.fecha) === date).sort((a,b) => String(a.hora||'').localeCompare(String(b.hora||''))).map(c => {
-    const id = String(c.id || c.ID || '');
-    const asg = assignments[id] || {};
-    const pago = dailyPaymentState(c);
-    const cita = dailyAppointmentState(c, !!(asg.ProfesionalID || asg.profesionalId));
-    const h = String(c.hora || '').slice(0,5);
-    const hm = h.split(':').map(Number);
-    const minutes = (hm[0] || 0) * 60 + (hm[1] || 0);
-    const closed = ['ATENDIDA','NO_ASISTIO','CANCELADA'].includes(cita);
-    const lastChangeTime = Math.max(
-      dailyOpsDateTimeValue(c.Actualizado || c.actualizado || c.updatedAt || c.fechaActualizacion),
-      dailyOpsDateTimeValue(c.Creado || c.creado || c.createdAt || c.fechaCreacion)
-    );
-    return {
-      ...c, id, hora:h, nombre:c.nombre || '', telefono:c.telefono || '', servicio:c.servicio || '',
-      sede:c.sede || c.modalidad || '', modalidad:c.modalidad || '', valor:c.precio || '',
-      estadoPago:pago, estadoCita:cita,
-      confirmadaVisual:['PAGO_APROBADO','NO_REQUIERE_PAGO'].includes(pago) && ['AUTORIZADA','ASIGNADA'].includes(cita),
-      fisioterapeuta:asg.ProfesionalNombre || asg.profesionalNombre || '',
-      observaciones:c.notaAdmin || c.notas || '',
-      reprogramaciones:c.Reprogramaciones || c.reprogramaciones || 0,
-      plan:/plan|paquete|combo/i.test(c.servicio || '') || !!c.PlanClienteID,
-      recordatorio:reminders[id] ? 'ENVIADO' : 'PENDIENTE',
-      proximaTresHoras:mode === 'hoy' && normDate(date) === today() && minutes >= nowMin && minutes <= nowMin + 180,
-      pendienteCierre:mode === 'hoy' && normDate(date) === today() && minutes < nowMin && !closed,
-      cambioPosteriorPreparacion:!!(prepTime && lastChangeTime && lastChangeTime > prepTime)
-    };
-  });
-  const counts = {
-    total:citas.length,
-    autorizadas:citas.filter(c => c.confirmadaVisual).length,
-    pendientesPago:citas.filter(c => c.estadoPago === 'PENDIENTE_PAGO').length,
-    comprobantes:citas.filter(c => c.estadoPago === 'COMPROBANTE_RECIBIDO').length,
-    sinFisioterapeuta:citas.filter(c => !c.fisioterapeuta && !['CANCELADA','NO_ASISTIO'].includes(c.estadoCita)).length,
-    recordatoriosPendientes:citas.filter(c => c.recordatorio !== 'ENVIADO').length,
-    pendientesCierre:citas.filter(c => c.pendienteCierre).length,
-    atendidas:citas.filter(c => c.estadoCita === 'ATENDIDA').length,
-    noAsistio:citas.filter(c => c.estadoCita === 'NO_ASISTIO').length,
-    canceladas:citas.filter(c => c.estadoCita === 'CANCELADA').length,
-    cambiosPosteriores:citas.filter(c => c.cambioPosteriorPreparacion).length,
-    listasAtender:citas.filter(c => c.confirmadaVisual && c.fisioterapeuta).length,
-    datosIncompletos:citas.filter(c => !c.telefono || !c.servicio || !c.hora).length,
-    novedades:citas.filter(c => c.pendienteCierre || c.cambioPosteriorPreparacion).length
-  };
-  return {ok:true, mode, fecha:date, preparacion:prep || null, citas, counts, horariosDisponibles:[]};
-}
-
-async function loadDailyOps(force=false) {
-  if (force || !(allData.citas || []).length) await reload().catch(()=>{});
-  await Promise.all([loadTeamData().catch(()=>{}), loadOperationsData().catch(()=>{})]);
-  const input = document.getElementById('dailyOpsDate');
-  if (input && !input.value) input.value = dailyOpsMode === 'hoy' ? today() : addDays(today(), 1);
-  const date = input?.value || today();
-  dailyOpsData = buildDailyOpsLocal(date, dailyOpsMode);
-  renderDailyOps();
-}
-
-function renderDailyOps() {
-  const input = document.getElementById('dailyOpsDate');
-  if (!input) return;
-  if (!input.value) input.value = dailyOpsMode === 'hoy' ? today() : addDays(today(), 1);
-  if (!dailyOpsData || dailyOpsData.fecha !== input.value || dailyOpsData.mode !== dailyOpsMode) dailyOpsData = buildDailyOpsLocal(input.value, dailyOpsMode);
-  document.getElementById('dailyModeTomorrow').className = dailyOpsMode === 'manana' ? 'btn btn-teal' : 'btn btn-ghost';
-  document.getElementById('dailyModeToday').className = dailyOpsMode === 'hoy' ? 'btn btn-teal' : 'btn btn-ghost';
-  const c = dailyOpsData.counts || {};
-  const prep = dailyOpsData.preparacion;
-  document.getElementById('dailyOpsPrepInfo').textContent = prep
-    ? `Última preparación: ${prep.UsuarioNombre || prep.usuarioNombre || 'Equipo'} · ${prep.FechaRevision || ''} ${prep.HoraRevision || ''} · ${prep.EstadoPreparacion || ''}`
-    : (dailyOpsMode === 'hoy' ? 'Aún no hay preparación registrada para esta fecha.' : 'Agenda pendiente por marcar como revisada.');
-  const summary = dailyOpsMode === 'hoy'
-    ? [['Próximas citas', (dailyOpsData.citas||[]).filter(x=>x.proximaTresHoras).length], ['Pendientes de pago', c.pendientesPago || 0], ['Comprobantes', c.comprobantes || 0], ['Sin fisioterapeuta', c.sinFisioterapeuta || 0], ['Cambios después', c.cambiosPosteriores || 0], ['Pendientes cierre', c.pendientesCierre || 0]]
-    : [['Total citas', c.total || 0], ['Pendientes de pago', c.pendientesPago || 0], ['Comprobantes', c.comprobantes || 0], ['Autorizadas', c.autorizadas || 0], ['Sin fisioterapeuta', c.sinFisioterapeuta || 0], ['Recordatorios', c.recordatoriosPendientes || 0], ['Horarios libres', (dailyOpsData.horariosDisponibles || []).length]];
-  document.getElementById('dailyOpsSummary').innerHTML = summary.map(([label,val]) => `<div class="kpi-card"><div class="kpi-label">${esc(label)}</div><div class="kpi-value">${esc(val)}</div></div>`).join('');
-  const alerts = dailyOpsMode === 'hoy'
-    ? [['proximas','Próximas 3 horas',(dailyOpsData.citas||[]).filter(x=>x.proximaTresHoras).length], ['pendientesPago','Pendientes de pago',c.pendientesPago], ['comprobantes','Comprobantes por verificar',c.comprobantes], ['sinFisio','Sin fisioterapeuta',c.sinFisioterapeuta], ['cierre','Pendientes de cierre',c.pendientesCierre], ['todas','Todas',c.total]]
-    : [['todas','Todas',c.total], ['pendientesPago','Pendientes de pago',c.pendientesPago], ['comprobantes','Comprobantes por verificar',c.comprobantes], ['sinFisio','Sin fisioterapeuta',c.sinFisioterapeuta], ['recordatorios','Recordatorios pendientes',c.recordatoriosPendientes]];
-  document.getElementById('dailyOpsAlerts').innerHTML = alerts.map(([key,label,val]) => `<button class="btn ${dailyOpsFilter===key?'btn-teal':'btn-ghost'}" style="justify-content:space-between;padding:12px 14px" onclick="dailyOpsFilter='${key}';renderDailyOps()"><span>${esc(label)}</span><strong>${val || 0}</strong></button>`).join('');
-  renderDailyOpsList();
-}
-
-function renderDailyOpsList() {
-  let list = dailyOpsData.citas || [];
-  const map = {pendientesPago:x=>x.estadoPago==='PENDIENTE_PAGO', comprobantes:x=>x.estadoPago==='COMPROBANTE_RECIBIDO', sinFisio:x=>!x.fisioterapeuta, recordatorios:x=>x.recordatorio!=='ENVIADO', listas:x=>x.confirmadaVisual && x.fisioterapeuta, datos:x=>!x.telefono || !x.servicio || !x.hora, proximas:x=>x.proximaTresHoras, cierre:x=>x.pendienteCierre};
-  if (map[dailyOpsFilter]) list = list.filter(map[dailyOpsFilter]);
-  const labels = {todas:'Todas las citas', pendientesPago:'Pendientes de pago', comprobantes:'Comprobantes por verificar', sinFisio:'Sin fisioterapeuta', recordatorios:'Recordatorios pendientes', listas:'Listas para atender', datos:'Datos incompletos', proximas:'Próximas 3 horas', cierre:'Pendientes de cierre'};
-  document.getElementById('dailyOpsFilterLabel').textContent = `${labels[dailyOpsFilter] || 'Filtro'} · ${list.length} cita(s)`;
-  document.getElementById('dailyOpsPendingBeforeClose').textContent = `Pendientes: ${dailyOpsData.counts?.pendientesPago || 0} sin pago · ${dailyOpsData.counts?.comprobantes || 0} comprobantes · ${dailyOpsData.counts?.sinFisioterapeuta || 0} sin fisio · ${dailyOpsData.counts?.recordatoriosPendientes || 0} recordatorios.`;
-  document.getElementById('dailyOpsList').innerHTML = list.length ? list.map(c => dailyOpsCard(c)).join('') : '<div class="empty-state">No hay citas para este filtro.</div>';
-}
-
-function dailyOpsCard(c) {
-  const phone = String(c.telefono||'').replace(/\D/g,'').replace(/^57/,'');
-  const wa = `https://wa.me/57${phone}?text=${encodeURIComponent(buildDailyReminderMessage(c))}`;
-  const pago = (operationsData.pagos || []).find(p => String(p.CitaID || '') === String(c.id) && ['COMPROBANTE_RECIBIDO','Por verificar'].includes(p.EstadoPago || ''));
-  const pagoActions = pago ? `
-        <button class="btn btn-teal btn-sm" onclick="verifyDailyPayment('${esc(pago.ID)}','PAGO_APROBADO')">Aprobar pago</button>
-        <button class="btn btn-danger btn-sm" onclick="verifyDailyPayment('${esc(pago.ID)}','PAGO_RECHAZADO')">Rechazar</button>` : '';
-  return `<div class="card" style="padding:16px;border-left:4px solid ${c.pendienteCierre?'#dc2626':c.estadoPago==='PENDIENTE_PAGO'?'#f59e0b':'var(--teal)'}">
-    <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap">
-      <div>
-        <div style="font-family:var(--font-a);font-size:1.15rem;color:var(--text)">${esc(c.hora)} · ${esc(c.nombre)}</div>
-        <div style="color:var(--muted);font-size:.88rem;margin-top:4px">${esc(c.servicio)}</div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px">
-          <span class="badge">${esc(c.estadoPago)}</span>
-          <span class="badge">${esc(c.estadoCita)}</span>
-          ${c.confirmadaVisual?'<span class="badge ok">Confirmada</span>':''}
-          <span class="badge">${c.fisioterapeuta ? 'Fis: '+esc(c.fisioterapeuta) : 'Sin fisioterapeuta'}</span>
-          <span class="badge">Recordatorio: ${esc(c.recordatorio)}</span>
-          ${c.pendienteCierre?'<span class="badge danger">Pendiente de cierre</span>':''}
-        </div>
-      </div>
-      <div style="display:flex;gap:7px;flex-wrap:wrap;align-items:flex-start">
-        <button class="btn btn-ghost btn-sm" onclick="verDetalle('${esc(c.id)}')">Ver cita</button>
-        <a class="btn btn-wa btn-sm" href="${wa}" target="_blank">Abrir WhatsApp</a>
-        <button class="btn btn-ghost btn-sm" onclick="abrirPagoCita('${esc(c.id)}')">Registrar comprobante</button>
-        ${pagoActions}
-        <a class="btn btn-ghost btn-sm" href="${wa}" target="_blank" onclick="logDailyReminder('${esc(c.id)}')">Enviar recordatorio</a>
-        <button class="btn btn-ghost btn-sm" onclick="abrirAsignarPro('${esc(c.id)}')">Asignar fisio</button>
-        <button class="btn btn-ghost btn-sm" onclick="addDailyObservationPrompt('${esc(c.id)}')">Observación</button>
-      </div>
-    </div>
-    ${c.observaciones?`<div style="margin-top:10px;color:var(--muted);font-size:.86rem">Obs: ${esc(c.observaciones)}</div>`:''}
-  </div>`;
-}
-
-async function verifyDailyPayment(id, status) {
-  await verifyPayment(id, status);
-  await loadDailyOps(true);
-}
-
-function buildDailyReminderMessage(c) {
-  return `Hola ${c.nombre || ''}, te escribimos de Cuidándote Fisioterapia para recordarte tu cita:\n\n📅 Fecha: ${dailyOpsData.fecha}\n⏰ Hora: ${c.hora}\n🌿 Servicio: ${c.servicio}\n📍 Sede/modalidad: ${c.sede || c.modalidad || 'Por confirmar'}\n\nTe recomendamos llegar con unos minutos de anticipación. Si necesitas reprogramar, por favor avísanos con mínimo 12 horas.${c.estadoPago === 'PENDIENTE_PAGO' ? '\n\n⚠️ Tenemos tu pago pendiente. Para autorizar la atención, por favor envíanos el comprobante.' : ''}`;
-}
-
-async function logDailyReminder(id) {
-  const c = (dailyOpsData.citas || []).find(x => x.id === id);
-  if (!c) return;
-  if (DAILY_OPS_LAB_MODE) {
-    const logs = JSON.parse(localStorage.getItem('dailyOpsReminderLogs_TEST') || '[]');
-    logs.push({id, fecha: dailyOpsData.fecha, savedAt: new Date().toISOString(), pendientePago: c.estadoPago === 'PENDIENTE_PAGO'});
-    localStorage.setItem('dailyOpsReminderLogs_TEST', JSON.stringify(logs.slice(-200)));
-    return;
-  }
-  try { await fetch(`${APPS_SCRIPT_URL}?action=logDailyReminder&token=${encodeURIComponent(TOKEN)}&citaId=${encodeURIComponent(id)}&fecha=${encodeURIComponent(dailyOpsData.fecha)}&pendientePago=${c.estadoPago==='PENDIENTE_PAGO'}&mensaje=${encodeURIComponent(buildDailyReminderMessage(c))}`); } catch(e) {}
-}
-
-async function addDailyObservationPrompt(id) {
-  const c = (dailyOpsData.citas || []).find(x => x.id === id);
-  if (!c) return;
-  const detalle = prompt('Observación para esta cita:', c.observaciones || '');
-  if (!detalle) return;
-  if (DAILY_OPS_LAB_MODE) {
-    const logs = JSON.parse(localStorage.getItem('dailyOpsObservationLogs_TEST') || '[]');
-    logs.push({id, fecha: dailyOpsData.fecha, detalle, savedAt: new Date().toISOString()});
-    localStorage.setItem('dailyOpsObservationLogs_TEST', JSON.stringify(logs.slice(-200)));
-    c.observaciones = detalle;
-    renderDailyOpsList();
-    toast('Modo prueba: observación guardada localmente');
-    return;
-  }
-  try {
-    const d = await fetch(`${APPS_SCRIPT_URL}?action=addDailyObservation&token=${encodeURIComponent(TOKEN)}&citaId=${encodeURIComponent(id)}&fecha=${encodeURIComponent(dailyOpsData.fecha)}&detalle=${encodeURIComponent(detalle)}`).then(r=>r.json());
-    toast(d.ok ? 'Observación guardada' : (d.error || 'No se pudo guardar'));
-    await loadDailyOps(true);
-  } catch(e) {
-    toast('No se pudo guardar la observación', 'err');
-  }
-}
-
-function copyDailyReport() {
-  const c = dailyOpsData.counts || {};
-  if (dailyOpsMode === 'hoy') {
-    copyText(`Cierre del día.\n\nFecha: ${dailyOpsData.fecha}\nAtendidas: ${c.atendidas || 0}\nNo asistieron: ${c.noAsistio || 0}\nCanceladas: ${c.canceladas || 0}\nPendientes de cierre: ${c.pendientesCierre || 0}\nNovedades: ${c.novedades || 0}`);
-    return;
-  }
-  copyText(`Agenda de mañana revisada.\n\nFecha: ${dailyOpsData.fecha}\nCitas: ${c.total || 0}\nAutorizadas: ${c.autorizadas || 0}\nPendientes de pago: ${c.pendientesPago || 0}\nComprobantes por verificar: ${c.comprobantes || 0}\nSin fisioterapeuta: ${c.sinFisioterapeuta || 0}\nNovedades: ${c.novedades || 0}`);
-}
-
-function copyDailyAvailableSlots() {
-  const slots = dailyOpsData.horariosDisponibles || [];
-  copyText(slots.length ? `Horarios disponibles para ${dailyOpsData.fecha}:\n${slots.map(s=>'• '+s).join('\n')}` : `Horarios disponibles para ${dailyOpsData.fecha}: pendiente de cálculo automático por duración/profesional.`);
-}
-
-async function finishDailyPreparation() {
-  const obs = document.getElementById('dailyOpsObservation').value.trim();
-  const payload = {fechaObjetivo:dailyOpsData.fecha, tipo:dailyOpsMode, observaciones:obs};
-  if (DAILY_OPS_LAB_MODE) {
-    const pending = dailyOpsData.counts || {};
-    const estado = (pending.pendientesPago || pending.comprobantes || pending.sinFisioterapeuta || pending.recordatoriosPendientes)
-      ? 'CON_PENDIENTES'
-      : 'LISTA';
-    localStorage.setItem('dailyOpsDraft_'+dailyOpsData.fecha, JSON.stringify({payload, estado, counts:dailyOpsData.counts, savedAt:new Date().toISOString()}));
-    toast(`Modo prueba: agenda marcada localmente como ${estado}`);
-    await loadDailyOps(true);
-    return;
-  }
-  try {
-    const d = await fetch(`${APPS_SCRIPT_URL}?action=saveDailyPreparation&token=${encodeURIComponent(TOKEN)}&data=${encodeURIComponent(JSON.stringify(payload))}`).then(r=>r.json());
-    toast(d.ok ? `Agenda marcada: ${d.estado || 'revisada'}` : (d.error || 'No se pudo guardar'));
-  } catch(e) {
-    localStorage.setItem('dailyOpsDraft_'+dailyOpsData.fecha, JSON.stringify({payload, counts:dailyOpsData.counts, savedAt:new Date().toISOString()}));
-    toast('Guardado localmente como borrador de prueba');
-  }
-  await loadDailyOps(true);
 }
 
 function renderCentroAcciones() {
@@ -8949,15 +8488,12 @@ function validateBusinessSchedule(date, time, service, modality, contexto='guard
   toast('Horario fuera de la jornada habitual. Se guardará como cita manual especial.', 'warn');
   return true;
 }
-
 function _addMultiDate() {
   const date = document.getElementById('multiDate').value;
   const time = document.getElementById('multiTime').value;
   if (!date) { toast('Selecciona una fecha', 'err'); return; }
   if (!time) { toast('Selecciona una hora', 'err'); return; }
-  const serv = document.getElementById('ncService')?.value || '';
-  const mod = document.getElementById('ncMod')?.value || '';
-  if (!validateBusinessSchedule(date, time, serv, mod, 'agendar')) { updateTimeHelp('multiTime','multiTimeHelp'); return; }
+  if (!validateNoMidnight(time, 'agendar')) { updateTimeHelp('multiTime','multiTimeHelp'); return; }
   if (_multiDates.find(d => d.date === date && d.time === time)) {
     toast('Esa fecha y hora ya está en la lista', 'warn'); return;
   }
@@ -9047,16 +8583,14 @@ async function submitAdminBookingMulti() {
     const date = document.getElementById('ncDate').value;
     const time = document.getElementById('ncTime').value;
     if (!date || !time) { toast('Selecciona fecha y hora', 'err'); return; }
-    if (!validateBusinessSchedule(date, time, serv, mod, 'agendar')) { updateTimeHelp('ncTime','ncTimeHelp'); return; }
+    if (!validateNoMidnight(time, 'agendar')) { updateTimeHelp('ncTime','ncTimeHelp'); return; }
     fechas = [{ date, time }];
   } else if (_scheduleMode === 'multiple') {
     if (_multiDates.length === 0) { toast('Agrega al menos una fecha', 'err'); return; }
-    if (_multiDates.some(d => !validateBusinessSchedule(d.date, d.time, serv, mod, 'agendar'))) return;
+    if (_multiDates.some(d => isMidnightTime(d.time))) { toast('Hay una fecha entre 00:00 y 00:59 (medianoche). Cámbiala a 12:00 si es mediodía.', 'err'); return; }
     fechas = [..._multiDates];
   } else {
-    const recDate = document.getElementById('recFechaInicio')?.value;
-    const recTime = document.getElementById('recHora')?.value;
-    if (recDate && recTime && !validateBusinessSchedule(recDate, recTime, serv, mod, 'agendar')) { updateTimeHelp('recHora','recTimeHelp'); return; }
+    if (isMidnightTime(document.getElementById('recHora')?.value)) { updateTimeHelp('recHora','recTimeHelp'); toast('Esa hora es de medianoche. Para citas al mediodía usa 12:00.', 'err'); return; }
     fechas = _calcRecDates();
     if (fechas.length === 0) { toast('Configura la recurrencia', 'err'); return; }
   }
@@ -9182,9 +8716,9 @@ async function confirmarReagendar(id) {
   const fecha = document.getElementById('rDate_' + id).value;
   const hora  = document.getElementById('rTime_' + id).value;
   if (!fecha || !hora) { toast('Selecciona fecha y hora', 'err'); return; }
+  if (!validateNoMidnight(hora, 'reagendar')) return;
   const cita = allData.citas.find(c => c.id === id);
   if (!cita) return;
-  if (!validateBusinessSchedule(fecha, hora, cita.servicio, cita.modalidad, 'reagendar')) return;
   const data = encodeURIComponent(JSON.stringify({
     id, servicio: cita.servicio, modalidad: cita.modalidad,
     fecha, hora, precio: cita.precio, notas: cita.notas || ''
@@ -9420,9 +8954,11 @@ function openPassportModuleFor(nombre) {
   showView('pasaporte');
   setTimeout(function() {
     const input = document.getElementById('pasNombreInput');
-    const patient = Object.values(_pasGetDB()).find(function(p) { return p.nombre === nombre; });
-    if (input && patient) selectPasPatient(patient);
-  }, 0);
+    if (!input) return;
+    input.value = nombre || '';
+    onPasInput(input.value);
+    toast('Selecciona el paciente en la lista para generar su enlace seguro.', 'info');
+  }, 80);
 }
 
 function toast(msg, type='ok') {
@@ -10288,7 +9824,7 @@ function verDetalle(id) {
           </div>
           <div class="field" style="flex:1;min-width:110px">
             <label>Hora *</label>
-            <input type="time" id="rTime_${c.id}" value="${c.hora}" min="07:00" max="20:00">
+            <input type="time" id="rTime_${c.id}" value="${c.hora}">
           </div>
           <button class="btn btn-teal btn-sm" onclick="confirmarReagendar('${c.id}')">Confirmar</button>
           <button class="btn btn-ghost btn-sm" onclick="toggleReagendar('${c.id}')">Cancelar</button>
@@ -10474,7 +10010,7 @@ async function guardarEdicion() {
   const precio   = getPrecioFinalEdit();
   const notas    = document.getElementById('editNotas').value.trim();
   if (!fecha) { toast('Selecciona una fecha', 'err'); return; }
-  if (!validateBusinessSchedule(fecha, hora, servicio, modalidad, 'guardar la cita')) return;
+  if (!validateNoMidnight(hora, 'guardar la cita')) return;
   const btn = document.getElementById('editSaveBtn');
   btn.textContent = 'Guardando...'; btn.disabled = true;
   try {
@@ -11262,7 +10798,7 @@ async function submitAdminBooking() {
   const date  = document.getElementById('ncDate').value;
   const time  = document.getElementById('ncTime').value;
   if (!name||!serv||!date||!time) { toast('Completa los campos obligatorios (*)','err'); return; }
-  if (!validateBusinessSchedule(date, time, serv, mod, 'agendar')) { updateTimeHelp('ncTime','ncTimeHelp'); return; }
+  if (!validateNoMidnight(time, 'agendar')) { updateTimeHelp('ncTime','ncTimeHelp'); return; }
 
   _submittingBooking = true;
   const btn = document.getElementById('ncSubmitBtn');
@@ -11667,7 +11203,7 @@ function renderPacientes() {
           ${waBtn(p.telefono,p.nombre,'','','','WA')}
           <button class="btn btn-ghost btn-sm" onclick="seguimientoWA('${p.telefono||''}','${p.nombre.replace(/'/g,"\\'")}','${(p.ultimoServicio||'').replace(/'/g,"\\'")}')">💬</button>
           ${(()=>{const u=waEncuesta(p.telefono,p.nombre);return u?`<a href="${u}" target="_blank" class="btn btn-ghost btn-sm" title="Enviar encuesta de satisfacción por WhatsApp">\u2B50 Encuesta</a>`:''})()}
-          ${waBtnPasaporte(p.telefono,p.nombre)}
+          <button type="button" class="btn btn-passport btn-sm" onclick="openPassportModuleFor('${p.nombre.replace(/'/g,"\\'")}')">Pasaporte</button>
           <button class="btn btn-edit btn-sm" onclick="editarPacienteIdx(${idx})">✏️ Editar</button>
           <button class="btn btn-danger btn-sm" onclick="borrarPaciente(${idx})">🗑️ Eliminar</button>
         </div>
@@ -13139,7 +12675,6 @@ async function limpiarHorariosInvalidosAuto() {
   // Administración puede agendar horarios especiales manualmente y deben permanecer visibles.
   return;
 }
-
 function exportarSeguimientoCSV() {
   const data  = window._segData || [];
   const dataR = window._segReadapData || [];
@@ -14254,6 +13789,424 @@ function renderKPITablero() {
   }
 
   el.innerHTML = html;
+}
+
+// ══════════════════════════════════════════════════════════════
+// COPIAR Y COMPARTIR INFORMACIÓN DE GESTIÓN
+// ══════════════════════════════════════════════════════════════
+function _copyGestionMesKey(d = new Date()) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+}
+
+function _copyGestionPeriodo() {
+  const now = new Date();
+  const meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  return `${meses[now.getMonth()]} de ${now.getFullYear()}`;
+}
+
+function _copyGestionTop(map, limit = 5) {
+  return Object.entries(map || {})
+    .sort((a,b) => b[1] - a[1])
+    .slice(0, limit)
+    .map(([k,v]) => `${k}: ${v}`)
+    .join('\n') || 'Sin datos registrados';
+}
+
+function _copyGestionData() {
+  const now = new Date();
+  const monthKey = _copyGestionMesKey(now);
+  const citasAll = allData.citas || [];
+  const eventosAll = allData.eventos || [];
+  const pacientesAll = allData.pacientes || [];
+  const pros = (allData.profesionales || allData.fisioterapeutas || allData.team || []);
+  const manual = getKPIManual ? getKPIManual() : {};
+  const cfg = getKPIConfig ? getKPIConfig() : {};
+  const citasMesAll = citasAll.filter(c => normDate(c.fecha || '').startsWith(monthKey) && !esRegistroServ(c.servicio));
+  const citasMesActivas = citasMesAll.filter(c => !String(c.estado || '').toLowerCase().includes('cancel'));
+  const eventosMes = eventosAll.filter(e => normDate(e.fecha || '').startsWith(monthKey));
+  const sesionesAtendidas = citasMesAll.filter(c => String(c.estado || '').toLowerCase().includes('atendida')).length;
+  const cancelaciones = citasMesAll.filter(c => String(c.estado || '').toLowerCase().includes('cancel')).length;
+  const noAsistencias = citasMesAll.filter(c => String(c.estado || '').toLowerCase().includes('no asist')).length;
+  const ventasGeneradas = citasMesActivas.reduce((s,c) => s + parsePrecio(c.precio), 0) + eventosMes.reduce((s,e) => s + parsePrecio(e.cobro), 0);
+  const ingresosCobrados = (typeof calcCobradoMes === 'function') ? calcCobradoMes() : ventasGeneradas;
+  const pagosPendientesLista = citasMesActivas.filter(c => {
+    const estado = String(c.estado || '').toLowerCase();
+    return estado.includes('pendiente de pago') || estado.includes('pago por verificar') || estado.includes('rechazado');
+  });
+  const pendienteCobrar = pagosPendientesLista.reduce((s,c) => s + parsePrecio(c.precio), 0);
+  const egresosMes = (typeof getEgresos === 'function' ? getEgresos() : [])
+    .filter(e => String(e.fecha || '').startsWith(monthKey))
+    .reduce((s,e) => s + (Number(e.monto) || parsePrecio(e.monto)), 0);
+  const ganancia = ingresosCobrados - egresosMes;
+  const metaMensual = cfg.meta_ventas_mes || window.META_VENTAS_MES || 0;
+  const cumplimiento = metaMensual > 0 ? Math.round((ingresosCobrados / metaMensual) * 100) : 0;
+  const faltante = Math.max(0, metaMensual - ingresosCobrados);
+
+  const pacienteMes = {};
+  citasMesActivas.forEach(c => { if (c.nombre) pacienteMes[String(c.nombre).trim().toLowerCase()] = c.nombre; });
+  let personasNuevas = 0;
+  let personasRecurrentes = 0;
+  Object.keys(pacienteMes).forEach(key => {
+    const tuvoAntes = citasAll.some(c => String(c.nombre || '').trim().toLowerCase() === key && normDate(c.fecha || '') < monthKey + '-01' && !String(c.estado || '').toLowerCase().includes('cancel'));
+    if (tuvoAntes) personasRecurrentes++; else personasNuevas++;
+  });
+
+  const servicios = {};
+  const horarios = {};
+  citasMesActivas.forEach(c => {
+    const serv = c.servicio || 'Sin servicio';
+    servicios[serv] = (servicios[serv] || 0) + 1;
+    const h = String(c.hora || '').slice(0,2) + ':00';
+    if (h && h !== ':00') horarios[h] = (horarios[h] || 0) + 1;
+  });
+  const serviciosArr = Object.entries(servicios).sort((a,b) => b[1] - a[1]);
+  const horariosArr = Object.entries(horarios).sort((a,b) => b[1] - a[1]);
+  const paquetesVendidos = citasMesActivas.filter(c => String(c.servicio || '').toLowerCase().includes('paquete')).length;
+  const ticketPromedio = citasMesActivas.length ? Math.round(ventasGeneradas / citasMesActivas.length) : 0;
+
+  const leadsRecibidos = typeof getLeadsMes === 'function' ? getLeadsMes() : (manual.leads || 0);
+  const leadsConvertidos = manual.convertidos || citasMesActivas.length;
+  const ocupacion = _copyGestionOcupacion(citasMesActivas.length + eventosMes.length, now);
+
+  const reactivar = _copyGestionReactivar(citasAll, pacientesAll);
+  const candidatosPaquete = _copyGestionCandidatosPaquete(citasAll);
+  const disponibilidadPros = pros.length
+    ? pros.map(p => `${p.nombre || p.Nombre || 'Profesional'}: ${p.disponibilidad || p.Disponibilidad || 'Sin disponibilidad registrada'}`).join('\n')
+    : 'Sin fisioterapeutas registrados';
+
+  return {
+    periodo: _copyGestionPeriodo(),
+    metaMensual, ingresosCobrados, ventasGeneradas, pendienteCobrar, egresosMes, ganancia, cumplimiento, faltante,
+    citasProgramadas: citasMesActivas.length,
+    sesionesAtendidas,
+    personasNuevas,
+    personasRecurrentes,
+    paquetesVendidos,
+    ticketPromedio,
+    ocupacion,
+    cancelaciones,
+    noAsistencias,
+    leadsRecibidos,
+    leadsConvertidos,
+    serviciosMasVendidos: serviciosArr.slice(0,5).map(([s,n]) => `${s}: ${n}`).join('\n') || 'Sin datos',
+    serviciosMenosVendidos: serviciosArr.slice(-5).map(([s,n]) => `${s}: ${n}`).join('\n') || 'Sin datos',
+    horariosMayorOcupacion: horariosArr.slice(0,5).map(([h,n]) => `${h}: ${n} cita(s)`).join('\n') || 'Sin datos',
+    horariosMenorOcupacion: horariosArr.slice(-5).map(([h,n]) => `${h}: ${n} cita(s)`).join('\n') || 'Sin datos',
+    disponibilidadPros,
+    pagosPendientesLista,
+    reactivar,
+    candidatosPaquete,
+    estrategiasEjecutadas: localStorage.getItem('gestion_estrategias_mes') || 'Sin registrar',
+    resultadosObtenidos: localStorage.getItem('gestion_resultados_mes') || 'Sin registrar',
+    observaciones: localStorage.getItem('gestion_observaciones_mes') || 'Sin registrar'
+  };
+}
+
+function _copyGestionOcupacion(citasProgramadas, date) {
+  const y = date.getFullYear(), m = date.getMonth();
+  const days = new Date(y, m + 1, 0).getDate();
+  let capacidad = 0;
+  for (let d = 1; d <= days; d++) {
+    const dow = new Date(y, m, d).getDay();
+    if (dow === 0) continue;
+    if (dow === 1) capacidad += 8;
+    else if (dow === 6) capacidad += 2;
+    else capacidad += 9;
+  }
+  return capacidad ? Math.round((citasProgramadas / capacidad) * 100) + '%' : 'Sin capacidad calculada';
+}
+
+function _copyGestionReactivar(citasAll, pacientesAll) {
+  const last = {};
+  citasAll.forEach(c => {
+    if (!c.nombre || String(c.estado || '').toLowerCase().includes('cancel')) return;
+    const key = String(c.nombre).trim().toLowerCase();
+    const f = normDate(c.fecha || '');
+    if (!last[key] || f > last[key].fecha) last[key] = {nombre:c.nombre, telefono:c.telefono || c.phone || '', fecha:f, servicio:c.servicio || ''};
+  });
+  const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 42);
+  const cutoffStr = normDate(cutoff);
+  return Object.values(last)
+    .filter(p => p.fecha && p.fecha < cutoffStr)
+    .sort((a,b) => a.fecha.localeCompare(b.fecha))
+    .slice(0,40);
+}
+
+function _copyGestionCandidatosPaquete(citasAll) {
+  const map = {};
+  citasAll.forEach(c => {
+    if (!c.nombre || String(c.estado || '').toLowerCase().includes('cancel')) return;
+    const key = String(c.nombre).trim().toLowerCase();
+    if (!map[key]) map[key] = {nombre:c.nombre, telefono:c.telefono || c.phone || '', total:0, paquete:false, ultimo:normDate(c.fecha || '')};
+    map[key].total++;
+    if (String(c.servicio || '').toLowerCase().includes('paquete')) map[key].paquete = true;
+    const f = normDate(c.fecha || '');
+    if (f > map[key].ultimo) map[key].ultimo = f;
+  });
+  return Object.values(map).filter(p => p.total >= 2 && !p.paquete).sort((a,b) => b.total - a.total).slice(0,40);
+}
+
+function _copyGestionDiagnostico(d) {
+  const ok = [];
+  const att = [];
+  if (d.cumplimiento >= 80) ok.push(`Cumplimiento de meta en ${d.cumplimiento}%.`);
+  else att.push(`Faltan ${fmtPeso(d.faltante)} para llegar a la meta mensual.`);
+  if (d.pendienteCobrar > 0) att.push(`Hay ${fmtPeso(d.pendienteCobrar)} pendiente por cobrar.`);
+  if (d.cancelaciones > 0) att.push(`Se registran ${d.cancelaciones} cancelación(es) este mes.`);
+  if (d.reactivar.length) att.push(`Hay ${d.reactivar.length} persona(s) para reactivar.`);
+  if (d.candidatosPaquete.length) ok.push(`Hay ${d.candidatosPaquete.length} candidato(s) para ofrecer paquetes.`);
+  if (!ok.length) ok.push('Hay información suficiente para tomar decisiones de gestión.');
+  if (!att.length) att.push('No se detectan alertas administrativas fuertes con los datos actuales.');
+  return {ok, att};
+}
+
+function _copyGestionAcciones(d) {
+  return [
+    `Contactar ${d.reactivar.length} persona(s) para reactivación.`,
+    `Revisar y cerrar ${d.pagosPendientesLista.length} pago(s) pendiente(s).`,
+    `Ofrecer paquetes a ${d.candidatosPaquete.length} candidato(s) con sesiones sueltas.`,
+    'Revisar horarios de baja ocupación y mover campañas hacia esas franjas.',
+    'Revisar el servicio más vendido y crear una oferta complementaria.'
+  ];
+}
+
+function _copyGestionTexto(kind) {
+  const d = _copyGestionData();
+  const diag = _copyGestionDiagnostico(d);
+  const acciones = _copyGestionAcciones(d);
+  const money = v => fmtPeso(v || 0);
+  const baseFin = [
+    `Periodo: ${d.periodo}`,
+    '',
+    'RESUMEN FINANCIERO',
+    `* Ingresos cobrados: ${money(d.ingresosCobrados)}`,
+    `* Ventas generadas: ${money(d.ventasGeneradas)}`,
+    `* Pendiente por cobrar: ${money(d.pendienteCobrar)}`,
+    `* Gastos: ${money(d.egresosMes)}`,
+    `* Ganancia estimada: ${money(d.ganancia)}`,
+    `* Meta mensual: ${money(d.metaMensual)}`,
+    `* Cumplimiento: ${d.cumplimiento}%`,
+    `* Dinero faltante: ${money(d.faltante)}`
+  ];
+  let text = '';
+  if (kind === 'ejecutivo') {
+    text = ['RESUMEN EJECUTIVO — CUIDÁNDOTE FISIOTERAPIA', ...baseFin, '', 'PUNTOS CLAVE', ...diag.ok.map(x => `* ${x}`), ...diag.att.map(x => `* ${x}`), '', 'PRÓXIMAS ACCIONES', ...acciones.map((x,i)=>`${i+1}. ${x}`)].join('\n');
+  } else if (kind === 'indicadores') {
+    text = ['INDICADORES DE GESTIÓN — CUIDÁNDOTE FISIOTERAPIA', `Periodo: ${d.periodo}`, '', ...baseFin.slice(2), '', 'OPERACIÓN', `* Citas programadas: ${d.citasProgramadas}`, `* Sesiones atendidas: ${d.sesionesAtendidas}`, `* Ocupación total: ${d.ocupacion}`, `* Cancelaciones: ${d.cancelaciones}`, `* No asistencias: ${d.noAsistencias}`, '', 'CLIENTES Y VENTAS', `* Personas nuevas: ${d.personasNuevas}`, `* Personas recurrentes: ${d.personasRecurrentes}`, `* Leads recibidos: ${d.leadsRecibidos}`, `* Leads convertidos: ${d.leadsConvertidos}`, `* Paquetes vendidos: ${d.paquetesVendidos}`, `* Ticket promedio: ${money(d.ticketPromedio)}`].join('\n');
+  } else if (kind === 'diagnostico') {
+    text = ['DIAGNÓSTICO DE GESTIÓN — CUIDÁNDOTE FISIOTERAPIA', `Periodo: ${d.periodo}`, '', 'Lo que está funcionando:', ...diag.ok.map(x => `* ${x}`), '', 'Lo que necesita atención:', ...diag.att.map(x => `* ${x}`)].join('\n');
+  } else if (kind === 'estrategias') {
+    text = ['ESTRATEGIAS RECOMENDADAS — CUIDÁNDOTE FISIOTERAPIA', `Periodo: ${d.periodo}`, '', ...acciones.map((x,i)=>`${i+1}. ${x}`), '', 'Estrategias ejecutadas:', d.estrategiasEjecutadas, '', 'Resultados obtenidos:', d.resultadosObtenidos].join('\n');
+  } else if (kind === 'plan') {
+    text = ['PLAN DE ACCIÓN — CUIDÁNDOTE FISIOTERAPIA', `Periodo: ${d.periodo}`, '', ...acciones.map((x,i)=>`${i+1}. ${x}`), '', 'Prioridad sugerida:', '1. Cobros pendientes.', '2. Reactivación.', '3. Ofertas de paquetes.', '4. Optimización de horarios.'].join('\n');
+  } else if (kind === 'asesor') {
+    text = _copyGestionAsesorText(d);
+  } else {
+    text = ['DIRECCIÓN Y CRECIMIENTO', `Periodo: ${d.periodo}`, '', '1. RESUMEN FINANCIERO', `Ingresos cobrados: ${money(d.ingresosCobrados)}`, `Ventas generadas: ${money(d.ventasGeneradas)}`, `Pendiente por cobrar: ${money(d.pendienteCobrar)}`, `Meta mensual: ${money(d.metaMensual)}`, `Cumplimiento: ${d.cumplimiento}%`, `Dinero faltante: ${money(d.faltante)}`, '', '2. DIAGNÓSTICO', '', 'Lo que está funcionando:', ...diag.ok.map(x => `* ${x}`), '', 'Lo que necesita atención:', ...diag.att.map(x => `* ${x}`), '', '3. ACCIONES PRIORITARIAS', ...acciones.map((x,i)=>`${i+1}. ${x}`), '', '4. SERVICIOS', 'Servicios más vendidos:', d.serviciosMasVendidos, '', 'Servicios menos vendidos:', d.serviciosMenosVendidos, '', '5. CAPACIDAD', 'Horarios con mayor ocupación:', d.horariosMayorOcupacion, '', 'Horarios con menor ocupación:', d.horariosMenorOcupacion].join('\n');
+  }
+  return _copyPlainText(text);
+}
+
+function _copyGestionAsesorText(d) {
+  const money = v => fmtPeso(v || 0);
+  return [
+    'ANÁLISIS MENSUAL DE CUIDÁNDOTE FISIOTERAPIA',
+    '',
+    `Periodo: ${d.periodo}`,
+    `Meta mensual: ${money(d.metaMensual)}`,
+    '',
+    'RESUMEN FINANCIERO',
+    `* Ingresos cobrados: ${money(d.ingresosCobrados)}`,
+    `* Ventas generadas: ${money(d.ventasGeneradas)}`,
+    `* Pendiente por cobrar: ${money(d.pendienteCobrar)}`,
+    `* Gastos: ${money(d.egresosMes)}`,
+    `* Ganancia estimada: ${money(d.ganancia)}`,
+    `* Cumplimiento de la meta: ${d.cumplimiento}%`,
+    '',
+    'OPERACIÓN',
+    `* Citas programadas: ${d.citasProgramadas}`,
+    `* Sesiones atendidas: ${d.sesionesAtendidas}`,
+    `* Cancelaciones: ${d.cancelaciones}`,
+    `* No asistencias: ${d.noAsistencias}`,
+    `* Ocupación total: ${d.ocupacion}`,
+    '',
+    'CLIENTES Y VENTAS',
+    `* Personas nuevas: ${d.personasNuevas}`,
+    `* Personas recurrentes: ${d.personasRecurrentes}`,
+    `* Leads recibidos: ${d.leadsRecibidos}`,
+    `* Leads convertidos: ${d.leadsConvertidos}`,
+    `* Paquetes vendidos: ${d.paquetesVendidos}`,
+    `* Ticket promedio: ${money(d.ticketPromedio)}`,
+    '',
+    'CAPACIDAD DEL EQUIPO',
+    `* Disponibilidad por profesional:\n${d.disponibilidadPros}`,
+    `* Horarios con baja ocupación:\n${d.horariosMenorOcupacion}`,
+    '* Citas que podrían delegarse: revisar citas próximas de servicios presenciales o de descarga muscular.',
+    '',
+    'OPORTUNIDADES',
+    `* Leads sin seguimiento: revisar contador y mensajes pendientes.`,
+    `* Personas para reactivar: ${d.reactivar.length}`,
+    `* Candidatos para paquetes: ${d.candidatosPaquete.length}`,
+    '* Paquetes próximos a terminar: revisar módulo de paquetes.',
+    `* Pagos pendientes: ${d.pagosPendientesLista.length}`,
+    '',
+    'SERVICIOS',
+    `* Servicios más vendidos:\n${d.serviciosMasVendidos}`,
+    `* Servicios menos vendidos:\n${d.serviciosMenosVendidos}`,
+    '* Servicios más rentables: revisar estructura de costos.',
+    '* Servicios con menor rentabilidad: revisar estructura de costos.',
+    '',
+    'ACCIONES DEL MES',
+    `* Estrategias ejecutadas: ${d.estrategiasEjecutadas}`,
+    `* Resultado: ${d.resultadosObtenidos}`,
+    '* Ingreso generado: calcular según campañas registradas.',
+    '',
+    'OBSERVACIONES',
+    d.observaciones,
+    '',
+    'Actúa como asesor estratégico de Cuidándote Fisioterapia. Analiza esta información y entrégame:',
+    '',
+    '1. Diagnóstico del mes.',
+    '2. Principales problemas.',
+    '3. Oportunidades de ingresos.',
+    '4. Cinco acciones prioritarias.',
+    '5. Personas o segmentos que debemos contactar.',
+    '6. Estrategias para llegar a la meta.',
+    '7. Actividades que debe realizar administración.',
+    '8. Actividades que se pueden delegar a los fisioterapeutas.',
+    '9. Riesgos.',
+    '10. Próximo paso inmediato.',
+    '',
+    'No inventes datos. Basa todas las recomendaciones únicamente en la información entregada.'
+  ].join('\n');
+}
+
+async function _copyPlainText(text) {
+  const clean = String(text || '').replace(/\n{3,}/g, '\n\n').trim();
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(clean);
+      _copyOk();
+      return true;
+    }
+  } catch(e) {}
+  _showCopyFallback(clean);
+  return false;
+}
+
+function _copyOk() {
+  toast('Información copiada correctamente', 'ok');
+  const el = document.getElementById('copyGestionStatus');
+  if (el) {
+    el.style.display = 'inline-flex';
+    clearTimeout(window._copyGestionStatusTimer);
+    window._copyGestionStatusTimer = setTimeout(() => { el.style.display = 'none'; }, 2200);
+  }
+}
+
+function _showCopyFallback(text, title='Copiar manualmente') {
+  let modal = document.getElementById('copyFallbackModal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'copyFallbackModal';
+    modal.className = 'modal-bg';
+    modal.style.cssText = 'display:none;position:fixed;inset:0;background:rgba(0,0,0,.42);z-index:9999;align-items:center;justify-content:center;padding:18px';
+    modal.innerHTML = `<div class="modal-card" style="max-width:760px;width:100%;background:var(--s1);border:1px solid var(--border);border-radius:18px;padding:22px;box-shadow:0 24px 80px rgba(0,0,0,.22)">
+      <div class="modal-title" id="copyFallbackTitle" style="margin-bottom:8px">Copiar manualmente</div>
+      <p style="font-size:.85rem;color:var(--muted);margin-bottom:10px">Tu navegador no permitió copiar automáticamente. Selecciona el texto y cópialo manualmente.</p>
+      <textarea id="copyFallbackText" style="width:100%;min-height:320px;resize:vertical;background:var(--s2);border:1px solid var(--border);border-radius:12px;color:var(--text);padding:12px;font-family:var(--font-m);font-size:.84rem;line-height:1.55"></textarea>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px;flex-wrap:wrap">
+        <button class="btn btn-ghost" onclick="document.getElementById('copyFallbackModal').style.display='none'">Cerrar</button>
+        <button class="btn btn-teal" onclick="document.getElementById('copyFallbackText').select();document.execCommand('copy');_copyOk()">Copiar selección</button>
+      </div>
+    </div>`;
+    document.body.appendChild(modal);
+  }
+  document.getElementById('copyFallbackTitle').textContent = title;
+  const ta = document.getElementById('copyFallbackText');
+  ta.value = text;
+  modal.style.display = 'flex';
+  setTimeout(() => { ta.focus(); ta.select(); }, 80);
+}
+
+function abrirCopiarListaGestion() {
+  const d = _copyGestionData();
+  const groups = [
+    ['Pagos pendientes', d.pagosPendientesLista.map(c => `${c.nombre} | ${normDate(c.fecha)} | ${c.servicio} | ${fmtPeso(parsePrecio(c.precio))}`)],
+    ['Personas para reactivar', d.reactivar.map(p => `${p.nombre} | última cita: ${p.fecha} | ${p.telefono || 'sin teléfono'}`)],
+    ['Candidatos para paquetes', d.candidatosPaquete.map(p => `${p.nombre} | ${p.total} sesiones | ${p.telefono || 'sin teléfono'}`)]
+  ];
+  const text = groups.map(([title, items]) => `${title.toUpperCase()}\n${items.length ? items.map((x,i)=>`${i+1}. ${x}`).join('\n') : 'Sin registros'}`).join('\n\n');
+  return _copyPlainText(text);
+}
+
+function copiarInfoPersonaGestion() {
+  const nombre = prompt('Escribe el nombre de la persona que quieres copiar:');
+  if (!nombre) return;
+  const key = nombre.trim().toLowerCase();
+  const citas = (allData.citas || []).filter(c => String(c.nombre || '').toLowerCase().includes(key) && !esRegistroServ(c.servicio));
+  if (!citas.length) { toast('No encontré citas para esa persona', 'warn'); return; }
+  citas.sort((a,b) => normDate(b.fecha).localeCompare(normDate(a.fecha)));
+  const c0 = citas[0];
+  const total = citas.length;
+  const pagado = citas.filter(c => String(c.estado || '').toLowerCase().includes('atendida') || String(c.estado || '').toLowerCase().includes('confirm')).length;
+  const text = [
+    'INFORMACIÓN ADMINISTRATIVA DE PERSONA',
+    '',
+    `Nombre: ${c0.nombre}`,
+    `Teléfono: ${c0.telefono || c0.phone || 'Sin registrar'}`,
+    `Correo: ${c0.email || 'Sin registrar'}`,
+    `Total de citas registradas: ${total}`,
+    `Citas confirmadas/atendidas: ${pagado}`,
+    `Última cita: ${normDate(c0.fecha)} ${c0.hora || ''}`,
+    `Último servicio: ${c0.servicio || 'Sin servicio'}`,
+    `Estado último registro: ${c0.estado || 'Sin estado'}`,
+    '',
+    'Historial reciente:',
+    ...citas.slice(0,8).map((c,i)=>`${i+1}. ${normDate(c.fecha)} ${c.hora || ''} | ${c.servicio || ''} | ${c.estado || ''}`)
+  ].join('\n');
+  return _copyPlainText(text);
+}
+
+function abrirMensajeWAGestion() {
+  const d = _copyGestionData();
+  const persona = d.reactivar[0] || d.candidatosPaquete[0] || null;
+  const nombre = persona ? persona.nombre.split(' ')[0] : 'Hola';
+  const phone = persona ? String(persona.telefono || '').replace(/\D/g,'') : '';
+  const msg = `Hola ${nombre}, te saludamos de Cuidándote Fisioterapia. Queríamos saber cómo has seguido y ayudarte a retomar tu proceso si lo necesitas. Tenemos horarios disponibles esta semana. ¿Quieres que te compartamos opciones?`;
+  _showWhatsAppCopyModal(msg, phone);
+}
+
+function _showWhatsAppCopyModal(msg, phone='') {
+  let modal = document.getElementById('waCopyGestionModal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'waCopyGestionModal';
+    modal.className = 'modal-bg';
+    modal.style.cssText = 'display:none;position:fixed;inset:0;background:rgba(0,0,0,.42);z-index:9999;align-items:center;justify-content:center;padding:18px';
+    modal.innerHTML = `<div class="modal-card" style="max-width:660px;width:100%;background:var(--s1);border:1px solid var(--border);border-radius:18px;padding:22px;box-shadow:0 24px 80px rgba(0,0,0,.22)">
+      <div class="modal-title" style="margin-bottom:8px">Mensaje para WhatsApp</div>
+      <p style="font-size:.85rem;color:var(--muted);margin-bottom:10px">Revísalo, edítalo y luego cópialo o abre WhatsApp. No se envía automáticamente.</p>
+      <input id="waCopyGestionPhone" placeholder="Teléfono opcional" style="width:100%;margin-bottom:10px;background:var(--s2);border:1px solid var(--border);border-radius:10px;color:var(--text);padding:10px 12px">
+      <textarea id="waCopyGestionText" style="width:100%;min-height:170px;resize:vertical;background:var(--s2);border:1px solid var(--border);border-radius:12px;color:var(--text);padding:12px;font-family:var(--font-b);font-size:.9rem;line-height:1.55"></textarea>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px;flex-wrap:wrap">
+        <button class="btn btn-ghost" onclick="document.getElementById('waCopyGestionModal').style.display='none'">Cerrar</button>
+        <button class="btn btn-ghost" onclick="_copyPlainText(document.getElementById('waCopyGestionText').value)">Copiar mensaje</button>
+        <button class="btn btn-teal" onclick="_openWAGestionPrepared()">Abrir WhatsApp</button>
+      </div>
+    </div>`;
+    document.body.appendChild(modal);
+  }
+  document.getElementById('waCopyGestionPhone').value = phone || '';
+  document.getElementById('waCopyGestionText').value = msg;
+  modal.style.display = 'flex';
+}
+
+function _openWAGestionPrepared() {
+  const phone = String(document.getElementById('waCopyGestionPhone').value || '').replace(/\D/g,'');
+  const text = document.getElementById('waCopyGestionText').value || '';
+  const url = phone ? `https://wa.me/57${phone.replace(/^57/,'')}?text=${encodeURIComponent(text)}` : `https://wa.me/?text=${encodeURIComponent(text)}`;
+  window.open(url, '_blank');
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -18641,28 +18594,13 @@ function searchPasPatient(q) {
   dd.style.display = 'block';
 }
 
-async function selectPasPatient(p) {
+function selectPasPatient(p) {
   document.getElementById('pasNombreInput').value = p.nombre;
   document.getElementById('pasDropdown').style.display = 'none';
   _pasTelefono  = (p.telefono || '').replace(/\D/g, '');
   _pasConfirmado = true;
   _pasSetConfirmed(true, p);
-
-  const btn = document.getElementById('pasAbrirBtn');
-  if (btn) {
-    btn.disabled = true;
-    btn.textContent = 'Generando enlace...';
-    btn.style.cursor = 'wait';
-  }
-  try {
-    await generarLinkPasaporte();
-  } finally {
-    if (btn) {
-      btn.disabled = false;
-      btn.textContent = 'Abrir y editar →';
-      btn.style.cursor = 'pointer';
-    }
-  }
+  generarLinkPasaporte();
 }
 
 function _pasSetConfirmed(ok, p) {
@@ -18700,20 +18638,11 @@ async function generarLinkPasaporte() {
   const card   = document.getElementById('pasLinkCard');
   if (!nombre) { card.style.display = 'none'; return; }
 
-  const url = PASSPORT_APPS_SCRIPT_URL + '?action=passportEnsure&token=' + encodeURIComponent(TOKEN)
+  const url = APPS_SCRIPT_URL + '?action=passportEnsure&token=' + encodeURIComponent(TOKEN)
     + '&nombre=' + encodeURIComponent(nombre)
     + '&telefono=' + encodeURIComponent(_pasTelefono || '');
-  let data;
-  try {
-    data = await fetch(url).then(function(response) { return response.json(); });
-  } catch (error) {
-    toast('No se pudo generar el pasaporte', 'error');
-    return;
-  }
-  if (!data.ok || !data.passport || !data.passport.link) {
-    toast(data.error || 'No se pudo generar el pasaporte', 'error');
-    return;
-  }
+  const data = await fetch(url).then(r => r.json());
+  if (!data.ok) { toast(data.error || 'No se pudo generar el pasaporte', 'error'); return; }
   _pasCurrent = data.passport;
   const link = _pasCurrent.link;
   document.getElementById('pasLinkTexto').textContent = link;
@@ -18725,49 +18654,43 @@ async function generarLinkPasaporte() {
   const msg = `Hola ${nombre.split(' ')[0]}! \uD83D\uDC4B\nTe dejo tu Pasaporte de Beneficios — ahi vas a ver tu progreso despues de cada sesion.\n${link}\n\n\u2B50 *Como ganar beneficios?*\nCada sesion sumas avances. Al llegar a:\n\n\u2705 *4 sesiones:* Descarga Localizada 10 min (zona de tu eleccion)\n\u2705 *8 sesiones:* Valoracion Funcional Express 10 min + PDF con resultados\n\u2705 *12 sesiones:* Movilidad Asistida 10 min + Botas de Compresion\n\u2705 *16 sesiones:* Kinesiotape + Tens 15 min (Readaptacion completa)\n\nGuardalo y nos vemos pronto! \uD83D\uDE0A`;
   document.getElementById('pasWhatsApp').href = tel + '?text=' + encodeURIComponent(msg);
 
+  renderPasaporteQR(link);
+  renderPasaporteAdminTools();
+}
+
+function renderPasaporteQR(link) {
+  const canvas = document.getElementById('pasQR');
+  if (!canvas) return;
+  let box = document.getElementById('pasQRBox');
+  if (!box) {
+    box = document.createElement('div');
+    box.id = 'pasQRBox';
+    box.style.cssText = 'width:112px;height:112px;border-radius:10px;border:1px solid var(--border);overflow:hidden;background:#F7F8FA;display:grid;place-items:center;flex-shrink:0';
+    canvas.insertAdjacentElement('afterend', box);
+  }
+  box.innerHTML = '';
+  canvas.style.display = 'none';
   if (typeof QRCode !== 'undefined') {
-    QRCode.toCanvas(document.getElementById('pasQR'), link, { width: 112, margin: 1, color: { dark: '#0A1A12', light: '#F7F8FA' } });
+    if (QRCode.toCanvas) {
+      canvas.style.display = 'block';
+      box.style.display = 'none';
+      QRCode.toCanvas(canvas, link, { width: 112, margin: 1, color: { dark: '#0A1A12', light: '#F7F8FA' } });
+    } else {
+      box.style.display = 'grid';
+      new QRCode(box, { text: link, width: 112, height: 112, colorDark: '#0A1A12', colorLight: '#F7F8FA', correctLevel: QRCode.CorrectLevel.M });
+    }
+  } else {
+    box.textContent = 'QR no disponible';
+    box.style.fontSize = '11px';
+    box.style.color = 'var(--muted)';
   }
 }
 
-async function abrirPasaporte() {
-  if (!_pasConfirmado) {
-    toast('Selecciona un paciente de la lista primero', 'warn');
-    return;
-  }
-
-  let link = (_pasCurrent && _pasCurrent.link) || document.getElementById('pasLinkTexto').textContent;
-  let popup = null;
-
-  if (!link) {
-    const btn = document.getElementById('pasAbrirBtn');
-    popup = window.open('', '_blank');
-    if (btn) {
-      btn.disabled = true;
-      btn.textContent = 'Generando enlace...';
-      btn.style.cursor = 'wait';
-    }
-    try {
-      await generarLinkPasaporte();
-    } catch (error) {
-      toast('No se pudo generar el enlace seguro', 'error');
-    } finally {
-      if (btn) {
-        btn.disabled = false;
-        btn.textContent = 'Abrir y editar →';
-        btn.style.cursor = 'pointer';
-      }
-    }
-    link = (_pasCurrent && _pasCurrent.link) || document.getElementById('pasLinkTexto').textContent;
-  }
-
-  if (!link) {
-    if (popup && !popup.closed) popup.close();
-    return;
-  }
-
-  if (popup && !popup.closed) popup.location.replace(link);
-  else window.open(link, '_blank');
+function abrirPasaporte() {
+  if (!_pasConfirmado) { toast('Selecciona un paciente de la lista primero', 'warn'); return; }
+  const link = (_pasCurrent && _pasCurrent.link) || document.getElementById('pasLinkTexto').textContent;
+  if (!link) { toast('Genera primero el enlace seguro', 'warn'); return; }
+  window.open(link, '_blank');
 }
 
 function copiarLinkPas() {
@@ -18779,6 +18702,94 @@ function copiarLinkPas() {
     btn.textContent = '¡Copiado!';
     setTimeout(() => btn.textContent = orig, 2000);
   });
+}
+
+function renderPasaporteAdminTools() {
+  const card = document.getElementById('pasLinkCard');
+  if (!card || !_pasCurrent) return;
+  let box = document.getElementById('pasAdminTools');
+  if (!box) {
+    card.insertAdjacentHTML('beforeend', `
+      <div id="pasAdminTools" style="margin-top:18px;padding-top:16px;border-top:1px solid var(--s2)">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+          <button class="btn btn-sm" onclick="regenerarTokenPasaporte()">Regenerar token</button>
+          ${_pasCurrent.estado === 'INACTIVO'
+            ? '<button class="btn btn-sm btn-teal" onclick="reactivarPasaporte()">Reactivar pasaporte</button>'
+            : '<button class="btn btn-sm btn-danger" onclick="desactivarPasaporte()">Desactivar pasaporte</button>'}
+          <button class="btn btn-sm btn-teal" onclick="guardarProgresoPasaporte()">Guardar progreso</button>
+        </div>
+        <div id="pasProgressEditor"></div>
+      </div>`);
+    box = document.getElementById('pasAdminTools');
+  }
+  const passport = _pasCurrent.passport || {};
+  const descarga = _pasCurrent.descarga || {};
+  const stampSource = passport.stamps || passport.sellos || passport;
+  const descargaSource = descarga.stamps || descarga.sellos || descarga;
+  document.getElementById('pasProgressEditor').innerHTML = `
+    <div style="font-weight:700;margin-bottom:4px">Sellos del pasaporte</div>
+    <div style="font-size:.78rem;color:var(--muted);margin-bottom:8px">${Number(passport.autoStampCount || 0)} automáticos. Ajusta solo para correcciones excepcionales.</div>
+    <div style="display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:8px;margin-bottom:14px">
+      ${Array.from({length:16}, (_, i) => {
+        const n = i + 1;
+        const checked = !!(stampSource[n] || stampSource['s' + n] || stampSource['stamp' + n] || stampSource[i]);
+        return `<label style="border:1px solid var(--s2);border-radius:10px;padding:8px;text-align:center"><input type="checkbox" class="pasStamp" data-n="${n}" ${checked ? 'checked' : ''}> ${n}</label>`;
+      }).join('')}
+    </div>
+    <div style="font-weight:700;margin-bottom:8px">Reto mensual descarga</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      ${[1,2].map(n => {
+        const checked = !!(descargaSource[n] || descargaSource['s' + n] || descargaSource['stamp' + n] || descargaSource[n - 1]);
+        return `<label style="border:1px solid var(--s2);border-radius:10px;padding:8px 12px"><input type="checkbox" class="pasDescarga" data-n="${n}" ${checked ? 'checked' : ''}> Sesión ${n}</label>`;
+      }).join('')}
+    </div>`;
+}
+
+async function guardarProgresoPasaporte() {
+  if (!_pasCurrent || !_pasCurrent.id) { toast('Genera primero el enlace seguro', 'warn'); return; }
+  const passport = {stamps:{}};
+  document.querySelectorAll('.pasStamp').forEach(cb => passport.stamps[cb.dataset.n] = cb.checked);
+  const descarga = {stamps:{}};
+  document.querySelectorAll('.pasDescarga').forEach(cb => descarga.stamps[cb.dataset.n] = cb.checked);
+  const url = APPS_SCRIPT_URL + '?action=passportSaveProgress&token=' + encodeURIComponent(TOKEN)
+    + '&id=' + encodeURIComponent(_pasCurrent.id)
+    + '&passport=' + encodeURIComponent(JSON.stringify(passport))
+    + '&descarga=' + encodeURIComponent(JSON.stringify(descarga));
+  const data = await fetch(url).then(r => r.json());
+  if (!data.ok) { toast(data.error || 'No se pudo guardar el progreso', 'error'); return; }
+  _pasCurrent = data.passport;
+  renderPasaporteAdminTools();
+  toast('Progreso guardado', 'success');
+}
+
+async function regenerarTokenPasaporte() {
+  if (!_pasCurrent || !_pasCurrent.id) return;
+  if (!confirm('¿Regenerar el enlace? El anterior dejará de funcionar.')) return;
+  const data = await fetch(APPS_SCRIPT_URL + '?action=passportRegenerateToken&token=' + encodeURIComponent(TOKEN) + '&id=' + encodeURIComponent(_pasCurrent.id)).then(r => r.json());
+  if (!data.ok) { toast(data.error || 'No se pudo regenerar', 'error'); return; }
+  _pasCurrent = data.passport;
+  generarLinkPasaporte();
+  toast('Token regenerado. El enlace anterior quedó inválido.', 'success');
+}
+
+async function desactivarPasaporte() {
+  if (!_pasCurrent || !_pasCurrent.id) return;
+  if (!confirm('¿Desactivar este pasaporte?')) return;
+  const data = await fetch(APPS_SCRIPT_URL + '?action=passportDeactivate&token=' + encodeURIComponent(TOKEN) + '&id=' + encodeURIComponent(_pasCurrent.id)).then(r => r.json());
+  if (!data.ok) { toast(data.error || 'No se pudo desactivar', 'error'); return; }
+  _pasCurrent = data.passport || _pasCurrent;
+  renderPasaporteAdminTools();
+  toast('Pasaporte desactivado', 'success');
+}
+
+async function reactivarPasaporte() {
+  if (!_pasCurrent || !_pasCurrent.id) return;
+  if (!confirm('¿Reactivar este pasaporte?')) return;
+  const data = await fetch(APPS_SCRIPT_URL + '?action=passportReactivate&token=' + encodeURIComponent(TOKEN) + '&id=' + encodeURIComponent(_pasCurrent.id)).then(r => r.json());
+  if (!data.ok) { toast(data.error || 'No se pudo reactivar', 'error'); return; }
+  _pasCurrent = data.passport || _pasCurrent;
+  renderPasaporteAdminTools();
+  toast('Pasaporte reactivado', 'success');
 }
 
 // ── Interceptor WA en desktop: muestra modal para copiar en vez de abrir wa.me ──

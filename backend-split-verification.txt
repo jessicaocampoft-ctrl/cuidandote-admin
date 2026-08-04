@@ -1,7 +1,0 @@
-admin_endpoint_pass=true
-admin_body={"ok":false,"error":"Credenciales incorrectas o usuario sin permisos de auxiliar"}
-passport_endpoint_pass=true
-passport_body={"ok":false,"error":"Este enlace no es válido o fue reemplazado. Solicita uno nuevo por WhatsApp."}
-live_admin_backend_pass=true
-live_passport_backend_pass=true
-overall_pass=true

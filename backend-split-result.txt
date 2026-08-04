@@ -1,2 +1,0 @@
-index.html: config=1 plus=1 template=0
-admin.html: config=1 plus=5 template=0

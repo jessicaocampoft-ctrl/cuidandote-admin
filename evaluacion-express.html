@@ -1,0 +1,1440 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>Evaluación Express CrossFit — Jessica Ocampo</title>
+<link rel="icon" href="Logo/4.png">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Cormorant+Garamond:ital,wght@0,600;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#F7F8FA;--s1:#fff;--s2:#F0F2F5;--s3:#E8EAED;
+  --primary:#1BBFB0;--primary-h:#17A89A;--primary-light:rgba(27,191,176,.1);
+  --text:#1A1A2E;--muted:#6B7280;--border:rgba(27,191,176,.2);
+  --ok:#16a34a;--warn:#d97706;--err:#dc2626;
+  --font-h:'Cormorant Garamond',serif;--font-b:'DM Sans',sans-serif;--font-m:'DM Mono',monospace;
+  --r:12px;--tr:.2s ease;
+}
+html,body{font-family:var(--font-b);background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+
+/* LOGIN */
+#loginScreen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:linear-gradient(135deg,#0d9488 0%,#1BBFB0 100%)}
+.login-box{background:#fff;border-radius:20px;padding:40px 36px;max-width:380px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.15)}
+.login-logo{text-align:center;margin-bottom:24px}
+.login-logo img{height:52px}
+.login-title{font-family:var(--font-h);font-size:1.6rem;font-weight:600;text-align:center;margin-bottom:6px}
+.login-sub{color:var(--muted);font-size:.85rem;text-align:center;margin-bottom:28px}
+.login-input{width:100%;padding:12px 16px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:var(--font-b);font-size:.95rem;outline:none;transition:var(--tr)}
+.login-input:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(27,191,176,.12)}
+.login-btn{width:100%;margin-top:14px;padding:13px;background:var(--primary);color:#fff;border:none;border-radius:10px;font-family:var(--font-b);font-size:.95rem;font-weight:600;cursor:pointer;transition:var(--tr)}
+.login-btn:hover{background:var(--primary-h)}
+.login-btn:disabled{opacity:.6;cursor:not-allowed}
+.login-err{color:var(--err);font-size:.82rem;text-align:center;margin-top:10px;display:none}
+
+/* APP */
+#app{display:none;max-width:700px;margin:0 auto;padding:16px 16px 80px}
+
+/* HEADER */
+.app-header{background:var(--primary);color:#fff;border-radius:16px;padding:20px 24px;margin-bottom:20px;display:flex;align-items:center;gap:14px}
+.app-header img{height:38px;filter:brightness(0) invert(1)}
+.app-header-text h1{font-family:var(--font-h);font-size:1.4rem;font-weight:600;line-height:1.2}
+.app-header-text p{font-size:.8rem;opacity:.85;margin-top:2px}
+.header-badge{margin-left:auto;background:rgba(255,255,255,.2);border-radius:99px;padding:5px 12px;font-size:.75rem;font-family:var(--font-m);white-space:nowrap}
+
+/* PROGRESS */
+.progress-wrap{display:flex;align-items:center;margin-bottom:24px;background:#fff;border-radius:12px;border:1px solid var(--border);padding:16px 20px;overflow-x:auto}
+.prog-step{display:flex;flex-direction:column;align-items:center;gap:4px;flex:1;position:relative;min-width:56px}
+.prog-step:not(:last-child)::after{content:'';position:absolute;top:13px;left:50%;width:100%;height:2px;background:var(--s3);z-index:0}
+.prog-step.done:not(:last-child)::after{background:var(--primary)}
+.prog-dot{width:26px;height:26px;border-radius:50%;background:var(--s3);border:2px solid var(--s3);display:flex;align-items:center;justify-content:center;font-size:.68rem;font-weight:700;color:var(--muted);position:relative;z-index:1;transition:var(--tr)}
+.prog-step.done .prog-dot{background:var(--primary);border-color:var(--primary);color:#fff}
+.prog-step.active .prog-dot{background:#fff;border-color:var(--primary);color:var(--primary);box-shadow:0 0 0 3px rgba(27,191,176,.2)}
+.prog-label{font-size:.6rem;color:var(--muted);text-align:center;line-height:1.3}
+.prog-step.active .prog-label,.prog-step.done .prog-label{color:var(--text);font-weight:500}
+
+/* CARDS */
+.card{background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:22px;margin-bottom:16px}
+.card-title{font-family:var(--font-h);font-size:1.25rem;font-weight:600;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.zone-title{font-size:.76rem;font-family:var(--font-m);color:var(--primary);text-transform:uppercase;letter-spacing:.08em;margin:20px 0 10px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+
+/* FIELDS */
+.field{display:flex;flex-direction:column;gap:5px;margin-bottom:14px}
+.field label{font-size:.76rem;color:var(--muted);font-family:var(--font-m)}
+.field input,.field select,.field textarea{background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font-b);font-size:.9rem;padding:10px 12px;outline:none;transition:var(--tr);width:100%}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--primary);background:#fff;box-shadow:0 0 0 3px rgba(27,191,176,.08)}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+/* LEVEL */
+.level-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:6px}
+.level-btn{padding:10px 6px;border-radius:8px;border:1.5px solid var(--border);background:var(--s2);cursor:pointer;text-align:center;transition:var(--tr);font-size:.76rem;font-weight:500;color:var(--muted)}
+.level-btn:hover,.level-btn.sel{border-color:var(--primary);background:var(--primary-light);color:var(--primary)}
+
+/* POSTURAL PHOTOS (step 2) */
+.photo-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.photo-box{position:relative;border:2px dashed var(--border);border-radius:12px;aspect-ratio:3/4;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;cursor:pointer;overflow:hidden;transition:var(--tr);background:var(--s2)}
+.photo-box:hover{border-color:var(--primary);background:var(--primary-light)}
+.photo-box.has-photo{border-style:solid;border-color:var(--primary)}
+.photo-box img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:10px}
+.photo-box-label{font-size:.72rem;color:var(--muted);text-align:center;z-index:1;padding:4px}
+.photo-box-icon{font-size:1.6rem;z-index:1}
+.photo-remove{position:absolute;top:6px;right:6px;background:rgba(220,38,38,.85);color:#fff;border:none;border-radius:50%;width:24px;height:24px;font-size:.75rem;cursor:pointer;display:none;align-items:center;justify-content:center;z-index:2}
+.photo-box.has-photo .photo-remove{display:flex}
+.photo-input{display:none}
+.photo-note{font-size:.76rem;color:var(--muted);text-align:center;margin-top:8px;line-height:1.5}
+
+/* ── TEST CARDS (screens funcionales) ── */
+.test-ex-card{background:#fff;border:1px solid var(--border);border-radius:12px;margin-bottom:10px;overflow:hidden}
+.test-ex-hd{display:flex;justify-content:space-between;align-items:center;padding:13px 16px;cursor:pointer;user-select:none;transition:var(--tr);gap:10px}
+.test-ex-hd:hover{background:var(--s2)}
+.test-ex-name{font-weight:600;font-size:.88rem;display:flex;align-items:center;gap:8px;flex:1}
+.test-tag{background:var(--s2);border-radius:6px;padding:2px 9px;font-size:.72rem;font-family:var(--font-m);color:var(--muted)}
+.test-tag.s0{background:#fee2e2;color:#dc2626}
+.test-tag.s1{background:#fed7aa;color:#c2410c}
+.test-tag.s2{background:#fef9c3;color:#92400e}
+.test-tag.s3{background:#dcfce7;color:#166534}
+.test-ex-bd{padding:0 16px;max-height:0;overflow:hidden;transition:max-height .35s ease}
+.test-ex-bd.open{max-height:700px;padding:0 16px 16px}
+.test-score-row{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;align-items:flex-start}
+.score-btns{display:flex;gap:7px;margin:6px 0 4px}
+.score-btn{width:44px;height:44px;border-radius:8px;border:1.5px solid var(--border);background:var(--s2);cursor:pointer;font-size:1rem;font-weight:700;color:var(--muted);transition:var(--tr);display:flex;align-items:center;justify-content:center}
+.score-btn.s0.sel{background:#fee2e2;border-color:#dc2626;color:#dc2626}
+.score-btn.s1.sel{background:#fed7aa;border-color:#ea580c;color:#ea580c}
+.score-btn.s2.sel{background:#fef9c3;border-color:#ca8a04;color:#92400e}
+.score-btn.s3.sel{background:#dcfce7;border-color:#16a34a;color:#16a34a}
+.score-legend{font-size:.68rem;color:var(--muted);font-family:var(--font-m);line-height:1.6}
+.test-mini-photo{border:2px dashed var(--border);border-radius:10px;aspect-ratio:4/3;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;position:relative;background:var(--s2);width:110px;flex-shrink:0;transition:var(--tr)}
+.test-mini-photo:hover{border-color:var(--primary);background:var(--primary-light)}
+.test-mini-photo.has-photo{border-style:solid;border-color:var(--primary)}
+.test-mini-photo img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.test-mini-photo .trm{position:absolute;top:4px;right:4px;background:rgba(220,38,38,.85);color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:.65rem;cursor:pointer;display:none;align-items:center;justify-content:center;z-index:2}
+.test-mini-photo.has-photo .trm{display:flex}
+.bilateral-wrap{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.bilateral-label{font-size:.72rem;font-family:var(--font-m);color:var(--muted);margin-bottom:4px}
+.time-input{width:90px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-family:var(--font-m);font-size:1rem;text-align:center;background:var(--s2);outline:none}
+.time-input:focus{border-color:var(--primary)}
+
+/* CHIPS */
+.chip-grid{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:4px}
+.chip{padding:8px 14px;border-radius:99px;border:1.5px solid var(--border);background:var(--s2);cursor:pointer;font-size:.8rem;font-weight:500;color:var(--muted);transition:var(--tr);user-select:none;display:flex;align-items:center;gap:5px}
+.chip:active{transform:scale(.97)}
+.chip.sel{background:var(--primary);border-color:var(--primary);color:#fff}
+.chip.sel::before{content:'✓ '}
+
+/* SEVERITY */
+.sev-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.sev-label{font-size:.8rem;color:var(--muted);min-width:120px}
+.sev-btns{display:flex;gap:6px}
+.sev-btn{padding:6px 16px;border-radius:99px;border:1.5px solid var(--border);background:var(--s2);cursor:pointer;font-size:.78rem;font-weight:500;color:var(--muted);transition:var(--tr)}
+.sev-btn.sel-leve{background:#fef9c3;border-color:#ca8a04;color:#92400e}
+.sev-btn.sel-mod{background:#fed7aa;border-color:#ea580c;color:#c2410c}
+.sev-btn.sel-sev{background:#fee2e2;border-color:#dc2626;color:#991b1b}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:7px;padding:11px 22px;border-radius:8px;border:none;font-family:var(--font-b);font-size:.9rem;font-weight:600;cursor:pointer;transition:var(--tr)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn-primary{background:var(--primary);color:#fff}
+.btn-primary:hover:not(:disabled){background:var(--primary-h)}
+.btn-ghost{background:var(--s2);color:var(--text);border:1px solid var(--border)}
+.btn-ghost:hover{background:var(--s3)}
+.btn-wa{background:#25D366;color:#fff}
+.btn-wa:hover{background:#1ebe5d}
+.btn-email{background:#4f46e5;color:#fff}
+.btn-email:hover{background:#4338ca}
+.btn-print{background:#374151;color:#fff}
+.btn-print:hover{background:#1f2937}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+.step-controls{display:flex;justify-content:space-between;align-items:center;margin-top:20px;gap:10px}
+.count-badge{background:var(--primary);color:#fff;border-radius:99px;font-size:.68rem;padding:1px 7px;font-family:var(--font-m);font-weight:600}
+
+/* ALERTS */
+.alert{border-radius:8px;padding:12px 16px;font-size:.84rem;margin-bottom:14px}
+.alert-warn{background:#fffbeb;border:1px solid #fde68a;color:#92400e}
+.alert-info{background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af}
+
+/* LOADING */
+#step5{text-align:center;padding:40px 20px}
+.loader-ring{width:64px;height:64px;border:4px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 20px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loader-msg{font-family:var(--font-h);font-size:1.3rem;margin-bottom:8px}
+.loader-sub{color:var(--muted);font-size:.85rem}
+
+/* REPORT */
+#reportContent{font-family:var(--font-b)}
+.report-header{background:linear-gradient(135deg,#0d9488,#1BBFB0);color:#fff;border-radius:16px;padding:24px;margin-bottom:20px}
+.report-header h2{font-family:var(--font-h);font-size:1.6rem;font-weight:600;margin-bottom:4px}
+.report-header p{font-size:.85rem;opacity:.85}
+.report-meta{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+.report-meta-item{background:rgba(255,255,255,.2);border-radius:8px;padding:6px 12px;font-size:.78rem;font-family:var(--font-m)}
+.report-section{background:#fff;border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:14px}
+.report-section h3{font-family:var(--font-h);font-size:1.1rem;font-weight:600;color:var(--primary);margin-bottom:12px;display:flex;align-items:center;gap:7px}
+.report-photos{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.report-photo{border-radius:10px;overflow:hidden;aspect-ratio:3/4;background:var(--s2)}
+.report-photo img{width:100%;height:100%;object-fit:cover}
+.report-photo-label{font-size:.7rem;color:var(--muted);text-align:center;margin-top:4px}
+.report-photo-empty{display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-size:.72rem;text-align:center;padding:8px}
+/* Test scores table in report */
+.test-report-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:6px}
+.test-report-item{border:1px solid var(--border);border-radius:10px;padding:12px;display:flex;gap:10px;align-items:flex-start}
+.test-report-img{width:60px;height:60px;border-radius:8px;object-fit:cover;flex-shrink:0;background:var(--s2)}
+.test-report-score{font-size:1.4rem;font-weight:700;font-family:var(--font-m);line-height:1}
+.test-report-name{font-size:.8rem;font-weight:600;margin-bottom:3px}
+.test-report-obs{font-size:.72rem;color:var(--muted);line-height:1.4}
+.score-pill{display:inline-block;border-radius:99px;padding:2px 10px;font-size:.72rem;font-weight:600;font-family:var(--font-m);margin-bottom:4px}
+.sp0{background:#fee2e2;color:#dc2626}.sp1{background:#fed7aa;color:#c2410c}.sp2{background:#fef9c3;color:#92400e}.sp3{background:#dcfce7;color:#16a34a}.sp-{background:var(--s2);color:var(--muted)}
+/* Postural findings */
+.report-findings{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.finding-tag{padding:5px 12px;border-radius:99px;font-size:.78rem;font-weight:500}
+.finding-tag.leve{background:#fef9c3;color:#92400e;border:1px solid #fde68a}
+.finding-tag.moderado{background:#fed7aa;color:#c2410c;border:1px solid #fdba74}
+.finding-tag.severo{background:#fee2e2;color:#991b1b;border:1px solid #fca5a5}
+/* AI text */
+.ai-text{font-size:.88rem;line-height:1.75;color:#374151}
+.ai-section-title{font-family:var(--font-h);font-size:1rem;color:var(--primary);font-weight:600;margin:14px 0 6px}
+/* BANNER REPORTE TÉCNICO */
+.banner-tecnico{background:#f0fdf4;border:1px solid #86efac;border-radius:10px;padding:14px 16px;margin-bottom:12px;font-size:.82rem;color:#166534}
+.banner-tecnico strong{display:block;margin-bottom:2px}
+
+/* CTA */
+.cta-box{background:linear-gradient(135deg,rgba(27,191,176,.08),rgba(27,191,176,.15));border:1.5px solid var(--primary);border-radius:14px;padding:22px;margin:16px 0;text-align:center}
+.cta-box h3{font-family:var(--font-h);font-size:1.3rem;font-weight:600;margin-bottom:8px}
+.cta-box p{color:var(--muted);font-size:.85rem;margin-bottom:16px;line-height:1.6}
+.paquetes-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.paquete{background:#fff;border:1.5px solid var(--border);border-radius:10px;padding:14px;text-align:center;transition:var(--tr)}
+.paquete.destacado{border-color:var(--primary);background:rgba(27,191,176,.04)}
+.paquete .pac-badge{font-size:.65rem;font-family:var(--font-m);background:var(--primary);color:#fff;padding:2px 8px;border-radius:99px;display:inline-block;margin-bottom:6px}
+.paquete h4{font-size:.9rem;font-weight:600;margin-bottom:4px}
+.paquete p{font-size:.76rem;color:var(--muted);line-height:1.4}
+
+@media(max-width:500px){
+  #app{padding:12px 12px 80px}
+  .level-grid{grid-template-columns:repeat(2,1fr)}
+  .photo-grid{grid-template-columns:repeat(2,1fr)}
+  .grid-2,.bilateral-wrap,.test-report-grid,.paquetes-grid{grid-template-columns:1fr}
+  .btn-row{flex-direction:column}
+  .btn-row .btn{width:100%;justify-content:center}
+  .app-header h1{font-size:1.1rem}
+}
+@media print{
+  #loginScreen,#app>.app-header,#app>.progress-wrap,.step-controls,.btn-row,.cta-box .btn{display:none!important}
+  #app{display:block!important;max-width:100%;padding:0}
+  #step6{display:block!important}
+  .card,.report-section{break-inside:avoid}
+}
+.trd-btn{flex:1;padding:8px 10px;border-radius:8px;border:1.5px solid var(--border);background:var(--s2);cursor:pointer;font-size:.78rem;font-weight:500;color:var(--muted);transition:var(--tr)}
+.trd-btn.pos{background:#fee2e2;border-color:#dc2626;color:#dc2626}
+.trd-btn.neg{background:#dcfce7;border-color:#16a34a;color:#16a34a}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginScreen">
+  <div class="login-box">
+    <div class="login-logo"><img src="Logo/4.png" alt="Jessica Ocampo" onerror="this.style.display='none'"></div>
+    <h1 class="login-title">Evaluación Express</h1>
+    <p class="login-sub">CrossFit · Análisis postural + Screens funcionales · IA</p>
+    <input id="pwInput" class="login-input" type="password" placeholder="Contraseña de acceso" onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="login-btn" id="loginBtn" onclick="doLogin()">Ingresar</button>
+    <p class="login-err" id="loginErr">Contraseña incorrecta.</p>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+
+  <div class="app-header">
+    <img src="Logo/4.png" alt="Logo" onerror="this.style.display='none'">
+    <div class="app-header-text">
+      <h1>Evaluación Express CrossFit</h1>
+      <p>Jessica Ocampo · Fisioterapia Deportiva</p>
+    </div>
+    <div class="header-badge">⚡ 5 min</div>
+  </div>
+
+  <!-- PROGRESS -->
+  <div class="progress-wrap">
+    <div class="prog-step active" id="ps1" onclick="tryGoStep(1)"><div class="prog-dot">1</div><div class="prog-label">Atleta</div></div>
+    <div class="prog-step" id="ps2" onclick="tryGoStep(2)"><div class="prog-dot">2</div><div class="prog-label">Postura</div></div>
+    <div class="prog-step" id="ps3" onclick="tryGoStep(3)"><div class="prog-dot">3</div><div class="prog-label">Screens</div></div>
+    <div class="prog-step" id="ps4" onclick="tryGoStep(4)"><div class="prog-dot">4</div><div class="prog-label">Hallazgos</div></div>
+    <div class="prog-step" id="ps5" onclick="tryGoStep(5)"><div class="prog-dot">5</div><div class="prog-label">IA</div></div>
+    <div class="prog-step" id="ps6" onclick="tryGoStep(6)"><div class="prog-dot">6</div><div class="prog-label">Reporte</div></div>
+  </div>
+
+  <!-- ═══ STEP 1: DATOS ATLETA ═══ -->
+  <div id="step1">
+    <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+      <span style="font-size:.75rem;color:var(--muted);align-self:center;font-family:var(--font-m)">Cargar ejemplo:</span>
+      <button class="btn btn-ghost" style="font-size:.78rem;padding:7px 14px" onclick="cargarEjemplo(1)">👤 Atleta masculino</button>
+      <button class="btn btn-ghost" style="font-size:.78rem;padding:7px 14px" onclick="cargarEjemplo(2)">👤 Atleta femenino</button>
+    </div>
+    <div class="card">
+      <div class="card-title">👤 Datos del atleta</div>
+      <div class="grid-2">
+        <div class="field"><label>Nombre completo *</label><input id="pNombre" type="text" placeholder="Nombre Apellido" autocomplete="name"></div>
+        <div class="field"><label>Edad</label><input id="pEdad" type="number" placeholder="28" min="10" max="80"></div>
+      </div>
+      <div class="grid-2">
+        <div class="field"><label>Teléfono (WhatsApp)</label><input id="pTelefono" type="tel" placeholder="3001234567"></div>
+        <div class="field"><label>Email (opcional)</label><input id="pEmail" type="email" placeholder="atleta@email.com"></div>
+      </div>
+      <div class="field" style="margin-bottom:6px">
+        <label>Nivel en CrossFit</label>
+        <div class="level-grid">
+          <div class="level-btn sel" data-val="Principiante" onclick="selNivel(this)">🌱 Principiante</div>
+          <div class="level-btn" data-val="Intermedio" onclick="selNivel(this)">💪 Intermedio</div>
+          <div class="level-btn" data-val="Avanzado" onclick="selNivel(this)">🔥 Avanzado</div>
+          <div class="level-btn" data-val="Competidor" onclick="selNivel(this)">🏆 Competidor</div>
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="field"><label>Años en CrossFit</label>
+          <select id="pAnios">
+            <option value="Menos de 1 año">Menos de 1 año</option>
+            <option value="1-2 años" selected>1-2 años</option>
+            <option value="3-5 años">3-5 años</option>
+            <option value="Más de 5 años">Más de 5 años</option>
+          </select>
+        </div>
+        <div class="field"><label>Objetivo principal</label>
+          <select id="pObjetivo">
+            <option value="Mejorar rendimiento">Mejorar rendimiento</option>
+            <option value="Prevenir lesiones">Prevenir lesiones</option>
+            <option value="Recuperación de lesión">Recuperación de lesión</option>
+            <option value="Salud general">Salud general</option>
+          </select>
+        </div>
+      </div>
+      <div class="field"><label>Molestias o lesiones actuales</label>
+        <textarea id="pMolestias" rows="2" placeholder="Ej: dolor lumbar al hacer deadlift, rodilla derecha molesta..."></textarea>
+      </div>
+    </div>
+    <div class="step-controls"><span></span><button class="btn btn-primary" onclick="goStep1()">Siguiente — Fotos posturales →</button></div>
+  </div>
+
+  <!-- ═══ STEP 2: FOTOS POSTURALES ═══ -->
+  <div id="step2" style="display:none">
+    <div class="card">
+      <div class="card-title">📐 Fotos posturales</div>
+      <div class="alert alert-warn">📱 Las fotos NO se almacenan en ningún servidor. Solo aparecen en el reporte.</div>
+      <div class="photo-grid">
+        <div>
+          <div class="photo-box" id="box-frontal" onclick="document.getElementById('inp-frontal').click()">
+            <span class="photo-box-icon">📸</span><span class="photo-box-label">Vista frontal</span>
+            <img id="prev-frontal" src="" alt="" style="display:none">
+            <button class="photo-remove" onclick="removePhoto(event,'frontal')">✕</button>
+          </div>
+          <input class="photo-input" type="file" id="inp-frontal" accept="image/*" onchange="handlePhoto('frontal',this)">
+        </div>
+        <div>
+          <div class="photo-box" id="box-lateralD" onclick="document.getElementById('inp-lateralD').click()">
+            <span class="photo-box-icon">📸</span><span class="photo-box-label">Lateral derecha</span>
+            <img id="prev-lateralD" src="" alt="" style="display:none">
+            <button class="photo-remove" onclick="removePhoto(event,'lateralD')">✕</button>
+          </div>
+          <input class="photo-input" type="file" id="inp-lateralD" accept="image/*" onchange="handlePhoto('lateralD',this)">
+        </div>
+        <div>
+          <div class="photo-box" id="box-lateralI" onclick="document.getElementById('inp-lateralI').click()">
+            <span class="photo-box-icon">📸</span><span class="photo-box-label">Lateral izquierda</span>
+            <img id="prev-lateralI" src="" alt="" style="display:none">
+            <button class="photo-remove" onclick="removePhoto(event,'lateralI')">✕</button>
+          </div>
+          <input class="photo-input" type="file" id="inp-lateralI" accept="image/*" onchange="handlePhoto('lateralI',this)">
+        </div>
+        <div>
+          <div class="photo-box" id="box-posterior" onclick="document.getElementById('inp-posterior').click()">
+            <span class="photo-box-icon">📸</span><span class="photo-box-label">Vista posterior</span>
+            <img id="prev-posterior" src="" alt="" style="display:none">
+            <button class="photo-remove" onclick="removePhoto(event,'posterior')">✕</button>
+          </div>
+          <input class="photo-input" type="file" id="inp-posterior" accept="image/*" onchange="handlePhoto('posterior',this)">
+        </div>
+      </div>
+      <p class="photo-note">💡 Atleta en ropa ajustada, de pie relajado — frente · lateral derecha · lateral izquierda · espalda<br>📂 Toca cada cuadro para elegir desde la <strong>galería</strong> o tomar foto en el momento.</p>
+    </div>
+    <div class="step-controls">
+      <button class="btn btn-ghost" onclick="goStep(1)">← Atrás</button>
+      <button class="btn btn-primary" onclick="goStep(3)">Siguiente — Screens →</button>
+    </div>
+  </div>
+
+  <!-- ═══ STEP 3: SCREENS FUNCIONALES ═══ -->
+  <div id="step3" style="display:none">
+    <div class="card">
+      <div class="card-title">🏋️ Screens Funcionales</div>
+      <div class="alert alert-info">📸 Sube una foto por prueba y asigna el score. <strong>0</strong> = dolor · <strong>1</strong> = no puede · <strong>2</strong> = compensación · <strong>3</strong> = correcto · La IA analizará las fotos automáticamente.</div>
+
+      <!-- PROTOCOLO COLAPSABLE -->
+      <div style="margin-bottom:14px">
+        <button onclick="toggleProtocolo()" style="background:none;border:none;color:var(--primary);font-size:.8rem;font-family:var(--font-m);cursor:pointer;padding:4px 0;display:flex;align-items:center;gap:5px">
+          <span id="proto-arr">▶</span> Ver protocolo de evaluación
+        </button>
+        <div id="protocolo-box" style="display:none;margin-top:10px;background:var(--s2);border-radius:10px;padding:14px;font-size:.76rem;line-height:1.6">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div><strong style="color:var(--primary)">🏋️ Deep Squat</strong><br>
+              <b>3:</b> Talones en suelo, rodillas alineadas, tronco paralelo a tibias<br>
+              <b>2:</b> Talones leve elevación o valgo leve / inclinación de tronco<br>
+              <b>1:</b> Talones elevados, valgo severo, no puede bajar paralelo<br>
+              <b>0:</b> Dolor en cualquier parte del movimiento</div>
+            <div><strong style="color:var(--primary)">🙌 Overhead Reach</strong><br>
+              <b>3:</b> Manos tocan la pared, columna neutral, sin compensación<br>
+              <b>2:</b> Toca pared con compensación lumbar o escápulas aladas<br>
+              <b>1:</b> No logra llevar manos a la pared<br>
+              <b>0:</b> Dolor en hombro o columna</div>
+            <div><strong style="color:var(--primary)">🦵 Single Leg Squat</strong><br>
+              <b>3:</b> Rodilla sobre 2° dedo, pelvis estable, control total<br>
+              <b>2:</b> Valgo leve / inclinación de tronco / inestabilidad<br>
+              <b>1:</b> Colapso en valgo / caída pélvica severa / no completa<br>
+              <b>0:</b> Dolor</div>
+            <div><strong style="color:var(--primary)">💪 Shoulder Clearing</strong><br>
+              <b>3:</b> Puños se tocan o superponen<br>
+              <b>2:</b> Puños a menos de un puño de distancia<br>
+              <b>1:</b> Puños a más de un puño de distancia<br>
+              <b>0:</b> Dolor</div>
+            <div><strong style="color:var(--primary)">🦴 Trendelenburg</strong><br>
+              <b>Neg (normal):</b> Pelvis se mantiene o sube al levantar pierna<br>
+              <b>Pos:</b> Caída del hemipelvis contralateral → debilidad glúteo medio<br>
+              <em>Apoyo monopodal 30s, observar cresta ilíaca contraria</em></div>
+            <div><strong style="color:var(--primary)">🦵 Shin Box</strong><br>
+              <b>RI normal:</b> 35-45° · <b>RE normal:</b> 40-60°<br>
+              <b>Trans 3:</b> Fluida y controlada · <b>Trans 2:</b> Con compensación de tronco<br>
+              <b>Trans 1:</b> No puede hacer transición RI→RE · <b>Trans 0:</b> Dolor</div>
+            <div><strong style="color:var(--primary)">🐦 Bird Dog</strong><br>
+              <b>3:</b> Columna neutral, movimiento coordinado, sin rotación pélvica<br>
+              <b>2:</b> Rotación pélvica leve / temblor / pérdida breve del neutro<br>
+              <b>1:</b> Pérdida severa del neutro o no completa<br>
+              <b>0:</b> Dolor</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 1. DEEP SQUAT -->
+      <div class="test-ex-card" id="tc-ds">
+        <div class="test-ex-hd" onclick="toggleTest('ds')">
+          <div class="test-ex-name">🏋️ Deep Squat <span class="test-tag" id="tag-ds">sin score</span></div>
+          <span id="arr-ds" style="color:var(--muted);font-size:.8rem">▼</span>
+        </div>
+        <div class="test-ex-bd" id="bd-ds">
+          <div class="test-score-row">
+            <div>
+              <div class="bilateral-label">Score</div>
+              <div class="score-btns" id="sc-ds">
+                <div class="score-btn s0" onclick="setScore('ds',0,this)">0</div>
+                <div class="score-btn s1" onclick="setScore('ds',1,this)">1</div>
+                <div class="score-btn s2" onclick="setScore('ds',2,this)">2</div>
+                <div class="score-btn s3" onclick="setScore('ds',3,this)">3</div>
+              </div>
+              <div class="score-legend">1: rodillas adentro / talones<br>2: compensación visible<br>3: patrón correcto</div>
+            </div>
+            <div>
+              <div class="bilateral-label">Foto de referencia</div>
+              <div class="test-mini-photo" id="mph-ds" onclick="document.getElementById('minp-ds').click()">
+                <span style="font-size:1.3rem">📸</span><span style="font-size:.68rem;color:var(--muted)">Subir foto</span>
+                <img id="mimg-ds" src="" alt="" style="display:none">
+                <button class="trm" onclick="removeTestPhoto(event,'ds')">✕</button>
+              </div>
+              <input type="file" id="minp-ds" accept="image/*" style="display:none" onchange="handleTestPhoto('ds',this)">
+            </div>
+          </div>
+          <div class="field" style="margin-top:10px">
+            <label>Observaciones</label>
+            <textarea id="obs-ds" rows="2" placeholder="Valgo bilateral, talones se levantan, inclinación tronco..."></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. OVERHEAD REACH -->
+      <div class="test-ex-card" id="tc-oh">
+        <div class="test-ex-hd" onclick="toggleTest('oh')">
+          <div class="test-ex-name">🙌 Overhead Reach (Wall Test) <span class="test-tag" id="tag-oh">sin score</span></div>
+          <span id="arr-oh" style="color:var(--muted);font-size:.8rem">▼</span>
+        </div>
+        <div class="test-ex-bd" id="bd-oh">
+          <div class="test-score-row">
+            <div>
+              <div class="bilateral-label">Score</div>
+              <div class="score-btns" id="sc-oh">
+                <div class="score-btn s0" onclick="setScore('oh',0,this)">0</div>
+                <div class="score-btn s1" onclick="setScore('oh',1,this)">1</div>
+                <div class="score-btn s2" onclick="setScore('oh',2,this)">2</div>
+                <div class="score-btn s3" onclick="setScore('oh',3,this)">3</div>
+              </div>
+              <div class="score-legend">1: no puede llegar a pared<br>2: lumbar compensa / escápulas<br>3: contacto sin compensación</div>
+            </div>
+            <div>
+              <div class="bilateral-label">Foto</div>
+              <div class="test-mini-photo" id="mph-oh" onclick="document.getElementById('minp-oh').click()">
+                <span style="font-size:1.3rem">📸</span><span style="font-size:.68rem;color:var(--muted)">Subir foto</span>
+                <img id="mimg-oh" src="" alt="" style="display:none">
+                <button class="trm" onclick="removeTestPhoto(event,'oh')">✕</button>
+              </div>
+              <input type="file" id="minp-oh" accept="image/*" style="display:none" onchange="handleTestPhoto('oh',this)">
+            </div>
+          </div>
+          <div class="field" style="margin-top:10px">
+            <label>Observaciones</label>
+            <textarea id="obs-oh" rows="2" placeholder="Compensación lumbar, codos no llegan, escápulas aladas..."></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. SINGLE LEG SQUAT (BILATERAL) -->
+      <div class="test-ex-card" id="tc-sls">
+        <div class="test-ex-hd" onclick="toggleTest('sls')">
+          <div class="test-ex-name">🦵 Single Leg Squat <span class="test-tag" id="tag-sls">sin score</span></div>
+          <span id="arr-sls" style="color:var(--muted);font-size:.8rem">▼</span>
+        </div>
+        <div class="test-ex-bd" id="bd-sls">
+          <div class="score-legend" style="margin-bottom:10px">0=dolor · 1=no puede · 2=valgo/tronco cae · 3=estable y alineado</div>
+          <div class="bilateral-wrap">
+            <div>
+              <div class="bilateral-label">Derecho (D)</div>
+              <div class="score-btns" id="sc-slsd">
+                <div class="score-btn s0" onclick="setScore('slsd',0,this)">0</div>
+                <div class="score-btn s1" onclick="setScore('slsd',1,this)">1</div>
+                <div class="score-btn s2" onclick="setScore('slsd',2,this)">2</div>
+                <div class="score-btn s3" onclick="setScore('slsd',3,this)">3</div>
+              </div>
+              <div class="test-mini-photo" id="mph-slsd" onclick="document.getElementById('minp-slsd').click()" style="width:90px;margin-top:6px">
+                <span style="font-size:1rem">📸</span><span style="font-size:.65rem;color:var(--muted)">Foto D</span>
+                <img id="mimg-slsd" src="" alt="" style="display:none">
+                <button class="trm" onclick="removeTestPhoto(event,'slsd')">✕</button>
+              </div>
+              <input type="file" id="minp-slsd" accept="image/*" style="display:none" onchange="handleTestPhoto('slsd',this)">
+            </div>
+            <div>
+              <div class="bilateral-label">Izquierdo (I)</div>
+              <div class="score-btns" id="sc-slsi">
+                <div class="score-btn s0" onclick="setScore('slsi',0,this)">0</div>
+                <div class="score-btn s1" onclick="setScore('slsi',1,this)">1</div>
+                <div class="score-btn s2" onclick="setScore('slsi',2,this)">2</div>
+                <div class="score-btn s3" onclick="setScore('slsi',3,this)">3</div>
+              </div>
+              <div class="test-mini-photo" id="mph-slsi" onclick="document.getElementById('minp-slsi').click()" style="width:90px;margin-top:6px">
+                <span style="font-size:1rem">📸</span><span style="font-size:.65rem;color:var(--muted)">Foto I</span>
+                <img id="mimg-slsi" src="" alt="" style="display:none">
+                <button class="trm" onclick="removeTestPhoto(event,'slsi')">✕</button>
+              </div>
+              <input type="file" id="minp-slsi" accept="image/*" style="display:none" onchange="handleTestPhoto('slsi',this)">
+            </div>
+          </div>
+          <div class="field" style="margin-top:10px">
+            <label>Observaciones</label>
+            <textarea id="obs-sls" rows="2" placeholder="Valgo D mayor que I, tronco cae hacia izq, inestabilidad tobillo..."></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. SHOULDER CLEARING + MOBILITY (BILATERAL) -->
+      <div class="test-ex-card" id="tc-sh">
+        <div class="test-ex-hd" onclick="toggleTest('sh')">
+          <div class="test-ex-name">💪 Shoulder Clearing + Mobility <span class="test-tag" id="tag-sh">sin score</span></div>
+          <span id="arr-sh" style="color:var(--muted);font-size:.8rem">▼</span>
+        </div>
+        <div class="test-ex-bd" id="bd-sh">
+          <div class="score-legend" style="margin-bottom:10px">0=dolor · 1=puños >1 mano apart · 2=1 mano · 3=puños juntos</div>
+          <div class="bilateral-wrap">
+            <div>
+              <div class="bilateral-label">Mano D arriba</div>
+              <div class="score-btns" id="sc-shd">
+                <div class="score-btn s0" onclick="setScore('shd',0,this)">0</div>
+                <div class="score-btn s1" onclick="setScore('shd',1,this)">1</div>
+                <div class="score-btn s2" onclick="setScore('shd',2,this)">2</div>
+                <div class="score-btn s3" onclick="setScore('shd',3,this)">3</div>
+              </div>
+              <div class="test-mini-photo" id="mph-shd" onclick="document.getElementById('minp-shd').click()" style="width:90px;margin-top:6px">
+                <span style="font-size:1rem">📸</span><span style="font-size:.65rem;color:var(--muted)">Foto D</span>
+                <img id="mimg-shd" src="" alt="" style="display:none">
+                <button class="trm" onclick="removeTestPhoto(event,'shd')">✕</button>
+              </div>
+              <input type="file" id="minp-shd" accept="image/*" style="display:none" onchange="handleTestPhoto('shd',this)">
+            </div>
+            <div>
+              <div class="bilateral-label">Mano I arriba</div>
+              <div class="score-btns" id="sc-shi">
+                <div class="score-btn s0" onclick="setScore('shi',0,this)">0</div>
+                <div class="score-btn s1" onclick="setScore('shi',1,this)">1</div>
+                <div class="score-btn s2" onclick="setScore('shi',2,this)">2</div>
+                <div class="score-btn s3" onclick="setScore('shi',3,this)">3</div>
+              </div>
+              <div class="test-mini-photo" id="mph-shi" onclick="document.getElementById('minp-shi').click()" style="width:90px;margin-top:6px">
+                <span style="font-size:1rem">📸</span><span style="font-size:.65rem;color:var(--muted)">Foto I</span>
+                <img id="mimg-shi" src="" alt="" style="display:none">
+                <button class="trm" onclick="removeTestPhoto(event,'shi')">✕</button>
+              </div>
+              <input type="file" id="minp-shi" accept="image/*" style="display:none" onchange="handleTestPhoto('shi',this)">
+            </div>
+          </div>
+          <div class="field" style="margin-top:10px">
+            <label>Observaciones</label>
+            <textarea id="obs-sh" rows="2" placeholder="Asimetría D vs I, dolor en impingement, limitación rotación interna..."></textarea>
+          </div>
+        </div>
+      </div>
+
+
+      <div class="zone-title" style="margin-top:18px">🦴 Movilidad de Cadera</div>
+
+      <!-- 6. TRENDELENBURG -->
+      <div class="test-ex-card" id="tc-trd">
+        <div class="test-ex-hd" onclick="toggleTest('trd')">
+          <div class="test-ex-name">🦴 Trendelenburg Estático <span class="test-tag" id="tag-trd">sin eval.</span></div>
+          <span id="arr-trd" style="color:var(--muted);font-size:.8rem">▼</span>
+        </div>
+        <div class="test-ex-bd" id="bd-trd">
+          <div class="score-legend" style="margin-bottom:10px"><strong>Positivo</strong> = caída del hemipelvis contralateral · <strong>Negativo</strong> = pelvis se mantiene o sube (normal)</div>
+          <div class="bilateral-wrap">
+            <div>
+              <div class="bilateral-label">Apoyo D (evalúa glúteo D)</div>
+              <div style="display:flex;gap:7px;margin:6px 0">
+                <button class="trd-btn" id="trd-d-pos" onclick="setTrd('d','positivo')">+ Positivo</button>
+                <button class="trd-btn" id="trd-d-neg" onclick="setTrd('d','negativo')">− Negativo</button>
+              </div>
+              <div class="test-mini-photo" id="mph-trdd" onclick="document.getElementById('minp-trdd').click()" style="width:90px;margin-top:6px">
+                <span style="font-size:1rem">📸</span><span style="font-size:.65rem;color:var(--muted)">Foto D</span>
+                <img id="mimg-trdd" src="" alt="" style="display:none">
+                <button class="trm" onclick="removeTestPhoto(event,'trdd')">✕</button>
+              </div>
+              <input type="file" id="minp-trdd" accept="image/*" style="display:none" onchange="handleTestPhoto('trdd',this)">
+            </div>
+            <div>
+              <div class="bilateral-label">Apoyo I (evalúa glúteo I)</div>
+              <div style="display:flex;gap:7px;margin:6px 0">
+                <button class="trd-btn" id="trd-i-pos" onclick="setTrd('i','positivo')">+ Positivo</button>
+                <button class="trd-btn" id="trd-i-neg" onclick="setTrd('i','negativo')">− Negativo</button>
+              </div>
+              <div class="test-mini-photo" id="mph-trdi" onclick="document.getElementById('minp-trdi').click()" style="width:90px;margin-top:6px">
+                <span style="font-size:1rem">📸</span><span style="font-size:.65rem;color:var(--muted)">Foto I</span>
+                <img id="mimg-trdi" src="" alt="" style="display:none">
+                <button class="trm" onclick="removeTestPhoto(event,'trdi')">✕</button>
+              </div>
+              <input type="file" id="minp-trdi" accept="image/*" style="display:none" onchange="handleTestPhoto('trdi',this)">
+            </div>
+          </div>
+          <div class="field" style="margin-top:10px">
+            <label>Observaciones</label>
+            <textarea id="obs-trd" rows="2" placeholder="Caída pélvica D/I, grado de compensación, dolor a la carga..."></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- 7. SHIN BOX -->
+      <div class="test-ex-card" id="tc-sb">
+        <div class="test-ex-hd" onclick="toggleTest('sb')">
+          <div class="test-ex-name">🦵 Shin Box Assessment <span class="test-tag" id="tag-sb">sin eval.</span></div>
+          <span id="arr-sb" style="color:var(--muted);font-size:.8rem">▼</span>
+        </div>
+        <div class="test-ex-bd" id="bd-sb">
+          <div class="score-legend" style="margin-bottom:10px">Sentado en suelo, shin horizontal a 90°. Medir grados de RI y RE activos. Transición RI→RE: 0=dolor · 1=no puede · 2=compensa · 3=fluida</div>
+          <div class="bilateral-wrap">
+            <div>
+              <div class="bilateral-label">Pierna D</div>
+              <div style="display:flex;gap:8px;margin:6px 0">
+                <div style="flex:1"><div style="font-size:.68rem;color:var(--muted);margin-bottom:3px">RI (°)</div><input type="number" class="time-input" style="width:100%" id="sb-ri-d" placeholder="35" min="0" max="90" oninput="updateSbTag()"></div>
+                <div style="flex:1"><div style="font-size:.68rem;color:var(--muted);margin-bottom:3px">RE (°)</div><input type="number" class="time-input" style="width:100%" id="sb-re-d" placeholder="45" min="0" max="90" oninput="updateSbTag()"></div>
+              </div>
+              <div class="bilateral-label">Transición D (0-3)</div>
+              <div class="score-btns" id="sc-sbd">
+                <div class="score-btn s0" onclick="setScore('sbd',0,this)">0</div>
+                <div class="score-btn s1" onclick="setScore('sbd',1,this)">1</div>
+                <div class="score-btn s2" onclick="setScore('sbd',2,this)">2</div>
+                <div class="score-btn s3" onclick="setScore('sbd',3,this)">3</div>
+              </div>
+              <div class="test-mini-photo" id="mph-sbd" onclick="document.getElementById('minp-sbd').click()" style="width:90px;margin-top:6px">
+                <span style="font-size:1rem">📸</span><span style="font-size:.65rem;color:var(--muted)">Foto D</span>
+                <img id="mimg-sbd" src="" alt="" style="display:none">
+                <button class="trm" onclick="removeTestPhoto(event,'sbd')">✕</button>
+              </div>
+              <input type="file" id="minp-sbd" accept="image/*" style="display:none" onchange="handleTestPhoto('sbd',this)">
+            </div>
+            <div>
+              <div class="bilateral-label">Pierna I</div>
+              <div style="display:flex;gap:8px;margin:6px 0">
+                <div style="flex:1"><div style="font-size:.68rem;color:var(--muted);margin-bottom:3px">RI (°)</div><input type="number" class="time-input" style="width:100%" id="sb-ri-i" placeholder="35" min="0" max="90" oninput="updateSbTag()"></div>
+                <div style="flex:1"><div style="font-size:.68rem;color:var(--muted);margin-bottom:3px">RE (°)</div><input type="number" class="time-input" style="width:100%" id="sb-re-i" placeholder="45" min="0" max="90" oninput="updateSbTag()"></div>
+              </div>
+              <div class="bilateral-label">Transición I (0-3)</div>
+              <div class="score-btns" id="sc-sbi">
+                <div class="score-btn s0" onclick="setScore('sbi',0,this)">0</div>
+                <div class="score-btn s1" onclick="setScore('sbi',1,this)">1</div>
+                <div class="score-btn s2" onclick="setScore('sbi',2,this)">2</div>
+                <div class="score-btn s3" onclick="setScore('sbi',3,this)">3</div>
+              </div>
+              <div class="test-mini-photo" id="mph-sbi" onclick="document.getElementById('minp-sbi').click()" style="width:90px;margin-top:6px">
+                <span style="font-size:1rem">📸</span><span style="font-size:.65rem;color:var(--muted)">Foto I</span>
+                <img id="mimg-sbi" src="" alt="" style="display:none">
+                <button class="trm" onclick="removeTestPhoto(event,'sbi')">✕</button>
+              </div>
+              <input type="file" id="minp-sbi" accept="image/*" style="display:none" onchange="handleTestPhoto('sbi',this)">
+            </div>
+          </div>
+          <div class="field" style="margin-top:10px">
+            <label>Observaciones</label>
+            <textarea id="obs-sb" rows="2" placeholder="Asimetría RI/RE, dolor en transición, compensación de tronco..."></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="zone-title" style="margin-top:18px">🔵 Evaluación de Core</div>
+
+      <!-- 8. BIRD DOG -->
+      <div class="test-ex-card" id="tc-bd">
+        <div class="test-ex-hd" onclick="toggleTest('bd')">
+          <div class="test-ex-name">🐦 Bird Dog <span class="test-tag" id="tag-bd">sin score</span></div>
+          <span id="arr-bd" style="color:var(--muted);font-size:.8rem">▼</span>
+        </div>
+        <div class="test-ex-bd" id="bd-bd">
+          <div class="score-legend" style="margin-bottom:10px">0=dolor · 1=pérdida de neutro severa / no completa · 2=rotación pélvica o temblor visible · 3=patrón correcto y simétrico</div>
+          <div class="bilateral-wrap">
+            <div>
+              <div class="bilateral-label">Lado D (brazo D / pierna I)</div>
+              <div class="score-btns" id="sc-bdd">
+                <div class="score-btn s0" onclick="setScore('bdd',0,this)">0</div>
+                <div class="score-btn s1" onclick="setScore('bdd',1,this)">1</div>
+                <div class="score-btn s2" onclick="setScore('bdd',2,this)">2</div>
+                <div class="score-btn s3" onclick="setScore('bdd',3,this)">3</div>
+              </div>
+              <div class="test-mini-photo" id="mph-bdd" onclick="document.getElementById('minp-bdd').click()" style="width:90px;margin-top:6px">
+                <span style="font-size:1rem">📸</span><span style="font-size:.65rem;color:var(--muted)">Foto D</span>
+                <img id="mimg-bdd" src="" alt="" style="display:none">
+                <button class="trm" onclick="removeTestPhoto(event,'bdd')">✕</button>
+              </div>
+              <input type="file" id="minp-bdd" accept="image/*" style="display:none" onchange="handleTestPhoto('bdd',this)">
+            </div>
+            <div>
+              <div class="bilateral-label">Lado I (brazo I / pierna D)</div>
+              <div class="score-btns" id="sc-bdi">
+                <div class="score-btn s0" onclick="setScore('bdi',0,this)">0</div>
+                <div class="score-btn s1" onclick="setScore('bdi',1,this)">1</div>
+                <div class="score-btn s2" onclick="setScore('bdi',2,this)">2</div>
+                <div class="score-btn s3" onclick="setScore('bdi',3,this)">3</div>
+              </div>
+              <div class="test-mini-photo" id="mph-bdi" onclick="document.getElementById('minp-bdi').click()" style="width:90px;margin-top:6px">
+                <span style="font-size:1rem">📸</span><span style="font-size:.65rem;color:var(--muted)">Foto I</span>
+                <img id="mimg-bdi" src="" alt="" style="display:none">
+                <button class="trm" onclick="removeTestPhoto(event,'bdi')">✕</button>
+              </div>
+              <input type="file" id="minp-bdi" accept="image/*" style="display:none" onchange="handleTestPhoto('bdi',this)">
+            </div>
+          </div>
+          <div class="field" style="margin-top:10px">
+            <label>Observaciones</label>
+            <textarea id="obs-bd" rows="2" placeholder="Rotación pélvica, pérdida de neutro lumbar, temblor excesivo, asimetría D vs I..."></textarea>
+          </div>
+        </div>
+      </div>
+
+
+    </div><!-- /card -->
+    <div class="step-controls">
+      <button class="btn btn-ghost" onclick="goStep(2)">← Atrás</button>
+      <button class="btn btn-primary" onclick="goStep(4)">Siguiente — Hallazgos posturales →</button>
+    </div>
+  </div>
+
+  <!-- ═══ STEP 4: HALLAZGOS POSTURALES ═══ -->
+  <div id="step4" style="display:none">
+    <div class="card">
+      <div class="card-title">📐 Hallazgos posturales — <span id="findingsCount" class="count-badge">0</span></div>
+      <p style="font-size:.82rem;color:var(--muted);margin-bottom:16px">Toca los hallazgos que observas en las fotos y en la evaluación estática.</p>
+
+      <div class="zone-title" style="margin-top:0">🦴 Zona Superior</div>
+      <div class="chip-grid">
+        <div class="chip" onclick="toggleChip(this)">Protracción escapular bilateral</div>
+        <div class="chip" onclick="toggleChip(this)">Protracción escapular D</div>
+        <div class="chip" onclick="toggleChip(this)">Protracción escapular I</div>
+        <div class="chip" onclick="toggleChip(this)">Asimetría escapular</div>
+        <div class="chip" onclick="toggleChip(this)">Límit. rot. externa hombro D</div>
+        <div class="chip" onclick="toggleChip(this)">Límit. rot. externa hombro I</div>
+        <div class="chip" onclick="toggleChip(this)">Cifosis dorsal aumentada</div>
+        <div class="chip" onclick="toggleChip(this)">Cabeza adelantada</div>
+        <div class="chip" onclick="toggleChip(this)">Hiperextensión cervical</div>
+        <div class="chip" onclick="toggleChip(this)">Elevación escapular D</div>
+        <div class="chip" onclick="toggleChip(this)">Elevación escapular I</div>
+      </div>
+
+      <div class="zone-title">🔵 Core, Columna & Pelvis</div>
+      <div class="chip-grid">
+        <div class="chip" onclick="toggleChip(this)">Anteversión pélvica</div>
+        <div class="chip" onclick="toggleChip(this)">Retroversión pélvica</div>
+        <div class="chip" onclick="toggleChip(this)">Inclinación pélvica lateral D</div>
+        <div class="chip" onclick="toggleChip(this)">Inclinación pélvica lateral I</div>
+        <div class="chip" onclick="toggleChip(this)">Hiperlordosis lumbar</div>
+        <div class="chip" onclick="toggleChip(this)">Rectificación lumbar</div>
+        <div class="chip" onclick="toggleChip(this)">Escoliosis funcional</div>
+        <div class="chip" onclick="toggleChip(this)">Asimetría lateral de tronco</div>
+        <div class="chip" onclick="toggleChip(this)">Debilidad de core visible</div>
+      </div>
+
+      <div class="zone-title">🦵 Zona Inferior</div>
+      <div class="chip-grid">
+        <div class="chip" onclick="toggleChip(this)">Valgo rodilla D</div>
+        <div class="chip" onclick="toggleChip(this)">Valgo rodilla I</div>
+        <div class="chip" onclick="toggleChip(this)">Valgo bilateral</div>
+        <div class="chip" onclick="toggleChip(this)">Varo de rodilla</div>
+        <div class="chip" onclick="toggleChip(this)">Hiperextensión rodilla</div>
+        <div class="chip" onclick="toggleChip(this)">Pronación pie D</div>
+        <div class="chip" onclick="toggleChip(this)">Pronación pie I</div>
+        <div class="chip" onclick="toggleChip(this)">Supinación pie</div>
+        <div class="chip" onclick="toggleChip(this)">Límit. flex. dorsal tobillo D</div>
+        <div class="chip" onclick="toggleChip(this)">Límit. flex. dorsal tobillo I</div>
+        <div class="chip" onclick="toggleChip(this)">Rot. externa excesiva cadera</div>
+      </div>
+
+      <div class="zone-title">📝 Observaciones posturales</div>
+      <div class="field"><textarea id="pObservaciones" rows="3" placeholder="Hallazgos adicionales en la evaluación estática..."></textarea></div>
+
+      <div class="zone-title">📊 Severidad global</div>
+      <div class="sev-row">
+        <span class="sev-label">Nivel de compromiso:</span>
+        <div class="sev-btns">
+          <div class="sev-btn" id="sev-leve" onclick="selSev('leve')">Leve</div>
+          <div class="sev-btn" id="sev-mod" onclick="selSev('moderado')">Moderado</div>
+          <div class="sev-btn" id="sev-sev" onclick="selSev('severo')">Severo</div>
+        </div>
+      </div>
+    </div>
+    <div class="step-controls">
+      <button class="btn btn-ghost" onclick="goStep(3)">← Atrás</button>
+      <button class="btn btn-primary" onclick="startGenerate()">✨ Generar reporte con IA →</button>
+    </div>
+  </div>
+
+  <!-- ═══ STEP 5: GENERANDO ═══ -->
+  <div id="step5" style="display:none;text-align:center;padding:40px 20px">
+    <div class="loader-ring"></div>
+    <div class="loader-msg">Analizando con IA...</div>
+    <div class="loader-sub" id="loaderMsg">Procesando hallazgos biomecánicos</div>
+    <div style="margin-top:24px;background:var(--s2);border-radius:10px;padding:14px;font-size:.8rem;color:var(--muted);text-align:center;line-height:1.6">
+      La IA genera un reporte completo con los screens funcionales<br>y el análisis postural. <strong style="color:var(--text)">~15 segundos.</strong>
+    </div>
+  </div>
+
+  <!-- ═══ STEP 6: REPORTE ═══ -->
+  <div id="step6" style="display:none">
+    <div id="reportContent"></div>
+    <div class="banner-tecnico">
+      <strong>📋 Estás viendo el reporte técnico completo</strong>
+      Solo visible para ti. Los botones de abajo envían versiones distintas al paciente o a ti.
+    </div>
+    <div class="btn-row">
+      <button class="btn" style="background:#0d9488;color:#fff" onclick="enviarmeATecnico()">📱 Enviarme a mí (técnico)</button>
+      <button class="btn btn-wa" onclick="enviarPacienteWA()">💬 Enviar al paciente</button>
+      <button class="btn btn-email" onclick="enviarPacienteEmail()">📧 Email al paciente</button>
+      <button class="btn btn-print" onclick="window.print()">🖨️ Imprimir / PDF</button>
+    </div>
+    <div style="margin-top:12px;text-align:center">
+      <button class="btn btn-ghost" onclick="nuevaEval()">+ Nueva evaluación</button>
+    </div>
+  </div>
+
+</div><!-- /app -->
+
+<script>
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw_r7Kr-9Uvu0qIVAJpyu8nzhmcJ9fzpqo2pspvFFHV_14cLzb9qUN9k3Lj8cdXFdIW/exec';
+// Auto-login: leer token desde sessionStorage (admin.html lo guarda antes de abrir esta ventana)
+// Ya NO se lee desde la URL para no exponerlo en historial/logs
+(function() {
+  const t = sessionStorage.getItem('evalToken');
+  if (t) { sessionStorage.setItem('adminToken', t); sessionStorage.removeItem('evalToken'); }
+})();
+let TOKEN = sessionStorage.getItem('adminToken') || '';
+let currentStep = 1;
+let nivelSel = 'Principiante';
+let sevSel = '';
+let photos = { frontal: null, lateralD: null, lateralI: null, posterior: null };
+let testPhotos = {};
+let testScores = {};
+let trdScores = {};
+let findings = [];
+let aiReport = '';
+let aiReportPaciente = '';
+let patientData = {};
+
+// Definición de los 5 tests
+const TESTS = [
+  { id:'ds',   name:'Deep Squat',                   bilateral:false },
+  { id:'oh',   name:'Overhead Reach (Wall Test)',    bilateral:false },
+  { id:'sls',  name:'Single Leg Squat',              bilateral:true, ids:['slsd','slsi'], labels:['D','I'] },
+  { id:'sh',   name:'Shoulder Clearing + Mobility',  bilateral:true, ids:['shd','shi'],   labels:['D arr.','I arr.'] },
+  { id:'bm',   name:'Balance Monopodal 10s',         bilateral:true, ids:['bmd','bmi'],   labels:['D','I'], time:true }
+];
+
+if (TOKEN) showApp();
+
+// ── EJEMPLOS DEMO ────────────────────────────────────────────────────
+const DEMOS = [
+  {
+    nombre:'Juan Esteban Gómez', edad:'27', telefono:'3001234567', email:'juan.gomez@email.com',
+    nivel:'Avanzado', anios:'3-5 años', objetivo:'Mejorar rendimiento',
+    molestias:'Dolor lumbar al hacer deadlift y tensión en hombro derecho post-WOD pesado'
+  },
+  {
+    nombre:'María Alejandra Torres', edad:'34', telefono:'3109876543', email:'maria.torres@email.com',
+    nivel:'Intermedio', anios:'1-2 años', objetivo:'Prevenir lesiones',
+    molestias:'Rodilla derecha molesta en los thrusters y box jumps, especialmente al bajar escaleras'
+  }
+];
+function cargarEjemplo(n) {
+  const d = DEMOS[n-1];
+  document.getElementById('pNombre').value    = d.nombre;
+  document.getElementById('pEdad').value      = d.edad;
+  document.getElementById('pTelefono').value  = d.telefono;
+  document.getElementById('pEmail').value     = d.email;
+  document.getElementById('pAnios').value     = d.anios;
+  document.getElementById('pObjetivo').value  = d.objetivo;
+  document.getElementById('pMolestias').value = d.molestias;
+  document.querySelectorAll('.level-btn').forEach(b => b.classList.remove('sel'));
+  document.querySelector('[data-val="' + d.nivel + '"]').classList.add('sel');
+  nivelSel = d.nivel;
+}
+
+// ── PROTOCOLO TOGGLE ─────────────────────────────────────────────────
+function toggleProtocolo() {
+  const box = document.getElementById('protocolo-box');
+  const arr = document.getElementById('proto-arr');
+  const open = box.style.display !== 'none';
+  box.style.display = open ? 'none' : 'block';
+  arr.textContent = open ? '▶' : '▼';
+}
+
+// ── COMPRIMIR IMAGEN ─────────────────────────────────────────────────
+function compressImage(dataUrl, maxW, quality) {
+  maxW = maxW || 900; quality = quality || 0.72;
+  return new Promise(function(resolve) {
+    if (!dataUrl) { resolve(null); return; }
+    var img = new Image();
+    img.onload = function() {
+      var scale = Math.min(1, maxW / Math.max(img.width, img.height));
+      var canvas = document.createElement('canvas');
+      canvas.width  = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = function() { resolve(dataUrl); };
+    img.src = dataUrl;
+  });
+}
+
+async function doLogin() {
+  const pw = document.getElementById('pwInput').value.trim();
+  const btn = document.getElementById('loginBtn');
+  const err = document.getElementById('loginErr');
+  if (!pw) return;
+  btn.textContent = 'Verificando...'; btn.disabled = true; err.style.display = 'none';
+  try {
+    const r = await fetch(APPS_SCRIPT_URL + '?action=adminData&token=' + encodeURIComponent(pw));
+    const d = await r.json();
+    if (d.ok) { TOKEN = pw; sessionStorage.setItem('adminToken', pw); showApp(); }
+    else { err.textContent = 'Contraseña incorrecta.'; err.style.display = 'block'; }
+  } catch(e) { err.textContent = 'Error de conexión.'; err.style.display = 'block'; }
+  btn.textContent = 'Ingresar'; btn.disabled = false;
+}
+document.getElementById('pwInput').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+
+function showApp() {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+}
+
+// ── NAVEGACIÓN ──────────────────────────────────────────────────────
+function goStep(n) {
+  document.getElementById('step' + currentStep).style.display = 'none';
+  document.getElementById('ps' + currentStep).classList.remove('active');
+  document.getElementById('ps' + currentStep).classList.add('done');
+  currentStep = n;
+  document.getElementById('step' + n).style.display = 'block';
+  document.getElementById('ps' + n).classList.remove('done');
+  document.getElementById('ps' + n).classList.add('active');
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+function tryGoStep(n) { if (n < currentStep) goStep(n); }
+
+function goStep1() {
+  const nombre = document.getElementById('pNombre').value.trim();
+  if (!nombre) { alert('Por favor ingresa el nombre del atleta'); document.getElementById('pNombre').focus(); return; }
+  patientData = {
+    nombre:    nombre,
+    edad:      document.getElementById('pEdad').value || 'N/A',
+    telefono:  document.getElementById('pTelefono').value.trim(),
+    email:     document.getElementById('pEmail').value.trim(),
+    nivel:     nivelSel,
+    anios:     document.getElementById('pAnios').value,
+    objetivo:  document.getElementById('pObjetivo').value,
+    molestias: document.getElementById('pMolestias').value.trim() || 'Ninguna reportada'
+  };
+  goStep(2);
+}
+
+function selNivel(el) {
+  document.querySelectorAll('.level-btn').forEach(b => b.classList.remove('sel'));
+  el.classList.add('sel'); nivelSel = el.dataset.val;
+}
+
+// ── FOTOS POSTURALES ────────────────────────────────────────────────
+function handlePhoto(type, input) {
+  const file = input.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    photos[type] = e.target.result;
+    const prev = document.getElementById('prev-' + type);
+    prev.src = e.target.result; prev.style.display = 'block';
+    const box = document.getElementById('box-' + type);
+    box.classList.add('has-photo');
+    box.querySelectorAll('.photo-box-icon,.photo-box-label').forEach(el => el.style.display = 'none');
+  };
+  reader.readAsDataURL(file);
+}
+function removePhoto(e, type) {
+  e.stopPropagation();
+  photos[type] = null;
+  const prev = document.getElementById('prev-' + type);
+  prev.src = ''; prev.style.display = 'none';
+  const box = document.getElementById('box-' + type);
+  box.classList.remove('has-photo');
+  document.getElementById('inp-' + type).value = '';
+  box.querySelectorAll('.photo-box-icon,.photo-box-label').forEach(el => el.style.display = '');
+}
+
+// ── FOTOS DE TESTS ──────────────────────────────────────────────────
+function handleTestPhoto(id, input) {
+  const file = input.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    testPhotos[id] = e.target.result;
+    const img = document.getElementById('mimg-' + id);
+    img.src = e.target.result; img.style.display = 'block';
+    const box = document.getElementById('mph-' + id);
+    box.classList.add('has-photo');
+    box.querySelectorAll('span').forEach(el => el.style.display = 'none');
+  };
+  reader.readAsDataURL(file);
+}
+function removeTestPhoto(e, id) {
+  e.stopPropagation();
+  testPhotos[id] = null;
+  const img = document.getElementById('mimg-' + id);
+  img.src = ''; img.style.display = 'none';
+  const box = document.getElementById('mph-' + id);
+  box.classList.remove('has-photo');
+  document.getElementById('minp-' + id).value = '';
+  box.querySelectorAll('span').forEach(el => el.style.display = '');
+}
+
+// ── TEST ACCORDION ──────────────────────────────────────────────────
+function toggleTest(id) {
+  const bd = document.getElementById('bd-' + id);
+  const arr = document.getElementById('arr-' + id);
+  const isOpen = bd.classList.contains('open');
+  bd.classList.toggle('open');
+  arr.textContent = isOpen ? '▼' : '▲';
+}
+
+// ── SCORE BUTTONS ────────────────────────────────────────────────────
+function setScore(id, val, el) {
+  const container = document.getElementById('sc-' + id);
+  container.querySelectorAll('.score-btn').forEach(b => b.classList.remove('sel'));
+  el.classList.add('sel');
+  testScores[id] = val;
+  // Actualizar tag del test padre
+  const tagEl = document.getElementById('tag-' + id.replace(/[di]$/, '').replace('sl','sls'));
+  if (tagEl) updateTestTag(tagEl, id);
+  // Para tests no bilaterales, actualizar directamente
+  const directTag = document.getElementById('tag-' + id);
+  if (directTag) { directTag.textContent = 'Score ' + val; directTag.className = 'test-tag s' + val; }
+}
+
+function updateTestTag(tagEl, id) {
+  const cleanParent = id.replace(/[di]$/i, '');
+  const bilMap = { sh:['shd','shi'], sls:['slsd','slsi'], bd:['bdd','bdi'], db:['dbd','dbi'], sb:['sbd','sbi'] };
+  const parentTag = document.getElementById('tag-' + cleanParent);
+  if (!parentTag) return;
+  const ids = bilMap[cleanParent];
+  if (!ids) return;
+  const defined = ids.map(i => testScores[i]).filter(s => s !== undefined);
+  if (!defined.length) return;
+  const min = Math.min(...defined);
+  parentTag.textContent = ids.map(i => testScores[i] !== undefined ? testScores[i] : '—').join('/');
+  parentTag.className = 'test-tag s' + min;
+}
+
+function updateBmTag() {
+  const d = document.getElementById('time-bmd').value;
+  const i = document.getElementById('time-bmi').value;
+  const tag = document.getElementById('tag-bm');
+  if (d || i) { tag.textContent = (d||'—') + 's D / ' + (i||'—') + 's I'; tag.className = 'test-tag'; }
+}
+
+function setTrd(side, val) {
+  trdScores[side] = val;
+  const posBtn = document.getElementById('trd-' + side + '-pos');
+  const negBtn = document.getElementById('trd-' + side + '-neg');
+  posBtn.className = 'trd-btn' + (val === 'positivo' ? ' pos' : '');
+  negBtn.className = 'trd-btn' + (val === 'negativo' ? ' neg' : '');
+  updateTrdTag();
+}
+
+function updateTrdTag() {
+  const tag = document.getElementById('tag-trd');
+  if (!trdScores.d && !trdScores.i) return;
+  const fmt = v => !v ? '?' : v === 'positivo' ? '(+)' : '(−)';
+  tag.textContent = 'D ' + fmt(trdScores.d) + ' / I ' + fmt(trdScores.i);
+  tag.className = 'test-tag ' + (trdScores.d === 'positivo' || trdScores.i === 'positivo' ? 's1' : 's3');
+}
+
+function updateSbTag() {
+  const riD = document.getElementById('sb-ri-d').value;
+  const reD = document.getElementById('sb-re-d').value;
+  const riI = document.getElementById('sb-ri-i').value;
+  const reI = document.getElementById('sb-re-i').value;
+  const tag = document.getElementById('tag-sb');
+  if (!riD && !reD && !riI && !reI) return;
+  tag.textContent = 'D:' + (riD||'—') + '°/' + (reD||'—') + '° I:' + (riI||'—') + '°/' + (reI||'—') + '°';
+  tag.className = 'test-tag';
+}
+
+function updatePkTag() {
+  const t = document.getElementById('time-pk').value;
+  const tag = document.getElementById('tag-pk');
+  if (!t) return;
+  tag.textContent = t + 's';
+  tag.className = 'test-tag ' + (+t >= 120 ? 's3' : +t >= 60 ? 's2' : +t >= 30 ? 's1' : 's0');
+}
+
+// ── CHIPS (HALLAZGOS) ────────────────────────────────────────────────
+function toggleChip(el) {
+  el.classList.toggle('sel');
+  const count = document.querySelectorAll('.chip.sel').length;
+  document.getElementById('findingsCount').textContent = count;
+}
+
+// ── SEVERIDAD ────────────────────────────────────────────────────────
+function selSev(val) {
+  document.getElementById('sev-leve').className = 'sev-btn' + (val==='leve'?' sel-leve':'');
+  document.getElementById('sev-mod').className  = 'sev-btn' + (val==='moderado'?' sel-mod':'');
+  document.getElementById('sev-sev').className  = 'sev-btn' + (val==='severo'?' sel-sev':'');
+  sevSel = val;
+}
+
+// ── GENERAR REPORTE ──────────────────────────────────────────────────
+async function startGenerate() {
+  findings = Array.from(document.querySelectorAll('.chip.sel')).map(el => el.textContent.replace('✓ ','').trim());
+  patientData.observaciones = document.getElementById('pObservaciones').value.trim();
+  patientData.severidad     = sevSel || 'No especificada';
+
+  // Recoger datos de todos los tests
+  const screens = {
+    deepSquat:      { score: testScores['ds']   ?? null, obs: document.getElementById('obs-ds').value.trim() },
+    overheadReach:  { score: testScores['oh']   ?? null, obs: document.getElementById('obs-oh').value.trim() },
+    singleLegSquat: { scoreD: testScores['slsd'] ?? null, scoreI: testScores['slsi'] ?? null, obs: document.getElementById('obs-sls').value.trim() },
+    shoulderMob:    { scoreD: testScores['shd']  ?? null, scoreI: testScores['shi']  ?? null, obs: document.getElementById('obs-sh').value.trim() },
+    trendelenburg:  { resultD: trdScores['d'] || null, resultI: trdScores['i'] || null, obs: document.getElementById('obs-trd').value.trim() },
+    shinBox:        { riD: document.getElementById('sb-ri-d').value || null, reD: document.getElementById('sb-re-d').value || null, riI: document.getElementById('sb-ri-i').value || null, reI: document.getElementById('sb-re-i').value || null, transD: testScores['sbd'] ?? null, transI: testScores['sbi'] ?? null, obs: document.getElementById('obs-sb').value.trim() },
+    birdDog:        { scoreD: testScores['bdd'] ?? null, scoreI: testScores['bdi'] ?? null, obs: document.getElementById('obs-bd').value.trim() }
+  };
+
+  goStep(5);
+  const msgs = ['Comprimiendo fotos…','Analizando screens funcionales…','Evaluando biomecánica postural…','Interpretando imágenes con IA…','Identificando riesgos CrossFit…','Redactando reporte profesional…'];
+  let mi = 0;
+  const msgEl = document.getElementById('loaderMsg');
+  const interval = setInterval(() => { msgEl.textContent = msgs[mi++ % msgs.length]; }, 2800);
+
+  try {
+    // Comprimir todas las fotos antes de enviar
+    const allPhotoIds = ['frontal','lateralD','lateralI','posterior','ds','oh','slsd','slsi','shd','shi','trdd','trdi','sbd','sbi','bdd','bdi'];
+    const compressedPhotos = {};
+    for (const id of allPhotoIds) {
+      const src = photos[id] || testPhotos[id];
+      if (src) compressedPhotos[id] = await compressImage(src);
+    }
+
+    const evalData = { ...patientData, hallazgos: findings, screens };
+    const r = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'generateEval', token: TOKEN, data: evalData, photos: compressedPhotos })
+    });
+    const d = await r.json();
+    clearInterval(interval);
+    if (d.ok) {
+      const parts = d.report.split('===PACIENTE===');
+      aiReport         = parts[0].trim();
+      aiReportPaciente = parts[1] ? parts[1].trim() : '';
+      buildReport(screens);
+      goStep(6);
+    }
+    else { alert('Error al generar el reporte: ' + (d.error || 'intenta de nuevo')); goStep(4); }
+  } catch(e) {
+    clearInterval(interval);
+    alert('Error de conexión. Verifica tu internet e intenta de nuevo.');
+    goStep(4);
+  }
+}
+
+// ── CONSTRUIR REPORTE ────────────────────────────────────────────────
+function buildReport(screens) {
+  const p = patientData;
+
+  // FOTOS POSTURALES
+  const postPhotoHtml = [
+    ['frontal',  'Frontal'],
+    ['lateralD', 'Lateral D'],
+    ['lateralI', 'Lateral I'],
+    ['posterior','Posterior']
+  ].map(([t, label]) => `
+    <div>
+      <div class="report-photo">
+        ${photos[t] ? `<img src="${photos[t]}" alt="${label}">` : `<div class="report-photo-empty">Sin foto<br>${label}</div>`}
+      </div>
+      <div class="report-photo-label">${label}</div>
+    </div>`).join('');
+
+  // SCREENS TABLE
+  const scoreColor = s => s===null?'sp-':`sp${s}`;
+  const scoreLabel = s => s===null?'—':`${s}/3`;
+  const timeSuffix = t => t ? t + 's' : '—';
+
+  const screensHtml = `
+    <div class="test-report-grid">
+      ${buildTestCard('Deep Squat', screens.deepSquat.score, null, screens.deepSquat.obs, testPhotos['ds'], false)}
+      ${buildTestCard('Overhead Reach', screens.overheadReach.score, null, screens.overheadReach.obs, testPhotos['oh'], false)}
+      ${buildTestCard('SL Squat D', screens.singleLegSquat.scoreD, null, '', testPhotos['slsd'], false)}
+      ${buildTestCard('SL Squat I', screens.singleLegSquat.scoreI, screens.singleLegSquat.obs, '', testPhotos['slsi'], false)}
+      ${buildTestCard('Shoulder D↑', screens.shoulderMob.scoreD, null, '', testPhotos['shd'], false)}
+      ${buildTestCard('Shoulder I↑', screens.shoulderMob.scoreI, screens.shoulderMob.obs, '', testPhotos['shi'], false)}
+    </div>
+    <div class="test-report-grid">
+      ${buildTrdCard('Trendelenburg D', screens.trendelenburg.resultD, testPhotos['trdd'])}
+      ${buildTrdCard('Trendelenburg I', screens.trendelenburg.resultI, testPhotos['trdi'])}
+      ${buildSbCard('Shin Box D', screens.shinBox.riD, screens.shinBox.reD, screens.shinBox.transD, testPhotos['sbd'])}
+      ${buildSbCard('Shin Box I', screens.shinBox.riI, screens.shinBox.reI, screens.shinBox.transI, testPhotos['sbi'])}
+    </div>
+    <div class="test-report-grid">
+      ${buildTestCard('Bird Dog D', screens.birdDog.scoreD, null, '', testPhotos['bdd'], false)}
+      ${buildTestCard('Bird Dog I', screens.birdDog.scoreI, screens.birdDog.obs, '', testPhotos['bdi'], false)}
+    </div>
+    ${screens.singleLegSquat.obs ? `<p style="font-size:.78rem;color:var(--muted);margin-top:6px;font-style:italic">📝 SL Squat: ${screens.singleLegSquat.obs}</p>` : ''}
+    ${screens.shoulderMob.obs ? `<p style="font-size:.78rem;color:var(--muted);margin-top:4px;font-style:italic">📝 Shoulder: ${screens.shoulderMob.obs}</p>` : ''}
+    ${screens.trendelenburg.obs ? `<p style="font-size:.78rem;color:var(--muted);margin-top:4px;font-style:italic">📝 Trendelenburg: ${screens.trendelenburg.obs}</p>` : ''}
+    ${screens.shinBox.obs ? `<p style="font-size:.78rem;color:var(--muted);margin-top:4px;font-style:italic">📝 Shin Box: ${screens.shinBox.obs}</p>` : ''}
+    ${screens.birdDog.obs ? `<p style="font-size:.78rem;color:var(--muted);margin-top:4px;font-style:italic">📝 Bird Dog: ${screens.birdDog.obs}</p>` : ''}`;
+
+  // HALLAZGOS POSTURALES
+  const sev = p.severidad || 'moderado';
+  const findingsHtml = findings.length
+    ? findings.map(f => `<span class="finding-tag ${sev}">${f}</span>`).join('')
+    : '<span style="color:var(--muted);font-size:.85rem">Sin hallazgos adicionales</span>';
+
+  document.getElementById('reportContent').innerHTML = `
+    <div class="report-header">
+      <h2>Evaluación Express CrossFit</h2>
+      <p>Jessica Ocampo Fisioterapeuta · Pereira, Colombia</p>
+      <div class="report-meta">
+        <div class="report-meta-item">👤 ${p.nombre}${p.edad!=='N/A'?', '+p.edad+' años':''}</div>
+        <div class="report-meta-item">🏋️ ${p.nivel} · ${p.anios}</div>
+        <div class="report-meta-item">🎯 ${p.objetivo}</div>
+        <div class="report-meta-item">📅 ${new Date().toLocaleDateString('es-CO',{day:'numeric',month:'long',year:'numeric'})}</div>
+      </div>
+    </div>
+
+    ${(photos.frontal||photos.lateralD||photos.lateralI||photos.posterior) ? `
+    <div class="report-section">
+      <h3>📐 Registro fotográfico postural</h3>
+      <div class="report-photos">${postPhotoHtml}</div>
+    </div>` : ''}
+
+    <div class="report-section">
+      <h3>🏋️ 5 Screens funcionales</h3>
+      ${screensHtml}
+    </div>
+
+    <div class="report-section">
+      <h3>📐 Hallazgos posturales ${findings.length?`<span class="count-badge">${findings.length}</span>`:''}</h3>
+      <div class="report-findings">${findingsHtml}</div>
+      ${p.observaciones?`<p style="font-size:.82rem;color:var(--muted);margin-top:8px;font-style:italic">📝 ${p.observaciones}</p>`:''}
+      ${p.molestias&&p.molestias!=='Ninguna reportada'?`<div class="alert alert-warn" style="margin-top:10px">⚠️ Molestia reportada: ${p.molestias}</div>`:''}
+    </div>
+
+    <div class="report-section">
+      <h3>🤖 Análisis biomecánico — Reporte técnico</h3>
+      <div class="ai-text">${formatAiReport(aiReport)}</div>
+    </div>
+
+    <div class="cta-box">
+      <h3>¿Listo para corregir estos disbalances?</h3>
+      <p>Con un plan de fisioterapia deportiva personalizado puedes mejorar tus scores, corregir tu postura y llevar tu rendimiento CrossFit al siguiente nivel.</p>
+      <div class="paquetes-grid">
+        <div class="paquete">
+          <div class="pac-badge">POPULAR</div>
+          <h4>Plan CrossFit 4 sesiones</h4>
+          <p>Evaluación completa + 3 sesiones dirigidas a los hallazgos identificados</p>
+        </div>
+        <div class="paquete destacado">
+          <div class="pac-badge">RECOMENDADO</div>
+          <h4>Plan CrossFit 8 sesiones</h4>
+          <p>Tratamiento completo + seguimiento postural + guía de movilidad personalizada</p>
+        </div>
+      </div>
+      <button class="btn btn-wa" style="margin:0 auto;display:flex" onclick="ctaWhatsApp()">💬 Quiero empezar mi plan</button>
+    </div>`;
+}
+
+function buildTestCard(name, score, obs, obsAlt, photo, isTime) {
+  const sc = score ?? null;
+  const pillClass = sc===null?'sp-':`sp${sc}`;
+  const pillText  = sc===null?'sin score':`${sc}/3`;
+  return `<div class="test-report-item">
+    ${photo ? `<img src="${photo}" class="test-report-img" alt="${name}">` : `<div class="test-report-img" style="display:flex;align-items:center;justify-content:center;font-size:1.2rem">📷</div>`}
+    <div style="flex:1;min-width:0">
+      <div class="test-report-name">${name}</div>
+      <span class="score-pill ${pillClass}">${pillText}</span>
+      ${obs||obsAlt ? `<div class="test-report-obs">${obs||obsAlt}</div>` : ''}
+    </div>
+  </div>`;
+}
+
+function buildBmCard(name, time, photo) {
+  const label = time ? time + 's' : 'sin dato';
+  const pillClass = !time ? 'sp-' : +time >= 8 ? 'sp3' : +time >= 5 ? 'sp2' : 'sp1';
+  return `<div class="test-report-item">
+    ${photo ? `<img src="${photo}" class="test-report-img" alt="${name}">` : `<div class="test-report-img" style="display:flex;align-items:center;justify-content:center;font-size:1.2rem">⚖️</div>`}
+    <div style="flex:1">
+      <div class="test-report-name">${name}</div>
+      <span class="score-pill ${pillClass}">${label}</span>
+      <div class="test-report-obs">Normal ≥ 8s</div>
+    </div>
+  </div>`;
+}
+
+function buildTrdCard(name, result, photo) {
+  const pillClass = !result ? 'sp-' : result === 'positivo' ? 'sp1' : 'sp3';
+  const pillText  = !result ? 'sin eval.' : result === 'positivo' ? '(+) Positivo' : '(−) Negativo';
+  return `<div class="test-report-item">
+    ${photo ? `<img src="${photo}" class="test-report-img" alt="${name}">` : `<div class="test-report-img" style="display:flex;align-items:center;justify-content:center;font-size:1.2rem">🦴</div>`}
+    <div style="flex:1;min-width:0">
+      <div class="test-report-name">${name}</div>
+      <span class="score-pill ${pillClass}">${pillText}</span>
+      <div class="test-report-obs">Caída pélvica contralateral</div>
+    </div>
+  </div>`;
+}
+
+function buildSbCard(name, ri, re, trans, photo) {
+  const pillClass = trans === null || trans === undefined ? 'sp-' : `sp${trans}`;
+  const pillText  = trans === null || trans === undefined ? 'sin trans.' : `Trans ${trans}/3`;
+  return `<div class="test-report-item">
+    ${photo ? `<img src="${photo}" class="test-report-img" alt="${name}">` : `<div class="test-report-img" style="display:flex;align-items:center;justify-content:center;font-size:1.2rem">🦵</div>`}
+    <div style="flex:1;min-width:0">
+      <div class="test-report-name">${name}</div>
+      <span class="score-pill ${pillClass}">${pillText}</span>
+      <div class="test-report-obs">RI: ${ri||'—'}° · RE: ${re||'—'}°</div>
+    </div>
+  </div>`;
+}
+
+function buildPlankCard(time, photo) {
+  const label = time ? time + 's' : 'sin dato';
+  const pillClass = !time ? 'sp-' : +time >= 120 ? 'sp3' : +time >= 60 ? 'sp2' : +time >= 30 ? 'sp1' : 'sp0';
+  return `<div class="test-report-item">
+    ${photo ? `<img src="${photo}" class="test-report-img" alt="Plank">` : `<div class="test-report-img" style="display:flex;align-items:center;justify-content:center;font-size:1.2rem">⏱️</div>`}
+    <div style="flex:1">
+      <div class="test-report-name">Plank</div>
+      <span class="score-pill ${pillClass}">${label}</span>
+      <div class="test-report-obs">Normal ≥ 60s · Competidor ≥ 120s</div>
+    </div>
+  </div>`;
+}
+
+function formatAiReport(text) {
+  return text
+    .replace(/\*\*([^*]+)\*\*/g, (_, t) => {
+      if (t === t.toUpperCase() || t.endsWith(':')) return `<div class="ai-section-title">${t}</div>`;
+      return `<strong>${t}</strong>`;
+    })
+    .replace(/\n/g, '<br>');
+}
+
+// ── COMPARTIR ────────────────────────────────────────────────────────
+
+// Envía el reporte técnico completo a Jessica por WhatsApp
+function enviarmeATecnico() {
+  const p = patientData;
+  const text = `*REPORTE TÉCNICO — Evaluación Express CrossFit*\n` +
+    `*Paciente:* ${p.nombre}${p.edad&&p.edad!=='N/A'?', '+p.edad+' años':''}\n` +
+    `*Nivel:* ${p.nivel} · ${p.anios}\n` +
+    `*Objetivo:* ${p.objetivo}\n` +
+    `*Severidad:* ${p.severidad||'—'}\n\n` +
+    `*Hallazgos (${findings.length}):*\n${findings.map(f=>'• '+f).join('\n')}\n\n` +
+    aiReport.replace(/\*\*/g,'*').substring(0, 1400);
+  window.open(`https://wa.me/573136467945?text=${encodeURIComponent(text)}`, '_blank');
+}
+
+// Envía la versión para el paciente (lenguaje simple) por WhatsApp
+function enviarPacienteWA() {
+  const p = patientData;
+  let phone = (p.telefono || '').replace(/\D/g, '');
+  if (phone && phone.length <= 10) phone = '57' + phone;
+  const texto = aiReportPaciente || aiReport;
+  const text = `*Tu Evaluación Express CrossFit*\n*Jessica Ocampo Fisioterapeuta*\n\nHola ${p.nombre}! 👋 Aquí tienes los resultados de tu evaluación de hoy.\n\n` +
+    texto.replace(/\*\*/g,'*').substring(0, 1200) +
+    `\n\n💬 ¿Listo para dar el siguiente paso? Escríbeme y te cuento los planes disponibles 💪\n_Jessica Ocampo Fisioterapeuta · Pereira_`;
+  const url = phone ? `https://wa.me/${phone}?text=${encodeURIComponent(text)}` : `https://wa.me/?text=${encodeURIComponent(text)}`;
+  window.open(url, '_blank');
+}
+
+// Envía la versión para el paciente por email
+function enviarPacienteEmail() {
+  const p = patientData;
+  if (!p.email) { alert('No hay email registrado para este atleta.'); return; }
+  const texto = aiReportPaciente || aiReport;
+  const subject = encodeURIComponent(`Tu Evaluación CrossFit — Jessica Ocampo Fisioterapeuta`);
+  const body = encodeURIComponent(
+    `Hola ${p.nombre},\n\nAquí tienes los resultados de tu evaluación postural express CrossFit.\n\n` +
+    texto.replace(/\*\*/g,'') +
+    `\n\n¿Listo para trabajar en esto? Escríbeme al WhatsApp o agenda tu cita directamente:\nhttps://jessica-ocampo-fisio.com\n\nJessica Ocampo Fisioterapeuta · Pereira\n+57 313 646 7945`
+  );
+  window.open(`mailto:${p.email}?subject=${subject}&body=${body}`);
+}
+
+function ctaWhatsApp() {
+  window.open(`https://wa.me/573136467945?text=${encodeURIComponent('Hola Jessica! Recibí mi evaluación postural CrossFit y me gustaría conocer los paquetes disponibles.')}`, '_blank');
+}
+
+// ── NUEVA EVALUACIÓN ─────────────────────────────────────────────────
+function nuevaEval() {
+  if (!confirm('¿Iniciar nueva evaluación? Se perderán los datos actuales.')) return;
+  currentStep = 1; nivelSel='Principiante'; sevSel=''; aiReport=''; aiReportPaciente=''; findings=[]; patientData={};
+  photos={frontal:null,lateralD:null,lateralI:null,posterior:null}; testPhotos={}; testScores={}; trdScores={};
+  document.querySelectorAll('.chip.sel').forEach(c=>c.classList.remove('sel'));
+  document.querySelectorAll('.level-btn').forEach(b=>b.classList.remove('sel'));
+  document.querySelector('[data-val="Principiante"]').classList.add('sel');
+  ['pNombre','pEdad','pTelefono','pEmail','pMolestias','pObservaciones',
+   'obs-ds','obs-oh','obs-sls','obs-sh',
+   'obs-trd','obs-sb','sb-ri-d','sb-re-d','sb-ri-i','sb-re-i','obs-bd']
+    .forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['frontal','lateralD','lateralI','posterior'].forEach(t=>removePhoto({stopPropagation:()=>{}},t));
+  ['ds','oh','slsd','slsi','shd','shi','trdd','trdi','sbd','sbi','bdd','bdi'].forEach(id=>{
+    testPhotos[id]=null;
+    const img=document.getElementById('mimg-'+id); if(img){img.src='';img.style.display='none';}
+    const box=document.getElementById('mph-'+id); if(box){box.classList.remove('has-photo');box.querySelectorAll('span').forEach(el=>el.style.display='');}
+    const minp=document.getElementById('minp-'+id); if(minp)minp.value='';
+    const sc=document.getElementById('sc-'+id); if(sc)sc.querySelectorAll('.score-btn').forEach(b=>b.classList.remove('sel'));
+  });
+  ['d','i'].forEach(s=>{
+    const pos=document.getElementById('trd-'+s+'-pos'); if(pos)pos.className='trd-btn';
+    const neg=document.getElementById('trd-'+s+'-neg'); if(neg)neg.className='trd-btn';
+  });
+  ['tag-trd','tag-sb','tag-bd'].forEach(id=>{const el=document.getElementById(id);if(el){el.textContent='sin eval.';el.className='test-tag';}});
+  [2,3,4,5,6].forEach(n=>{document.getElementById('step'+n).style.display='none';document.getElementById('ps'+n).classList.remove('done','active');});
+  document.getElementById('step1').style.display='block';
+  document.getElementById('ps1').classList.add('active');
+  document.getElementById('ps1').classList.remove('done');
+  document.getElementById('findingsCount').textContent='0';
+  window.scrollTo({top:0});
+}
+</script>
+</body>
+</html>
