@@ -7047,6 +7047,28 @@ function exportOperationsAuditCSV() {
   downloadOperationsCSV(`auditoria_operativa_${today()}.csv`, rows);
 }
 
+async function fetchJsonWithTimeout(url, options = {}, timeoutMs = 45000) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(url, { ...options, signal: controller.signal });
+    const raw = (await response.text()).replace(/^\uFEFF/, '').trim();
+    if (!raw) throw new Error('El servidor respondió vacío. Intenta nuevamente.');
+    try {
+      return JSON.parse(raw);
+    } catch (_) {
+      throw new Error('El servidor devolvió una respuesta inválida. Intenta nuevamente.');
+    }
+  } catch (error) {
+    if (error && error.name === 'AbortError') {
+      throw new Error('El servidor tardó demasiado. Intenta nuevamente.');
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 function openProfessionalLoginMode() {
   location.hash = '/profesionales/login';
   showOnlyScreen('proLoginScreen');
@@ -7064,14 +7086,14 @@ async function doProfessionalLogin() {
   err.style.display = 'none';
   btn.disabled = true; btn.textContent = 'Verificando...';
   try {
-    const d = await fetch(APPS_SCRIPT_URL, {
+    const d = await fetchJsonWithTimeout(APPS_SCRIPT_URL, {
       method:'POST',
       body:JSON.stringify({
         action:'professionalLogin',
         user:document.getElementById('proUser').value.trim(),
         password:document.getElementById('proPass').value
       })
-    }).then(r => r.json());
+    }, 45000);
     if (!d.ok) throw new Error(d.error || 'No pudimos iniciar sesión');
     PROFESSIONAL_TOKEN = d.professionalToken;
     professionalSession = d.professional;
@@ -7233,11 +7255,10 @@ async function doLogin() {
   if (!pw) return;
   btn.textContent = 'Verificando...'; btn.disabled = true;
   try {
-    const r = await fetch(APPS_SCRIPT_URL, {
+    const d = await fetchJsonWithTimeout(APPS_SCRIPT_URL, {
       method: 'POST',
       body: JSON.stringify({action: 'adminLogin', user, password: pw})
-    });
-    const d = await r.json();
+    }, 45000);
     if (d.ok) {
       _loginAttempts = 0;
       TOKEN = d.sessionToken;
@@ -7266,7 +7287,7 @@ async function doLogin() {
       errEl.style.display = 'block';
     }
   } catch(e) {
-    document.getElementById('loginErr').textContent = 'Error de conexión. Revisa tu internet.';
+    document.getElementById('loginErr').textContent = e.message || 'Error de conexión. Revisa tu internet.';
     document.getElementById('loginErr').style.display = 'block';
   }
   btn.textContent = 'Ingresar'; btn.disabled = false;
@@ -14009,6 +14030,10 @@ function _copyGestionTexto(kind) {
     text = ['DIRECCIÓN Y CRECIMIENTO', `Periodo: ${d.periodo}`, '', '1. RESUMEN FINANCIERO', `Ingresos cobrados: ${money(d.ingresosCobrados)}`, `Ventas generadas: ${money(d.ventasGeneradas)}`, `Pendiente por cobrar: ${money(d.pendienteCobrar)}`, `Meta mensual: ${money(d.metaMensual)}`, `Cumplimiento: ${d.cumplimiento}%`, `Dinero faltante: ${money(d.faltante)}`, '', '2. DIAGNÓSTICO', '', 'Lo que está funcionando:', ...diag.ok.map(x => `* ${x}`), '', 'Lo que necesita atención:', ...diag.att.map(x => `* ${x}`), '', '3. ACCIONES PRIORITARIAS', ...acciones.map((x,i)=>`${i+1}. ${x}`), '', '4. SERVICIOS', 'Servicios más vendidos:', d.serviciosMasVendidos, '', 'Servicios menos vendidos:', d.serviciosMenosVendidos, '', '5. CAPACIDAD', 'Horarios con mayor ocupación:', d.horariosMayorOcupacion, '', 'Horarios con menor ocupación:', d.horariosMenorOcupacion].join('\n');
   }
   return _copyPlainText(text);
+}
+
+function copyGestionTexto(kind) {
+  return _copyGestionTexto(kind);
 }
 
 function _copyGestionAsesorText(d) {
