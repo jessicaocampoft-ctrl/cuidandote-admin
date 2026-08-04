@@ -1,4 +1,5 @@
-﻿<!DOCTYPE html>
+﻿[OK] Patrón localizado: visibilidad del botón Rechazar
+[OK] Patrón localizado: visibilidad del botón Aprobar [OK] Patrón localizado: botón Pedir revisión [OK] Patrón localizado: botón Rechazar [OK] Patrón localizado: botón Aprobar [OK] Patrón localizado: color del estado del pago [OK] Patrón localizado: lista de pagos sin duplicados [OK] Patrón localizado: contador de pagos rechazados [OK] Patrón localizado: contador de pagos aprobados [OK] Patrón localizado: contador de pagos por verificar [OK] Patrón localizado: deduplicación del historial de pagos [OK] Patrón localizado: confirmación manual con PAGO_APROBADO [OK] Patrón localizado: validaciones de valor, fecha y medio de pago <!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
@@ -6879,7 +6880,10 @@ async function saveManualPayment(mode = 'verify') {
   const proofFile = await readPaymentProofFile();
   if (proofFile?.error) return toast(proofFile.error, 'err');
   const ref = document.getElementById('payComprobante').value.trim();
-  if (!proofFile && !ref) return toast('Sube el pantallazo o escribe una referencia del pago', 'err');
+  if (!valorRecibido) return toast('Escribe el valor recibido', 'err');
+  if (!fechaPago) return toast('Selecciona la fecha del pago', 'err');
+  if (!medioPago) return toast('Selecciona el medio de pago', 'err');
+  if (!proofFile && !ref) return toast('Sin archivo adjunto: escribe una referencia u observación del pago', 'err');
   if (mode === 'approve' && !confirm('¿Confirmas que el dinero ya ingresó y quieres autorizar esta cita para atender?')) return;
   const payload = {
     citaId,
@@ -6902,7 +6906,7 @@ async function saveManualPayment(mode = 'verify') {
   if (d.ok) {
     if (mode === 'approve') {
       const obs = payload.observaciones || 'Pago confirmado desde registro de comprobante';
-      const v = await fetch(`${APPS_SCRIPT_URL}?action=verifyPayment&token=${encodeURIComponent(TOKEN)}&id=${encodeURIComponent(d.id)}&estado=Aprobado&observaciones=${encodeURIComponent(obs)}`).then(r => r.json());
+      const v = await fetch(`${APPS_SCRIPT_URL}?action=verifyPayment&token=${encodeURIComponent(TOKEN)}&id=${encodeURIComponent(d.id)}&estado=PAGO_APROBADO&observaciones=${encodeURIComponent(obs)}`).then(r => r.json());
       if (!v.ok) return toast(v.error || 'El comprobante se subió, pero no se pudo aprobar', 'err');
       toast('Pago confirmado y cita autorizada');
     } else {
@@ -6947,10 +6951,18 @@ async function verifyPayment(id, status) {
 function renderPagos() {
   fillPaymentSelectors(document.getElementById('payCitaId')?.value || '');
   const pagos = operationsData.pagos || [];
+  const pagosUnicos = [];
+  const seenPayments = new Set();
+  pagos.forEach(p => {
+    const key = p.CitaID ? `cita:${p.CitaID}` : `pago:${p.ID}`;
+    if (seenPayments.has(key)) return;
+    seenPayments.add(key);
+    pagosUnicos.push(p);
+  });
   const cuentas = operationsData.cuentas || [];
-  const porVerificar = pagos.filter(p => (p.EstadoPago || '') === 'Por verificar').length;
-  const aprobados = pagos.filter(p => (p.EstadoPago || '') === 'Aprobado').length;
-  const rechazados = pagos.filter(p => (p.EstadoPago || '') === 'Rechazado').length;
+  const porVerificar = pagos.filter(p => ['Por verificar','COMPROBANTE_RECIBIDO'].includes(p.EstadoPago || '')).length;
+  const aprobados = pagos.filter(p => ['Aprobado','PAGO_APROBADO'].includes(p.EstadoPago || '')).length;
+  const rechazados = pagos.filter(p => ['Rechazado','PAGO_RECHAZADO'].includes(p.EstadoPago || '')).length;
   document.getElementById('pagosStats').innerHTML = [
     ['Por verificar', porVerificar],
     ['Aprobados', aprobados],
@@ -6965,8 +6977,8 @@ function renderPagos() {
       <div class="team-muted" style="margin-top:8px"><strong>Titular:</strong> ${esc(a.Titular)}</div>
     </div>`).join('') : '<div class="empty"><p>No hay cuentas configuradas.</p></div>';
 
-  document.getElementById('paymentsList').innerHTML = pagos.length ? pagos.slice(0, 40).map(p => {
-    const tone = (p.EstadoPago || '') === 'Aprobado' ? 'ok' : ((p.EstadoPago || '') === 'Rechazado' ? 'warn' : 'info');
+  document.getElementById('paymentsList').innerHTML = pagosUnicos.length ? pagosUnicos.slice(0, 40).map(p => {
+    const tone = ['Aprobado','PAGO_APROBADO'].includes(p.EstadoPago || '') ? 'ok' : (['Rechazado','PAGO_RECHAZADO'].includes(p.EstadoPago || '') ? 'warn' : 'info');
     return `<div class="team-card">
       <div class="team-card-head">
         <div>
@@ -6979,9 +6991,9 @@ function renderPagos() {
       ${p.Comprobante ? `<div class="team-muted">Comprobante/ref: ${String(p.Comprobante).startsWith('http') ? `<a href="${esc(p.Comprobante)}" target="_blank" rel="noopener">Ver comprobante</a>` : esc(p.Comprobante)}</div>` : ''}
       ${p.Observaciones ? `<div class="team-muted">Obs: ${esc(p.Observaciones)}</div>` : ''}
       <div class="team-card-actions">
-        ${(p.EstadoPago || '') !== 'Aprobado' ? `<button class="btn btn-teal btn-sm" onclick="verifyPayment('${esc(p.ID)}','Aprobado')">Aprobar</button>` : ''}
-        ${(p.EstadoPago || '') !== 'Rechazado' ? `<button class="btn btn-danger btn-sm" onclick="verifyPayment('${esc(p.ID)}','Rechazado')">Rechazar</button>` : ''}
-        <button class="btn btn-ghost btn-sm" onclick="verifyPayment('${esc(p.ID)}','Por verificar')">Pedir revisión</button>
+        ${!['Aprobado','PAGO_APROBADO'].includes(p.EstadoPago || '') ? `<button class="btn btn-teal btn-sm" onclick="verifyPayment('${esc(p.ID)}','PAGO_APROBADO')">Aprobar</button>` : ''}
+        ${!['Rechazado','PAGO_RECHAZADO'].includes(p.EstadoPago || '') ? `<button class="btn btn-danger btn-sm" onclick="verifyPayment('${esc(p.ID)}','PAGO_RECHAZADO')">Rechazar</button>` : ''}
+        <button class="btn btn-ghost btn-sm" onclick="verifyPayment('${esc(p.ID)}','COMPROBANTE_RECIBIDO')">Pedir revisión</button>
       </div>
     </div>`;
   }).join('') : '<div class="empty"><p>No hay pagos registrados aún.</p></div>';
@@ -20193,6 +20205,7 @@ document.addEventListener('DOMContentLoaded', () => {
 <script src="admin-copy-tools.js"></script>
 </body>
 </html>
+
 
 
 
