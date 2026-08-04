@@ -6,6 +6,7 @@ const target = process.argv[2] || 'index.html';
 const raw = fs.readFileSync(target, 'utf8');
 const html = raw.replace(/^\uFEFF/, '');
 const findings = [];
+const outputDir = path.resolve('audit-output');
 
 function add(severity, code, message, detail = '') {
   findings.push({ severity, code, message, detail });
@@ -13,6 +14,10 @@ function add(severity, code, message, detail = '') {
 
 function unique(values) {
   return [...new Set(values)];
+}
+
+function lineNumber(source, index) {
+  return source.slice(0, Math.max(0, index)).split('\n').length;
 }
 
 const doctypeIndex = html.search(/<!doctype html>/i);
@@ -26,11 +31,19 @@ if (/\[OK\]\s*Patr[oó]n localizado/i.test(prefix)) {
   add('CRITICAL', 'PATCH_LOG_IN_HTML', 'Un script de corrección insertó mensajes de diagnóstico dentro del HTML.');
 }
 
-const ids = [...html.matchAll(/\bid\s*=\s*["']([^"']+)["']/gi)].map(m => m[1]);
+const markupOnly = html
+  .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '')
+  .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, '');
+
+const idMatches = [...markupOnly.matchAll(/\bid\s*=\s*["']([^"']+)["']/gi)];
+const ids = idMatches.map(m => m[1]);
 const idCounts = new Map();
 for (const id of ids) idCounts.set(id, (idCounts.get(id) || 0) + 1);
 for (const [id, count] of idCounts) {
-  if (count > 1) add('CRITICAL', 'DUPLICATE_ID', `El id "${id}" aparece ${count} veces.`);
+  if (count > 1) {
+    const lines = idMatches.filter(m => m[1] === id).map(m => lineNumber(markupOnly, m.index));
+    add('CRITICAL', 'DUPLICATE_ID', `El id "${id}" aparece ${count} veces en el HTML estático.`, `Líneas aproximadas: ${lines.join(', ')}`);
+  }
 }
 
 const directIdRefs = [
@@ -38,10 +51,12 @@ const directIdRefs = [
   ...html.matchAll(/querySelector\(\s*["']#([A-Za-z][\w:.-]*)["']\s*\)/g)
 ].map(m => m[1]);
 for (const ref of unique(directIdRefs)) {
-  if (!idCounts.has(ref)) add('WARNING', 'MISSING_STATIC_ID', `El código consulta #${ref}, pero no existe un id estático con ese nombre.`, 'Puede ser un elemento generado dinámicamente; requiere revisión manual.');
+  if (!idCounts.has(ref) && !new RegExp(`id\\s*=\\s*[\\"']${ref.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[\\"']`).test(html)) {
+    add('WARNING', 'MISSING_STATIC_ID', `El código consulta #${ref}, pero no existe un id literal con ese nombre.`, 'Puede ser un elemento generado dinámicamente; requiere revisión manual.');
+  }
 }
 
-const sectionTargets = unique([...html.matchAll(/data-section\s*=\s*["']([^"']+)["']/gi)].map(m => m[1]));
+const sectionTargets = unique([...markupOnly.matchAll(/data-section\s*=\s*["']([^"']+)["']/gi)].map(m => m[1]));
 for (const section of sectionTargets) {
   if (!idCounts.has(section) && !idCounts.has(`section-${section}`) && !idCounts.has(`${section}Section`)) {
     add('WARNING', 'SECTION_TARGET_NOT_FOUND', `El menú apunta a la sección "${section}", pero no se encontró un contenedor estático equivalente.`);
@@ -53,7 +68,7 @@ const legacyStateCalls = [
   ...html.matchAll(/[?&]estado=(Aprobado|Rechazado|Por%20verificar|Por verificar)/g)
 ];
 for (const match of legacyStateCalls) {
-  add('CRITICAL', 'LEGACY_PAYMENT_STATE', `El flujo de pagos todavía envía el estado antiguo "${match[1]}".`, match[0].slice(0, 250));
+  add('CRITICAL', 'LEGACY_PAYMENT_STATE', `El flujo de pagos todavía envía el estado antiguo "${match[1]}".`, `Línea aproximada ${lineNumber(html, match.index)}: ${match[0].slice(0, 250)}`);
 }
 
 for (const state of ['PAGO_APROBADO', 'PAGO_RECHAZADO', 'COMPROBANTE_RECIBIDO']) {
@@ -71,12 +86,11 @@ const inlineScripts = [...html.matchAll(/<script\b(?![^>]*\bsrc\s*=)[^>]*>([\s\S
   .map(m => m[1])
   .filter(code => code.trim() && !/^\s*[\[{]/.test(code));
 
+fs.mkdirSync(outputDir, { recursive: true });
 if (inlineScripts.length === 0) {
   add('WARNING', 'NO_INLINE_SCRIPT', 'No se encontraron bloques JavaScript internos para validar.');
 } else {
-  const auditDir = path.resolve('.audit-output');
-  fs.mkdirSync(auditDir, { recursive: true });
-  const jsPath = path.join(auditDir, 'inline-scripts.js');
+  const jsPath = path.join(outputDir, 'inline-scripts.js');
   fs.writeFileSync(jsPath, inlineScripts.join('\n;\n'), 'utf8');
   const syntax = spawnSync(process.execPath, ['--check', jsPath], { encoding: 'utf8' });
   if (syntax.status !== 0) {
@@ -84,20 +98,23 @@ if (inlineScripts.length === 0) {
   }
 }
 
-const functionDeclarations = [...html.matchAll(/\bfunction\s+([A-Za-z_$][\w$]*)\s*\(/g)].map(m => m[1]);
+const scriptSource = inlineScripts.join('\n;\n');
+const functionDeclarations = [...scriptSource.matchAll(/\bfunction\s+([A-Za-z_$][\w$]*)\s*\(/g)].map(m => m[1]);
 const duplicateFunctions = [...new Set(functionDeclarations.filter((name, index, arr) => arr.indexOf(name) !== index))];
 for (const name of duplicateFunctions) {
-  add('WARNING', 'DUPLICATE_FUNCTION', `La función ${name} está declarada más de una vez.`);
+  const count = functionDeclarations.filter(n => n === name).length;
+  add('WARNING', 'DUPLICATE_FUNCTION', `La función ${name} está declarada ${count} veces.`);
 }
 
-const onclickFunctions = unique([...html.matchAll(/\bonclick\s*=\s*["']\s*([A-Za-z_$][\w$]*)\s*\(/gi)].map(m => m[1]));
+const onclickFunctions = unique([...markupOnly.matchAll(/\bonclick\s*=\s*["']\s*([A-Za-z_$][\w$]*)\s*\(/gi)].map(m => m[1]));
 const declaredNames = new Set([
   ...functionDeclarations,
-  ...[...html.matchAll(/\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*(?:async\s*)?(?:function\b|\([^)]*\)\s*=>|[A-Za-z_$][\w$]*\s*=>)/g)].map(m => m[1])
+  ...[...scriptSource.matchAll(/\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*(?:async\s*)?(?:function\b|\([^)]*\)\s*=>|[A-Za-z_$][\w$]*\s*=>)/g)].map(m => m[1])
 ]);
-const browserBuiltins = new Set(['alert', 'confirm', 'open', 'print']);
+const browserBuiltins = new Set(['alert', 'confirm', 'open', 'print', 'setTimeout', 'setInterval', 'clearTimeout', 'clearInterval']);
+const languageKeywords = new Set(['if', 'for', 'while', 'switch', 'return', 'try', 'catch']);
 for (const name of onclickFunctions) {
-  if (!declaredNames.has(name) && !browserBuiltins.has(name)) {
+  if (!declaredNames.has(name) && !browserBuiltins.has(name) && !languageKeywords.has(name)) {
     add('WARNING', 'MISSING_CLICK_HANDLER', `El HTML llama ${name}() desde un botón, pero no se encontró su declaración estática.`);
   }
 }
@@ -108,7 +125,7 @@ const reportLines = [
   '# Resultado de auditoría automática',
   '',
   `- Archivo: \`${target}\``,
-  `- IDs encontrados: ${ids.length}`,
+  `- IDs estáticos encontrados: ${ids.length}`,
   `- Secciones de menú detectadas: ${sectionTargets.length}`,
   `- Bloques JavaScript revisados: ${inlineScripts.length}`,
   `- Hallazgos críticos: ${critical.length}`,
@@ -129,9 +146,8 @@ if (findings.length === 0) {
 
 reportLines.push('', '## Alcance', '', 'Esta auditoría detecta regresiones estructurales y de contrato. Inicio de sesión, permisos, llamadas reales al backend, carga de archivos y persistencia deben validarse además con pruebas funcionales controladas.');
 
-fs.mkdirSync('.audit-output', { recursive: true });
-fs.writeFileSync('.audit-output/resultado-auditoria.md', reportLines.join('\n'), 'utf8');
-fs.writeFileSync('.audit-output/resultado-auditoria.json', JSON.stringify({ target, critical, warnings, findings }, null, 2), 'utf8');
+fs.writeFileSync(path.join(outputDir, 'resultado-auditoria.md'), reportLines.join('\n'), 'utf8');
+fs.writeFileSync(path.join(outputDir, 'resultado-auditoria.json'), JSON.stringify({ target, critical, warnings, findings }, null, 2), 'utf8');
 console.log(reportLines.join('\n'));
 
 process.exit(critical.length > 0 ? 1 : 0);
