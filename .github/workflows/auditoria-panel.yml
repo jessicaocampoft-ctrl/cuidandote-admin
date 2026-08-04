@@ -57,6 +57,7 @@ jobs:
         run: |
           node tools/fix-browser-smoke-test-v2.mjs tools/browser-smoke.mjs
           node tools/fix-browser-smoke-test-v3.mjs tools/browser-smoke.mjs
+          node tools/fix-browser-smoke-test-v4.mjs tools/browser-smoke.mjs
 
       - name: Descargar contrato actual del backend
         run: curl --fail --silent --show-error --location "https://raw.githubusercontent.com/jessicaocampoft-ctrl/jessicaocampoft-ctrl.github.io/main/google-apps-script.js" --output audit-backend.js
