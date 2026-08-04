@@ -79,8 +79,14 @@ if (html.includes(simpleGlobalSearch)) {
 
 // 4) Reparar el botón de cobro que llama openPago() sin tener función definida.
 const hasOpenPagoDeclaration = /\b(?:async\s+)?function\s+openPago\s*\(/.test(html);
-if (!hasOpenPagoDeclaration && /onclick="openPago\('/.test(html)) {
+const openPagoReference = html.indexOf('onclick="openPago(');
+if (!hasOpenPagoDeclaration && openPagoReference >= 0) {
   const marker = '// ── Alerta semana floja ──';
+  const insertionIndex = html.indexOf(marker, openPagoReference);
+  if (insertionIndex < 0) {
+    throw new Error('openPago: no se encontró el punto de inserción después del botón Registrar pago.');
+  }
+
   const openPagoFunction = `function openPago(citaId) {
   showView('pagos');
   setTimeout(() => {
@@ -98,11 +104,8 @@ if (!hasOpenPagoDeclaration && /onclick="openPago\('/.test(html)) {
 }
 
 `;
-  const markerCount = html.split(marker).length - 1;
-  if (markerCount !== 1) {
-    throw new Error(`openPago: se esperaba un marcador de inserción y se encontraron ${markerCount}.`);
-  }
-  html = html.replace(marker, openPagoFunction + marker);
+
+  html = html.slice(0, insertionIndex) + openPagoFunction + html.slice(insertionIndex);
   changes.push('Crear función openPago para Registrar pago');
 }
 
