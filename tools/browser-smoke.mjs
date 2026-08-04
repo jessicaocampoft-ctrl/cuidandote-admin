@@ -291,6 +291,20 @@ try {
       if(s.value!=='QA-CITA' || display==='none') throw new Error(JSON.stringify({value:s.value,display,options,citas:allData.citas,operaciones:operationsData.citas}));
       return true;
     })()`],
+      const s=document.getElementById('payCitaId');
+      if(!s) throw new Error('payCitaId ausente');
+      const now=new Date();
+      const qaDate=[now.getFullYear(),String(now.getMonth()+1).padStart(2,'0'),String(now.getDate()).padStart(2,'0')].join('-');
+      const qaCita={id:'QA-CITA',ID:'QA-CITA',CitaID:'QA-CITA',nombre:'QA Auditoría',Cliente:'QA Auditoría',fecha:qaDate,Fecha:qaDate,hora:'10:00',Hora:'10:00',servicio:'Descarga muscular completa',Servicio:'Descarga muscular completa',estado:'Pendiente de pago',Estado:'Pendiente de pago',precio:'10000',Precio:'10000'};
+      allData.citas=[qaCita];
+      operationsData.citas=[qaCita];
+      openPago('QA-CITA');
+      await new Promise(r=>setTimeout(r,300));
+      const options=[...s.options].map(o=>({value:o.value,text:o.textContent}));
+      const display=getComputedStyle(document.getElementById('vPagos')).display;
+      if(s.value!=='QA-CITA' || display==='none') throw new Error(JSON.stringify({value:s.value,display,options,citas:allData.citas,operaciones:operationsData.citas}));
+      return true;
+    })()`],
     ['Búsqueda global', `(() => { if(typeof globalSearch!=='function') throw new Error('globalSearch ausente'); globalSearch('QA'); const f=document.getElementById('fSearch'); return !f || f.value==='QA'; })()`],
     ['Solicitud con timeout', `(async () => { if(typeof fetchJsonWithTimeout!=='function') throw new Error('fetchJsonWithTimeout ausente'); const d=await fetchJsonWithTimeout(APPS_SCRIPT_URL+'?action=ping',{},1000); return d && d.ok===true; })()`]
   ];
