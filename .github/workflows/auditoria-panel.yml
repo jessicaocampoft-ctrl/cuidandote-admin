@@ -36,6 +36,9 @@ jobs:
       - name: Aplicar correcciones estructurales de fase 1
         run: node tools/fix-panel-phase1.mjs index.html
 
+      - name: Aplicar correcciones funcionales de fase 2
+        run: node tools/fix-panel-phase2.mjs index.html
+
       - name: Extraer contexto general de los hallazgos
         run: node tools/inspect-panel.mjs index.html
 
@@ -50,7 +53,7 @@ jobs:
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git add index.html AUDIT_CONTEXT.md AUDIT_PHASE2.md
-            git commit -m "Preparar correcciones funcionales de fase 2"
+            git commit -m "Corregir copia de información y tiempos de espera del login"
             git push origin HEAD:auditoria-panel-2026-08-04
           fi
 
