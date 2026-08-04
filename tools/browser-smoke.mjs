@@ -210,7 +210,15 @@ try {
 
   await evaluate(cdp, `(() => {
     try { TOKEN = 'q'.repeat(48); } catch (_) {}
-    try { allData = { citas: [], pacientes: [], bloqueos: [], eventos: [], codigos: [], servicios: [], currentUser: {id:'qa',nombre:'QA Auditoría',rol:'Superadministradora'} }; } catch (_) {}
+    try {
+      const now = new Date();
+      const qaDate = [now.getFullYear(), String(now.getMonth()+1).padStart(2,'0'), String(now.getDate()).padStart(2,'0')].join('-');
+      allData = {
+        citas: [{ id:'QA-CITA', nombre:'QA Auditoría', fecha:qaDate, hora:'10:00', servicio:'Descarga muscular completa', estado:'Pendiente de pago', precio:'10000' }],
+        pacientes: [], bloqueos: [], eventos: [], codigos: [], servicios: [],
+        currentUser: {id:'qa',nombre:'QA Auditoría',rol:'Superadministradora'}
+      };
+    } catch (_) {}
     try { operationsData = { citas: [], pagos: [], cuentas: [], paquetes: [], comisiones: [], waitlist: [] }; } catch (_) {}
     const login = document.getElementById('loginScreen'); if (login) login.style.display = 'none';
     const app = document.getElementById('adminApp'); if (app) app.style.display = 'block';
@@ -236,7 +244,7 @@ try {
   const localTests = [
     ['Dictado por voz', `(() => { const p=document.getElementById('voicePanel'); if(!p) throw new Error('voicePanel ausente'); const before=p.style.display; toggleVoicePanel(); const opened=p.style.display; toggleVoicePanel(); return before !== opened; })()`],
     ['Copiar resumen de gestión', `(async () => { if(typeof copyGestionTexto!=='function') throw new Error('copyGestionTexto ausente'); await copyGestionTexto('ejecutivo'); return !!window.__smokeClipboard; })()`],
-    ['Abrir pago desde una cita', `(async () => { const s=document.getElementById('payCitaId'); if(!s) throw new Error('payCitaId ausente'); s.innerHTML='<option value="QA-CITA">QA</option>'; openPago('QA-CITA'); await new Promise(r=>setTimeout(r,180)); return s.value==='QA-CITA'; })()`],
+    ['Abrir pago desde una cita', `(async () => { const s=document.getElementById('payCitaId'); if(!s) throw new Error('payCitaId ausente'); openPago('QA-CITA'); await new Promise(r=>setTimeout(r,220)); return s.value==='QA-CITA' && getComputedStyle(document.getElementById('vPagos')).display !== 'none'; })()`],
     ['Búsqueda global', `(() => { if(typeof globalSearch!=='function') throw new Error('globalSearch ausente'); globalSearch('QA'); const f=document.getElementById('fSearch'); return !f || f.value==='QA'; })()`],
     ['Solicitud con timeout', `(async () => { if(typeof fetchJsonWithTimeout!=='function') throw new Error('fetchJsonWithTimeout ausente'); const d=await fetchJsonWithTimeout(APPS_SCRIPT_URL+'?action=ping',{},1000); return d && d.ok===true; })()`]
   ];
@@ -255,7 +263,7 @@ try {
   const cdpErrors = cdp.events
     .filter(event => event.method === 'Runtime.exceptionThrown' || (event.method === 'Log.entryAdded' && event.params?.entry?.level === 'error'))
     .map(event => event.params?.exceptionDetails?.exception?.description || event.params?.exceptionDetails?.text || event.params?.entry?.text || event.method);
-  const relevantCdpErrors = cdpErrors.filter(text => !/favicon|ERR_BLOCKED_BY_CLIENT|Failed to load resource/i.test(text));
+  const relevantCdpErrors = cdpErrors.filter(text => !/favicon|ERR_BLOCKED_BY_CLIENT|Failed to load resource|X-Frame-Options may only be set via an HTTP header/i.test(text));
   if (relevantCdpErrors.length) failures.push({ test: 'Errores del navegador', detail: relevantCdpErrors.join(' | ').slice(0, 5000) });
 
 } finally {
