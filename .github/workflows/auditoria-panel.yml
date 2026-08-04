@@ -42,6 +42,14 @@ jobs:
       - name: Aplicar correcciones de encuestas, Base de datos y voz
         run: node tools/fix-panel-phase4.mjs index.html
 
+      - name: Descargar contrato actual del backend
+        run: curl --fail --silent --show-error --location "https://raw.githubusercontent.com/jessicaocampoft-ctrl/jessicaocampoft-ctrl.github.io/main/google-apps-script.js" --output audit-backend.js
+
+      - name: Comparar acciones del panel con Apps Script
+        id: contract_audit
+        continue-on-error: true
+        run: node tools/audit-contracts.mjs index.html audit-backend.js
+
       - name: Extraer contexto general de los hallazgos
         run: node tools/inspect-panel.mjs index.html
 
@@ -59,18 +67,22 @@ jobs:
 
       - name: Guardar correcciones e informes en la rama aislada
         run: |
-          if [ -z "$(git status --porcelain -- index.html AUDIT_CONTEXT.md AUDIT_PHASE2.md AUDIT_PHASE3.md AUDIT_PHASE4.md AUDIT_PHASE4_DETAILS.md)" ]; then
+          if [ -z "$(git status --porcelain -- index.html AUDIT_CONTEXT.md AUDIT_PHASE2.md AUDIT_PHASE3.md AUDIT_PHASE4.md AUDIT_PHASE4_DETAILS.md AUDIT_CONTRACTS.md)" ]; then
             echo "No había cambios seguros pendientes."
           else
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add index.html AUDIT_CONTEXT.md AUDIT_PHASE2.md AUDIT_PHASE3.md AUDIT_PHASE4.md AUDIT_PHASE4_DETAILS.md
-            git commit -m "Corregir encuestas Base de datos y dictado por voz"
+            git add index.html AUDIT_CONTEXT.md AUDIT_PHASE2.md AUDIT_PHASE3.md AUDIT_PHASE4.md AUDIT_PHASE4_DETAILS.md AUDIT_CONTRACTS.md
+            git commit -m "Auditar contratos entre panel y Apps Script"
             git push origin HEAD:auditoria-panel-2026-08-04
           fi
 
-      - name: Revisar estructura, JavaScript y contratos críticos
+      - name: Revisar estructura y JavaScript
         run: node tools/audit-panel.mjs index.html
+
+      - name: Exigir contratos completos
+        run: |
+          node -e "const r=require('./audit-output/contratos-panel-backend.json'); if(r.missing.length){console.error('Acciones sin backend:',r.missing.join(', ')); process.exit(1)} console.log('Contratos completos:',r.requestedActions.length,'acciones verificadas')"
 
       - name: Guardar informe incluso si hay errores
         if: always()
