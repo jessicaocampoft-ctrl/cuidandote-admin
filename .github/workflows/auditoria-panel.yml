@@ -1,0 +1,36 @@
+name: Auditoría automática del panel
+
+on:
+  push:
+    branches:
+      - auditoria-panel-2026-08-04
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  auditoria:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar código
+        uses: actions/checkout@v4
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Revisar estructura, JavaScript y contratos críticos
+        run: node tools/audit-panel.mjs index.html
+
+      - name: Guardar informe incluso si hay errores
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: resultado-auditoria-panel
+          path: .audit-output/
+          if-no-files-found: warn
