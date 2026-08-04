@@ -2794,6 +2794,13 @@ Primero evaluamos cómo está el cuerpo ahora, luego tratamos, luego te enseñam
             <strong style="color:var(--text)">3.</strong> Dicta la cita &nbsp;
             <strong style="color:var(--text)">4.</strong> Toca <em>Procesar</em>
           </p>
+          <div id="voiceStatus" style="display:none;align-items:center;gap:8px;margin-bottom:8px;padding:8px 10px;background:rgba(27,191,176,.10);border:1px solid rgba(27,191,176,.28);border-radius:8px;font-size:.8rem;color:var(--primary)">
+            <span>🎙️ Escuchando</span>
+            <span id="voiceTranscript" style="color:var(--text);font-style:italic"></span>
+          </div>
+          <div id="voiceHelp" style="display:none;margin-bottom:8px;padding:8px 10px;background:rgba(245,158,11,.10);border:1px solid rgba(245,158,11,.28);border-radius:8px;font-size:.78rem;color:#92400e">
+            Prueba diciendo: “Cita para María, mañana a las 3 de la tarde, descarga muscular completa”.
+          </div>
           <textarea id="voiceText" rows="3" placeholder='Ej: "Cita para María García, mañana a las 3 pm, descarga muscular completa, presencial"' style="width:100%;background:var(--s1);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font-b);font-size:.9rem;padding:10px 12px;outline:none;resize:none;margin-bottom:8px" onfocus="this.style.borderColor='var(--primary)'"></textarea>
           <div style="display:flex;gap:8px">
             <button type="button" onclick="procesarVozTexto()" style="flex:1;background:var(--primary);color:#0D0D0D;font-family:var(--font-b);font-size:.88rem;font-weight:600;padding:10px;border:none;border-radius:8px;cursor:pointer">✓ Procesar cita</button>
@@ -4766,7 +4773,7 @@ Acción: enviar mensaje de reenganche a los 14 pacientes que solo vinieron una v
               <div class="em-prog-meta" id="emPM_nps">0 de 6 pasos completados</div>
               <div class="em-prog-wrap"><div class="em-prog-fill" id="emPF_nps" style="width:0%"></div></div>
               <div class="em-steps">
-                <label class="em-step" id="emS_nps_0" onclick="handleEmStep(event,'nps',0)"><input type="checkbox" id="emCk_nps_0" onclick="event.stopPropagation()"><span class="em-step-n">01</span><span class="em-step-text"><strong>Cargar encuestas e identificar detractores:</strong> presionar "Cargar encuestas" en el tablero y revisar en el formulario de Google quiénes respondieron con nota 0–3. Anotar nombre, servicio y fecha de la sesión.</span><button class="em-goto" onclick="event.stopPropagation();document.getElementById('kpiLoadBtn') && document.getElementById('kpiLoadBtn').click()">Cargar encuestas →</button></label>
+                <label class="em-step" id="emS_nps_0" onclick="handleEmStep(event,'nps',0)"><input type="checkbox" id="emCk_nps_0" onclick="event.stopPropagation()"><span class="em-step-n">01</span><span class="em-step-text"><strong>Cargar encuestas e identificar detractores:</strong> presionar "Cargar encuestas" en el tablero y revisar en el formulario de Google quiénes respondieron con nota 0–3. Anotar nombre, servicio y fecha de la sesión.</span><button class="em-goto" onclick="event.stopPropagation();document.getElementById('btnCargarEncuesta') && document.getElementById('btnCargarEncuesta').click()">Cargar encuestas →</button></label>
                 <label class="em-step" id="emS_nps_1" onclick="handleEmStep(event,'nps',1)"><input type="checkbox" id="emCk_nps_1" onclick="event.stopPropagation()"><span class="em-step-n">02</span><span class="em-step-text"><strong>Llamar a cada detractor en menos de 48h:</strong> no WhatsApp — llamada de voz. Guión de apertura: <em>"Hola [nombre], soy Jessica. Vi que tu experiencia no fue lo que esperabas y quería llamarte personalmente para entender qué pasó. No es para defenderme — es para aprender."</em> Escuchar el doble de lo que hablas.</span></label>
                 <label class="em-step" id="emS_nps_2" onclick="handleEmStep(event,'nps',2)"><input type="checkbox" id="emCk_nps_2" onclick="event.stopPropagation()"><span class="em-step-n">03</span><span class="em-step-text"><strong>Ofrecer sesión de compensación sin condiciones:</strong> al final de la llamada, si la queja es válida, ofrecer una sesión gratuita o con descuento significativo. No pedirle que cambie la nota — solo demostrar que la calidad importa. Muchos detractores se convierten en los pacientes más leales después de una recuperación bien manejada.</span></label>
                 <label class="em-step" id="emS_nps_3" onclick="handleEmStep(event,'nps',3)"><input type="checkbox" id="emCk_nps_3" onclick="event.stopPropagation()"><span class="em-step-n">04</span><span class="em-step-text"><strong>Analizar el patrón de quejas:</strong> ¿todos los detractores tuvieron el mismo servicio? ¿El mismo día de la semana? ¿Coinciden en horario o auxiliar? Si hay un patrón claro, el problema es sistémico — no individual. Corregirlo en el proceso, no culpar a casos aislados.</span></label>
@@ -11355,22 +11362,6 @@ let _dbPacs = [];
 
 function initFormDB() {
   // noop — form fields start empty, no defaults needed
-}
-
-function dbOnServiceChange() {
-  const val = document.getElementById('dbServicioMain').value;
-  const planSel = document.getElementById('dbServicioPlan');
-  if (val === '__planes__') {
-    planSel.style.display = 'block';
-    document.getElementById('dbServicio').value = '';
-  } else {
-    planSel.style.display = 'none';
-    document.getElementById('dbServicio').value = val;
-  }
-}
-
-function dbOnPlanChange() {
-  document.getElementById('dbServicio').value = document.getElementById('dbServicioPlan').value;
 }
 
 function renderBasedatos() {
