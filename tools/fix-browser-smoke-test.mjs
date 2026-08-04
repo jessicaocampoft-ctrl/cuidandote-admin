@@ -30,5 +30,11 @@ replaceExact(
   'Ignorar advertencia no funcional de X-Frame-Options'
 );
 
+replaceExact(
+  `  await sleep(1200);`,
+  `  let panelReady = false;\n  for (let intento = 0; intento < 100; intento++) {\n    try {\n      panelReady = await evaluate(cdp, \`document.readyState === 'complete' && typeof showView === 'function' && !!document.getElementById('loginScreen') && !!document.getElementById('adminApp')\`);\n    } catch (_) {}\n    if (panelReady) break;\n    await sleep(100);\n  }\n  if (!panelReady) throw new Error('El panel no terminó de cargar en 10 segundos.');\n  await sleep(200);`,
+  'Esperar la carga completa del panel antes de probar'
+);
+
 fs.writeFileSync(target, source, 'utf8');
 console.log(changes.length ? `Prueba del navegador actualizada:\n- ${changes.join('\n- ')}` : 'La prueba del navegador ya estaba actualizada.');
