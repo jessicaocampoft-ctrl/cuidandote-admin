@@ -35,14 +35,20 @@ jobs:
       - name: Extraer el flujo corregido para revisión
         run: node tools/extract-payment-flow.mjs index.html
 
+      - name: Descargar el backend actual
+        run: curl --fail --silent --show-error --location "https://raw.githubusercontent.com/jessicaocampoft-ctrl/jessicaocampoft-ctrl.github.io/main/google-apps-script.js" --output audit-backend.js
+
+      - name: Verificar el contrato real del backend
+        run: node tools/extract-backend-payment.mjs audit-backend.js
+
       - name: Guardar hotfix y resultados
         run: |
-          if [ -z "$(git status --porcelain -- index.html PAYMENT_FLOW_CONTEXT.md PAYMENT_TEST_RESULT.md)" ]; then
+          if [ -z "$(git status --porcelain -- index.html PAYMENT_FLOW_CONTEXT.md PAYMENT_TEST_RESULT.md BACKEND_PAYMENT_CONTEXT.md)" ]; then
             echo "La corrección y los informes ya estaban guardados."
           else
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add index.html PAYMENT_FLOW_CONTEXT.md PAYMENT_TEST_RESULT.md
-            git commit -m "Corregir y probar el botón Confirmar pago"
+            git add index.html PAYMENT_FLOW_CONTEXT.md PAYMENT_TEST_RESULT.md BACKEND_PAYMENT_CONTEXT.md
+            git commit -m "Verificar el hotfix contra el backend de pagos"
             git push origin HEAD:hotfix-pagos-2026-08-04
           fi
