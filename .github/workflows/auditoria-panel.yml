@@ -38,7 +38,7 @@ jobs:
 
       - name: Guardar preparación segura en la rama aislada
         run: |
-          if git diff --quiet -- index.html AUDIT_CONTEXT.md; then
+          if [ -z "$(git status --porcelain -- index.html AUDIT_CONTEXT.md)" ]; then
             echo "No había cambios de preparación pendientes."
           else
             git config user.name "github-actions[bot]"
