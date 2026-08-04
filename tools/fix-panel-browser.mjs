@@ -18,16 +18,20 @@ function replaceExact(oldText, newText, label) {
 }
 
 // 1) Finanzas: renderMetricas usa fecha, mes y año en varios cálculos.
-replaceExact(
-  `function renderMetricas() {\n  const citas = citasReales();`,
-  `function renderMetricas() {\n  const now = new Date();\n  const citas = citasReales();`,
-  'Declarar la fecha actual dentro de renderMetricas'
-);
-replaceExact(
-  `function renderMetricas() {\n  const now = new Date();\n  const citas = citasReales();`,
-  `function renderMetricas() {\n  const now = new Date();\n  const m = now.getMonth() + 1;\n  const y = now.getFullYear();\n  const citas = citasReales();`,
-  'Declarar mes y año dentro de renderMetricas'
-);
+const metricsComplete = `function renderMetricas() {\n  const now = new Date();\n  const m = now.getMonth() + 1;\n  const y = now.getFullYear();\n  const citas = citasReales();`;
+const metricsOnlyNow = `function renderMetricas() {\n  const now = new Date();\n  const citas = citasReales();`;
+const metricsWithoutDate = `function renderMetricas() {\n  const citas = citasReales();`;
+if (!html.includes(metricsComplete)) {
+  if (html.includes(metricsOnlyNow)) {
+    html = html.replace(metricsOnlyNow, metricsComplete);
+    changes.push('Declarar mes y año dentro de renderMetricas');
+  } else if (html.includes(metricsWithoutDate)) {
+    html = html.replace(metricsWithoutDate, metricsComplete);
+    changes.push('Declarar fecha, mes y año dentro de renderMetricas');
+  } else {
+    throw new Error('No se reconoció el inicio de renderMetricas; no se modificó el panel.');
+  }
+}
 
 // 2) Navegación: citas es un nombre antiguo de la vista agenda.
 replaceExact(
@@ -58,7 +62,7 @@ if (html.includes(ineffectiveFrameMeta)) {
 }
 
 // Validaciones antes de guardar.
-if (!html.includes('const now = new Date();\n  const m = now.getMonth() + 1;\n  const y = now.getFullYear();\n  const citas = citasReales();')) {
+if (!html.includes(metricsComplete)) {
   throw new Error('Finanzas no quedó protegida con fecha, mes y año locales.');
 }
 if (!html.includes("const viewAliases = { citas: 'agenda' };")) {
