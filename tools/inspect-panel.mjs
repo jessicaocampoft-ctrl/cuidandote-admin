@@ -17,6 +17,15 @@ function contextAround(lineNumber, radius = 6) {
     .join('\n');
 }
 
+function exactRange(start, end) {
+  const safeStart = Math.max(1, start);
+  const safeEnd = Math.min(lines.length, end);
+  return lines
+    .slice(safeStart - 1, safeEnd)
+    .map((line, i) => `${safeStart + i}: ${line}`)
+    .join('\n');
+}
+
 function occurrences(regex) {
   return [...raw.matchAll(regex)].map(match => ({
     index: match.index ?? 0,
@@ -39,10 +48,17 @@ function addSection(title, items) {
   });
 }
 
+function addRange(title, start, end) {
+  sections.push(`## ${title}`, '', `Líneas ${start}–${end}`, '', '```html', exactRange(start, end), '```', '');
+}
+
 addSection('Todas las apariciones de copyGestionStatus', occurrences(/\bcopyGestionStatus\b/g));
 addSection('ID duplicado: emCk_ventas_sem_1', occurrences(/\bid\s*=\s*["']emCk_ventas_sem_1["']/gi));
 addSection('Declaraciones de globalSearch', occurrences(/\bfunction\s+globalSearch\s*\(/g));
 addSection('Declaración de copyGestionTexto', occurrences(/\b(?:async\s+)?function\s+copyGestionTexto\s*\(|\bcopyGestionTexto\s*=\s*(?:async\s*)?(?:function|\()/g));
+addSection('Funciones con Gestion en el nombre', occurrences(/\b(?:async\s+)?function\s+[A-Za-z_$][\w$]*Gestion[A-Za-z_$\w]*\s*\(/g));
+addSection('Funciones relacionadas con copiar', occurrences(/\b(?:async\s+)?function\s+[A-Za-z_$][\w$]*(?:copy|Copy|copiar|Copiar)[A-Za-z_$\w]*\s*\(/g));
+addSection('Uso de navigator.clipboard', occurrences(/navigator\.clipboard/g));
 addSection('Declaración de openPago', occurrences(/\b(?:async\s+)?function\s+openPago\s*\(|\bopenPago\s*=\s*(?:async\s*)?(?:function|\()/g));
 addSection('Referencias a openPago', occurrences(/\bopenPago\b/g));
 addSection('Acción adminLogin', occurrences(/adminLogin/g));
@@ -51,6 +67,11 @@ addSection('Funciones relacionadas con login', occurrences(/\b(?:async\s+)?funct
 addSection('AbortController', occurrences(/new AbortController\(\)/g));
 addSection('Llamadas fetch con señal', occurrences(/signal\s*:\s*[A-Za-z_$][\w$]*\.signal/g));
 addSection('Estados de pago canónicos', occurrences(/PAGO_APROBADO|PAGO_RECHAZADO|COMPROBANTE_RECIBIDO/g));
+
+addRange('Bloque completo de login profesional', 7045, 7125);
+addRange('Bloque completo de login administrativo', 7210, 7285);
+addRange('Utilidades de copia y gestión', 13940, 14360);
+addRange('Botón y función Registrar pago', 17090, 17165);
 
 const output = [
   '# Contexto técnico para correcciones del panel',
