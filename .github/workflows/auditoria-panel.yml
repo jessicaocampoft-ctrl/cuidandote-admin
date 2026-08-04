@@ -53,8 +53,10 @@ jobs:
       - name: Corregir Finanzas navegación y códigos QR
         run: node tools/fix-panel-browser.mjs index.html
 
-      - name: Ajustar la prueba funcional con una cita simulada válida
-        run: node tools/fix-browser-smoke-test-v2.mjs tools/browser-smoke.mjs
+      - name: Preparar la prueba funcional del navegador
+        run: |
+          node tools/fix-browser-smoke-test-v2.mjs tools/browser-smoke.mjs
+          node tools/fix-browser-smoke-test-v3.mjs tools/browser-smoke.mjs
 
       - name: Descargar contrato actual del backend
         run: curl --fail --silent --show-error --location "https://raw.githubusercontent.com/jessicaocampoft-ctrl/jessicaocampoft-ctrl.github.io/main/google-apps-script.js" --output audit-backend.js
