@@ -25,6 +25,12 @@ replaceExact(
 );
 
 replaceExact(
+  `    ['Abrir pago desde una cita', \`(async () => { const s=document.getElementById('payCitaId'); if(!s) throw new Error('payCitaId ausente'); openPago('QA-CITA'); await new Promise(r=>setTimeout(r,220)); return s.value==='QA-CITA' && getComputedStyle(document.getElementById('vPagos')).display !== 'none'; })()\`],`,
+  `    ['Abrir pago desde una cita', \`(async () => { const s=document.getElementById('payCitaId'); if(!s) throw new Error('payCitaId ausente'); openPago('QA-CITA'); await new Promise(r=>setTimeout(r,300)); const options=[...s.options].map(o=>({value:o.value,text:o.textContent})); const display=getComputedStyle(document.getElementById('vPagos')).display; if(s.value!=='QA-CITA' || display==='none') throw new Error(JSON.stringify({value:s.value,display,options,citas:allData.citas})); return true; })()\`],`,
+  'Mostrar diagnóstico exacto de openPago'
+);
+
+replaceExact(
   `  const relevantCdpErrors = cdpErrors.filter(text => !/favicon|ERR_BLOCKED_BY_CLIENT|Failed to load resource/i.test(text));`,
   `  const relevantCdpErrors = cdpErrors.filter(text => !/favicon|ERR_BLOCKED_BY_CLIENT|Failed to load resource|X-Frame-Options may only be set via an HTTP header/i.test(text));`,
   'Ignorar advertencia no funcional de X-Frame-Options'
