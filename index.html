@@ -1,11 +1,9 @@
-﻿[OK] Patrón localizado: visibilidad del botón Rechazar
-[OK] Patrón localizado: visibilidad del botón Aprobar [OK] Patrón localizado: botón Pedir revisión [OK] Patrón localizado: botón Rechazar [OK] Patrón localizado: botón Aprobar [OK] Patrón localizado: color del estado del pago [OK] Patrón localizado: lista de pagos sin duplicados [OK] Patrón localizado: contador de pagos rechazados [OK] Patrón localizado: contador de pagos aprobados [OK] Patrón localizado: contador de pagos por verificar [OK] Patrón localizado: deduplicación del historial de pagos [OK] Patrón localizado: confirmación manual con PAGO_APROBADO [OK] Patrón localizado: validaciones de valor, fecha y medio de pago <!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow,noarchive">
-<meta http-equiv="X-Frame-Options" content="DENY">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; connect-src 'self' https://script.google.com https://script.googleusercontent.com https://places.googleapis.com;">
 <script>
 (function(){
@@ -1559,7 +1557,7 @@ button:disabled{cursor:not-allowed;opacity:.58}
     animation-iteration-count:1!important;transition-duration:.01ms!important}
 }
 </style>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="vendor/qrcode.min.js"></script>
 </head>
 <body>
 
@@ -2795,6 +2793,13 @@ Primero evaluamos cómo está el cuerpo ahora, luego tratamos, luego te enseñam
             <strong style="color:var(--text)">3.</strong> Dicta la cita &nbsp;
             <strong style="color:var(--text)">4.</strong> Toca <em>Procesar</em>
           </p>
+          <div id="voiceStatus" style="display:none;align-items:center;gap:8px;margin-bottom:8px;padding:8px 10px;background:rgba(27,191,176,.10);border:1px solid rgba(27,191,176,.28);border-radius:8px;font-size:.8rem;color:var(--primary)">
+            <span>🎙️ Escuchando</span>
+            <span id="voiceTranscript" style="color:var(--text);font-style:italic"></span>
+          </div>
+          <div id="voiceHelp" style="display:none;margin-bottom:8px;padding:8px 10px;background:rgba(245,158,11,.10);border:1px solid rgba(245,158,11,.28);border-radius:8px;font-size:.78rem;color:#92400e">
+            Prueba diciendo: “Cita para María, mañana a las 3 de la tarde, descarga muscular completa”.
+          </div>
           <textarea id="voiceText" rows="3" placeholder='Ej: "Cita para María García, mañana a las 3 pm, descarga muscular completa, presencial"' style="width:100%;background:var(--s1);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font-b);font-size:.9rem;padding:10px 12px;outline:none;resize:none;margin-bottom:8px" onfocus="this.style.borderColor='var(--primary)'"></textarea>
           <div style="display:flex;gap:8px">
             <button type="button" onclick="procesarVozTexto()" style="flex:1;background:var(--primary);color:#0D0D0D;font-family:var(--font-b);font-size:.88rem;font-weight:600;padding:10px;border:none;border-radius:8px;cursor:pointer">✓ Procesar cita</button>
@@ -3949,7 +3954,7 @@ Primero evaluamos cómo está el cuerpo ahora, luego tratamos, luego te enseñam
                 Exporta el análisis como texto limpio para WhatsApp, documentos o asesoría externa. No copia código ni datos clínicos sensibles.
               </p>
             </div>
-            <span id="copyGestionStatus" style="display:none;padding:7px 10px;border-radius:999px;background:rgba(16,185,129,.12);color:#047857;font-size:.78rem;font-weight:700">Información copiada correctamente</span>
+            <span id="copyGestionStatusPrincipal" class="copyGestionStatus" style="display:none;padding:7px 10px;border-radius:999px;background:rgba(16,185,129,.12);color:#047857;font-size:.78rem;font-weight:700">Información copiada correctamente</span>
           </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
             <button class="btn btn-teal btn-sm" onclick="copyGestionTexto('completo')">Copiar resumen completo</button>
@@ -4012,7 +4017,7 @@ Primero evaluamos cómo está el cuerpo ahora, luego tratamos, luego te enseñam
               Exporta el análisis como texto limpio para WhatsApp, documentos o asesoría externa. No copia código ni datos clínicos sensibles.
             </p>
           </div>
-          <span id="copyGestionStatus" style="display:none;padding:7px 10px;border-radius:999px;background:rgba(16,185,129,.12);color:#047857;font-size:.78rem;font-weight:700">Información copiada correctamente</span>
+          <span id="copyGestionStatusSecundario" class="copyGestionStatus" style="display:none;padding:7px 10px;border-radius:999px;background:rgba(16,185,129,.12);color:#047857;font-size:.78rem;font-weight:700">Información copiada correctamente</span>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <button class="btn btn-teal btn-sm" onclick="copyGestionTexto('completo')">Copiar resumen completo</button>
@@ -4728,7 +4733,7 @@ Acción: enviar mensaje de reenganche a los 14 pacientes que solo vinieron una v
               <div class="em-prog-wrap"><div class="em-prog-fill" id="emPF_ventas_mes" style="width:0%"></div></div>
               <div class="em-steps">
                 <label class="em-step" id="emS_ventas_mes_0" onclick="handleEmStep(event,'ventas_mes',0)"><input type="checkbox" id="emCk_ventas_mes_0" onclick="event.stopPropagation()"><span class="em-step-n">01</span><span class="em-step-text"><strong>Calcular el gap real:</strong> abrir Finanzas, ver cuánto se ha facturado y cuánto falta. Dividirlo entre los días hábiles restantes del mes — ese es el ingreso diario necesario. Si son más de $600k/día extra, el plan de citas no es suficiente solo.</span><button class="em-goto" onclick="event.stopPropagation();showView('finanzas')">Ver Finanzas →</button></label>
-                <label class="em-step" id="emS_ventas_mes_1" onclick="handleEmStep(event,'ventas_mes',1)"><input type="checkbox" id="emCk_ventas_sem_1" onclick="event.stopPropagation()"><span class="em-step-n">02</span><span class="em-step-text"><strong>Campaña de paquetes con fecha límite:</strong> ofrecer a pacientes activos paquetes pre-pagados con vigencia de 60 días. El pago adelantado ingresa al mes actual aunque las citas se usen después — es la palanca más rápida para cerrar el gap.</span></label>
+                <label class="em-step" id="emS_ventas_mes_1" onclick="handleEmStep(event,'ventas_mes',1)"><input type="checkbox" id="emCk_ventas_mes_1" onclick="event.stopPropagation()"><span class="em-step-n">02</span><span class="em-step-text"><strong>Campaña de paquetes con fecha límite:</strong> ofrecer a pacientes activos paquetes pre-pagados con vigencia de 60 días. El pago adelantado ingresa al mes actual aunque las citas se usen después — es la palanca más rápida para cerrar el gap.</span></label>
                 <label class="em-step" id="emS_ventas_mes_2" onclick="handleEmStep(event,'ventas_mes',2)"><input type="checkbox" id="emCk_ventas_mes_2" onclick="event.stopPropagation()"><span class="em-step-n">03</span><span class="em-step-text"><strong>Evento corporativo o grupal de emergencia:</strong> si hay contactos en empresas, gimnasios o equipos deportivos de la zona, ofrecer una jornada de valoraciones express (20–30 min c/u). 10 valoraciones a $80k = $800k en un día, sin costo de adquisición.</span></label>
                 <label class="em-step" id="emS_ventas_mes_3" onclick="handleEmStep(event,'ventas_mes',3)"><input type="checkbox" id="emCk_ventas_mes_3" onclick="event.stopPropagation()"><span class="em-step-n">04</span><span class="em-step-text"><strong>Campaña de referidos urgente:</strong> contactar a los 10 mejores pacientes del mes y pedirles que refieran a alguien. Ofrecer la primera sesión del referido con descuento — el ingreso parcial es mejor que el espacio vacío.</span></label>
                 <label class="em-step" id="emS_ventas_mes_4" onclick="handleEmStep(event,'ventas_mes',4)"><input type="checkbox" id="emCk_ventas_mes_4" onclick="event.stopPropagation()"><span class="em-step-n">05</span><span class="em-step-text"><strong>Pauta de cierre de mes:</strong> publicar un anuncio de 3–5 días con los horarios disponibles del mes y CTA urgente. El mensaje de escasez real ("quedan X espacios este mes") convierte mejor que cualquier descuento.</span></label>
@@ -4767,7 +4772,7 @@ Acción: enviar mensaje de reenganche a los 14 pacientes que solo vinieron una v
               <div class="em-prog-meta" id="emPM_nps">0 de 6 pasos completados</div>
               <div class="em-prog-wrap"><div class="em-prog-fill" id="emPF_nps" style="width:0%"></div></div>
               <div class="em-steps">
-                <label class="em-step" id="emS_nps_0" onclick="handleEmStep(event,'nps',0)"><input type="checkbox" id="emCk_nps_0" onclick="event.stopPropagation()"><span class="em-step-n">01</span><span class="em-step-text"><strong>Cargar encuestas e identificar detractores:</strong> presionar "Cargar encuestas" en el tablero y revisar en el formulario de Google quiénes respondieron con nota 0–3. Anotar nombre, servicio y fecha de la sesión.</span><button class="em-goto" onclick="event.stopPropagation();document.getElementById('kpiLoadBtn') && document.getElementById('kpiLoadBtn').click()">Cargar encuestas →</button></label>
+                <label class="em-step" id="emS_nps_0" onclick="handleEmStep(event,'nps',0)"><input type="checkbox" id="emCk_nps_0" onclick="event.stopPropagation()"><span class="em-step-n">01</span><span class="em-step-text"><strong>Cargar encuestas e identificar detractores:</strong> presionar "Cargar encuestas" en el tablero y revisar en el formulario de Google quiénes respondieron con nota 0–3. Anotar nombre, servicio y fecha de la sesión.</span><button class="em-goto" onclick="event.stopPropagation();document.getElementById('btnCargarEncuesta') && document.getElementById('btnCargarEncuesta').click()">Cargar encuestas →</button></label>
                 <label class="em-step" id="emS_nps_1" onclick="handleEmStep(event,'nps',1)"><input type="checkbox" id="emCk_nps_1" onclick="event.stopPropagation()"><span class="em-step-n">02</span><span class="em-step-text"><strong>Llamar a cada detractor en menos de 48h:</strong> no WhatsApp — llamada de voz. Guión de apertura: <em>"Hola [nombre], soy Jessica. Vi que tu experiencia no fue lo que esperabas y quería llamarte personalmente para entender qué pasó. No es para defenderme — es para aprender."</em> Escuchar el doble de lo que hablas.</span></label>
                 <label class="em-step" id="emS_nps_2" onclick="handleEmStep(event,'nps',2)"><input type="checkbox" id="emCk_nps_2" onclick="event.stopPropagation()"><span class="em-step-n">03</span><span class="em-step-text"><strong>Ofrecer sesión de compensación sin condiciones:</strong> al final de la llamada, si la queja es válida, ofrecer una sesión gratuita o con descuento significativo. No pedirle que cambie la nota — solo demostrar que la calidad importa. Muchos detractores se convierten en los pacientes más leales después de una recuperación bien manejada.</span></label>
                 <label class="em-step" id="emS_nps_3" onclick="handleEmStep(event,'nps',3)"><input type="checkbox" id="emCk_nps_3" onclick="event.stopPropagation()"><span class="em-step-n">04</span><span class="em-step-text"><strong>Analizar el patrón de quejas:</strong> ¿todos los detractores tuvieron el mismo servicio? ¿El mismo día de la semana? ¿Coinciden en horario o auxiliar? Si hay un patrón claro, el problema es sistémico — no individual. Corregirlo en el proceso, no culpar a casos aislados.</span></label>
@@ -7048,6 +7053,28 @@ function exportOperationsAuditCSV() {
   downloadOperationsCSV(`auditoria_operativa_${today()}.csv`, rows);
 }
 
+async function fetchJsonWithTimeout(url, options = {}, timeoutMs = 45000) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(url, { ...options, signal: controller.signal });
+    const raw = (await response.text()).replace(/^\uFEFF/, '').trim();
+    if (!raw) throw new Error('El servidor respondió vacío. Intenta nuevamente.');
+    try {
+      return JSON.parse(raw);
+    } catch (_) {
+      throw new Error('El servidor devolvió una respuesta inválida. Intenta nuevamente.');
+    }
+  } catch (error) {
+    if (error && error.name === 'AbortError') {
+      throw new Error('El servidor tardó demasiado. Intenta nuevamente.');
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 function openProfessionalLoginMode() {
   location.hash = '/profesionales/login';
   showOnlyScreen('proLoginScreen');
@@ -7065,14 +7092,14 @@ async function doProfessionalLogin() {
   err.style.display = 'none';
   btn.disabled = true; btn.textContent = 'Verificando...';
   try {
-    const d = await fetch(APPS_SCRIPT_URL, {
+    const d = await fetchJsonWithTimeout(APPS_SCRIPT_URL, {
       method:'POST',
       body:JSON.stringify({
         action:'professionalLogin',
         user:document.getElementById('proUser').value.trim(),
         password:document.getElementById('proPass').value
       })
-    }).then(r => r.json());
+    }, 45000);
     if (!d.ok) throw new Error(d.error || 'No pudimos iniciar sesión');
     PROFESSIONAL_TOKEN = d.professionalToken;
     professionalSession = d.professional;
@@ -7234,11 +7261,10 @@ async function doLogin() {
   if (!pw) return;
   btn.textContent = 'Verificando...'; btn.disabled = true;
   try {
-    const r = await fetch(APPS_SCRIPT_URL, {
+    const d = await fetchJsonWithTimeout(APPS_SCRIPT_URL, {
       method: 'POST',
       body: JSON.stringify({action: 'adminLogin', user, password: pw})
-    });
-    const d = await r.json();
+    }, 45000);
     if (d.ok) {
       _loginAttempts = 0;
       TOKEN = d.sessionToken;
@@ -7267,7 +7293,7 @@ async function doLogin() {
       errEl.style.display = 'block';
     }
   } catch(e) {
-    document.getElementById('loginErr').textContent = 'Error de conexión. Revisa tu internet.';
+    document.getElementById('loginErr').textContent = e.message || 'Error de conexión. Revisa tu internet.';
     document.getElementById('loginErr').style.display = 'block';
   }
   btn.textContent = 'Ingresar'; btn.disabled = false;
@@ -7771,6 +7797,8 @@ function applyRoleRestrictions() {
   // Auxiliar operativo: acceso completo. Exclusivos de propietaria se bloquean en backend.
 }
 function showView(v) {
+  const viewAliases = { citas: 'agenda' };
+  v = viewAliases[v] || v;
   ['dashboard','acciones','espera','automatizaciones','tareas','tareasConfig','agenda','nueva','calendario','bloquear','pacientes','equipo','basedatos','codigos','paquetes','recordatorios','finanzas','pagos','guiakpis','presupuesto','seguimiento','mensajes','empresas','pasaporte','comisiones','guioneswa','recuperacion'].forEach(id => {
     const sec = document.getElementById('v' + id.charAt(0).toUpperCase() + id.slice(1));
     const sb  = document.getElementById('sb-' + id);
@@ -7778,6 +7806,10 @@ function showView(v) {
     if (sb)  sb.classList.remove('active');
   });
   const _sec = document.getElementById('v' + v.charAt(0).toUpperCase() + v.slice(1));
+  if (!_sec) {
+    console.warn('Vista no encontrada:', v);
+    return false;
+  }
   _sec.style.display = 'block';
   _sec.classList.remove('view-fadein');
   void _sec.offsetWidth;
@@ -8710,13 +8742,6 @@ async function submitAdminBookingMulti() {
     if (_scheduleMode !== 'unica') { _multiDates = []; _renderMultiChips(); }
     clearNuevaCita();
   }
-}
-
-// ── BÚSQUEDA GLOBAL ──
-function globalSearch(val) {
-  showView('agenda');
-  const fSearch = document.getElementById('fSearch');
-  if (fSearch) { fSearch.value = val; renderAgenda(); }
 }
 
 // ── REAGENDAR RÁPIDO ──
@@ -11342,22 +11367,6 @@ let _dbPacs = [];
 
 function initFormDB() {
   // noop — form fields start empty, no defaults needed
-}
-
-function dbOnServiceChange() {
-  const val = document.getElementById('dbServicioMain').value;
-  const planSel = document.getElementById('dbServicioPlan');
-  if (val === '__planes__') {
-    planSel.style.display = 'block';
-    document.getElementById('dbServicio').value = '';
-  } else {
-    planSel.style.display = 'none';
-    document.getElementById('dbServicio').value = val;
-  }
-}
-
-function dbOnPlanChange() {
-  document.getElementById('dbServicio').value = document.getElementById('dbServicioPlan').value;
 }
 
 function renderBasedatos() {
@@ -14019,6 +14028,10 @@ function _copyGestionTexto(kind) {
   return _copyPlainText(text);
 }
 
+function copyGestionTexto(kind) {
+  return _copyGestionTexto(kind);
+}
+
 function _copyGestionAsesorText(d) {
   const money = v => fmtPeso(v || 0);
   return [
@@ -14108,12 +14121,12 @@ async function _copyPlainText(text) {
 
 function _copyOk() {
   toast('Información copiada correctamente', 'ok');
-  const el = document.getElementById('copyGestionStatus');
-  if (el) {
-    el.style.display = 'inline-flex';
-    clearTimeout(window._copyGestionStatusTimer);
-    window._copyGestionStatusTimer = setTimeout(() => { el.style.display = 'none'; }, 2200);
-  }
+  const estados = document.querySelectorAll('.copyGestionStatus');
+  estados.forEach(el => { el.style.display = 'inline-flex'; });
+  clearTimeout(window._copyGestionStatusTimer);
+  window._copyGestionStatusTimer = setTimeout(() => {
+    estados.forEach(el => { el.style.display = 'none'; });
+  }, 2200);
 }
 
 function _showCopyFallback(text, title='Copiar manualmente') {
@@ -16634,6 +16647,9 @@ function renderEstructuraFinanciera() {
 // ── MÉTRICAS INTELIGENTES ──
 // ══════════════════════════════════════════════════════════════
 function renderMetricas() {
+  const now = new Date();
+  const m = now.getMonth() + 1;
+  const y = now.getFullYear();
   const citas = citasReales();
   const COLORES = ['var(--primary)','#6366f1','#f59e0b','#10b981','#ef4444','#8b5cf6'];
   const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
@@ -17120,6 +17136,22 @@ function _checkCobrosPendientes() {
       </div>
     </div>`;
   }).join('');
+}
+
+function openPago(citaId) {
+  showView('pagos');
+  setTimeout(() => {
+    if (typeof fillPaymentSelectors === 'function') fillPaymentSelectors(citaId || '');
+    const selector = document.getElementById('payCitaId');
+    if (selector) {
+      selector.value = citaId || '';
+      selector.dispatchEvent(new Event('change', { bubbles: true }));
+      selector.focus();
+      selector.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else {
+      toast('Se abrió Pagos, pero no se encontró la cita seleccionada', 'warn');
+    }
+  }, 100);
 }
 
 // ── Alerta semana floja ──
