@@ -9,6 +9,8 @@ Comienza en línea 16649.
 ```javascript
 function renderMetricas() {
   const now = new Date();
+  const m = now.getMonth() + 1;
+  const y = now.getFullYear();
   const citas = citasReales();
   const COLORES = ['var(--primary)','#6366f1','#f59e0b','#10b981','#ef4444','#8b5cf6'];
   const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
@@ -523,7 +525,7 @@ function showView(v) {
 
 ## Función openPago
 
-Comienza en línea 17139.
+Comienza en línea 17141.
 
 ```javascript
 function openPago(citaId) {
@@ -687,34 +689,34 @@ No se encontraron coincidencias.
 1572:       <span style="color:#fff;font-weight:700;font-size:1rem">Enviar por WhatsApp</span>
 ```
 
-### Coincidencia 2 — línea 18722
+### Coincidencia 2 — línea 18724
 
 ```html
-18710:     box.style.cssText = 'width:112px;height:112px;border-radius:10px;border:1px solid var(--border);overflow:hidden;background:#F7F8FA;display:grid;place-items:center;flex-shrink:0';
-18711:     canvas.insertAdjacentElement('afterend', box);
-18712:   }
-18713:   box.innerHTML = '';
-18714:   canvas.style.display = 'none';
-18715:   if (typeof QRCode !== 'undefined') {
-18716:     if (QRCode.toCanvas) {
-18717:       canvas.style.display = 'block';
-18718:       box.style.display = 'none';
-18719:       QRCode.toCanvas(canvas, link, { width: 112, margin: 1, color: { dark: '#0A1A12', light: '#F7F8FA' } });
-18720:     } else {
-18721:       box.style.display = 'grid';
-18722:       new QRCode(box, { text: link, width: 112, height: 112, colorDark: '#0A1A12', colorLight: '#F7F8FA', correctLevel: QRCode.CorrectLevel.M });
-18723:     }
-18724:   } else {
-18725:     box.textContent = 'QR no disponible';
-18726:     box.style.fontSize = '11px';
-18727:     box.style.color = 'var(--muted)';
-18728:   }
-18729: }
-18730: 
-18731: function abrirPasaporte() {
-18732:   if (!_pasConfirmado) { toast('Selecciona un paciente de la lista primero', 'warn'); return; }
-18733:   const link = (_pasCurrent && _pasCurrent.link) || document.getElementById('pasLinkTexto').textContent;
-18734:   if (!link) { toast('Genera primero el enlace seguro', 'warn'); return; }
+18712:     box.style.cssText = 'width:112px;height:112px;border-radius:10px;border:1px solid var(--border);overflow:hidden;background:#F7F8FA;display:grid;place-items:center;flex-shrink:0';
+18713:     canvas.insertAdjacentElement('afterend', box);
+18714:   }
+18715:   box.innerHTML = '';
+18716:   canvas.style.display = 'none';
+18717:   if (typeof QRCode !== 'undefined') {
+18718:     if (QRCode.toCanvas) {
+18719:       canvas.style.display = 'block';
+18720:       box.style.display = 'none';
+18721:       QRCode.toCanvas(canvas, link, { width: 112, margin: 1, color: { dark: '#0A1A12', light: '#F7F8FA' } });
+18722:     } else {
+18723:       box.style.display = 'grid';
+18724:       new QRCode(box, { text: link, width: 112, height: 112, colorDark: '#0A1A12', colorLight: '#F7F8FA', correctLevel: QRCode.CorrectLevel.M });
+18725:     }
+18726:   } else {
+18727:     box.textContent = 'QR no disponible';
+18728:     box.style.fontSize = '11px';
+18729:     box.style.color = 'var(--muted)';
+18730:   }
+18731: }
+18732: 
+18733: function abrirPasaporte() {
+18734:   if (!_pasConfirmado) { toast('Selecciona un paciente de la lista primero', 'warn'); return; }
+18735:   const link = (_pasCurrent && _pasCurrent.link) || document.getElementById('pasLinkTexto').textContent;
+18736:   if (!link) { toast('Genera primero el enlace seguro', 'warn'); return; }
 ```
 
 ## Uso de la variable now dentro de métricas
@@ -2472,347 +2474,379 @@ No se encontraron coincidencias.
 16648: // ══════════════════════════════════════════════════════════════
 16649: function renderMetricas() {
 16650:   const now = new Date();
-16651:   const citas = citasReales();
-16652:   const COLORES = ['var(--primary)','#6366f1','#f59e0b','#10b981','#ef4444','#8b5cf6'];
-16653:   const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-16654: 
-16655:   // 1. Horarios más demandados (excluye 00:00 = citas sin hora registrada)
+16651:   const m = now.getMonth() + 1;
+16652:   const y = now.getFullYear();
+16653:   const citas = citasReales();
+16654:   const COLORES = ['var(--primary)','#6366f1','#f59e0b','#10b981','#ef4444','#8b5cf6'];
+16655:   const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 ```
 
-### Coincidencia 145 — línea 17067
+### Coincidencia 145 — línea 16651
 
 ```html
-17062:   renderCitasResumen();
-17063: 
-17064:   // Inicializar filtro de convenios con el mes actual
-17065:   const convMesFiltro = document.getElementById('convenioMesFiltro');
-17066:   if (convMesFiltro && !convMesFiltro.value) {
-17067:     const nm = now.getMonth()+1;
-17068:     convMesFiltro.value = y + '-' + String(nm).padStart(2,'0');
-17069:   }
-17070:   renderConveniosReport();
-17071:   _checkAutoAtendida();
-17072:   _checkCobrosPendientes();
+16646: // ══════════════════════════════════════════════════════════════
+16647: // ── MÉTRICAS INTELIGENTES ──
+16648: // ══════════════════════════════════════════════════════════════
+16649: function renderMetricas() {
+16650:   const now = new Date();
+16651:   const m = now.getMonth() + 1;
+16652:   const y = now.getFullYear();
+16653:   const citas = citasReales();
+16654:   const COLORES = ['var(--primary)','#6366f1','#f59e0b','#10b981','#ef4444','#8b5cf6'];
+16655:   const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+16656: 
 ```
 
-### Coincidencia 146 — línea 17077
+### Coincidencia 146 — línea 16652
 
 ```html
-17072:   _checkCobrosPendientes();
-17073: }
-17074: 
-17075: // ── Automatización #2: marcar citas pasadas como Atendidas ──
-17076: function _checkAutoAtendida() {
-17077:   const nowMs = Date.now();
-17078:   const pendientes = (allData.citas || []).filter(c => {
-17079:     if (!['Confirmada','Pendiente'].includes(c.estado)) return false;
-17080:     if (esRegistroServ(c.servicio)) return false;
-17081:     const f = normDate(c.fecha);
-17082:     if (!f || !c.hora) return false;
+16647: // ── MÉTRICAS INTELIGENTES ──
+16648: // ══════════════════════════════════════════════════════════════
+16649: function renderMetricas() {
+16650:   const now = new Date();
+16651:   const m = now.getMonth() + 1;
+16652:   const y = now.getFullYear();
+16653:   const citas = citasReales();
+16654:   const COLORES = ['var(--primary)','#6366f1','#f59e0b','#10b981','#ef4444','#8b5cf6'];
+16655:   const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+16656: 
+16657:   // 1. Horarios más demandados (excluye 00:00 = citas sin hora registrada)
 ```
 
-### Coincidencia 147 — línea 17157
+### Coincidencia 147 — línea 17069
 
 ```html
-17152:   }, 100);
-17153: }
-17154: 
-17155: // ── Alerta semana floja ──
-17156: function _checkAlertaSemanFloja(citas) {
-17157:   const now = new Date();
-17158:   const dow = now.getDay(); // 0=dom, 3=mié, 5=vie
-17159:   const hoyStr = today();
-17160: 
-17161:   // Mostrar solo si es miércoles, jueves o viernes (dow 3,4,5)
-17162:   const dashEl = document.getElementById('alertaSemanFlojaDash');
+17064:   renderCitasResumen();
+17065: 
+17066:   // Inicializar filtro de convenios con el mes actual
+17067:   const convMesFiltro = document.getElementById('convenioMesFiltro');
+17068:   if (convMesFiltro && !convMesFiltro.value) {
+17069:     const nm = now.getMonth()+1;
+17070:     convMesFiltro.value = y + '-' + String(nm).padStart(2,'0');
+17071:   }
+17072:   renderConveniosReport();
+17073:   _checkAutoAtendida();
+17074:   _checkCobrosPendientes();
 ```
 
-### Coincidencia 148 — línea 17158
+### Coincidencia 148 — línea 17079
 
 ```html
-17153: }
-17154: 
-17155: // ── Alerta semana floja ──
-17156: function _checkAlertaSemanFloja(citas) {
-17157:   const now = new Date();
-17158:   const dow = now.getDay(); // 0=dom, 3=mié, 5=vie
-17159:   const hoyStr = today();
-17160: 
-17161:   // Mostrar solo si es miércoles, jueves o viernes (dow 3,4,5)
-17162:   const dashEl = document.getElementById('alertaSemanFlojaDash');
-17163:   const finEl  = document.getElementById('alertaSemanFlojaFin');
+17074:   _checkCobrosPendientes();
+17075: }
+17076: 
+17077: // ── Automatización #2: marcar citas pasadas como Atendidas ──
+17078: function _checkAutoAtendida() {
+17079:   const nowMs = Date.now();
+17080:   const pendientes = (allData.citas || []).filter(c => {
+17081:     if (!['Confirmada','Pendiente'].includes(c.estado)) return false;
+17082:     if (esRegistroServ(c.servicio)) return false;
+17083:     const f = normDate(c.fecha);
+17084:     if (!f || !c.hora) return false;
 ```
 
-### Coincidencia 149 — línea 17174
+### Coincidencia 149 — línea 17159
 
 ```html
-17169:   };
-17170: 
-17171:   if (dow < 3 || dow > 5) { apagar(); return; }
+17154:   }, 100);
+17155: }
+17156: 
+17157: // ── Alerta semana floja ──
+17158: function _checkAlertaSemanFloja(citas) {
+17159:   const now = new Date();
+17160:   const dow = now.getDay(); // 0=dom, 3=mié, 5=vie
+17161:   const hoyStr = today();
+17162: 
+17163:   // Mostrar solo si es miércoles, jueves o viernes (dow 3,4,5)
+17164:   const dashEl = document.getElementById('alertaSemanFlojaDash');
+```
+
+### Coincidencia 150 — línea 17160
+
+```html
+17155: }
+17156: 
+17157: // ── Alerta semana floja ──
+17158: function _checkAlertaSemanFloja(citas) {
+17159:   const now = new Date();
+17160:   const dow = now.getDay(); // 0=dom, 3=mié, 5=vie
+17161:   const hoyStr = today();
+17162: 
+17163:   // Mostrar solo si es miércoles, jueves o viernes (dow 3,4,5)
+17164:   const dashEl = document.getElementById('alertaSemanFlojaDash');
+17165:   const finEl  = document.getElementById('alertaSemanFlojaFin');
+```
+
+### Coincidencia 151 — línea 17176
+
+```html
+17171:   };
 17172: 
-17173:   // Calcular ingresos semana actual (lunes a hoy)
-17174:   const lunes = new Date(now);
-17175:   lunes.setDate(now.getDate() - (dow === 0 ? 6 : dow - 1));
-17176:   lunes.setHours(0,0,0,0);
-17177: 
-17178:   let totalSemActual = 0, nSemActual = 0;
-17179:   citas.forEach(c => {
+17173:   if (dow < 3 || dow > 5) { apagar(); return; }
+17174: 
+17175:   // Calcular ingresos semana actual (lunes a hoy)
+17176:   const lunes = new Date(now);
+17177:   lunes.setDate(now.getDate() - (dow === 0 ? 6 : dow - 1));
+17178:   lunes.setHours(0,0,0,0);
+17179: 
+17180:   let totalSemActual = 0, nSemActual = 0;
+17181:   citas.forEach(c => {
 ```
 
-### Coincidencia 150 — línea 17175
+### Coincidencia 152 — línea 17177
 
 ```html
-17170: 
-17171:   if (dow < 3 || dow > 5) { apagar(); return; }
 17172: 
-17173:   // Calcular ingresos semana actual (lunes a hoy)
-17174:   const lunes = new Date(now);
-17175:   lunes.setDate(now.getDate() - (dow === 0 ? 6 : dow - 1));
-17176:   lunes.setHours(0,0,0,0);
-17177: 
-17178:   let totalSemActual = 0, nSemActual = 0;
-17179:   citas.forEach(c => {
-17180:     const f = normDate(c.fecha);
-```
-
-### Coincidencia 151 — línea 18542
-
-```html
-18537: 
-18538: // ══════════════════════════════════════════════════════════════
-18539: // ── EXPORTAR CSV ──
-18540: // ══════════════════════════════════════════════════════════════
-18541: function exportarCSV(modo) {
-18542:   const now = new Date();
-18543:   const m   = now.getMonth()+1;
-18544:   const y   = now.getFullYear();
-18545:   let citas = citasReales().filter(esCobrada);
-18546: 
-18547:   if (modo === 'mes') {
-```
-
-### Coincidencia 152 — línea 18543
-
-```html
-18538: // ══════════════════════════════════════════════════════════════
-18539: // ── EXPORTAR CSV ──
-18540: // ══════════════════════════════════════════════════════════════
-18541: function exportarCSV(modo) {
-18542:   const now = new Date();
-18543:   const m   = now.getMonth()+1;
-18544:   const y   = now.getFullYear();
-18545:   let citas = citasReales().filter(esCobrada);
-18546: 
-18547:   if (modo === 'mes') {
-18548:     citas = citas.filter(c => { const [cy,cm]=normDate(c.fecha).split('-'); return +cm===m && +cy===y; });
+17173:   if (dow < 3 || dow > 5) { apagar(); return; }
+17174: 
+17175:   // Calcular ingresos semana actual (lunes a hoy)
+17176:   const lunes = new Date(now);
+17177:   lunes.setDate(now.getDate() - (dow === 0 ? 6 : dow - 1));
+17178:   lunes.setHours(0,0,0,0);
+17179: 
+17180:   let totalSemActual = 0, nSemActual = 0;
+17181:   citas.forEach(c => {
+17182:     const f = normDate(c.fecha);
 ```
 
 ### Coincidencia 153 — línea 18544
 
 ```html
-18539: // ── EXPORTAR CSV ──
+18539: 
 18540: // ══════════════════════════════════════════════════════════════
-18541: function exportarCSV(modo) {
-18542:   const now = new Date();
-18543:   const m   = now.getMonth()+1;
-18544:   const y   = now.getFullYear();
-18545:   let citas = citasReales().filter(esCobrada);
-18546: 
-18547:   if (modo === 'mes') {
-18548:     citas = citas.filter(c => { const [cy,cm]=normDate(c.fecha).split('-'); return +cm===m && +cy===y; });
-18549:   }
+18541: // ── EXPORTAR CSV ──
+18542: // ══════════════════════════════════════════════════════════════
+18543: function exportarCSV(modo) {
+18544:   const now = new Date();
+18545:   const m   = now.getMonth()+1;
+18546:   const y   = now.getFullYear();
+18547:   let citas = citasReales().filter(esCobrada);
+18548: 
+18549:   if (modo === 'mes') {
 ```
 
-### Coincidencia 154 — línea 18586
+### Coincidencia 154 — línea 18545
 
 ```html
-18581:   const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
-18582:   const url  = URL.createObjectURL(blob);
-18583:   const a    = document.createElement('a');
-18584:   const nombre = modo === 'mes'
-18585:     ? `ingresos_${y}-${pad(m)}.csv`
-18586:     : `ingresos_completo_${y}-${pad(m)}-${pad(now.getDate())}.csv`;
-18587:   a.href = url; a.download = nombre; a.click();
-18588:   URL.revokeObjectURL(url);
-18589:   toast('CSV descargado: ' + nombre);
-18590: }
-18591: 
+18540: // ══════════════════════════════════════════════════════════════
+18541: // ── EXPORTAR CSV ──
+18542: // ══════════════════════════════════════════════════════════════
+18543: function exportarCSV(modo) {
+18544:   const now = new Date();
+18545:   const m   = now.getMonth()+1;
+18546:   const y   = now.getFullYear();
+18547:   let citas = citasReales().filter(esCobrada);
+18548: 
+18549:   if (modo === 'mes') {
+18550:     citas = citas.filter(c => { const [cy,cm]=normDate(c.fecha).split('-'); return +cm===m && +cy===y; });
 ```
 
-### Coincidencia 155 — línea 19004
+### Coincidencia 155 — línea 18546
 
 ```html
-18999: }
-19000: 
-19001: function _initComisMesSel() {
-19002:   const sel = document.getElementById('comisMes');
-19003:   if (!sel || sel.options.length > 0) return;
-19004:   const now = new Date();
-19005:   const meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
-19006:   for (let i = 0; i < 12; i++) {
-19007:     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-19008:     const opt = document.createElement('option');
-19009:     opt.value = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+18541: // ── EXPORTAR CSV ──
+18542: // ══════════════════════════════════════════════════════════════
+18543: function exportarCSV(modo) {
+18544:   const now = new Date();
+18545:   const m   = now.getMonth()+1;
+18546:   const y   = now.getFullYear();
+18547:   let citas = citasReales().filter(esCobrada);
+18548: 
+18549:   if (modo === 'mes') {
+18550:     citas = citas.filter(c => { const [cy,cm]=normDate(c.fecha).split('-'); return +cm===m && +cy===y; });
+18551:   }
 ```
 
-### Coincidencia 156 — línea 19007
+### Coincidencia 156 — línea 18588
 
 ```html
-19002:   const sel = document.getElementById('comisMes');
-19003:   if (!sel || sel.options.length > 0) return;
-19004:   const now = new Date();
-19005:   const meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
-19006:   for (let i = 0; i < 12; i++) {
-19007:     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-19008:     const opt = document.createElement('option');
-19009:     opt.value = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
-19010:     opt.textContent = meses[d.getMonth()] + ' ' + d.getFullYear();
-19011:     sel.appendChild(opt);
-19012:   }
+18583:   const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+18584:   const url  = URL.createObjectURL(blob);
+18585:   const a    = document.createElement('a');
+18586:   const nombre = modo === 'mes'
+18587:     ? `ingresos_${y}-${pad(m)}.csv`
+18588:     : `ingresos_completo_${y}-${pad(m)}-${pad(now.getDate())}.csv`;
+18589:   a.href = url; a.download = nombre; a.click();
+18590:   URL.revokeObjectURL(url);
+18591:   toast('CSV descargado: ' + nombre);
+18592: }
+18593: 
 ```
 
-### Coincidencia 158 — línea 19128
+### Coincidencia 157 — línea 19006
 
 ```html
-19123:   _comisSetManualReact(y, m, _comisManualReact(y,m).filter(n => n.toLowerCase() !== nombre.toLowerCase()));
-19124:   renderComisiones();
-19125: }
-19126: 
-19127: function marcarComisionPagada(persona) {
-19128:   const now = new Date().toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'});
-19129:   kvSet('comis_pago_'+persona+'_'+_comisMesVal(), now);
-19130:   renderComisiones();
-19131: }
-19132: function desmarcarComisionPagada(persona) {
-19133:   kvRemove('comis_pago_'+persona+'_'+_comisMesVal());
+19001: }
+19002: 
+19003: function _initComisMesSel() {
+19004:   const sel = document.getElementById('comisMes');
+19005:   if (!sel || sel.options.length > 0) return;
+19006:   const now = new Date();
+19007:   const meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+19008:   for (let i = 0; i < 12; i++) {
+19009:     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+19010:     const opt = document.createElement('option');
+19011:     opt.value = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
 ```
 
-### Coincidencia 159 — línea 19129
+### Coincidencia 158 — línea 19009
 
 ```html
-19124:   renderComisiones();
-19125: }
-19126: 
-19127: function marcarComisionPagada(persona) {
-19128:   const now = new Date().toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'});
-19129:   kvSet('comis_pago_'+persona+'_'+_comisMesVal(), now);
-19130:   renderComisiones();
-19131: }
-19132: function desmarcarComisionPagada(persona) {
-19133:   kvRemove('comis_pago_'+persona+'_'+_comisMesVal());
-19134:   renderComisiones();
+19004:   const sel = document.getElementById('comisMes');
+19005:   if (!sel || sel.options.length > 0) return;
+19006:   const now = new Date();
+19007:   const meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+19008:   for (let i = 0; i < 12; i++) {
+19009:     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+19010:     const opt = document.createElement('option');
+19011:     opt.value = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+19012:     opt.textContent = meses[d.getMonth()] + ' ' + d.getFullYear();
+19013:     sel.appendChild(opt);
+19014:   }
 ```
 
-### Coincidencia 160 — línea 19577
+### Coincidencia 160 — línea 19130
 
 ```html
-19572:   const editId = document.getElementById('msgEditId').value;
-19573:   if (editId) {
-19574:     const idx = msgs.findIndex(m => m.id === editId);
-19575:     if (idx >= 0) msgs[idx] = { ...msgs[idx], titulo, cat, texto };
-19576:   } else {
-19577:     msgs.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2,5), titulo, cat, texto, created: Date.now() });
-19578:   }
-19579:   _setMensajesPre(msgs);
-19580:   closeModal('modalMensaje');
-19581:   renderMensajes();
-19582:   toast('Mensaje guardado ✓', 'ok');
+19125:   _comisSetManualReact(y, m, _comisManualReact(y,m).filter(n => n.toLowerCase() !== nombre.toLowerCase()));
+19126:   renderComisiones();
+19127: }
+19128: 
+19129: function marcarComisionPagada(persona) {
+19130:   const now = new Date().toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'});
+19131:   kvSet('comis_pago_'+persona+'_'+_comisMesVal(), now);
+19132:   renderComisiones();
+19133: }
+19134: function desmarcarComisionPagada(persona) {
+19135:   kvRemove('comis_pago_'+persona+'_'+_comisMesVal());
 ```
 
-### Coincidencia 162 — línea 19706
+### Coincidencia 161 — línea 19131
 
 ```html
-19701: function _fmtCLP(n) {
-19702:   return '$' + Math.round(n).toLocaleString('es-CO');
-19703: }
-19704: 
-19705: function _recMesActual() {
-19706:   const now = new Date();
-19707:   return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-19708: }
-19709: 
-19710: function _initRecMesSel() {
-19711:   const sel = document.getElementById('recMesFiltro');
+19126:   renderComisiones();
+19127: }
+19128: 
+19129: function marcarComisionPagada(persona) {
+19130:   const now = new Date().toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'});
+19131:   kvSet('comis_pago_'+persona+'_'+_comisMesVal(), now);
+19132:   renderComisiones();
+19133: }
+19134: function desmarcarComisionPagada(persona) {
+19135:   kvRemove('comis_pago_'+persona+'_'+_comisMesVal());
+19136:   renderComisiones();
 ```
 
-### Coincidencia 163 — línea 19707
+### Coincidencia 162 — línea 19579
 
 ```html
-19702:   return '$' + Math.round(n).toLocaleString('es-CO');
-19703: }
-19704: 
-19705: function _recMesActual() {
-19706:   const now = new Date();
-19707:   return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-19708: }
-19709: 
-19710: function _initRecMesSel() {
-19711:   const sel = document.getElementById('recMesFiltro');
-19712:   if (!sel) return;
+19574:   const editId = document.getElementById('msgEditId').value;
+19575:   if (editId) {
+19576:     const idx = msgs.findIndex(m => m.id === editId);
+19577:     if (idx >= 0) msgs[idx] = { ...msgs[idx], titulo, cat, texto };
+19578:   } else {
+19579:     msgs.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2,5), titulo, cat, texto, created: Date.now() });
+19580:   }
+19581:   _setMensajesPre(msgs);
+19582:   closeModal('modalMensaje');
+19583:   renderMensajes();
+19584:   toast('Mensaje guardado ✓', 'ok');
 ```
 
-### Coincidencia 165 — línea 19816
+### Coincidencia 164 — línea 19708
 
 ```html
-19811:   if (!servicio) { alert('Selecciona el servicio'); return; }
-19812:   if (!venta || venta <= 0) { alert('Ingresa el valor de la venta'); return; }
-19813: 
-19814:   const comision = Math.round(venta * REC_PCT);
-19815:   const rec = {
-19816:     id: Date.now().toString(),
-19817:     fecha,
-19818:     paciente,
-19819:     servicio,
-19820:     venta,
-19821:     comision,
+19703: function _fmtCLP(n) {
+19704:   return '$' + Math.round(n).toLocaleString('es-CO');
+19705: }
+19706: 
+19707: function _recMesActual() {
+19708:   const now = new Date();
+19709:   return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+19710: }
+19711: 
+19712: function _initRecMesSel() {
+19713:   const sel = document.getElementById('recMesFiltro');
 ```
 
-### Coincidencia 166 — línea 20096
+### Coincidencia 165 — línea 19709
 
 ```html
-20091: 
-20092: function cargarCampañaReferidos() {
-20093:   const panel = document.getElementById('refCampañaPanel');
-20094:   if (!panel) return;
-20095: 
-20096:   const now   = new Date();
-20097:   const mes   = now.getMonth();
-20098:   const anio  = now.getFullYear();
-20099:   const MESES = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
-20100:   const mesStr = MESES[mes];
-20101: 
+19704:   return '$' + Math.round(n).toLocaleString('es-CO');
+19705: }
+19706: 
+19707: function _recMesActual() {
+19708:   const now = new Date();
+19709:   return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+19710: }
+19711: 
+19712: function _initRecMesSel() {
+19713:   const sel = document.getElementById('recMesFiltro');
+19714:   if (!sel) return;
 ```
 
-### Coincidencia 167 — línea 20097
+### Coincidencia 167 — línea 19818
 
 ```html
-20092: function cargarCampañaReferidos() {
-20093:   const panel = document.getElementById('refCampañaPanel');
-20094:   if (!panel) return;
-20095: 
-20096:   const now   = new Date();
-20097:   const mes   = now.getMonth();
-20098:   const anio  = now.getFullYear();
-20099:   const MESES = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
-20100:   const mesStr = MESES[mes];
-20101: 
-20102:   const citas = (allData.citas || []).filter(c => {
+19813:   if (!servicio) { alert('Selecciona el servicio'); return; }
+19814:   if (!venta || venta <= 0) { alert('Ingresa el valor de la venta'); return; }
+19815: 
+19816:   const comision = Math.round(venta * REC_PCT);
+19817:   const rec = {
+19818:     id: Date.now().toString(),
+19819:     fecha,
+19820:     paciente,
+19821:     servicio,
+19822:     venta,
+19823:     comision,
 ```
 
 ### Coincidencia 168 — línea 20098
 
 ```html
-20093:   const panel = document.getElementById('refCampañaPanel');
-20094:   if (!panel) return;
-20095: 
-20096:   const now   = new Date();
-20097:   const mes   = now.getMonth();
-20098:   const anio  = now.getFullYear();
-20099:   const MESES = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
-20100:   const mesStr = MESES[mes];
-20101: 
-20102:   const citas = (allData.citas || []).filter(c => {
-20103:     if (!c.fecha || c.estado === 'Cancelada' || esRegistroServ(c.servicio)) return false;
+20093: 
+20094: function cargarCampañaReferidos() {
+20095:   const panel = document.getElementById('refCampañaPanel');
+20096:   if (!panel) return;
+20097: 
+20098:   const now   = new Date();
+20099:   const mes   = now.getMonth();
+20100:   const anio  = now.getFullYear();
+20101:   const MESES = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
+20102:   const mesStr = MESES[mes];
+20103: 
+```
+
+### Coincidencia 169 — línea 20099
+
+```html
+20094: function cargarCampañaReferidos() {
+20095:   const panel = document.getElementById('refCampañaPanel');
+20096:   if (!panel) return;
+20097: 
+20098:   const now   = new Date();
+20099:   const mes   = now.getMonth();
+20100:   const anio  = now.getFullYear();
+20101:   const MESES = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
+20102:   const mesStr = MESES[mes];
+20103: 
+20104:   const citas = (allData.citas || []).filter(c => {
+```
+
+### Coincidencia 170 — línea 20100
+
+```html
+20095:   const panel = document.getElementById('refCampañaPanel');
+20096:   if (!panel) return;
+20097: 
+20098:   const now   = new Date();
+20099:   const mes   = now.getMonth();
+20100:   const anio  = now.getFullYear();
+20101:   const MESES = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
+20102:   const mesStr = MESES[mes];
+20103: 
+20104:   const citas = (allData.citas || []).filter(c => {
+20105:     if (!c.fecha || c.estado === 'Cancelada' || esRegistroServ(c.servicio)) return false;
 ```
 
 ## Selectores de pago y cita
@@ -4533,178 +4567,178 @@ No se encontraron coincidencias.
 15882: 
 ```
 
-### Coincidencia 82 — línea 16800
+### Coincidencia 82 — línea 16802
 
 ```html
-16792:   const meses4 = [];
-16793:   for (let i = 3; i >= 0; i--) {
-16794:     const d = new Date(now2.getFullYear(), now2.getMonth()-i, 1);
-16795:     meses4.push({ m: d.getMonth()+1, y: d.getFullYear(), label: MESES[d.getMonth()] });
-16796:   }
-16797:   const cancelEl = document.getElementById('metricCancelacion');
-16798:   if (cancelEl) {
-16799:     const rows = meses4.map(mes => {
-16800:       const todasMes = allData.citas.filter(c => {
-16801:         const [cy,cm] = normDate(c.fecha).split('-');
-16802:         return +cm===mes.m && +cy===mes.y && !esRegistroServ(c.servicio);
-16803:       });
-16804:       const canceladas = todasMes.filter(c => c.estado === 'Cancelada').length;
-16805:       const total = todasMes.length || 1;
-16806:       const pct = Math.round(canceladas / total * 100);
-16807:       const color = pct >= 30 ? '#ef4444' : pct >= 15 ? '#f59e0b' : 'var(--ok)';
-16808:       return `<div class="metric-row">
+16794:   const meses4 = [];
+16795:   for (let i = 3; i >= 0; i--) {
+16796:     const d = new Date(now2.getFullYear(), now2.getMonth()-i, 1);
+16797:     meses4.push({ m: d.getMonth()+1, y: d.getFullYear(), label: MESES[d.getMonth()] });
+16798:   }
+16799:   const cancelEl = document.getElementById('metricCancelacion');
+16800:   if (cancelEl) {
+16801:     const rows = meses4.map(mes => {
+16802:       const todasMes = allData.citas.filter(c => {
+16803:         const [cy,cm] = normDate(c.fecha).split('-');
+16804:         return +cm===mes.m && +cy===mes.y && !esRegistroServ(c.servicio);
+16805:       });
+16806:       const canceladas = todasMes.filter(c => c.estado === 'Cancelada').length;
+16807:       const total = todasMes.length || 1;
+16808:       const pct = Math.round(canceladas / total * 100);
+16809:       const color = pct >= 30 ? '#ef4444' : pct >= 15 ? '#f59e0b' : 'var(--ok)';
+16810:       return `<div class="metric-row">
 ```
 
-### Coincidencia 83 — línea 17078
+### Coincidencia 83 — línea 17080
 
 ```html
-17070:   renderConveniosReport();
-17071:   _checkAutoAtendida();
-17072:   _checkCobrosPendientes();
-17073: }
-17074: 
-17075: // ── Automatización #2: marcar citas pasadas como Atendidas ──
-17076: function _checkAutoAtendida() {
-17077:   const nowMs = Date.now();
-17078:   const pendientes = (allData.citas || []).filter(c => {
-17079:     if (!['Confirmada','Pendiente'].includes(c.estado)) return false;
-17080:     if (esRegistroServ(c.servicio)) return false;
-17081:     const f = normDate(c.fecha);
-17082:     if (!f || !c.hora) return false;
-17083:     const [hh, mm] = c.hora.split(':').map(Number);
-17084:     const citaEnd = new Date(f + 'T' + c.hora);
-17085:     citaEnd.setMinutes(citaEnd.getMinutes() + 60);
-17086:     return citaEnd.getTime() < nowMs;
+17072:   renderConveniosReport();
+17073:   _checkAutoAtendida();
+17074:   _checkCobrosPendientes();
+17075: }
+17076: 
+17077: // ── Automatización #2: marcar citas pasadas como Atendidas ──
+17078: function _checkAutoAtendida() {
+17079:   const nowMs = Date.now();
+17080:   const pendientes = (allData.citas || []).filter(c => {
+17081:     if (!['Confirmada','Pendiente'].includes(c.estado)) return false;
+17082:     if (esRegistroServ(c.servicio)) return false;
+17083:     const f = normDate(c.fecha);
+17084:     if (!f || !c.hora) return false;
+17085:     const [hh, mm] = c.hora.split(':').map(Number);
+17086:     const citaEnd = new Date(f + 'T' + c.hora);
+17087:     citaEnd.setMinutes(citaEnd.getMinutes() + 60);
+17088:     return citaEnd.getTime() < nowMs;
 ```
 
-### Coincidencia 84 — línea 17143
+### Coincidencia 84 — línea 17145
 
 ```html
-17135:     </div>`;
-17136:   }).join('');
-17137: }
-17138: 
-17139: function openPago(citaId) {
-17140:   showView('pagos');
-17141:   setTimeout(() => {
-17142:     if (typeof fillPaymentSelectors === 'function') fillPaymentSelectors(citaId || '');
-17143:     const selector = document.getElementById('payCitaId');
-17144:     if (selector) {
-17145:       selector.value = citaId || '';
-17146:       selector.dispatchEvent(new Event('change', { bubbles: true }));
-17147:       selector.focus();
-17148:       selector.scrollIntoView({ behavior: 'smooth', block: 'center' });
-17149:     } else {
-17150:       toast('Se abrió Pagos, pero no se encontró la cita seleccionada', 'warn');
-17151:     }
+17137:     </div>`;
+17138:   }).join('');
+17139: }
+17140: 
+17141: function openPago(citaId) {
+17142:   showView('pagos');
+17143:   setTimeout(() => {
+17144:     if (typeof fillPaymentSelectors === 'function') fillPaymentSelectors(citaId || '');
+17145:     const selector = document.getElementById('payCitaId');
+17146:     if (selector) {
+17147:       selector.value = citaId || '';
+17148:       selector.dispatchEvent(new Event('change', { bubbles: true }));
+17149:       selector.focus();
+17150:       selector.scrollIntoView({ behavior: 'smooth', block: 'center' });
+17151:     } else {
+17152:       toast('Se abrió Pagos, pero no se encontró la cita seleccionada', 'warn');
+17153:     }
 ```
 
-### Coincidencia 85 — línea 17685
+### Coincidencia 85 — línea 17687
 
 ```html
-17677:   const recs      = [];
-17678: 
-17679:   const DIAS_ES = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
-17680:   const toStr = d => d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-17681: 
-17682:   // ── Histórico: últimas 12 semanas (excluye la semana seleccionada) ──
-17683:   const lunD = lunes instanceof Date ? lunes : new Date((lunes||today())+'T12:00:00');
-17684:   const lunesHace12 = new Date(lunD); lunesHace12.setDate(lunD.getDate()-84);
-17685:   const histCitas = (allData.citas||[]).filter(c => {
-17686:     const f = normDate(c.fecha); if (!f) return false;
-17687:     const fD = new Date(f+'T12:00:00');
-17688:     return fD < lunD && fD >= lunesHace12;
-17689:   });
-17690: 
-17691:   // Promedio por día de semana (dow 0=Dom … 6=Sáb)
-17692:   const histDow = {};
-17693:   histCitas.forEach(c => {
+17679:   const recs      = [];
+17680: 
+17681:   const DIAS_ES = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+17682:   const toStr = d => d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+17683: 
+17684:   // ── Histórico: últimas 12 semanas (excluye la semana seleccionada) ──
+17685:   const lunD = lunes instanceof Date ? lunes : new Date((lunes||today())+'T12:00:00');
+17686:   const lunesHace12 = new Date(lunD); lunesHace12.setDate(lunD.getDate()-84);
+17687:   const histCitas = (allData.citas||[]).filter(c => {
+17688:     const f = normDate(c.fecha); if (!f) return false;
+17689:     const fD = new Date(f+'T12:00:00');
+17690:     return fD < lunD && fD >= lunesHace12;
+17691:   });
+17692: 
+17693:   // Promedio por día de semana (dow 0=Dom … 6=Sáb)
+17694:   const histDow = {};
+17695:   histCitas.forEach(c => {
 ```
 
-### Coincidencia 86 — línea 17923
+### Coincidencia 86 — línea 17925
 
 ```html
-17915:   if (s.includes('valoracion'))   return { tipo:'valoracion',   diasDelay:1, label:'Valoración funcional' };
-17916:   if (s.includes('readaptacion')) return { tipo:'readaptacion', diasDelay:1, label:'Readaptación funcional' };
-17917:   return null;
-17918: }
-17919: function generarTareas() {
-17920:   const hoyStr = today();
-17921:   const hoy = new Date(hoyStr+'T12:00:00');
-17922:   const tareas = [], seen = new Set();
-17923:   allData.citas.forEach(c => {
-17924:     if (c.estado === 'Cancelada' || esRegistroServ(c.servicio)) return;
-17925:     const ft = _tareaFechaTipo(c);
-17926:     if (!ft) return;
-17927:     const fSesion = normDate(c.fecha);
-17928:     if (!fSesion) return;
-17929:     if (fSesion < ADMIN_OPERATIONS_START_DATE) return;
-17930:     const diasDiff = Math.round((hoy - new Date(fSesion+'T12:00:00')) / 86400000);
-17931:     if (diasDiff < ft.diasDelay) return;
+17917:   if (s.includes('valoracion'))   return { tipo:'valoracion',   diasDelay:1, label:'Valoración funcional' };
+17918:   if (s.includes('readaptacion')) return { tipo:'readaptacion', diasDelay:1, label:'Readaptación funcional' };
+17919:   return null;
+17920: }
+17921: function generarTareas() {
+17922:   const hoyStr = today();
+17923:   const hoy = new Date(hoyStr+'T12:00:00');
+17924:   const tareas = [], seen = new Set();
+17925:   allData.citas.forEach(c => {
+17926:     if (c.estado === 'Cancelada' || esRegistroServ(c.servicio)) return;
+17927:     const ft = _tareaFechaTipo(c);
+17928:     if (!ft) return;
+17929:     const fSesion = normDate(c.fecha);
+17930:     if (!fSesion) return;
+17931:     if (fSesion < ADMIN_OPERATIONS_START_DATE) return;
+17932:     const diasDiff = Math.round((hoy - new Date(fSesion+'T12:00:00')) / 86400000);
+17933:     if (diasDiff < ft.diasDelay) return;
 ```
 
-### Coincidencia 87 — línea 18146
+### Coincidencia 87 — línea 18148
 
 ```html
-18138:   }).join('');
-18139: }
-18140: function abrirModalPaquete(plIdxPre) {
-18141:   const plantillas = _getPkPlantillas();
-18142:   const sel = document.getElementById('pkPlantillaSel');
-18143:   if (sel) sel.innerHTML = '<option value="">— Elige plantilla —</option>' + plantillas.map((pl,i) => `<option value="${i}" ${i===plIdxPre?'selected':''}>${pl.nombre}</option>`).join('');
-18144:   const dl = document.getElementById('pkPacienteList');
-18145:   if (dl) {
-18146:     const nomCitas = allData.citas.map(c=>c.nombre||'').filter(Boolean);
-18147:     const nomPacs  = (allData.pacientes||[]).map(p=>p.nombre||'').filter(Boolean);
-18148:     const todos    = [...new Set([...nomCitas, ...nomPacs])].sort();
-18149:     dl.innerHTML   = todos.map(n=>`<option value="${n}">`).join('');
-18150:   }
-18151:   const fi = document.getElementById('pkFechaCompra'); if (fi) fi.value = today();
-18152:   const pkModal = document.getElementById('modalPaquete'); if (pkModal) pkModal.style.display = 'flex';
-18153: }
-18154: function guardarPaqueteAsignado() {
+18140:   }).join('');
+18141: }
+18142: function abrirModalPaquete(plIdxPre) {
+18143:   const plantillas = _getPkPlantillas();
+18144:   const sel = document.getElementById('pkPlantillaSel');
+18145:   if (sel) sel.innerHTML = '<option value="">— Elige plantilla —</option>' + plantillas.map((pl,i) => `<option value="${i}" ${i===plIdxPre?'selected':''}>${pl.nombre}</option>`).join('');
+18146:   const dl = document.getElementById('pkPacienteList');
+18147:   if (dl) {
+18148:     const nomCitas = allData.citas.map(c=>c.nombre||'').filter(Boolean);
+18149:     const nomPacs  = (allData.pacientes||[]).map(p=>p.nombre||'').filter(Boolean);
+18150:     const todos    = [...new Set([...nomCitas, ...nomPacs])].sort();
+18151:     dl.innerHTML   = todos.map(n=>`<option value="${n}">`).join('');
+18152:   }
+18153:   const fi = document.getElementById('pkFechaCompra'); if (fi) fi.value = today();
+18154:   const pkModal = document.getElementById('modalPaquete'); if (pkModal) pkModal.style.display = 'flex';
+18155: }
+18156: function guardarPaqueteAsignado() {
 ```
 
-### Coincidencia 88 — línea 18600
+### Coincidencia 88 — línea 18602
 
 ```html
-18592: // ── PASAPORTE DE MOVIMIENTO ────────────────────────────────────
-18593: const PASAPORTE_BASE  = 'https://cuidandotefisioterapia.com/pasaporte.html';
-18594: let _pasTelefono = '';
-18595: let _pasConfirmado = false;  // true solo cuando se seleccionó desde la BD
-18596: let _pasCurrent = null;
-18597: 
-18598: function _pasGetDB() {
-18599:   const map = {};
-18600:   allData.citas.filter(c => c.estado !== 'Registro').forEach(c => {
-18601:     const key = (c.nombre || '').toLowerCase().trim();
-18602:     if (key && !map[key]) map[key] = { nombre: c.nombre, telefono: c.telefono || '' };
-18603:   });
-18604:   (allData.pacientes || []).forEach(p => {
-18605:     const key = (p.nombre || '').toLowerCase().trim();
-18606:     if (key && !map[key]) map[key] = { nombre: p.nombre, telefono: p.telefono || '' };
-18607:   });
-18608:   return map;
+18594: // ── PASAPORTE DE MOVIMIENTO ────────────────────────────────────
+18595: const PASAPORTE_BASE  = 'https://cuidandotefisioterapia.com/pasaporte.html';
+18596: let _pasTelefono = '';
+18597: let _pasConfirmado = false;  // true solo cuando se seleccionó desde la BD
+18598: let _pasCurrent = null;
+18599: 
+18600: function _pasGetDB() {
+18601:   const map = {};
+18602:   allData.citas.filter(c => c.estado !== 'Registro').forEach(c => {
+18603:     const key = (c.nombre || '').toLowerCase().trim();
+18604:     if (key && !map[key]) map[key] = { nombre: c.nombre, telefono: c.telefono || '' };
+18605:   });
+18606:   (allData.pacientes || []).forEach(p => {
+18607:     const key = (p.nombre || '').toLowerCase().trim();
+18608:     if (key && !map[key]) map[key] = { nombre: p.nombre, telefono: p.telefono || '' };
+18609:   });
+18610:   return map;
 ```
 
-### Coincidencia 89 — línea 20102
+### Coincidencia 89 — línea 20104
 
 ```html
-20094:   if (!panel) return;
-20095: 
-20096:   const now   = new Date();
-20097:   const mes   = now.getMonth();
-20098:   const anio  = now.getFullYear();
-20099:   const MESES = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
-20100:   const mesStr = MESES[mes];
-20101: 
-20102:   const citas = (allData.citas || []).filter(c => {
-20103:     if (!c.fecha || c.estado === 'Cancelada' || esRegistroServ(c.servicio)) return false;
-20104:     const [y, m] = c.fecha.split('-');
-20105:     return +y === anio && +m === (mes + 1);
-20106:   });
-20107: 
-20108:   const vistos = {};
-20109:   const pacientes = [];
-20110:   citas.forEach(c => {
+20096:   if (!panel) return;
+20097: 
+20098:   const now   = new Date();
+20099:   const mes   = now.getMonth();
+20100:   const anio  = now.getFullYear();
+20101:   const MESES = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
+20102:   const mesStr = MESES[mes];
+20103: 
+20104:   const citas = (allData.citas || []).filter(c => {
+20105:     if (!c.fecha || c.estado === 'Cancelada' || esRegistroServ(c.servicio)) return false;
+20106:     const [y, m] = c.fecha.split('-');
+20107:     return +y === anio && +m === (mes + 1);
+20108:   });
+20109: 
+20110:   const vistos = {};
+20111:   const pacientes = [];
+20112:   citas.forEach(c => {
 ```

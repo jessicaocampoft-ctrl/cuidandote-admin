@@ -16648,6 +16648,8 @@ function renderEstructuraFinanciera() {
 // ══════════════════════════════════════════════════════════════
 function renderMetricas() {
   const now = new Date();
+  const m = now.getMonth() + 1;
+  const y = now.getFullYear();
   const citas = citasReales();
   const COLORES = ['var(--primary)','#6366f1','#f59e0b','#10b981','#ef4444','#8b5cf6'];
   const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];

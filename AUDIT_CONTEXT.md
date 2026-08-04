@@ -1,7 +1,7 @@
 # Contexto técnico para correcciones del panel
 
 Archivo revisado: `index.html`
-Total de líneas: 20243
+Total de líneas: 20245
 
 ## Todas las apariciones de copyGestionStatus
 
@@ -699,58 +699,58 @@ Total de líneas: 20243
 14211:     modal.style.cssText = 'display:none;position:fixed;inset:0;background:rgba(0,0,0,.42);z-index:9999;align-items:center;justify-content:center;padding:18px';
 ```
 
-### Coincidencia 17 — línea 18838
+### Coincidencia 17 — línea 18840
 
 ```html
-18832:   _pasCurrent = data.passport || _pasCurrent;
-18833:   renderPasaporteAdminTools();
-18834:   toast('Pasaporte reactivado', 'success');
-18835: }
-18836: 
-18837: // ── Interceptor WA en desktop: muestra modal para copiar en vez de abrir wa.me ──
-18838: (function initWACopyInterceptor() {
-18839:   const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-18840:   if (isMobile) return; // en celular, el link funciona directo con la app nativa
-18841: 
-18842:   document.addEventListener('click', function(e) {
-18843:     const a = e.target.closest('a[href]');
-18844:     if (!a) return;
+18834:   _pasCurrent = data.passport || _pasCurrent;
+18835:   renderPasaporteAdminTools();
+18836:   toast('Pasaporte reactivado', 'success');
+18837: }
+18838: 
+18839: // ── Interceptor WA en desktop: muestra modal para copiar en vez de abrir wa.me ──
+18840: (function initWACopyInterceptor() {
+18841:   const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+18842:   if (isMobile) return; // en celular, el link funciona directo con la app nativa
+18843: 
+18844:   document.addEventListener('click', function(e) {
+18845:     const a = e.target.closest('a[href]');
+18846:     if (!a) return;
 ```
 
-### Coincidencia 18 — línea 18868
+### Coincidencia 18 — línea 18870
 
 ```html
-18862:       document.getElementById('waOpenLink').href        = 'https://web.whatsapp.com';
-18863:     }
-18864:     document.getElementById('waCopyModal').style.display = 'flex';
-18865:   }); // bubble phase: los onclick inline (markWaSent, etc.) disparan primero, luego prevenimos la navegacion
-18866: })();
-18867: 
-18868: function cerrarWaCopyModal() {
-18869:   document.getElementById('waCopyModal').style.display = 'none';
-18870: }
-18871: 
-18872: function copiarMsgWA() {
-18873:   const txt = document.getElementById('waCopyText').textContent;
-18874:   navigator.clipboard.writeText(txt).then(() => {
+18864:       document.getElementById('waOpenLink').href        = 'https://web.whatsapp.com';
+18865:     }
+18866:     document.getElementById('waCopyModal').style.display = 'flex';
+18867:   }); // bubble phase: los onclick inline (markWaSent, etc.) disparan primero, luego prevenimos la navegacion
+18868: })();
+18869: 
+18870: function cerrarWaCopyModal() {
+18871:   document.getElementById('waCopyModal').style.display = 'none';
+18872: }
+18873: 
+18874: function copiarMsgWA() {
+18875:   const txt = document.getElementById('waCopyText').textContent;
+18876:   navigator.clipboard.writeText(txt).then(() => {
 ```
 
-### Coincidencia 19 — línea 19661
+### Coincidencia 19 — línea 19663
 
 ```html
-19655:     if (el) el.style.display = t === tab ? 'block' : 'none';
-19656:     if (btn) {
-19657:       btn.className = t === tab ? 'btn btn-teal btn-sm' : 'btn btn-ghost btn-sm';
-19658:     }
-19659:   });
-19660: }
-19661: function gCopiar(id, btn) {
-19662:   const el = document.getElementById(id); const txt = el.tagName === "TEXTAREA" ? el.value : el.innerText;
-19663:   navigator.clipboard.writeText(txt).then(() => {
-19664:     const orig = btn.textContent;
-19665:     btn.textContent = '✅ Copiado';
-19666:     btn.style.background = '#16a34a';
-19667:     btn.style.color = '#fff';
+19657:     if (el) el.style.display = t === tab ? 'block' : 'none';
+19658:     if (btn) {
+19659:       btn.className = t === tab ? 'btn btn-teal btn-sm' : 'btn btn-ghost btn-sm';
+19660:     }
+19661:   });
+19662: }
+19663: function gCopiar(id, btn) {
+19664:   const el = document.getElementById(id); const txt = el.tagName === "TEXTAREA" ? el.value : el.innerText;
+19665:   navigator.clipboard.writeText(txt).then(() => {
+19666:     const orig = btn.textContent;
+19667:     btn.textContent = '✅ Copiado';
+19668:     btn.style.background = '#16a34a';
+19669:     btn.style.color = '#fff';
 ```
 
 ## Uso de navigator.clipboard
@@ -845,152 +845,152 @@ Total de líneas: 20243
 15314:     setTimeout(() => { btn.innerHTML = orig; btn.style.background=''; btn.style.color=''; }, 3000);
 ```
 
-### Coincidencia 6 — línea 18741
+### Coincidencia 6 — línea 18743
 
 ```html
-18735:   window.open(link, '_blank');
-18736: }
-18737: 
-18738: function copiarLinkPas() {
-18739:   const link = document.getElementById('pasLinkTexto').textContent;
-18740:   if (!link) return;
-18741:   navigator.clipboard.writeText(link).then(() => {
-18742:     const btn = document.getElementById('pasCopyBtn');
-18743:     const orig = btn.textContent;
-18744:     btn.textContent = '¡Copiado!';
-18745:     setTimeout(() => btn.textContent = orig, 2000);
-18746:   });
-18747: }
+18737:   window.open(link, '_blank');
+18738: }
+18739: 
+18740: function copiarLinkPas() {
+18741:   const link = document.getElementById('pasLinkTexto').textContent;
+18742:   if (!link) return;
+18743:   navigator.clipboard.writeText(link).then(() => {
+18744:     const btn = document.getElementById('pasCopyBtn');
+18745:     const orig = btn.textContent;
+18746:     btn.textContent = '¡Copiado!';
+18747:     setTimeout(() => btn.textContent = orig, 2000);
+18748:   });
+18749: }
 ```
 
-### Coincidencia 7 — línea 18874
+### Coincidencia 7 — línea 18876
 
 ```html
-18868: function cerrarWaCopyModal() {
-18869:   document.getElementById('waCopyModal').style.display = 'none';
-18870: }
-18871: 
-18872: function copiarMsgWA() {
-18873:   const txt = document.getElementById('waCopyText').textContent;
-18874:   navigator.clipboard.writeText(txt).then(() => {
-18875:     const btn = document.getElementById('waCopyBtn');
-18876:     const orig = btn.textContent;
-18877:     btn.textContent = '✅ ¡Copiado!';
-18878:     setTimeout(() => btn.textContent = orig, 2500);
-18879:     toast('Mensaje copiado. Pégalo en WhatsApp Web 💬', 'ok');
-18880:   }).catch(() => {
+18870: function cerrarWaCopyModal() {
+18871:   document.getElementById('waCopyModal').style.display = 'none';
+18872: }
+18873: 
+18874: function copiarMsgWA() {
+18875:   const txt = document.getElementById('waCopyText').textContent;
+18876:   navigator.clipboard.writeText(txt).then(() => {
+18877:     const btn = document.getElementById('waCopyBtn');
+18878:     const orig = btn.textContent;
+18879:     btn.textContent = '✅ ¡Copiado!';
+18880:     setTimeout(() => btn.textContent = orig, 2500);
+18881:     toast('Mensaje copiado. Pégalo en WhatsApp Web 💬', 'ok');
+18882:   }).catch(() => {
 ```
 
-### Coincidencia 8 — línea 19438
+### Coincidencia 8 — línea 19440
 
 ```html
-19432:   const msg =
-19433:     `📅 *Horarios disponibles — ${fechaLegible}*\n` +
-19434:     `🩺 Servicio: ${servicio}\n\n` +
-19435:     libres.map(h => `✅ ${h}`).join('\n') +
-19436:     '\n\n¿Cuál te queda mejor? 😊';
-19437: 
-19438:   navigator.clipboard.writeText(msg).then(() => {
-19439:     const msgEl = document.getElementById('dispCopyMsg');
-19440:     if (msgEl) { msgEl.style.display = 'block'; setTimeout(() => msgEl.style.display = 'none', 2500); }
-19441:   }).catch(() => {
-19442:     // Fallback para dispositivos sin clipboard API
-19443:     const ta = document.createElement('textarea');
-19444:     ta.value = msg; ta.style.position = 'fixed'; ta.style.opacity = '0';
+19434:   const msg =
+19435:     `📅 *Horarios disponibles — ${fechaLegible}*\n` +
+19436:     `🩺 Servicio: ${servicio}\n\n` +
+19437:     libres.map(h => `✅ ${h}`).join('\n') +
+19438:     '\n\n¿Cuál te queda mejor? 😊';
+19439: 
+19440:   navigator.clipboard.writeText(msg).then(() => {
+19441:     const msgEl = document.getElementById('dispCopyMsg');
+19442:     if (msgEl) { msgEl.style.display = 'block'; setTimeout(() => msgEl.style.display = 'none', 2500); }
+19443:   }).catch(() => {
+19444:     // Fallback para dispositivos sin clipboard API
+19445:     const ta = document.createElement('textarea');
+19446:     ta.value = msg; ta.style.position = 'fixed'; ta.style.opacity = '0';
 ```
 
-### Coincidencia 9 — línea 19595
+### Coincidencia 9 — línea 19597
 
 ```html
-19589:   toast('Mensaje eliminado', 'ok');
-19590: }
-19591: 
-19592: function copiarMensajePre(id) {
-19593:   const m = _getMensajesPre().find(x => x.id === id);
-19594:   if (!m) return;
-19595:   navigator.clipboard.writeText(m.texto)
-19596:     .then(() => toast('Copiado al portapapeles ✓', 'ok'))
-19597:     .catch(() => {
-19598:       const ta = document.createElement('textarea');
-19599:       ta.value = m.texto; document.body.appendChild(ta); ta.select();
-19600:       document.execCommand('copy'); document.body.removeChild(ta);
-19601:       toast('Copiado al portapapeles ✓', 'ok');
+19591:   toast('Mensaje eliminado', 'ok');
+19592: }
+19593: 
+19594: function copiarMensajePre(id) {
+19595:   const m = _getMensajesPre().find(x => x.id === id);
+19596:   if (!m) return;
+19597:   navigator.clipboard.writeText(m.texto)
+19598:     .then(() => toast('Copiado al portapapeles ✓', 'ok'))
+19599:     .catch(() => {
+19600:       const ta = document.createElement('textarea');
+19601:       ta.value = m.texto; document.body.appendChild(ta); ta.select();
+19602:       document.execCommand('copy'); document.body.removeChild(ta);
+19603:       toast('Copiado al portapapeles ✓', 'ok');
 ```
 
-### Coincidencia 10 — línea 19663
+### Coincidencia 10 — línea 19665
 
 ```html
-19657:       btn.className = t === tab ? 'btn btn-teal btn-sm' : 'btn btn-ghost btn-sm';
-19658:     }
-19659:   });
-19660: }
-19661: function gCopiar(id, btn) {
-19662:   const el = document.getElementById(id); const txt = el.tagName === "TEXTAREA" ? el.value : el.innerText;
-19663:   navigator.clipboard.writeText(txt).then(() => {
-19664:     const orig = btn.textContent;
-19665:     btn.textContent = '✅ Copiado';
-19666:     btn.style.background = '#16a34a';
-19667:     btn.style.color = '#fff';
-19668:     setTimeout(() => {
-19669:       btn.textContent = orig;
+19659:       btn.className = t === tab ? 'btn btn-teal btn-sm' : 'btn btn-ghost btn-sm';
+19660:     }
+19661:   });
+19662: }
+19663: function gCopiar(id, btn) {
+19664:   const el = document.getElementById(id); const txt = el.tagName === "TEXTAREA" ? el.value : el.innerText;
+19665:   navigator.clipboard.writeText(txt).then(() => {
+19666:     const orig = btn.textContent;
+19667:     btn.textContent = '✅ Copiado';
+19668:     btn.style.background = '#16a34a';
+19669:     btn.style.color = '#fff';
+19670:     setTimeout(() => {
+19671:       btn.textContent = orig;
 ```
 
 ## Declaración de openPago
 
-### Coincidencia 1 — línea 17139
+### Coincidencia 1 — línea 17141
 
 ```html
-17133:         <button class="btn btn-ghost btn-sm" onclick="openPago('${c.id}')">💳 Registrar pago</button>
-17134:       </div>
-17135:     </div>`;
-17136:   }).join('');
-17137: }
-17138: 
-17139: function openPago(citaId) {
-17140:   showView('pagos');
-17141:   setTimeout(() => {
-17142:     if (typeof fillPaymentSelectors === 'function') fillPaymentSelectors(citaId || '');
-17143:     const selector = document.getElementById('payCitaId');
-17144:     if (selector) {
-17145:       selector.value = citaId || '';
+17135:         <button class="btn btn-ghost btn-sm" onclick="openPago('${c.id}')">💳 Registrar pago</button>
+17136:       </div>
+17137:     </div>`;
+17138:   }).join('');
+17139: }
+17140: 
+17141: function openPago(citaId) {
+17142:   showView('pagos');
+17143:   setTimeout(() => {
+17144:     if (typeof fillPaymentSelectors === 'function') fillPaymentSelectors(citaId || '');
+17145:     const selector = document.getElementById('payCitaId');
+17146:     if (selector) {
+17147:       selector.value = citaId || '';
 ```
 
 ## Referencias a openPago
 
-### Coincidencia 1 — línea 17133
+### Coincidencia 1 — línea 17135
 
 ```html
-17127:     const msg = `Hola ${(c.nombre || '').split(' ')[0]}! \u2757 Te recuerdo que queda pendiente el pago de tu sesion del ${fmtDate(normDate(c.fecha))} por ${c.precio}. ¿Cuando lo puedes hacer efectivo? \uD83D\uDE4F`;
-17128:     const wa  = tel.length >= 7 ? `https://wa.me/57${tel.slice(-10)}?text=${encodeURIComponent(msg)}` : null;
-17129:     return `<div style="display:flex;justify-content:space-between;align-items:center;font-size:.82rem;padding:7px 12px;background:rgba(255,255,255,.6);border-radius:7px;gap:10px;flex-wrap:wrap">
-17130:       <span><strong>${c.nombre || '—'}</strong> · ${fmtDate(normDate(c.fecha))} · <span style="color:#92400e;font-weight:600">${c.precio}</span></span>
-17131:       <div style="display:flex;gap:6px">
-17132:         ${wa ? `<a href="${wa}" target="_blank" class="btn btn-sm" style="background:#d97706;color:#fff;border:none;text-decoration:none">💬 Cobrar WA</a>` : ''}
-17133:         <button class="btn btn-ghost btn-sm" onclick="openPago('${c.id}')">💳 Registrar pago</button>
-17134:       </div>
-17135:     </div>`;
-17136:   }).join('');
-17137: }
-17138: 
-17139: function openPago(citaId) {
+17129:     const msg = `Hola ${(c.nombre || '').split(' ')[0]}! \u2757 Te recuerdo que queda pendiente el pago de tu sesion del ${fmtDate(normDate(c.fecha))} por ${c.precio}. ¿Cuando lo puedes hacer efectivo? \uD83D\uDE4F`;
+17130:     const wa  = tel.length >= 7 ? `https://wa.me/57${tel.slice(-10)}?text=${encodeURIComponent(msg)}` : null;
+17131:     return `<div style="display:flex;justify-content:space-between;align-items:center;font-size:.82rem;padding:7px 12px;background:rgba(255,255,255,.6);border-radius:7px;gap:10px;flex-wrap:wrap">
+17132:       <span><strong>${c.nombre || '—'}</strong> · ${fmtDate(normDate(c.fecha))} · <span style="color:#92400e;font-weight:600">${c.precio}</span></span>
+17133:       <div style="display:flex;gap:6px">
+17134:         ${wa ? `<a href="${wa}" target="_blank" class="btn btn-sm" style="background:#d97706;color:#fff;border:none;text-decoration:none">💬 Cobrar WA</a>` : ''}
+17135:         <button class="btn btn-ghost btn-sm" onclick="openPago('${c.id}')">💳 Registrar pago</button>
+17136:       </div>
+17137:     </div>`;
+17138:   }).join('');
+17139: }
+17140: 
+17141: function openPago(citaId) {
 ```
 
-### Coincidencia 2 — línea 17139
+### Coincidencia 2 — línea 17141
 
 ```html
-17133:         <button class="btn btn-ghost btn-sm" onclick="openPago('${c.id}')">💳 Registrar pago</button>
-17134:       </div>
-17135:     </div>`;
-17136:   }).join('');
-17137: }
-17138: 
-17139: function openPago(citaId) {
-17140:   showView('pagos');
-17141:   setTimeout(() => {
-17142:     if (typeof fillPaymentSelectors === 'function') fillPaymentSelectors(citaId || '');
-17143:     const selector = document.getElementById('payCitaId');
-17144:     if (selector) {
-17145:       selector.value = citaId || '';
+17135:         <button class="btn btn-ghost btn-sm" onclick="openPago('${c.id}')">💳 Registrar pago</button>
+17136:       </div>
+17137:     </div>`;
+17138:   }).join('');
+17139: }
+17140: 
+17141: function openPago(citaId) {
+17142:   showView('pagos');
+17143:   setTimeout(() => {
+17144:     if (typeof fillPaymentSelectors === 'function') fillPaymentSelectors(citaId || '');
+17145:     const selector = document.getElementById('payCitaId');
+17146:     if (selector) {
+17147:       selector.value = citaId || '';
 ```
 
 ## Acción adminLogin
@@ -1127,40 +1127,40 @@ No se encontraron coincidencias.
 10388:   if (n) {
 ```
 
-### Coincidencia 7 — línea 18171
+### Coincidencia 7 — línea 18173
 
 ```html
-18165:   const asignados = _getPkAsignados();
-18166:   asignados.push({ paciente, telefono:tel, nombre:pl.nombre, sesiones:+pl.sesiones, consumidas:0, precio:pl.precio, fechaCompra:fechaC, vencimiento:vigD.toLocalDateStr(), notas });
-18167:   _savePkAsignados(asignados);
-18168:   document.getElementById('modalPaquete').style.display='none';
-18169:   renderPaquetes(); toast('Paquete asignado ✓');
-18170: }
-18171: function usarSesion(idx) {
-18172:   const a = _getPkAsignados(); const p = a[idx]; if (!p) return;
-18173:   if ((p.consumidas||0) >= p.sesiones) { toast('Paquete agotado','err'); return; }
-18174:   p.consumidas = (p.consumidas||0)+1; _savePkAsignados(a);
-18175:   renderPaquetes(); toast(`Sesión registrada: ${p.consumidas}/${p.sesiones}`);
-18176: }
-18177: function ajustarSesiones(idx) {
+18167:   const asignados = _getPkAsignados();
+18168:   asignados.push({ paciente, telefono:tel, nombre:pl.nombre, sesiones:+pl.sesiones, consumidas:0, precio:pl.precio, fechaCompra:fechaC, vencimiento:vigD.toLocalDateStr(), notas });
+18169:   _savePkAsignados(asignados);
+18170:   document.getElementById('modalPaquete').style.display='none';
+18171:   renderPaquetes(); toast('Paquete asignado ✓');
+18172: }
+18173: function usarSesion(idx) {
+18174:   const a = _getPkAsignados(); const p = a[idx]; if (!p) return;
+18175:   if ((p.consumidas||0) >= p.sesiones) { toast('Paquete agotado','err'); return; }
+18176:   p.consumidas = (p.consumidas||0)+1; _savePkAsignados(a);
+18177:   renderPaquetes(); toast(`Sesión registrada: ${p.consumidas}/${p.sesiones}`);
+18178: }
+18179: function ajustarSesiones(idx) {
 ```
 
-### Coincidencia 8 — línea 18177
+### Coincidencia 8 — línea 18179
 
 ```html
-18171: function usarSesion(idx) {
-18172:   const a = _getPkAsignados(); const p = a[idx]; if (!p) return;
-18173:   if ((p.consumidas||0) >= p.sesiones) { toast('Paquete agotado','err'); return; }
-18174:   p.consumidas = (p.consumidas||0)+1; _savePkAsignados(a);
-18175:   renderPaquetes(); toast(`Sesión registrada: ${p.consumidas}/${p.sesiones}`);
-18176: }
-18177: function ajustarSesiones(idx) {
-18178:   const a = _getPkAsignados(); const p = a[idx]; if (!p) return;
-18179:   const val = prompt(`Sesiones consumidas de "${p.nombre}" (${p.paciente})\nActual: ${p.consumidas||0} de ${p.sesiones}`, p.consumidas||0);
-18180:   if (val === null) return;
-18181:   const n = parseInt(val, 10);
-18182:   if (isNaN(n) || n < 0) { toast('Número inválido','err'); return; }
-18183:   if (n > p.sesiones) { toast(`No puede superar el total (${p.sesiones})`, 'err'); return; }
+18173: function usarSesion(idx) {
+18174:   const a = _getPkAsignados(); const p = a[idx]; if (!p) return;
+18175:   if ((p.consumidas||0) >= p.sesiones) { toast('Paquete agotado','err'); return; }
+18176:   p.consumidas = (p.consumidas||0)+1; _savePkAsignados(a);
+18177:   renderPaquetes(); toast(`Sesión registrada: ${p.consumidas}/${p.sesiones}`);
+18178: }
+18179: function ajustarSesiones(idx) {
+18180:   const a = _getPkAsignados(); const p = a[idx]; if (!p) return;
+18181:   const val = prompt(`Sesiones consumidas de "${p.nombre}" (${p.paciente})\nActual: ${p.consumidas||0} de ${p.sesiones}`, p.consumidas||0);
+18182:   if (val === null) return;
+18183:   const n = parseInt(val, 10);
+18184:   if (isNaN(n) || n < 0) { toast('Número inválido','err'); return; }
+18185:   if (n > p.sesiones) { toast(`No puede superar el total (${p.sesiones})`, 'err'); return; }
 ```
 
 ## AbortController
@@ -2007,80 +2007,80 @@ Líneas 13940–14360
 Líneas 17090–17165
 
 ```html
-17090:   const txt    = document.getElementById('bannerAutoAtendidaTxt');
-17091:   if (!banner) return;
-17092:   banner.style.display = pendientes.length > 0 ? 'flex' : 'none';
-17093:   if (txt && pendientes.length) txt.textContent = `${pendientes.length} cita${pendientes.length !== 1 ? 's' : ''} pasada${pendientes.length !== 1 ? 's' : ''} aún sin marcar como Atendida`;
-17094: }
-17095: 
-17096: async function marcarTodasAtendidas() {
-17097:   const pendientes = window._autoAtendidaList || [];
-17098:   if (!pendientes.length) { toast('No hay citas pendientes de cierre.'); return; }
-17099:   window._agendaFiltroPendienteCierre = true;
-17100:   showView('agenda');
-17101:   if (typeof renderAgenda === 'function') renderAgenda();
-17102:   toast(`${pendientes.length} cita${pendientes.length !== 1 ? 's' : ''} pendiente${pendientes.length !== 1 ? 's' : ''} de cierre. Revísalas manualmente.`);
-17103: }
-17104: 
-17105: // ── Automatización #3: cobros pendientes (3+ días sin registrar pago) ──
-17106: function _checkCobrosPendientes() {
-17107:   const hoyStr = today();
-17108:   const pendientes = citasReales().filter(c => {
-17109:     if (c.estado !== 'Atendida') return false;
-17110:     if (c.pago) return false;
-17111:     if (kvGet('pago_' + c.id) === '1') return false;
-17112:     if (parsePrecio(c.precio) === 0) return false;
-17113:     const f = normDate(c.fecha);
-17114:     if (!f) return false;
-17115:     const diff = Math.round((new Date(hoyStr + 'T12:00:00') - new Date(f + 'T12:00:00')) / 86400000);
-17116:     return diff >= 3;
-17117:   });
-17118:   const banner = document.getElementById('bannerCobros');
-17119:   const txtEl  = document.getElementById('bannerCobrosTxt');
-17120:   const lista  = document.getElementById('bannerCobrosLista');
-17121:   if (!banner) return;
-17122:   if (!pendientes.length) { banner.style.display = 'none'; return; }
-17123:   banner.style.display = 'block';
-17124:   if (txtEl) txtEl.textContent = `${pendientes.length} cobro${pendientes.length !== 1 ? 's' : ''} pendiente${pendientes.length !== 1 ? 's' : ''} · 3+ días sin registrar pago`;
-17125:   if (lista) lista.innerHTML = pendientes.map(c => {
-17126:     const tel = (c.telefono || '').replace(/\D/g, '');
-17127:     const msg = `Hola ${(c.nombre || '').split(' ')[0]}! \u2757 Te recuerdo que queda pendiente el pago de tu sesion del ${fmtDate(normDate(c.fecha))} por ${c.precio}. ¿Cuando lo puedes hacer efectivo? \uD83D\uDE4F`;
-17128:     const wa  = tel.length >= 7 ? `https://wa.me/57${tel.slice(-10)}?text=${encodeURIComponent(msg)}` : null;
-17129:     return `<div style="display:flex;justify-content:space-between;align-items:center;font-size:.82rem;padding:7px 12px;background:rgba(255,255,255,.6);border-radius:7px;gap:10px;flex-wrap:wrap">
-17130:       <span><strong>${c.nombre || '—'}</strong> · ${fmtDate(normDate(c.fecha))} · <span style="color:#92400e;font-weight:600">${c.precio}</span></span>
-17131:       <div style="display:flex;gap:6px">
-17132:         ${wa ? `<a href="${wa}" target="_blank" class="btn btn-sm" style="background:#d97706;color:#fff;border:none;text-decoration:none">💬 Cobrar WA</a>` : ''}
-17133:         <button class="btn btn-ghost btn-sm" onclick="openPago('${c.id}')">💳 Registrar pago</button>
-17134:       </div>
-17135:     </div>`;
-17136:   }).join('');
-17137: }
-17138: 
-17139: function openPago(citaId) {
-17140:   showView('pagos');
-17141:   setTimeout(() => {
-17142:     if (typeof fillPaymentSelectors === 'function') fillPaymentSelectors(citaId || '');
-17143:     const selector = document.getElementById('payCitaId');
-17144:     if (selector) {
-17145:       selector.value = citaId || '';
-17146:       selector.dispatchEvent(new Event('change', { bubbles: true }));
-17147:       selector.focus();
-17148:       selector.scrollIntoView({ behavior: 'smooth', block: 'center' });
-17149:     } else {
-17150:       toast('Se abrió Pagos, pero no se encontró la cita seleccionada', 'warn');
-17151:     }
-17152:   }, 100);
-17153: }
-17154: 
-17155: // ── Alerta semana floja ──
-17156: function _checkAlertaSemanFloja(citas) {
-17157:   const now = new Date();
-17158:   const dow = now.getDay(); // 0=dom, 3=mié, 5=vie
-17159:   const hoyStr = today();
-17160: 
-17161:   // Mostrar solo si es miércoles, jueves o viernes (dow 3,4,5)
-17162:   const dashEl = document.getElementById('alertaSemanFlojaDash');
-17163:   const finEl  = document.getElementById('alertaSemanFlojaFin');
-17164:   const txtEl  = document.getElementById('alertaSemanFlojaTxt');
-17165: 
+17090:   window._autoAtendidaList = pendientes;
+17091:   const banner = document.getElementById('bannerAutoAtendida');
+17092:   const txt    = document.getElementById('bannerAutoAtendidaTxt');
+17093:   if (!banner) return;
+17094:   banner.style.display = pendientes.length > 0 ? 'flex' : 'none';
+17095:   if (txt && pendientes.length) txt.textContent = `${pendientes.length} cita${pendientes.length !== 1 ? 's' : ''} pasada${pendientes.length !== 1 ? 's' : ''} aún sin marcar como Atendida`;
+17096: }
+17097: 
+17098: async function marcarTodasAtendidas() {
+17099:   const pendientes = window._autoAtendidaList || [];
+17100:   if (!pendientes.length) { toast('No hay citas pendientes de cierre.'); return; }
+17101:   window._agendaFiltroPendienteCierre = true;
+17102:   showView('agenda');
+17103:   if (typeof renderAgenda === 'function') renderAgenda();
+17104:   toast(`${pendientes.length} cita${pendientes.length !== 1 ? 's' : ''} pendiente${pendientes.length !== 1 ? 's' : ''} de cierre. Revísalas manualmente.`);
+17105: }
+17106: 
+17107: // ── Automatización #3: cobros pendientes (3+ días sin registrar pago) ──
+17108: function _checkCobrosPendientes() {
+17109:   const hoyStr = today();
+17110:   const pendientes = citasReales().filter(c => {
+17111:     if (c.estado !== 'Atendida') return false;
+17112:     if (c.pago) return false;
+17113:     if (kvGet('pago_' + c.id) === '1') return false;
+17114:     if (parsePrecio(c.precio) === 0) return false;
+17115:     const f = normDate(c.fecha);
+17116:     if (!f) return false;
+17117:     const diff = Math.round((new Date(hoyStr + 'T12:00:00') - new Date(f + 'T12:00:00')) / 86400000);
+17118:     return diff >= 3;
+17119:   });
+17120:   const banner = document.getElementById('bannerCobros');
+17121:   const txtEl  = document.getElementById('bannerCobrosTxt');
+17122:   const lista  = document.getElementById('bannerCobrosLista');
+17123:   if (!banner) return;
+17124:   if (!pendientes.length) { banner.style.display = 'none'; return; }
+17125:   banner.style.display = 'block';
+17126:   if (txtEl) txtEl.textContent = `${pendientes.length} cobro${pendientes.length !== 1 ? 's' : ''} pendiente${pendientes.length !== 1 ? 's' : ''} · 3+ días sin registrar pago`;
+17127:   if (lista) lista.innerHTML = pendientes.map(c => {
+17128:     const tel = (c.telefono || '').replace(/\D/g, '');
+17129:     const msg = `Hola ${(c.nombre || '').split(' ')[0]}! \u2757 Te recuerdo que queda pendiente el pago de tu sesion del ${fmtDate(normDate(c.fecha))} por ${c.precio}. ¿Cuando lo puedes hacer efectivo? \uD83D\uDE4F`;
+17130:     const wa  = tel.length >= 7 ? `https://wa.me/57${tel.slice(-10)}?text=${encodeURIComponent(msg)}` : null;
+17131:     return `<div style="display:flex;justify-content:space-between;align-items:center;font-size:.82rem;padding:7px 12px;background:rgba(255,255,255,.6);border-radius:7px;gap:10px;flex-wrap:wrap">
+17132:       <span><strong>${c.nombre || '—'}</strong> · ${fmtDate(normDate(c.fecha))} · <span style="color:#92400e;font-weight:600">${c.precio}</span></span>
+17133:       <div style="display:flex;gap:6px">
+17134:         ${wa ? `<a href="${wa}" target="_blank" class="btn btn-sm" style="background:#d97706;color:#fff;border:none;text-decoration:none">💬 Cobrar WA</a>` : ''}
+17135:         <button class="btn btn-ghost btn-sm" onclick="openPago('${c.id}')">💳 Registrar pago</button>
+17136:       </div>
+17137:     </div>`;
+17138:   }).join('');
+17139: }
+17140: 
+17141: function openPago(citaId) {
+17142:   showView('pagos');
+17143:   setTimeout(() => {
+17144:     if (typeof fillPaymentSelectors === 'function') fillPaymentSelectors(citaId || '');
+17145:     const selector = document.getElementById('payCitaId');
+17146:     if (selector) {
+17147:       selector.value = citaId || '';
+17148:       selector.dispatchEvent(new Event('change', { bubbles: true }));
+17149:       selector.focus();
+17150:       selector.scrollIntoView({ behavior: 'smooth', block: 'center' });
+17151:     } else {
+17152:       toast('Se abrió Pagos, pero no se encontró la cita seleccionada', 'warn');
+17153:     }
+17154:   }, 100);
+17155: }
+17156: 
+17157: // ── Alerta semana floja ──
+17158: function _checkAlertaSemanFloja(citas) {
+17159:   const now = new Date();
+17160:   const dow = now.getDay(); // 0=dom, 3=mié, 5=vie
+17161:   const hoyStr = today();
+17162: 
+17163:   // Mostrar solo si es miércoles, jueves o viernes (dow 3,4,5)
+17164:   const dashEl = document.getElementById('alertaSemanFlojaDash');
+17165:   const finEl  = document.getElementById('alertaSemanFlojaFin');
 ```

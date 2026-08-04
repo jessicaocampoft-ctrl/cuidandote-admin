@@ -4264,514 +4264,514 @@ Archivo: `index.html`
 16485:   };
 ```
 
-### Línea 18950
+### Línea 18952
 
 ```html
-18938:     semanas_meta:          parseInt(cfg.semanas_meta          || '4',     10),
-18939:     ses_llena:             META_SESIONES_SEMANA, // siempre igual a la meta KPI — fuente única de verdad
-18940:     bono_react:            parseInt(cfg.bono_react            || '15000', 10),
-18941:     bono_react_tipo:       cfg.bono_react_tipo || 'fijo',
-18942:     pct_reventa:           parseInt(cfg.pct_reventa           || '5',     10),
-18943:     bono_cruzada:          parseInt(cfg.bono_cruzada          || '20000', 10),
-18944:     serv_mant:             (cfg.serv_mant     || 'plan activo,plan pro,longevidad,combo bienvenida,combo').split(',').map(s => s.trim().toLowerCase()).filter(Boolean),
-18945:     serv_descarga:         (cfg.serv_descarga || 'descarga').toLowerCase().trim(),
-18946:     bono_contenido:        parseInt(cfg.bono_contenido        || '50000', 10),
-18947:     contenido_split_aux:   parseInt(cfg.contenido_split_aux   || '50',    10),
-18948:     contenido_persona:     cfg.contenido_persona || 'Persona del video',
-18949:     contenido_leads_meta:  parseInt(cfg.contenido_leads_meta  || '5',     10),
-18950:     equipo_nps_meta:       parseInt(cfg.equipo_nps_meta       || '90',    10),
-18951:   };
-18952: }
-18953: 
-18954: function saveComisConfig() {
-18955:   const g = id => (document.getElementById(id)||{}).value || '';
-18956:   kvSet('comisiones_config', JSON.stringify({
-18957:     bono_agenda:          g('cfg_bono_agenda'),
-18958:     semanas_meta:         g('cfg_semanas_meta'),
-18959:     ses_llena:            g('cfg_ses_llena'),
-18960:     bono_react:           g('cfg_bono_react'),
-18961:     bono_react_tipo:      g('cfg_bono_react_tipo') || 'fijo',
-18962:     pct_reventa:          g('cfg_pct_reventa'),
+18940:     semanas_meta:          parseInt(cfg.semanas_meta          || '4',     10),
+18941:     ses_llena:             META_SESIONES_SEMANA, // siempre igual a la meta KPI — fuente única de verdad
+18942:     bono_react:            parseInt(cfg.bono_react            || '15000', 10),
+18943:     bono_react_tipo:       cfg.bono_react_tipo || 'fijo',
+18944:     pct_reventa:           parseInt(cfg.pct_reventa           || '5',     10),
+18945:     bono_cruzada:          parseInt(cfg.bono_cruzada          || '20000', 10),
+18946:     serv_mant:             (cfg.serv_mant     || 'plan activo,plan pro,longevidad,combo bienvenida,combo').split(',').map(s => s.trim().toLowerCase()).filter(Boolean),
+18947:     serv_descarga:         (cfg.serv_descarga || 'descarga').toLowerCase().trim(),
+18948:     bono_contenido:        parseInt(cfg.bono_contenido        || '50000', 10),
+18949:     contenido_split_aux:   parseInt(cfg.contenido_split_aux   || '50',    10),
+18950:     contenido_persona:     cfg.contenido_persona || 'Persona del video',
+18951:     contenido_leads_meta:  parseInt(cfg.contenido_leads_meta  || '5',     10),
+18952:     equipo_nps_meta:       parseInt(cfg.equipo_nps_meta       || '90',    10),
+18953:   };
+18954: }
+18955: 
+18956: function saveComisConfig() {
+18957:   const g = id => (document.getElementById(id)||{}).value || '';
+18958:   kvSet('comisiones_config', JSON.stringify({
+18959:     bono_agenda:          g('cfg_bono_agenda'),
+18960:     semanas_meta:         g('cfg_semanas_meta'),
+18961:     ses_llena:            g('cfg_ses_llena'),
+18962:     bono_react:           g('cfg_bono_react'),
+18963:     bono_react_tipo:      g('cfg_bono_react_tipo') || 'fijo',
+18964:     pct_reventa:          g('cfg_pct_reventa'),
 ```
 
-### Línea 18970
+### Línea 18972
 
 ```html
-18958:     semanas_meta:         g('cfg_semanas_meta'),
-18959:     ses_llena:            g('cfg_ses_llena'),
-18960:     bono_react:           g('cfg_bono_react'),
-18961:     bono_react_tipo:      g('cfg_bono_react_tipo') || 'fijo',
-18962:     pct_reventa:          g('cfg_pct_reventa'),
-18963:     bono_cruzada:         g('cfg_bono_cruzada'),
-18964:     serv_mant:            g('cfg_serv_mant'),
-18965:     serv_descarga:        g('cfg_serv_descarga'),
-18966:     bono_contenido:       g('cfg_bono_contenido'),
-18967:     contenido_split_aux:  g('cfg_contenido_split_aux'),
-18968:     contenido_persona:    g('cfg_contenido_persona'),
-18969:     contenido_leads_meta: g('cfg_contenido_leads_meta'),
-18970:     equipo_nps_meta:      g('cfg_equipo_nps_meta'),
-18971:   }));
-18972:   const msg = document.getElementById('coConfigMsg');
-18973:   if (msg) { msg.style.display='inline'; setTimeout(()=>msg.style.display='none',2000); }
-18974:   renderComisiones();
-18975: }
-18976: 
-18977: function toggleComisConfig() {
-18978:   const p = document.getElementById('coConfigPanel');
-18979:   if (!p) return;
-18980:   const open = p.style.display === 'none';
-18981:   p.style.display = open ? 'block' : 'none';
-18982:   if (!open) return;
+18960:     semanas_meta:         g('cfg_semanas_meta'),
+18961:     ses_llena:            g('cfg_ses_llena'),
+18962:     bono_react:           g('cfg_bono_react'),
+18963:     bono_react_tipo:      g('cfg_bono_react_tipo') || 'fijo',
+18964:     pct_reventa:          g('cfg_pct_reventa'),
+18965:     bono_cruzada:         g('cfg_bono_cruzada'),
+18966:     serv_mant:            g('cfg_serv_mant'),
+18967:     serv_descarga:        g('cfg_serv_descarga'),
+18968:     bono_contenido:       g('cfg_bono_contenido'),
+18969:     contenido_split_aux:  g('cfg_contenido_split_aux'),
+18970:     contenido_persona:    g('cfg_contenido_persona'),
+18971:     contenido_leads_meta: g('cfg_contenido_leads_meta'),
+18972:     equipo_nps_meta:      g('cfg_equipo_nps_meta'),
+18973:   }));
+18974:   const msg = document.getElementById('coConfigMsg');
+18975:   if (msg) { msg.style.display='inline'; setTimeout(()=>msg.style.display='none',2000); }
+18976:   renderComisiones();
+18977: }
+18978: 
+18979: function toggleComisConfig() {
+18980:   const p = document.getElementById('coConfigPanel');
+18981:   if (!p) return;
+18982:   const open = p.style.display === 'none';
+18983:   p.style.display = open ? 'block' : 'none';
+18984:   if (!open) return;
 ```
 
-### Línea 18998
+### Línea 19000
 
 ```html
-18986:   set('cfg_semanas_meta',         cfg.semanas_meta);
-18987:   set('cfg_ses_llena',            META_SESIONES_SEMANA);
-18988:   set('cfg_bono_react',           cfg.bono_react);
-18989:   set('cfg_bono_react_tipo',      cfg.bono_react_tipo);
-18990:   set('cfg_pct_reventa',          cfg.pct_reventa);
-18991:   set('cfg_bono_cruzada',         cfg.bono_cruzada);
-18992:   set('cfg_serv_mant',            cfg.serv_mant.join(', '));
-18993:   set('cfg_serv_descarga',        cfg.serv_descarga);
-18994:   set('cfg_bono_contenido',       cfg.bono_contenido);
-18995:   set('cfg_contenido_split_aux',  cfg.contenido_split_aux);
-18996:   set('cfg_contenido_persona',    cfg.contenido_persona);
-18997:   set('cfg_contenido_leads_meta', cfg.contenido_leads_meta);
-18998:   set('cfg_equipo_nps_meta',      cfg.equipo_nps_meta);
-18999: }
-19000: 
-19001: function _initComisMesSel() {
-19002:   const sel = document.getElementById('comisMes');
-19003:   if (!sel || sel.options.length > 0) return;
-19004:   const now = new Date();
-19005:   const meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
-19006:   for (let i = 0; i < 12; i++) {
-19007:     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-19008:     const opt = document.createElement('option');
-19009:     opt.value = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
-19010:     opt.textContent = meses[d.getMonth()] + ' ' + d.getFullYear();
-```
-
-### Línea 19189
-
-```html
-19177:   const bonoCruzAux   = cruzadas.filter(c => c.asign === 'auxiliar').length * cfg.bono_cruzada;
-19178:   const bonoCruz = bonoCruzFisio; // compatibilidad (se suma a fisio)
-19179: 
-19180:   // ── CREADOR DE CONTENIDO ──
-19181:   const leadsActual = (() => { const lm=getLeadsMes(), km=getKPIManual(); return lm>0?lm:(km.leads||0); })();
-19182:   const visitasActual = parseInt(kvGet('comis_visitas_'+mes)||'0', 10);
-19183:   const contenidoOk  = leadsActual >= cfg.contenido_leads_meta;
-19184:   const bonoCont     = contenidoOk ? cfg.bono_contenido : 0;
-19185:   const bonoContAux  = Math.round(bonoCont * cfg.contenido_split_aux / 100);
-19186:   const bonoContVideo= bonoCont - bonoContAux;
-19187:   const splitVideoP  = 100 - cfg.contenido_split_aux;
-19188: 
-19189:   // ── NPS / TODO EL EQUIPO ──
-19190:   const _enc    = getEncuestaStats();
-19191:   const npsActual = _enc.nps !== undefined ? _enc.nps : null;
-19192:   const equipoOk  = npsActual !== null && npsActual >= cfg.equipo_nps_meta;
-19193: 
-19194:   // ── TOTALES ──
-19195:   const totalAux   = bonoAg + bonoReact + bonoContAux + bonoCruzAux;
-19196:   const totalFisio = bonoRev + bonoCruzFisio;
-19197:   const totalVideo = bonoContVideo;
-19198:   const totalGen   = totalAux + totalFisio + totalVideo;
-19199: 
-19200:   const pagoAux   = kvGet('comis_pago_auxiliar_' + mes);
-19201:   const pagoFisio = kvGet('comis_pago_fisio_' + mes);
-```
-
-### Línea 19190
-
-```html
-19178:   const bonoCruz = bonoCruzFisio; // compatibilidad (se suma a fisio)
-19179: 
-19180:   // ── CREADOR DE CONTENIDO ──
-19181:   const leadsActual = (() => { const lm=getLeadsMes(), km=getKPIManual(); return lm>0?lm:(km.leads||0); })();
-19182:   const visitasActual = parseInt(kvGet('comis_visitas_'+mes)||'0', 10);
-19183:   const contenidoOk  = leadsActual >= cfg.contenido_leads_meta;
-19184:   const bonoCont     = contenidoOk ? cfg.bono_contenido : 0;
-19185:   const bonoContAux  = Math.round(bonoCont * cfg.contenido_split_aux / 100);
-19186:   const bonoContVideo= bonoCont - bonoContAux;
-19187:   const splitVideoP  = 100 - cfg.contenido_split_aux;
-19188: 
-19189:   // ── NPS / TODO EL EQUIPO ──
-19190:   const _enc    = getEncuestaStats();
-19191:   const npsActual = _enc.nps !== undefined ? _enc.nps : null;
-19192:   const equipoOk  = npsActual !== null && npsActual >= cfg.equipo_nps_meta;
-19193: 
-19194:   // ── TOTALES ──
-19195:   const totalAux   = bonoAg + bonoReact + bonoContAux + bonoCruzAux;
-19196:   const totalFisio = bonoRev + bonoCruzFisio;
-19197:   const totalVideo = bonoContVideo;
-19198:   const totalGen   = totalAux + totalFisio + totalVideo;
-19199: 
-19200:   const pagoAux   = kvGet('comis_pago_auxiliar_' + mes);
-19201:   const pagoFisio = kvGet('comis_pago_fisio_' + mes);
-19202:   const pagoVideo = kvGet('comis_pago_video_' + mes);
+18988:   set('cfg_semanas_meta',         cfg.semanas_meta);
+18989:   set('cfg_ses_llena',            META_SESIONES_SEMANA);
+18990:   set('cfg_bono_react',           cfg.bono_react);
+18991:   set('cfg_bono_react_tipo',      cfg.bono_react_tipo);
+18992:   set('cfg_pct_reventa',          cfg.pct_reventa);
+18993:   set('cfg_bono_cruzada',         cfg.bono_cruzada);
+18994:   set('cfg_serv_mant',            cfg.serv_mant.join(', '));
+18995:   set('cfg_serv_descarga',        cfg.serv_descarga);
+18996:   set('cfg_bono_contenido',       cfg.bono_contenido);
+18997:   set('cfg_contenido_split_aux',  cfg.contenido_split_aux);
+18998:   set('cfg_contenido_persona',    cfg.contenido_persona);
+18999:   set('cfg_contenido_leads_meta', cfg.contenido_leads_meta);
+19000:   set('cfg_equipo_nps_meta',      cfg.equipo_nps_meta);
+19001: }
+19002: 
+19003: function _initComisMesSel() {
+19004:   const sel = document.getElementById('comisMes');
+19005:   if (!sel || sel.options.length > 0) return;
+19006:   const now = new Date();
+19007:   const meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+19008:   for (let i = 0; i < 12; i++) {
+19009:     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+19010:     const opt = document.createElement('option');
+19011:     opt.value = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+19012:     opt.textContent = meses[d.getMonth()] + ' ' + d.getFullYear();
 ```
 
 ### Línea 19191
 
 ```html
-19179: 
-19180:   // ── CREADOR DE CONTENIDO ──
-19181:   const leadsActual = (() => { const lm=getLeadsMes(), km=getKPIManual(); return lm>0?lm:(km.leads||0); })();
-19182:   const visitasActual = parseInt(kvGet('comis_visitas_'+mes)||'0', 10);
-19183:   const contenidoOk  = leadsActual >= cfg.contenido_leads_meta;
-19184:   const bonoCont     = contenidoOk ? cfg.bono_contenido : 0;
-19185:   const bonoContAux  = Math.round(bonoCont * cfg.contenido_split_aux / 100);
-19186:   const bonoContVideo= bonoCont - bonoContAux;
-19187:   const splitVideoP  = 100 - cfg.contenido_split_aux;
-19188: 
-19189:   // ── NPS / TODO EL EQUIPO ──
-19190:   const _enc    = getEncuestaStats();
-19191:   const npsActual = _enc.nps !== undefined ? _enc.nps : null;
-19192:   const equipoOk  = npsActual !== null && npsActual >= cfg.equipo_nps_meta;
-19193: 
-19194:   // ── TOTALES ──
-19195:   const totalAux   = bonoAg + bonoReact + bonoContAux + bonoCruzAux;
-19196:   const totalFisio = bonoRev + bonoCruzFisio;
-19197:   const totalVideo = bonoContVideo;
-19198:   const totalGen   = totalAux + totalFisio + totalVideo;
-19199: 
-19200:   const pagoAux   = kvGet('comis_pago_auxiliar_' + mes);
-19201:   const pagoFisio = kvGet('comis_pago_fisio_' + mes);
-19202:   const pagoVideo = kvGet('comis_pago_video_' + mes);
-19203: 
+19179:   const bonoCruzAux   = cruzadas.filter(c => c.asign === 'auxiliar').length * cfg.bono_cruzada;
+19180:   const bonoCruz = bonoCruzFisio; // compatibilidad (se suma a fisio)
+19181: 
+19182:   // ── CREADOR DE CONTENIDO ──
+19183:   const leadsActual = (() => { const lm=getLeadsMes(), km=getKPIManual(); return lm>0?lm:(km.leads||0); })();
+19184:   const visitasActual = parseInt(kvGet('comis_visitas_'+mes)||'0', 10);
+19185:   const contenidoOk  = leadsActual >= cfg.contenido_leads_meta;
+19186:   const bonoCont     = contenidoOk ? cfg.bono_contenido : 0;
+19187:   const bonoContAux  = Math.round(bonoCont * cfg.contenido_split_aux / 100);
+19188:   const bonoContVideo= bonoCont - bonoContAux;
+19189:   const splitVideoP  = 100 - cfg.contenido_split_aux;
+19190: 
+19191:   // ── NPS / TODO EL EQUIPO ──
+19192:   const _enc    = getEncuestaStats();
+19193:   const npsActual = _enc.nps !== undefined ? _enc.nps : null;
+19194:   const equipoOk  = npsActual !== null && npsActual >= cfg.equipo_nps_meta;
+19195: 
+19196:   // ── TOTALES ──
+19197:   const totalAux   = bonoAg + bonoReact + bonoContAux + bonoCruzAux;
+19198:   const totalFisio = bonoRev + bonoCruzFisio;
+19199:   const totalVideo = bonoContVideo;
+19200:   const totalGen   = totalAux + totalFisio + totalVideo;
+19201: 
+19202:   const pagoAux   = kvGet('comis_pago_auxiliar_' + mes);
+19203:   const pagoFisio = kvGet('comis_pago_fisio_' + mes);
 ```
 
 ### Línea 19192
 
 ```html
-19180:   // ── CREADOR DE CONTENIDO ──
-19181:   const leadsActual = (() => { const lm=getLeadsMes(), km=getKPIManual(); return lm>0?lm:(km.leads||0); })();
-19182:   const visitasActual = parseInt(kvGet('comis_visitas_'+mes)||'0', 10);
-19183:   const contenidoOk  = leadsActual >= cfg.contenido_leads_meta;
-19184:   const bonoCont     = contenidoOk ? cfg.bono_contenido : 0;
-19185:   const bonoContAux  = Math.round(bonoCont * cfg.contenido_split_aux / 100);
-19186:   const bonoContVideo= bonoCont - bonoContAux;
-19187:   const splitVideoP  = 100 - cfg.contenido_split_aux;
-19188: 
-19189:   // ── NPS / TODO EL EQUIPO ──
-19190:   const _enc    = getEncuestaStats();
-19191:   const npsActual = _enc.nps !== undefined ? _enc.nps : null;
-19192:   const equipoOk  = npsActual !== null && npsActual >= cfg.equipo_nps_meta;
-19193: 
-19194:   // ── TOTALES ──
-19195:   const totalAux   = bonoAg + bonoReact + bonoContAux + bonoCruzAux;
-19196:   const totalFisio = bonoRev + bonoCruzFisio;
-19197:   const totalVideo = bonoContVideo;
-19198:   const totalGen   = totalAux + totalFisio + totalVideo;
-19199: 
-19200:   const pagoAux   = kvGet('comis_pago_auxiliar_' + mes);
-19201:   const pagoFisio = kvGet('comis_pago_fisio_' + mes);
-19202:   const pagoVideo = kvGet('comis_pago_video_' + mes);
-19203: 
-19204:   // ── RESUMEN ──
+19180:   const bonoCruz = bonoCruzFisio; // compatibilidad (se suma a fisio)
+19181: 
+19182:   // ── CREADOR DE CONTENIDO ──
+19183:   const leadsActual = (() => { const lm=getLeadsMes(), km=getKPIManual(); return lm>0?lm:(km.leads||0); })();
+19184:   const visitasActual = parseInt(kvGet('comis_visitas_'+mes)||'0', 10);
+19185:   const contenidoOk  = leadsActual >= cfg.contenido_leads_meta;
+19186:   const bonoCont     = contenidoOk ? cfg.bono_contenido : 0;
+19187:   const bonoContAux  = Math.round(bonoCont * cfg.contenido_split_aux / 100);
+19188:   const bonoContVideo= bonoCont - bonoContAux;
+19189:   const splitVideoP  = 100 - cfg.contenido_split_aux;
+19190: 
+19191:   // ── NPS / TODO EL EQUIPO ──
+19192:   const _enc    = getEncuestaStats();
+19193:   const npsActual = _enc.nps !== undefined ? _enc.nps : null;
+19194:   const equipoOk  = npsActual !== null && npsActual >= cfg.equipo_nps_meta;
+19195: 
+19196:   // ── TOTALES ──
+19197:   const totalAux   = bonoAg + bonoReact + bonoContAux + bonoCruzAux;
+19198:   const totalFisio = bonoRev + bonoCruzFisio;
+19199:   const totalVideo = bonoContVideo;
+19200:   const totalGen   = totalAux + totalFisio + totalVideo;
+19201: 
+19202:   const pagoAux   = kvGet('comis_pago_auxiliar_' + mes);
+19203:   const pagoFisio = kvGet('comis_pago_fisio_' + mes);
+19204:   const pagoVideo = kvGet('comis_pago_video_' + mes);
 ```
 
-### Línea 19332
+### Línea 19193
 
 ```html
-19320:       </div>
-19321:     </div>
-19322:     <div class="co-footer">
-19323:       ${btnVideo}
-19324:       <span style="font-size:.75rem;color:var(--muted)">Bono total: ${fmtPeso(bonoCont)}</span>
-19325:     </div>
-19326:   </div>`;
-19327: 
-19328:   const contWrap = document.getElementById('coContenidoWrap');
-19329:   if (contWrap) contWrap.innerHTML = htmlCont;
-19330: 
-19331:   // ── TODO EL EQUIPO ──
-19332:   const npsStr    = npsActual !== null ? npsActual + '%' : '— (carga encuestas)';
-19333:   const equipoCol = equipoOk ? 'var(--ok)' : npsActual !== null ? '#ef4444' : 'var(--muted)';
-19334:   const htmlEquipo = `<div style="background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:18px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px">
-19335:     <div>
-19336:       <div style="font-family:var(--font-h);font-size:1.05rem;font-weight:600;margin-bottom:3px">🏆 Todo el Equipo — Calidad del Servicio</div>
-19337:       <div style="font-size:.82rem;color:var(--muted)">Meta: NPS >${cfg.equipo_nps_meta}% · Resultado: <strong style="color:${equipoCol}">${npsStr}</strong></div>
-19338:     </div>
-19339:     <div style="text-align:right">
-19340:       <div style="font-family:var(--font-h);font-size:1.2rem;font-weight:700;color:${equipoCol}">${equipoOk ? '✓ Almuerzo trimestral' : npsActual !== null ? '✗ Meta no cumplida' : '⏳ Sin datos de encuesta'}</div>
-19341:       ${equipoOk ? '<div style="font-size:.72rem;color:var(--muted);margin-top:2px">Recordar agendar el almuerzo del equipo</div>' : ''}
-19342:     </div>
-19343:   </div>`;
-19344: 
+19181: 
+19182:   // ── CREADOR DE CONTENIDO ──
+19183:   const leadsActual = (() => { const lm=getLeadsMes(), km=getKPIManual(); return lm>0?lm:(km.leads||0); })();
+19184:   const visitasActual = parseInt(kvGet('comis_visitas_'+mes)||'0', 10);
+19185:   const contenidoOk  = leadsActual >= cfg.contenido_leads_meta;
+19186:   const bonoCont     = contenidoOk ? cfg.bono_contenido : 0;
+19187:   const bonoContAux  = Math.round(bonoCont * cfg.contenido_split_aux / 100);
+19188:   const bonoContVideo= bonoCont - bonoContAux;
+19189:   const splitVideoP  = 100 - cfg.contenido_split_aux;
+19190: 
+19191:   // ── NPS / TODO EL EQUIPO ──
+19192:   const _enc    = getEncuestaStats();
+19193:   const npsActual = _enc.nps !== undefined ? _enc.nps : null;
+19194:   const equipoOk  = npsActual !== null && npsActual >= cfg.equipo_nps_meta;
+19195: 
+19196:   // ── TOTALES ──
+19197:   const totalAux   = bonoAg + bonoReact + bonoContAux + bonoCruzAux;
+19198:   const totalFisio = bonoRev + bonoCruzFisio;
+19199:   const totalVideo = bonoContVideo;
+19200:   const totalGen   = totalAux + totalFisio + totalVideo;
+19201: 
+19202:   const pagoAux   = kvGet('comis_pago_auxiliar_' + mes);
+19203:   const pagoFisio = kvGet('comis_pago_fisio_' + mes);
+19204:   const pagoVideo = kvGet('comis_pago_video_' + mes);
+19205: 
 ```
 
-### Línea 19333
+### Línea 19194
 
 ```html
-19321:     </div>
-19322:     <div class="co-footer">
-19323:       ${btnVideo}
-19324:       <span style="font-size:.75rem;color:var(--muted)">Bono total: ${fmtPeso(bonoCont)}</span>
-19325:     </div>
-19326:   </div>`;
-19327: 
-19328:   const contWrap = document.getElementById('coContenidoWrap');
-19329:   if (contWrap) contWrap.innerHTML = htmlCont;
-19330: 
-19331:   // ── TODO EL EQUIPO ──
-19332:   const npsStr    = npsActual !== null ? npsActual + '%' : '— (carga encuestas)';
-19333:   const equipoCol = equipoOk ? 'var(--ok)' : npsActual !== null ? '#ef4444' : 'var(--muted)';
-19334:   const htmlEquipo = `<div style="background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:18px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px">
-19335:     <div>
-19336:       <div style="font-family:var(--font-h);font-size:1.05rem;font-weight:600;margin-bottom:3px">🏆 Todo el Equipo — Calidad del Servicio</div>
-19337:       <div style="font-size:.82rem;color:var(--muted)">Meta: NPS >${cfg.equipo_nps_meta}% · Resultado: <strong style="color:${equipoCol}">${npsStr}</strong></div>
-19338:     </div>
-19339:     <div style="text-align:right">
-19340:       <div style="font-family:var(--font-h);font-size:1.2rem;font-weight:700;color:${equipoCol}">${equipoOk ? '✓ Almuerzo trimestral' : npsActual !== null ? '✗ Meta no cumplida' : '⏳ Sin datos de encuesta'}</div>
-19341:       ${equipoOk ? '<div style="font-size:.72rem;color:var(--muted);margin-top:2px">Recordar agendar el almuerzo del equipo</div>' : ''}
-19342:     </div>
-19343:   </div>`;
-19344: 
-19345:   const equipoWrap = document.getElementById('coEquipoWrap');
+19182:   // ── CREADOR DE CONTENIDO ──
+19183:   const leadsActual = (() => { const lm=getLeadsMes(), km=getKPIManual(); return lm>0?lm:(km.leads||0); })();
+19184:   const visitasActual = parseInt(kvGet('comis_visitas_'+mes)||'0', 10);
+19185:   const contenidoOk  = leadsActual >= cfg.contenido_leads_meta;
+19186:   const bonoCont     = contenidoOk ? cfg.bono_contenido : 0;
+19187:   const bonoContAux  = Math.round(bonoCont * cfg.contenido_split_aux / 100);
+19188:   const bonoContVideo= bonoCont - bonoContAux;
+19189:   const splitVideoP  = 100 - cfg.contenido_split_aux;
+19190: 
+19191:   // ── NPS / TODO EL EQUIPO ──
+19192:   const _enc    = getEncuestaStats();
+19193:   const npsActual = _enc.nps !== undefined ? _enc.nps : null;
+19194:   const equipoOk  = npsActual !== null && npsActual >= cfg.equipo_nps_meta;
+19195: 
+19196:   // ── TOTALES ──
+19197:   const totalAux   = bonoAg + bonoReact + bonoContAux + bonoCruzAux;
+19198:   const totalFisio = bonoRev + bonoCruzFisio;
+19199:   const totalVideo = bonoContVideo;
+19200:   const totalGen   = totalAux + totalFisio + totalVideo;
+19201: 
+19202:   const pagoAux   = kvGet('comis_pago_auxiliar_' + mes);
+19203:   const pagoFisio = kvGet('comis_pago_fisio_' + mes);
+19204:   const pagoVideo = kvGet('comis_pago_video_' + mes);
+19205: 
+19206:   // ── RESUMEN ──
 ```
 
-### Línea 19337
+### Línea 19334
 
 ```html
-19325:     </div>
-19326:   </div>`;
-19327: 
-19328:   const contWrap = document.getElementById('coContenidoWrap');
-19329:   if (contWrap) contWrap.innerHTML = htmlCont;
-19330: 
-19331:   // ── TODO EL EQUIPO ──
-19332:   const npsStr    = npsActual !== null ? npsActual + '%' : '— (carga encuestas)';
-19333:   const equipoCol = equipoOk ? 'var(--ok)' : npsActual !== null ? '#ef4444' : 'var(--muted)';
-19334:   const htmlEquipo = `<div style="background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:18px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px">
-19335:     <div>
-19336:       <div style="font-family:var(--font-h);font-size:1.05rem;font-weight:600;margin-bottom:3px">🏆 Todo el Equipo — Calidad del Servicio</div>
-19337:       <div style="font-size:.82rem;color:var(--muted)">Meta: NPS >${cfg.equipo_nps_meta}% · Resultado: <strong style="color:${equipoCol}">${npsStr}</strong></div>
-19338:     </div>
-19339:     <div style="text-align:right">
-19340:       <div style="font-family:var(--font-h);font-size:1.2rem;font-weight:700;color:${equipoCol}">${equipoOk ? '✓ Almuerzo trimestral' : npsActual !== null ? '✗ Meta no cumplida' : '⏳ Sin datos de encuesta'}</div>
-19341:       ${equipoOk ? '<div style="font-size:.72rem;color:var(--muted);margin-top:2px">Recordar agendar el almuerzo del equipo</div>' : ''}
-19342:     </div>
-19343:   </div>`;
-19344: 
-19345:   const equipoWrap = document.getElementById('coEquipoWrap');
-19346:   if (equipoWrap) equipoWrap.innerHTML = htmlEquipo;
-19347: }
-19348: </script>
-19349: 
+19322:       </div>
+19323:     </div>
+19324:     <div class="co-footer">
+19325:       ${btnVideo}
+19326:       <span style="font-size:.75rem;color:var(--muted)">Bono total: ${fmtPeso(bonoCont)}</span>
+19327:     </div>
+19328:   </div>`;
+19329: 
+19330:   const contWrap = document.getElementById('coContenidoWrap');
+19331:   if (contWrap) contWrap.innerHTML = htmlCont;
+19332: 
+19333:   // ── TODO EL EQUIPO ──
+19334:   const npsStr    = npsActual !== null ? npsActual + '%' : '— (carga encuestas)';
+19335:   const equipoCol = equipoOk ? 'var(--ok)' : npsActual !== null ? '#ef4444' : 'var(--muted)';
+19336:   const htmlEquipo = `<div style="background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:18px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px">
+19337:     <div>
+19338:       <div style="font-family:var(--font-h);font-size:1.05rem;font-weight:600;margin-bottom:3px">🏆 Todo el Equipo — Calidad del Servicio</div>
+19339:       <div style="font-size:.82rem;color:var(--muted)">Meta: NPS >${cfg.equipo_nps_meta}% · Resultado: <strong style="color:${equipoCol}">${npsStr}</strong></div>
+19340:     </div>
+19341:     <div style="text-align:right">
+19342:       <div style="font-family:var(--font-h);font-size:1.2rem;font-weight:700;color:${equipoCol}">${equipoOk ? '✓ Almuerzo trimestral' : npsActual !== null ? '✗ Meta no cumplida' : '⏳ Sin datos de encuesta'}</div>
+19343:       ${equipoOk ? '<div style="font-size:.72rem;color:var(--muted);margin-top:2px">Recordar agendar el almuerzo del equipo</div>' : ''}
+19344:     </div>
+19345:   </div>`;
+19346: 
 ```
 
-### Línea 19340
+### Línea 19335
 
 ```html
-19328:   const contWrap = document.getElementById('coContenidoWrap');
-19329:   if (contWrap) contWrap.innerHTML = htmlCont;
-19330: 
-19331:   // ── TODO EL EQUIPO ──
-19332:   const npsStr    = npsActual !== null ? npsActual + '%' : '— (carga encuestas)';
-19333:   const equipoCol = equipoOk ? 'var(--ok)' : npsActual !== null ? '#ef4444' : 'var(--muted)';
-19334:   const htmlEquipo = `<div style="background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:18px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px">
-19335:     <div>
-19336:       <div style="font-family:var(--font-h);font-size:1.05rem;font-weight:600;margin-bottom:3px">🏆 Todo el Equipo — Calidad del Servicio</div>
-19337:       <div style="font-size:.82rem;color:var(--muted)">Meta: NPS >${cfg.equipo_nps_meta}% · Resultado: <strong style="color:${equipoCol}">${npsStr}</strong></div>
-19338:     </div>
-19339:     <div style="text-align:right">
-19340:       <div style="font-family:var(--font-h);font-size:1.2rem;font-weight:700;color:${equipoCol}">${equipoOk ? '✓ Almuerzo trimestral' : npsActual !== null ? '✗ Meta no cumplida' : '⏳ Sin datos de encuesta'}</div>
-19341:       ${equipoOk ? '<div style="font-size:.72rem;color:var(--muted);margin-top:2px">Recordar agendar el almuerzo del equipo</div>' : ''}
-19342:     </div>
-19343:   </div>`;
-19344: 
-19345:   const equipoWrap = document.getElementById('coEquipoWrap');
-19346:   if (equipoWrap) equipoWrap.innerHTML = htmlEquipo;
-19347: }
-19348: </script>
-19349: 
-19350: <script>
-19351: // ══════════════════════════════════════════
-19352: //  DISPONIBILIDAD RÁPIDA
+19323:     </div>
+19324:     <div class="co-footer">
+19325:       ${btnVideo}
+19326:       <span style="font-size:.75rem;color:var(--muted)">Bono total: ${fmtPeso(bonoCont)}</span>
+19327:     </div>
+19328:   </div>`;
+19329: 
+19330:   const contWrap = document.getElementById('coContenidoWrap');
+19331:   if (contWrap) contWrap.innerHTML = htmlCont;
+19332: 
+19333:   // ── TODO EL EQUIPO ──
+19334:   const npsStr    = npsActual !== null ? npsActual + '%' : '— (carga encuestas)';
+19335:   const equipoCol = equipoOk ? 'var(--ok)' : npsActual !== null ? '#ef4444' : 'var(--muted)';
+19336:   const htmlEquipo = `<div style="background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:18px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px">
+19337:     <div>
+19338:       <div style="font-family:var(--font-h);font-size:1.05rem;font-weight:600;margin-bottom:3px">🏆 Todo el Equipo — Calidad del Servicio</div>
+19339:       <div style="font-size:.82rem;color:var(--muted)">Meta: NPS >${cfg.equipo_nps_meta}% · Resultado: <strong style="color:${equipoCol}">${npsStr}</strong></div>
+19340:     </div>
+19341:     <div style="text-align:right">
+19342:       <div style="font-family:var(--font-h);font-size:1.2rem;font-weight:700;color:${equipoCol}">${equipoOk ? '✓ Almuerzo trimestral' : npsActual !== null ? '✗ Meta no cumplida' : '⏳ Sin datos de encuesta'}</div>
+19343:       ${equipoOk ? '<div style="font-size:.72rem;color:var(--muted);margin-top:2px">Recordar agendar el almuerzo del equipo</div>' : ''}
+19344:     </div>
+19345:   </div>`;
+19346: 
+19347:   const equipoWrap = document.getElementById('coEquipoWrap');
 ```
 
-### Línea 19805
+### Línea 19339
 
 ```html
-19793:     pie.style.display = 'flex';
-19794:     pie.innerHTML = `
-19795:       <span style="color:var(--muted)">Ventas filtradas: <strong style="color:var(--text)">${_fmtCLP(totalFilVenta)}</strong></span>
-19796:       <span style="color:var(--muted)">Comisión total: <strong style="color:#10b981">${_fmtCLP(totalFilComis)}</strong></span>
-19797:       ${totalFilPend > 0 ? `<span style="color:var(--muted)">Pendiente: <strong style="color:#f59e0b">${_fmtCLP(totalFilPend)}</strong></span>` : ''}
-19798:     `;
-19799:   }
-19800: }
-19801: 
-19802: function registrarRecuperacion() {
-19803:   const paciente = document.getElementById('recInpPaciente')?.value.trim();
-19804:   const fecha    = document.getElementById('recInpFecha')?.value;
-19805:   const servicio = document.getElementById('recInpServicio')?.value;
-19806:   const venta    = parseFloat(document.getElementById('recInpVenta')?.value || '0');
-19807:   const nota     = document.getElementById('recInpNota')?.value.trim() || '';
-19808: 
-19809:   if (!paciente) { alert('Ingresa el nombre del paciente'); return; }
-19810:   if (!fecha)    { alert('Selecciona la fecha de la cita'); return; }
-19811:   if (!servicio) { alert('Selecciona el servicio'); return; }
-19812:   if (!venta || venta <= 0) { alert('Ingresa el valor de la venta'); return; }
-19813: 
-19814:   const comision = Math.round(venta * REC_PCT);
-19815:   const rec = {
-19816:     id: Date.now().toString(),
-19817:     fecha,
+19327:     </div>
+19328:   </div>`;
+19329: 
+19330:   const contWrap = document.getElementById('coContenidoWrap');
+19331:   if (contWrap) contWrap.innerHTML = htmlCont;
+19332: 
+19333:   // ── TODO EL EQUIPO ──
+19334:   const npsStr    = npsActual !== null ? npsActual + '%' : '— (carga encuestas)';
+19335:   const equipoCol = equipoOk ? 'var(--ok)' : npsActual !== null ? '#ef4444' : 'var(--muted)';
+19336:   const htmlEquipo = `<div style="background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:18px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px">
+19337:     <div>
+19338:       <div style="font-family:var(--font-h);font-size:1.05rem;font-weight:600;margin-bottom:3px">🏆 Todo el Equipo — Calidad del Servicio</div>
+19339:       <div style="font-size:.82rem;color:var(--muted)">Meta: NPS >${cfg.equipo_nps_meta}% · Resultado: <strong style="color:${equipoCol}">${npsStr}</strong></div>
+19340:     </div>
+19341:     <div style="text-align:right">
+19342:       <div style="font-family:var(--font-h);font-size:1.2rem;font-weight:700;color:${equipoCol}">${equipoOk ? '✓ Almuerzo trimestral' : npsActual !== null ? '✗ Meta no cumplida' : '⏳ Sin datos de encuesta'}</div>
+19343:       ${equipoOk ? '<div style="font-size:.72rem;color:var(--muted);margin-top:2px">Recordar agendar el almuerzo del equipo</div>' : ''}
+19344:     </div>
+19345:   </div>`;
+19346: 
+19347:   const equipoWrap = document.getElementById('coEquipoWrap');
+19348:   if (equipoWrap) equipoWrap.innerHTML = htmlEquipo;
+19349: }
+19350: </script>
+19351: 
 ```
 
-### Línea 19834
+### Línea 19342
 
 ```html
-19822:     nota,
-19823:     pagado: false,
-19824:     pagadoFecha: null
-19825:   };
-19826: 
-19827:   const all = _loadRec();
-19828:   all.push(rec);
-19829:   _saveRec(all);
-19830: 
-19831:   // Limpiar formulario
-19832:   document.getElementById('recInpPaciente').value = '';
-19833:   document.getElementById('recInpFecha').value    = '';
-19834:   document.getElementById('recInpServicio').value = '';
-19835:   document.getElementById('recInpVenta').value    = '';
-19836:   document.getElementById('recInpNota').value     = '';
-19837:   document.getElementById('recInpComisionCalc').value = '$0';
-19838: 
-19839:   const msg = document.getElementById('recGuardadoMsg');
-19840:   if (msg) { msg.style.display = 'inline'; setTimeout(() => { msg.style.display = 'none'; }, 2500); }
-19841: 
-19842:   renderRecuperaciones();
-19843:   if (typeof toast === 'function') toast(`Recuperación registrada — comisión: ${_fmtCLP(comision)}`, 'ok');
-19844: }
-19845: 
-19846: function marcarPagado(id) {
+19330:   const contWrap = document.getElementById('coContenidoWrap');
+19331:   if (contWrap) contWrap.innerHTML = htmlCont;
+19332: 
+19333:   // ── TODO EL EQUIPO ──
+19334:   const npsStr    = npsActual !== null ? npsActual + '%' : '— (carga encuestas)';
+19335:   const equipoCol = equipoOk ? 'var(--ok)' : npsActual !== null ? '#ef4444' : 'var(--muted)';
+19336:   const htmlEquipo = `<div style="background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:18px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px">
+19337:     <div>
+19338:       <div style="font-family:var(--font-h);font-size:1.05rem;font-weight:600;margin-bottom:3px">🏆 Todo el Equipo — Calidad del Servicio</div>
+19339:       <div style="font-size:.82rem;color:var(--muted)">Meta: NPS >${cfg.equipo_nps_meta}% · Resultado: <strong style="color:${equipoCol}">${npsStr}</strong></div>
+19340:     </div>
+19341:     <div style="text-align:right">
+19342:       <div style="font-family:var(--font-h);font-size:1.2rem;font-weight:700;color:${equipoCol}">${equipoOk ? '✓ Almuerzo trimestral' : npsActual !== null ? '✗ Meta no cumplida' : '⏳ Sin datos de encuesta'}</div>
+19343:       ${equipoOk ? '<div style="font-size:.72rem;color:var(--muted);margin-top:2px">Recordar agendar el almuerzo del equipo</div>' : ''}
+19344:     </div>
+19345:   </div>`;
+19346: 
+19347:   const equipoWrap = document.getElementById('coEquipoWrap');
+19348:   if (equipoWrap) equipoWrap.innerHTML = htmlEquipo;
+19349: }
+19350: </script>
+19351: 
+19352: <script>
+19353: // ══════════════════════════════════════════
+19354: //  DISPONIBILIDAD RÁPIDA
 ```
 
-### Línea 20058
+### Línea 19807
 
 ```html
-20046:       </div>
-20047:       <div style="flex-shrink:0">${registrarBtn}</div>
-20048:     </div>
-20049:     <div style="margin-top:10px;padding-top:10px;border-top:1px solid ${gc.border};display:flex;gap:6px;flex-wrap:wrap;align-items:center">
-20050:       <span style="font-size:.7rem;color:var(--muted);font-family:var(--font-m);white-space:nowrap">Enviar por WA:</span>
-20051:       ${waBtns}
-20052:     </div>
-20053:   </div>`;
-20054: }
-20055: 
-20056: function preRellenaRecuperacion(nombre, servicio) {
-20057:   const inpNombre = document.getElementById('recInpPaciente');
-20058:   const inpServ   = document.getElementById('recInpServicio');
-20059:   const inpFecha  = document.getElementById('recInpFecha');
-20060:   if (inpNombre) inpNombre.value = nombre;
-20061:   if (inpFecha && !inpFecha.value) inpFecha.value = today();
-20062:   // Intentar hacer match del servicio en el select
-20063:   if (inpServ && servicio) {
-20064:     const opts = Array.from(inpServ.options);
-20065:     const srv  = servicio.toLowerCase();
-20066:     const match = opts.find(o => srv.includes(o.value.toLowerCase()) || o.value.toLowerCase().includes(srv.split(' ')[0].toLowerCase()));
-20067:     if (match) inpServ.value = match.value;
-20068:   }
-20069:   // Scroll suave al formulario
-20070:   const form = document.getElementById('recInpVenta');
+19795:     pie.style.display = 'flex';
+19796:     pie.innerHTML = `
+19797:       <span style="color:var(--muted)">Ventas filtradas: <strong style="color:var(--text)">${_fmtCLP(totalFilVenta)}</strong></span>
+19798:       <span style="color:var(--muted)">Comisión total: <strong style="color:#10b981">${_fmtCLP(totalFilComis)}</strong></span>
+19799:       ${totalFilPend > 0 ? `<span style="color:var(--muted)">Pendiente: <strong style="color:#f59e0b">${_fmtCLP(totalFilPend)}</strong></span>` : ''}
+19800:     `;
+19801:   }
+19802: }
+19803: 
+19804: function registrarRecuperacion() {
+19805:   const paciente = document.getElementById('recInpPaciente')?.value.trim();
+19806:   const fecha    = document.getElementById('recInpFecha')?.value;
+19807:   const servicio = document.getElementById('recInpServicio')?.value;
+19808:   const venta    = parseFloat(document.getElementById('recInpVenta')?.value || '0');
+19809:   const nota     = document.getElementById('recInpNota')?.value.trim() || '';
+19810: 
+19811:   if (!paciente) { alert('Ingresa el nombre del paciente'); return; }
+19812:   if (!fecha)    { alert('Selecciona la fecha de la cita'); return; }
+19813:   if (!servicio) { alert('Selecciona el servicio'); return; }
+19814:   if (!venta || venta <= 0) { alert('Ingresa el valor de la venta'); return; }
+19815: 
+19816:   const comision = Math.round(venta * REC_PCT);
+19817:   const rec = {
+19818:     id: Date.now().toString(),
+19819:     fecha,
 ```
 
-### Línea 20063
+### Línea 19836
 
 ```html
-20051:       ${waBtns}
-20052:     </div>
-20053:   </div>`;
-20054: }
-20055: 
-20056: function preRellenaRecuperacion(nombre, servicio) {
-20057:   const inpNombre = document.getElementById('recInpPaciente');
-20058:   const inpServ   = document.getElementById('recInpServicio');
-20059:   const inpFecha  = document.getElementById('recInpFecha');
-20060:   if (inpNombre) inpNombre.value = nombre;
-20061:   if (inpFecha && !inpFecha.value) inpFecha.value = today();
-20062:   // Intentar hacer match del servicio en el select
-20063:   if (inpServ && servicio) {
-20064:     const opts = Array.from(inpServ.options);
-20065:     const srv  = servicio.toLowerCase();
-20066:     const match = opts.find(o => srv.includes(o.value.toLowerCase()) || o.value.toLowerCase().includes(srv.split(' ')[0].toLowerCase()));
-20067:     if (match) inpServ.value = match.value;
-20068:   }
-20069:   // Scroll suave al formulario
-20070:   const form = document.getElementById('recInpVenta');
-20071:   if (form) { form.scrollIntoView({ behavior:'smooth', block:'center' }); form.focus(); }
-20072:   if (typeof toast === 'function') toast(`Formulario pre-llenado para ${nombre}`, 'ok');
-20073: }
-20074: 
-20075: // ── CAMPAÑA DE REFERIDOS DEL MES ──
+19824:     nota,
+19825:     pagado: false,
+19826:     pagadoFecha: null
+19827:   };
+19828: 
+19829:   const all = _loadRec();
+19830:   all.push(rec);
+19831:   _saveRec(all);
+19832: 
+19833:   // Limpiar formulario
+19834:   document.getElementById('recInpPaciente').value = '';
+19835:   document.getElementById('recInpFecha').value    = '';
+19836:   document.getElementById('recInpServicio').value = '';
+19837:   document.getElementById('recInpVenta').value    = '';
+19838:   document.getElementById('recInpNota').value     = '';
+19839:   document.getElementById('recInpComisionCalc').value = '$0';
+19840: 
+19841:   const msg = document.getElementById('recGuardadoMsg');
+19842:   if (msg) { msg.style.display = 'inline'; setTimeout(() => { msg.style.display = 'none'; }, 2500); }
+19843: 
+19844:   renderRecuperaciones();
+19845:   if (typeof toast === 'function') toast(`Recuperación registrada — comisión: ${_fmtCLP(comision)}`, 'ok');
+19846: }
+19847: 
+19848: function marcarPagado(id) {
 ```
 
-### Línea 20064
+### Línea 20060
 
 ```html
-20052:     </div>
-20053:   </div>`;
-20054: }
-20055: 
-20056: function preRellenaRecuperacion(nombre, servicio) {
-20057:   const inpNombre = document.getElementById('recInpPaciente');
-20058:   const inpServ   = document.getElementById('recInpServicio');
-20059:   const inpFecha  = document.getElementById('recInpFecha');
-20060:   if (inpNombre) inpNombre.value = nombre;
-20061:   if (inpFecha && !inpFecha.value) inpFecha.value = today();
-20062:   // Intentar hacer match del servicio en el select
-20063:   if (inpServ && servicio) {
-20064:     const opts = Array.from(inpServ.options);
-20065:     const srv  = servicio.toLowerCase();
-20066:     const match = opts.find(o => srv.includes(o.value.toLowerCase()) || o.value.toLowerCase().includes(srv.split(' ')[0].toLowerCase()));
-20067:     if (match) inpServ.value = match.value;
-20068:   }
-20069:   // Scroll suave al formulario
-20070:   const form = document.getElementById('recInpVenta');
-20071:   if (form) { form.scrollIntoView({ behavior:'smooth', block:'center' }); form.focus(); }
-20072:   if (typeof toast === 'function') toast(`Formulario pre-llenado para ${nombre}`, 'ok');
-20073: }
-20074: 
-20075: // ── CAMPAÑA DE REFERIDOS DEL MES ──
-20076: // ── helpers de estado por paciente (persisten en localStorage) ──
+20048:       </div>
+20049:       <div style="flex-shrink:0">${registrarBtn}</div>
+20050:     </div>
+20051:     <div style="margin-top:10px;padding-top:10px;border-top:1px solid ${gc.border};display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+20052:       <span style="font-size:.7rem;color:var(--muted);font-family:var(--font-m);white-space:nowrap">Enviar por WA:</span>
+20053:       ${waBtns}
+20054:     </div>
+20055:   </div>`;
+20056: }
+20057: 
+20058: function preRellenaRecuperacion(nombre, servicio) {
+20059:   const inpNombre = document.getElementById('recInpPaciente');
+20060:   const inpServ   = document.getElementById('recInpServicio');
+20061:   const inpFecha  = document.getElementById('recInpFecha');
+20062:   if (inpNombre) inpNombre.value = nombre;
+20063:   if (inpFecha && !inpFecha.value) inpFecha.value = today();
+20064:   // Intentar hacer match del servicio en el select
+20065:   if (inpServ && servicio) {
+20066:     const opts = Array.from(inpServ.options);
+20067:     const srv  = servicio.toLowerCase();
+20068:     const match = opts.find(o => srv.includes(o.value.toLowerCase()) || o.value.toLowerCase().includes(srv.split(' ')[0].toLowerCase()));
+20069:     if (match) inpServ.value = match.value;
+20070:   }
+20071:   // Scroll suave al formulario
+20072:   const form = document.getElementById('recInpVenta');
 ```
 
-### Línea 20067
+### Línea 20065
 
 ```html
-20055: 
-20056: function preRellenaRecuperacion(nombre, servicio) {
-20057:   const inpNombre = document.getElementById('recInpPaciente');
-20058:   const inpServ   = document.getElementById('recInpServicio');
-20059:   const inpFecha  = document.getElementById('recInpFecha');
-20060:   if (inpNombre) inpNombre.value = nombre;
-20061:   if (inpFecha && !inpFecha.value) inpFecha.value = today();
-20062:   // Intentar hacer match del servicio en el select
-20063:   if (inpServ && servicio) {
-20064:     const opts = Array.from(inpServ.options);
-20065:     const srv  = servicio.toLowerCase();
-20066:     const match = opts.find(o => srv.includes(o.value.toLowerCase()) || o.value.toLowerCase().includes(srv.split(' ')[0].toLowerCase()));
-20067:     if (match) inpServ.value = match.value;
-20068:   }
-20069:   // Scroll suave al formulario
-20070:   const form = document.getElementById('recInpVenta');
-20071:   if (form) { form.scrollIntoView({ behavior:'smooth', block:'center' }); form.focus(); }
-20072:   if (typeof toast === 'function') toast(`Formulario pre-llenado para ${nombre}`, 'ok');
-20073: }
-20074: 
-20075: // ── CAMPAÑA DE REFERIDOS DEL MES ──
-20076: // ── helpers de estado por paciente (persisten en localStorage) ──
-20077: function _refKey(mesStr, anio, nombre) {
-20078:   return `refCamp_${mesStr}${anio}_${(nombre||'').toLowerCase().trim().replace(/\s+/g,'_')}`;
-20079: }
+20053:       ${waBtns}
+20054:     </div>
+20055:   </div>`;
+20056: }
+20057: 
+20058: function preRellenaRecuperacion(nombre, servicio) {
+20059:   const inpNombre = document.getElementById('recInpPaciente');
+20060:   const inpServ   = document.getElementById('recInpServicio');
+20061:   const inpFecha  = document.getElementById('recInpFecha');
+20062:   if (inpNombre) inpNombre.value = nombre;
+20063:   if (inpFecha && !inpFecha.value) inpFecha.value = today();
+20064:   // Intentar hacer match del servicio en el select
+20065:   if (inpServ && servicio) {
+20066:     const opts = Array.from(inpServ.options);
+20067:     const srv  = servicio.toLowerCase();
+20068:     const match = opts.find(o => srv.includes(o.value.toLowerCase()) || o.value.toLowerCase().includes(srv.split(' ')[0].toLowerCase()));
+20069:     if (match) inpServ.value = match.value;
+20070:   }
+20071:   // Scroll suave al formulario
+20072:   const form = document.getElementById('recInpVenta');
+20073:   if (form) { form.scrollIntoView({ behavior:'smooth', block:'center' }); form.focus(); }
+20074:   if (typeof toast === 'function') toast(`Formulario pre-llenado para ${nombre}`, 'ok');
+20075: }
+20076: 
+20077: // ── CAMPAÑA DE REFERIDOS DEL MES ──
+```
+
+### Línea 20066
+
+```html
+20054:     </div>
+20055:   </div>`;
+20056: }
+20057: 
+20058: function preRellenaRecuperacion(nombre, servicio) {
+20059:   const inpNombre = document.getElementById('recInpPaciente');
+20060:   const inpServ   = document.getElementById('recInpServicio');
+20061:   const inpFecha  = document.getElementById('recInpFecha');
+20062:   if (inpNombre) inpNombre.value = nombre;
+20063:   if (inpFecha && !inpFecha.value) inpFecha.value = today();
+20064:   // Intentar hacer match del servicio en el select
+20065:   if (inpServ && servicio) {
+20066:     const opts = Array.from(inpServ.options);
+20067:     const srv  = servicio.toLowerCase();
+20068:     const match = opts.find(o => srv.includes(o.value.toLowerCase()) || o.value.toLowerCase().includes(srv.split(' ')[0].toLowerCase()));
+20069:     if (match) inpServ.value = match.value;
+20070:   }
+20071:   // Scroll suave al formulario
+20072:   const form = document.getElementById('recInpVenta');
+20073:   if (form) { form.scrollIntoView({ behavior:'smooth', block:'center' }); form.focus(); }
+20074:   if (typeof toast === 'function') toast(`Formulario pre-llenado para ${nombre}`, 'ok');
+20075: }
+20076: 
+20077: // ── CAMPAÑA DE REFERIDOS DEL MES ──
+20078: // ── helpers de estado por paciente (persisten en localStorage) ──
+```
+
+### Línea 20069
+
+```html
+20057: 
+20058: function preRellenaRecuperacion(nombre, servicio) {
+20059:   const inpNombre = document.getElementById('recInpPaciente');
+20060:   const inpServ   = document.getElementById('recInpServicio');
+20061:   const inpFecha  = document.getElementById('recInpFecha');
+20062:   if (inpNombre) inpNombre.value = nombre;
+20063:   if (inpFecha && !inpFecha.value) inpFecha.value = today();
+20064:   // Intentar hacer match del servicio en el select
+20065:   if (inpServ && servicio) {
+20066:     const opts = Array.from(inpServ.options);
+20067:     const srv  = servicio.toLowerCase();
+20068:     const match = opts.find(o => srv.includes(o.value.toLowerCase()) || o.value.toLowerCase().includes(srv.split(' ')[0].toLowerCase()));
+20069:     if (match) inpServ.value = match.value;
+20070:   }
+20071:   // Scroll suave al formulario
+20072:   const form = document.getElementById('recInpVenta');
+20073:   if (form) { form.scrollIntoView({ behavior:'smooth', block:'center' }); form.focus(); }
+20074:   if (typeof toast === 'function') toast(`Formulario pre-llenado para ${nombre}`, 'ok');
+20075: }
+20076: 
+20077: // ── CAMPAÑA DE REFERIDOS DEL MES ──
+20078: // ── helpers de estado por paciente (persisten en localStorage) ──
+20079: function _refKey(mesStr, anio, nombre) {
+20080:   return `refCamp_${mesStr}${anio}_${(nombre||'').toLowerCase().trim().replace(/\s+/g,'_')}`;
+20081: }
 ```
 
 ## Controles del formulario de Base de datos

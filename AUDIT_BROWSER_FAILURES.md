@@ -114,17 +114,17 @@
 16648: // ══════════════════════════════════════════════════════════════
 16649: function renderMetricas() {
 16650:   const now = new Date();
-16651:   const citas = citasReales();
-16652:   const COLORES = ['var(--primary)','#6366f1','#f59e0b','#10b981','#ef4444','#8b5cf6'];
-16653:   const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-16654: 
-16655:   // 1. Horarios más demandados (excluye 00:00 = citas sin hora registrada)
-16656:   const horMap = {};
-16657:   let sinHoraCnt = 0;
-16658:   citas.forEach(c => {
-16659:     const h = (c.hora || '').split(':')[0].replace(/^0+$/, ''); // "0" y "00" → ""
-16660:     if (h && +h !== 0) horMap[h] = (horMap[h] || 0) + 1;
-16661:     else sinHoraCnt++;
+16651:   const m = now.getMonth() + 1;
+16652:   const y = now.getFullYear();
+16653:   const citas = citasReales();
+16654:   const COLORES = ['var(--primary)','#6366f1','#f59e0b','#10b981','#ef4444','#8b5cf6'];
+16655:   const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+16656: 
+16657:   // 1. Horarios más demandados (excluye 00:00 = citas sin hora registrada)
+16658:   const horMap = {};
+16659:   let sinHoraCnt = 0;
+16660:   citas.forEach(c => {
+16661:     const h = (c.hora || '').split(':')[0].replace(/^0+$/, ''); // "0" y "00" → ""
 ```
 
 ## Usos de now en renderizado financiero
@@ -4435,738 +4435,798 @@
 16648: // ══════════════════════════════════════════════════════════════
 16649: function renderMetricas() {
 16650:   const now = new Date();
-16651:   const citas = citasReales();
-16652:   const COLORES = ['var(--primary)','#6366f1','#f59e0b','#10b981','#ef4444','#8b5cf6'];
-16653:   const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-16654: 
-16655:   // 1. Horarios más demandados (excluye 00:00 = citas sin hora registrada)
-16656:   const horMap = {};
-16657:   let sinHoraCnt = 0;
-16658:   citas.forEach(c => {
-16659:     const h = (c.hora || '').split(':')[0].replace(/^0+$/, ''); // "0" y "00" → ""
-16660:     if (h && +h !== 0) horMap[h] = (horMap[h] || 0) + 1;
-16661:     else sinHoraCnt++;
-16662:   });
+16651:   const m = now.getMonth() + 1;
+16652:   const y = now.getFullYear();
+16653:   const citas = citasReales();
+16654:   const COLORES = ['var(--primary)','#6366f1','#f59e0b','#10b981','#ef4444','#8b5cf6'];
+16655:   const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+16656: 
+16657:   // 1. Horarios más demandados (excluye 00:00 = citas sin hora registrada)
+16658:   const horMap = {};
+16659:   let sinHoraCnt = 0;
+16660:   citas.forEach(c => {
+16661:     const h = (c.hora || '').split(':')[0].replace(/^0+$/, ''); // "0" y "00" → ""
+16662:     if (h && +h !== 0) horMap[h] = (horMap[h] || 0) + 1;
 ```
 
-### Coincidencia 145 — línea 17067
+### Coincidencia 145 — línea 16651
 
 ```html
-17055: 
-17056:   // Inicializar selector de fecha para ingresos por día/semana
-17057:   const fechaInp = document.getElementById('ingresosFechaInput');
-17058:   if (fechaInp && !fechaInp.value) {
-17059:     fechaInp.value = today();
-17060:     setModoIngresos('semana');
-17061:   }
-17062:   renderCitasResumen();
-17063: 
-17064:   // Inicializar filtro de convenios con el mes actual
-17065:   const convMesFiltro = document.getElementById('convenioMesFiltro');
-17066:   if (convMesFiltro && !convMesFiltro.value) {
-17067:     const nm = now.getMonth()+1;
-17068:     convMesFiltro.value = y + '-' + String(nm).padStart(2,'0');
-17069:   }
-17070:   renderConveniosReport();
-17071:   _checkAutoAtendida();
-17072:   _checkCobrosPendientes();
-17073: }
-17074: 
-17075: // ── Automatización #2: marcar citas pasadas como Atendidas ──
-17076: function _checkAutoAtendida() {
-17077:   const nowMs = Date.now();
-17078:   const pendientes = (allData.citas || []).filter(c => {
-17079:     if (!['Confirmada','Pendiente'].includes(c.estado)) return false;
+16639:       </div>
+16640:     </div>
+16641:   </div>`;
+16642: 
+16643:   el.innerHTML = html;
+16644: }
+16645: 
+16646: // ══════════════════════════════════════════════════════════════
+16647: // ── MÉTRICAS INTELIGENTES ──
+16648: // ══════════════════════════════════════════════════════════════
+16649: function renderMetricas() {
+16650:   const now = new Date();
+16651:   const m = now.getMonth() + 1;
+16652:   const y = now.getFullYear();
+16653:   const citas = citasReales();
+16654:   const COLORES = ['var(--primary)','#6366f1','#f59e0b','#10b981','#ef4444','#8b5cf6'];
+16655:   const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+16656: 
+16657:   // 1. Horarios más demandados (excluye 00:00 = citas sin hora registrada)
+16658:   const horMap = {};
+16659:   let sinHoraCnt = 0;
+16660:   citas.forEach(c => {
+16661:     const h = (c.hora || '').split(':')[0].replace(/^0+$/, ''); // "0" y "00" → ""
+16662:     if (h && +h !== 0) horMap[h] = (horMap[h] || 0) + 1;
+16663:     else sinHoraCnt++;
 ```
 
-### Coincidencia 146 — línea 17077
+### Coincidencia 146 — línea 16652
 
 ```html
-17065:   const convMesFiltro = document.getElementById('convenioMesFiltro');
-17066:   if (convMesFiltro && !convMesFiltro.value) {
-17067:     const nm = now.getMonth()+1;
-17068:     convMesFiltro.value = y + '-' + String(nm).padStart(2,'0');
-17069:   }
-17070:   renderConveniosReport();
-17071:   _checkAutoAtendida();
-17072:   _checkCobrosPendientes();
-17073: }
-17074: 
-17075: // ── Automatización #2: marcar citas pasadas como Atendidas ──
-17076: function _checkAutoAtendida() {
-17077:   const nowMs = Date.now();
-17078:   const pendientes = (allData.citas || []).filter(c => {
-17079:     if (!['Confirmada','Pendiente'].includes(c.estado)) return false;
-17080:     if (esRegistroServ(c.servicio)) return false;
-17081:     const f = normDate(c.fecha);
-17082:     if (!f || !c.hora) return false;
-17083:     const [hh, mm] = c.hora.split(':').map(Number);
-17084:     const citaEnd = new Date(f + 'T' + c.hora);
-17085:     citaEnd.setMinutes(citaEnd.getMinutes() + 60);
-17086:     return citaEnd.getTime() < nowMs;
-17087:   });
-17088:   window._autoAtendidaList = pendientes;
-17089:   const banner = document.getElementById('bannerAutoAtendida');
+16640:     </div>
+16641:   </div>`;
+16642: 
+16643:   el.innerHTML = html;
+16644: }
+16645: 
+16646: // ══════════════════════════════════════════════════════════════
+16647: // ── MÉTRICAS INTELIGENTES ──
+16648: // ══════════════════════════════════════════════════════════════
+16649: function renderMetricas() {
+16650:   const now = new Date();
+16651:   const m = now.getMonth() + 1;
+16652:   const y = now.getFullYear();
+16653:   const citas = citasReales();
+16654:   const COLORES = ['var(--primary)','#6366f1','#f59e0b','#10b981','#ef4444','#8b5cf6'];
+16655:   const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+16656: 
+16657:   // 1. Horarios más demandados (excluye 00:00 = citas sin hora registrada)
+16658:   const horMap = {};
+16659:   let sinHoraCnt = 0;
+16660:   citas.forEach(c => {
+16661:     const h = (c.hora || '').split(':')[0].replace(/^0+$/, ''); // "0" y "00" → ""
+16662:     if (h && +h !== 0) horMap[h] = (horMap[h] || 0) + 1;
+16663:     else sinHoraCnt++;
+16664:   });
 ```
 
-### Coincidencia 147 — línea 17157
+### Coincidencia 147 — línea 17069
 
 ```html
-17145:       selector.value = citaId || '';
-17146:       selector.dispatchEvent(new Event('change', { bubbles: true }));
-17147:       selector.focus();
-17148:       selector.scrollIntoView({ behavior: 'smooth', block: 'center' });
-17149:     } else {
-17150:       toast('Se abrió Pagos, pero no se encontró la cita seleccionada', 'warn');
-17151:     }
-17152:   }, 100);
-17153: }
-17154: 
-17155: // ── Alerta semana floja ──
-17156: function _checkAlertaSemanFloja(citas) {
-17157:   const now = new Date();
-17158:   const dow = now.getDay(); // 0=dom, 3=mié, 5=vie
-17159:   const hoyStr = today();
-17160: 
-17161:   // Mostrar solo si es miércoles, jueves o viernes (dow 3,4,5)
-17162:   const dashEl = document.getElementById('alertaSemanFlojaDash');
-17163:   const finEl  = document.getElementById('alertaSemanFlojaFin');
-17164:   const txtEl  = document.getElementById('alertaSemanFlojaTxt');
-17165: 
-17166:   const apagar = () => {
-17167:     if (dashEl) dashEl.style.display = 'none';
-17168:     if (finEl)  { finEl.style.display = 'none'; finEl.innerHTML = ''; }
-17169:   };
+17057: 
+17058:   // Inicializar selector de fecha para ingresos por día/semana
+17059:   const fechaInp = document.getElementById('ingresosFechaInput');
+17060:   if (fechaInp && !fechaInp.value) {
+17061:     fechaInp.value = today();
+17062:     setModoIngresos('semana');
+17063:   }
+17064:   renderCitasResumen();
+17065: 
+17066:   // Inicializar filtro de convenios con el mes actual
+17067:   const convMesFiltro = document.getElementById('convenioMesFiltro');
+17068:   if (convMesFiltro && !convMesFiltro.value) {
+17069:     const nm = now.getMonth()+1;
+17070:     convMesFiltro.value = y + '-' + String(nm).padStart(2,'0');
+17071:   }
+17072:   renderConveniosReport();
+17073:   _checkAutoAtendida();
+17074:   _checkCobrosPendientes();
+17075: }
+17076: 
+17077: // ── Automatización #2: marcar citas pasadas como Atendidas ──
+17078: function _checkAutoAtendida() {
+17079:   const nowMs = Date.now();
+17080:   const pendientes = (allData.citas || []).filter(c => {
+17081:     if (!['Confirmada','Pendiente'].includes(c.estado)) return false;
 ```
 
-### Coincidencia 148 — línea 17158
+### Coincidencia 148 — línea 17079
 
 ```html
-17146:       selector.dispatchEvent(new Event('change', { bubbles: true }));
-17147:       selector.focus();
-17148:       selector.scrollIntoView({ behavior: 'smooth', block: 'center' });
-17149:     } else {
-17150:       toast('Se abrió Pagos, pero no se encontró la cita seleccionada', 'warn');
-17151:     }
-17152:   }, 100);
-17153: }
-17154: 
-17155: // ── Alerta semana floja ──
-17156: function _checkAlertaSemanFloja(citas) {
-17157:   const now = new Date();
-17158:   const dow = now.getDay(); // 0=dom, 3=mié, 5=vie
-17159:   const hoyStr = today();
-17160: 
-17161:   // Mostrar solo si es miércoles, jueves o viernes (dow 3,4,5)
-17162:   const dashEl = document.getElementById('alertaSemanFlojaDash');
-17163:   const finEl  = document.getElementById('alertaSemanFlojaFin');
-17164:   const txtEl  = document.getElementById('alertaSemanFlojaTxt');
-17165: 
-17166:   const apagar = () => {
-17167:     if (dashEl) dashEl.style.display = 'none';
-17168:     if (finEl)  { finEl.style.display = 'none'; finEl.innerHTML = ''; }
-17169:   };
-17170: 
+17067:   const convMesFiltro = document.getElementById('convenioMesFiltro');
+17068:   if (convMesFiltro && !convMesFiltro.value) {
+17069:     const nm = now.getMonth()+1;
+17070:     convMesFiltro.value = y + '-' + String(nm).padStart(2,'0');
+17071:   }
+17072:   renderConveniosReport();
+17073:   _checkAutoAtendida();
+17074:   _checkCobrosPendientes();
+17075: }
+17076: 
+17077: // ── Automatización #2: marcar citas pasadas como Atendidas ──
+17078: function _checkAutoAtendida() {
+17079:   const nowMs = Date.now();
+17080:   const pendientes = (allData.citas || []).filter(c => {
+17081:     if (!['Confirmada','Pendiente'].includes(c.estado)) return false;
+17082:     if (esRegistroServ(c.servicio)) return false;
+17083:     const f = normDate(c.fecha);
+17084:     if (!f || !c.hora) return false;
+17085:     const [hh, mm] = c.hora.split(':').map(Number);
+17086:     const citaEnd = new Date(f + 'T' + c.hora);
+17087:     citaEnd.setMinutes(citaEnd.getMinutes() + 60);
+17088:     return citaEnd.getTime() < nowMs;
+17089:   });
+17090:   window._autoAtendidaList = pendientes;
+17091:   const banner = document.getElementById('bannerAutoAtendida');
 ```
 
-### Coincidencia 149 — línea 17174
+### Coincidencia 149 — línea 17159
 
 ```html
-17162:   const dashEl = document.getElementById('alertaSemanFlojaDash');
-17163:   const finEl  = document.getElementById('alertaSemanFlojaFin');
-17164:   const txtEl  = document.getElementById('alertaSemanFlojaTxt');
-17165: 
-17166:   const apagar = () => {
-17167:     if (dashEl) dashEl.style.display = 'none';
-17168:     if (finEl)  { finEl.style.display = 'none'; finEl.innerHTML = ''; }
-17169:   };
-17170: 
-17171:   if (dow < 3 || dow > 5) { apagar(); return; }
+17147:       selector.value = citaId || '';
+17148:       selector.dispatchEvent(new Event('change', { bubbles: true }));
+17149:       selector.focus();
+17150:       selector.scrollIntoView({ behavior: 'smooth', block: 'center' });
+17151:     } else {
+17152:       toast('Se abrió Pagos, pero no se encontró la cita seleccionada', 'warn');
+17153:     }
+17154:   }, 100);
+17155: }
+17156: 
+17157: // ── Alerta semana floja ──
+17158: function _checkAlertaSemanFloja(citas) {
+17159:   const now = new Date();
+17160:   const dow = now.getDay(); // 0=dom, 3=mié, 5=vie
+17161:   const hoyStr = today();
+17162: 
+17163:   // Mostrar solo si es miércoles, jueves o viernes (dow 3,4,5)
+17164:   const dashEl = document.getElementById('alertaSemanFlojaDash');
+17165:   const finEl  = document.getElementById('alertaSemanFlojaFin');
+17166:   const txtEl  = document.getElementById('alertaSemanFlojaTxt');
+17167: 
+17168:   const apagar = () => {
+17169:     if (dashEl) dashEl.style.display = 'none';
+17170:     if (finEl)  { finEl.style.display = 'none'; finEl.innerHTML = ''; }
+17171:   };
+```
+
+### Coincidencia 150 — línea 17160
+
+```html
+17148:       selector.dispatchEvent(new Event('change', { bubbles: true }));
+17149:       selector.focus();
+17150:       selector.scrollIntoView({ behavior: 'smooth', block: 'center' });
+17151:     } else {
+17152:       toast('Se abrió Pagos, pero no se encontró la cita seleccionada', 'warn');
+17153:     }
+17154:   }, 100);
+17155: }
+17156: 
+17157: // ── Alerta semana floja ──
+17158: function _checkAlertaSemanFloja(citas) {
+17159:   const now = new Date();
+17160:   const dow = now.getDay(); // 0=dom, 3=mié, 5=vie
+17161:   const hoyStr = today();
+17162: 
+17163:   // Mostrar solo si es miércoles, jueves o viernes (dow 3,4,5)
+17164:   const dashEl = document.getElementById('alertaSemanFlojaDash');
+17165:   const finEl  = document.getElementById('alertaSemanFlojaFin');
+17166:   const txtEl  = document.getElementById('alertaSemanFlojaTxt');
+17167: 
+17168:   const apagar = () => {
+17169:     if (dashEl) dashEl.style.display = 'none';
+17170:     if (finEl)  { finEl.style.display = 'none'; finEl.innerHTML = ''; }
+17171:   };
 17172: 
-17173:   // Calcular ingresos semana actual (lunes a hoy)
-17174:   const lunes = new Date(now);
-17175:   lunes.setDate(now.getDate() - (dow === 0 ? 6 : dow - 1));
-17176:   lunes.setHours(0,0,0,0);
-17177: 
-17178:   let totalSemActual = 0, nSemActual = 0;
-17179:   citas.forEach(c => {
-17180:     const f = normDate(c.fecha);
-17181:     if (!f) return;
-17182:     const fd = new Date(f + 'T12:00:00');
-17183:     if (fd >= lunes && f <= hoyStr) {
-17184:       totalSemActual += parsePrecio(c.precio);
-17185:       nSemActual++;
-17186:     }
 ```
 
-### Coincidencia 150 — línea 17175
+### Coincidencia 151 — línea 17176
 
 ```html
-17163:   const finEl  = document.getElementById('alertaSemanFlojaFin');
-17164:   const txtEl  = document.getElementById('alertaSemanFlojaTxt');
-17165: 
-17166:   const apagar = () => {
-17167:     if (dashEl) dashEl.style.display = 'none';
-17168:     if (finEl)  { finEl.style.display = 'none'; finEl.innerHTML = ''; }
-17169:   };
-17170: 
-17171:   if (dow < 3 || dow > 5) { apagar(); return; }
+17164:   const dashEl = document.getElementById('alertaSemanFlojaDash');
+17165:   const finEl  = document.getElementById('alertaSemanFlojaFin');
+17166:   const txtEl  = document.getElementById('alertaSemanFlojaTxt');
+17167: 
+17168:   const apagar = () => {
+17169:     if (dashEl) dashEl.style.display = 'none';
+17170:     if (finEl)  { finEl.style.display = 'none'; finEl.innerHTML = ''; }
+17171:   };
 17172: 
-17173:   // Calcular ingresos semana actual (lunes a hoy)
-17174:   const lunes = new Date(now);
-17175:   lunes.setDate(now.getDate() - (dow === 0 ? 6 : dow - 1));
-17176:   lunes.setHours(0,0,0,0);
-17177: 
-17178:   let totalSemActual = 0, nSemActual = 0;
-17179:   citas.forEach(c => {
-17180:     const f = normDate(c.fecha);
-17181:     if (!f) return;
-17182:     const fd = new Date(f + 'T12:00:00');
-17183:     if (fd >= lunes && f <= hoyStr) {
-17184:       totalSemActual += parsePrecio(c.precio);
-17185:       nSemActual++;
-17186:     }
-17187:   });
+17173:   if (dow < 3 || dow > 5) { apagar(); return; }
+17174: 
+17175:   // Calcular ingresos semana actual (lunes a hoy)
+17176:   const lunes = new Date(now);
+17177:   lunes.setDate(now.getDate() - (dow === 0 ? 6 : dow - 1));
+17178:   lunes.setHours(0,0,0,0);
+17179: 
+17180:   let totalSemActual = 0, nSemActual = 0;
+17181:   citas.forEach(c => {
+17182:     const f = normDate(c.fecha);
+17183:     if (!f) return;
+17184:     const fd = new Date(f + 'T12:00:00');
+17185:     if (fd >= lunes && f <= hoyStr) {
+17186:       totalSemActual += parsePrecio(c.precio);
+17187:       nSemActual++;
+17188:     }
 ```
 
-### Coincidencia 151 — línea 18542
+### Coincidencia 152 — línea 17177
 
 ```html
-18530: 
-18531: function resRow(label, val, style='') {
-18532:   return `<div style="display:flex;justify-content:space-between;align-items:center;font-size:.85rem;padding:3px 0">
-18533:     <span style="color:var(--muted)">${label}</span>
-18534:     <span style="${style}">${val}</span>
-18535:   </div>`;
-18536: }
-18537: 
-18538: // ══════════════════════════════════════════════════════════════
-18539: // ── EXPORTAR CSV ──
-18540: // ══════════════════════════════════════════════════════════════
-18541: function exportarCSV(modo) {
-18542:   const now = new Date();
-18543:   const m   = now.getMonth()+1;
-18544:   const y   = now.getFullYear();
-18545:   let citas = citasReales().filter(esCobrada);
-18546: 
-18547:   if (modo === 'mes') {
-18548:     citas = citas.filter(c => { const [cy,cm]=normDate(c.fecha).split('-'); return +cm===m && +cy===y; });
-18549:   }
-18550: 
-18551:   // Agregar eventos externos como filas adicionales
-18552:   let evts = (allData.eventos || []);
-18553:   if (modo === 'mes') {
-18554:     evts = evts.filter(e => { const [cy,cm]=normDate(e.fecha).split('-'); return +cm===m && +cy===y; });
-```
-
-### Coincidencia 152 — línea 18543
-
-```html
-18531: function resRow(label, val, style='') {
-18532:   return `<div style="display:flex;justify-content:space-between;align-items:center;font-size:.85rem;padding:3px 0">
-18533:     <span style="color:var(--muted)">${label}</span>
-18534:     <span style="${style}">${val}</span>
-18535:   </div>`;
-18536: }
-18537: 
-18538: // ══════════════════════════════════════════════════════════════
-18539: // ── EXPORTAR CSV ──
-18540: // ══════════════════════════════════════════════════════════════
-18541: function exportarCSV(modo) {
-18542:   const now = new Date();
-18543:   const m   = now.getMonth()+1;
-18544:   const y   = now.getFullYear();
-18545:   let citas = citasReales().filter(esCobrada);
-18546: 
-18547:   if (modo === 'mes') {
-18548:     citas = citas.filter(c => { const [cy,cm]=normDate(c.fecha).split('-'); return +cm===m && +cy===y; });
-18549:   }
-18550: 
-18551:   // Agregar eventos externos como filas adicionales
-18552:   let evts = (allData.eventos || []);
-18553:   if (modo === 'mes') {
-18554:     evts = evts.filter(e => { const [cy,cm]=normDate(e.fecha).split('-'); return +cm===m && +cy===y; });
-18555:   }
+17165:   const finEl  = document.getElementById('alertaSemanFlojaFin');
+17166:   const txtEl  = document.getElementById('alertaSemanFlojaTxt');
+17167: 
+17168:   const apagar = () => {
+17169:     if (dashEl) dashEl.style.display = 'none';
+17170:     if (finEl)  { finEl.style.display = 'none'; finEl.innerHTML = ''; }
+17171:   };
+17172: 
+17173:   if (dow < 3 || dow > 5) { apagar(); return; }
+17174: 
+17175:   // Calcular ingresos semana actual (lunes a hoy)
+17176:   const lunes = new Date(now);
+17177:   lunes.setDate(now.getDate() - (dow === 0 ? 6 : dow - 1));
+17178:   lunes.setHours(0,0,0,0);
+17179: 
+17180:   let totalSemActual = 0, nSemActual = 0;
+17181:   citas.forEach(c => {
+17182:     const f = normDate(c.fecha);
+17183:     if (!f) return;
+17184:     const fd = new Date(f + 'T12:00:00');
+17185:     if (fd >= lunes && f <= hoyStr) {
+17186:       totalSemActual += parsePrecio(c.precio);
+17187:       nSemActual++;
+17188:     }
+17189:   });
 ```
 
 ### Coincidencia 153 — línea 18544
 
 ```html
-18532:   return `<div style="display:flex;justify-content:space-between;align-items:center;font-size:.85rem;padding:3px 0">
-18533:     <span style="color:var(--muted)">${label}</span>
-18534:     <span style="${style}">${val}</span>
-18535:   </div>`;
-18536: }
-18537: 
-18538: // ══════════════════════════════════════════════════════════════
-18539: // ── EXPORTAR CSV ──
+18532: 
+18533: function resRow(label, val, style='') {
+18534:   return `<div style="display:flex;justify-content:space-between;align-items:center;font-size:.85rem;padding:3px 0">
+18535:     <span style="color:var(--muted)">${label}</span>
+18536:     <span style="${style}">${val}</span>
+18537:   </div>`;
+18538: }
+18539: 
 18540: // ══════════════════════════════════════════════════════════════
-18541: function exportarCSV(modo) {
-18542:   const now = new Date();
-18543:   const m   = now.getMonth()+1;
-18544:   const y   = now.getFullYear();
-18545:   let citas = citasReales().filter(esCobrada);
-18546: 
-18547:   if (modo === 'mes') {
-18548:     citas = citas.filter(c => { const [cy,cm]=normDate(c.fecha).split('-'); return +cm===m && +cy===y; });
-18549:   }
-18550: 
-18551:   // Agregar eventos externos como filas adicionales
-18552:   let evts = (allData.eventos || []);
-18553:   if (modo === 'mes') {
-18554:     evts = evts.filter(e => { const [cy,cm]=normDate(e.fecha).split('-'); return +cm===m && +cy===y; });
-18555:   }
-18556:   const filasEventos = evts.map(e => ({
+18541: // ── EXPORTAR CSV ──
+18542: // ══════════════════════════════════════════════════════════════
+18543: function exportarCSV(modo) {
+18544:   const now = new Date();
+18545:   const m   = now.getMonth()+1;
+18546:   const y   = now.getFullYear();
+18547:   let citas = citasReales().filter(esCobrada);
+18548: 
+18549:   if (modo === 'mes') {
+18550:     citas = citas.filter(c => { const [cy,cm]=normDate(c.fecha).split('-'); return +cm===m && +cy===y; });
+18551:   }
+18552: 
+18553:   // Agregar eventos externos como filas adicionales
+18554:   let evts = (allData.eventos || []);
+18555:   if (modo === 'mes') {
+18556:     evts = evts.filter(e => { const [cy,cm]=normDate(e.fecha).split('-'); return +cm===m && +cy===y; });
 ```
 
-### Coincidencia 154 — línea 18586
+### Coincidencia 154 — línea 18545
 
 ```html
-18574:     ])
-18575:   ].sort((a,b) => a[0].localeCompare(b[0]));
-18576: 
-18577:   const csvContent = [header, ...rows]
-18578:     .map(r => r.map(v => '"' + String(v).replace(/"/g, '""') + '"').join(','))
-18579:     .join('\n');
-18580: 
-18581:   const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
-18582:   const url  = URL.createObjectURL(blob);
-18583:   const a    = document.createElement('a');
-18584:   const nombre = modo === 'mes'
-18585:     ? `ingresos_${y}-${pad(m)}.csv`
-18586:     : `ingresos_completo_${y}-${pad(m)}-${pad(now.getDate())}.csv`;
-18587:   a.href = url; a.download = nombre; a.click();
-18588:   URL.revokeObjectURL(url);
-18589:   toast('CSV descargado: ' + nombre);
-18590: }
-18591: 
-18592: // ── PASAPORTE DE MOVIMIENTO ────────────────────────────────────
-18593: const PASAPORTE_BASE  = 'https://cuidandotefisioterapia.com/pasaporte.html';
-18594: let _pasTelefono = '';
-18595: let _pasConfirmado = false;  // true solo cuando se seleccionó desde la BD
-18596: let _pasCurrent = null;
-18597: 
-18598: function _pasGetDB() {
+18533: function resRow(label, val, style='') {
+18534:   return `<div style="display:flex;justify-content:space-between;align-items:center;font-size:.85rem;padding:3px 0">
+18535:     <span style="color:var(--muted)">${label}</span>
+18536:     <span style="${style}">${val}</span>
+18537:   </div>`;
+18538: }
+18539: 
+18540: // ══════════════════════════════════════════════════════════════
+18541: // ── EXPORTAR CSV ──
+18542: // ══════════════════════════════════════════════════════════════
+18543: function exportarCSV(modo) {
+18544:   const now = new Date();
+18545:   const m   = now.getMonth()+1;
+18546:   const y   = now.getFullYear();
+18547:   let citas = citasReales().filter(esCobrada);
+18548: 
+18549:   if (modo === 'mes') {
+18550:     citas = citas.filter(c => { const [cy,cm]=normDate(c.fecha).split('-'); return +cm===m && +cy===y; });
+18551:   }
+18552: 
+18553:   // Agregar eventos externos como filas adicionales
+18554:   let evts = (allData.eventos || []);
+18555:   if (modo === 'mes') {
+18556:     evts = evts.filter(e => { const [cy,cm]=normDate(e.fecha).split('-'); return +cm===m && +cy===y; });
+18557:   }
 ```
 
-### Coincidencia 155 — línea 19004
+### Coincidencia 155 — línea 18546
 
 ```html
-18992:   set('cfg_serv_mant',            cfg.serv_mant.join(', '));
-18993:   set('cfg_serv_descarga',        cfg.serv_descarga);
-18994:   set('cfg_bono_contenido',       cfg.bono_contenido);
-18995:   set('cfg_contenido_split_aux',  cfg.contenido_split_aux);
-18996:   set('cfg_contenido_persona',    cfg.contenido_persona);
-18997:   set('cfg_contenido_leads_meta', cfg.contenido_leads_meta);
-18998:   set('cfg_equipo_nps_meta',      cfg.equipo_nps_meta);
-18999: }
-19000: 
-19001: function _initComisMesSel() {
-19002:   const sel = document.getElementById('comisMes');
-19003:   if (!sel || sel.options.length > 0) return;
-19004:   const now = new Date();
-19005:   const meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
-19006:   for (let i = 0; i < 12; i++) {
-19007:     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-19008:     const opt = document.createElement('option');
-19009:     opt.value = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
-19010:     opt.textContent = meses[d.getMonth()] + ' ' + d.getFullYear();
-19011:     sel.appendChild(opt);
-19012:   }
-19013: }
-19014: 
-19015: function _comisMesVal() {
-19016:   const sel = document.getElementById('comisMes');
+18534:   return `<div style="display:flex;justify-content:space-between;align-items:center;font-size:.85rem;padding:3px 0">
+18535:     <span style="color:var(--muted)">${label}</span>
+18536:     <span style="${style}">${val}</span>
+18537:   </div>`;
+18538: }
+18539: 
+18540: // ══════════════════════════════════════════════════════════════
+18541: // ── EXPORTAR CSV ──
+18542: // ══════════════════════════════════════════════════════════════
+18543: function exportarCSV(modo) {
+18544:   const now = new Date();
+18545:   const m   = now.getMonth()+1;
+18546:   const y   = now.getFullYear();
+18547:   let citas = citasReales().filter(esCobrada);
+18548: 
+18549:   if (modo === 'mes') {
+18550:     citas = citas.filter(c => { const [cy,cm]=normDate(c.fecha).split('-'); return +cm===m && +cy===y; });
+18551:   }
+18552: 
+18553:   // Agregar eventos externos como filas adicionales
+18554:   let evts = (allData.eventos || []);
+18555:   if (modo === 'mes') {
+18556:     evts = evts.filter(e => { const [cy,cm]=normDate(e.fecha).split('-'); return +cm===m && +cy===y; });
+18557:   }
+18558:   const filasEventos = evts.map(e => ({
 ```
 
-### Coincidencia 156 — línea 19007
+### Coincidencia 156 — línea 18588
 
 ```html
-18995:   set('cfg_contenido_split_aux',  cfg.contenido_split_aux);
-18996:   set('cfg_contenido_persona',    cfg.contenido_persona);
-18997:   set('cfg_contenido_leads_meta', cfg.contenido_leads_meta);
-18998:   set('cfg_equipo_nps_meta',      cfg.equipo_nps_meta);
-18999: }
-19000: 
-19001: function _initComisMesSel() {
-19002:   const sel = document.getElementById('comisMes');
-19003:   if (!sel || sel.options.length > 0) return;
-19004:   const now = new Date();
-19005:   const meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
-19006:   for (let i = 0; i < 12; i++) {
-19007:     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-19008:     const opt = document.createElement('option');
-19009:     opt.value = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
-19010:     opt.textContent = meses[d.getMonth()] + ' ' + d.getFullYear();
-19011:     sel.appendChild(opt);
-19012:   }
-19013: }
-19014: 
-19015: function _comisMesVal() {
-19016:   const sel = document.getElementById('comisMes');
-19017:   return sel ? sel.value : '';
-19018: }
-19019: 
+18576:     ])
+18577:   ].sort((a,b) => a[0].localeCompare(b[0]));
+18578: 
+18579:   const csvContent = [header, ...rows]
+18580:     .map(r => r.map(v => '"' + String(v).replace(/"/g, '""') + '"').join(','))
+18581:     .join('\n');
+18582: 
+18583:   const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+18584:   const url  = URL.createObjectURL(blob);
+18585:   const a    = document.createElement('a');
+18586:   const nombre = modo === 'mes'
+18587:     ? `ingresos_${y}-${pad(m)}.csv`
+18588:     : `ingresos_completo_${y}-${pad(m)}-${pad(now.getDate())}.csv`;
+18589:   a.href = url; a.download = nombre; a.click();
+18590:   URL.revokeObjectURL(url);
+18591:   toast('CSV descargado: ' + nombre);
+18592: }
+18593: 
+18594: // ── PASAPORTE DE MOVIMIENTO ────────────────────────────────────
+18595: const PASAPORTE_BASE  = 'https://cuidandotefisioterapia.com/pasaporte.html';
+18596: let _pasTelefono = '';
+18597: let _pasConfirmado = false;  // true solo cuando se seleccionó desde la BD
+18598: let _pasCurrent = null;
+18599: 
+18600: function _pasGetDB() {
 ```
 
-### Coincidencia 157 — línea 19007
+### Coincidencia 157 — línea 19006
 
 ```html
-18995:   set('cfg_contenido_split_aux',  cfg.contenido_split_aux);
-18996:   set('cfg_contenido_persona',    cfg.contenido_persona);
-18997:   set('cfg_contenido_leads_meta', cfg.contenido_leads_meta);
-18998:   set('cfg_equipo_nps_meta',      cfg.equipo_nps_meta);
-18999: }
-19000: 
-19001: function _initComisMesSel() {
-19002:   const sel = document.getElementById('comisMes');
-19003:   if (!sel || sel.options.length > 0) return;
-19004:   const now = new Date();
-19005:   const meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
-19006:   for (let i = 0; i < 12; i++) {
-19007:     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-19008:     const opt = document.createElement('option');
-19009:     opt.value = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
-19010:     opt.textContent = meses[d.getMonth()] + ' ' + d.getFullYear();
-19011:     sel.appendChild(opt);
-19012:   }
-19013: }
-19014: 
-19015: function _comisMesVal() {
-19016:   const sel = document.getElementById('comisMes');
-19017:   return sel ? sel.value : '';
-19018: }
-19019: 
+18994:   set('cfg_serv_mant',            cfg.serv_mant.join(', '));
+18995:   set('cfg_serv_descarga',        cfg.serv_descarga);
+18996:   set('cfg_bono_contenido',       cfg.bono_contenido);
+18997:   set('cfg_contenido_split_aux',  cfg.contenido_split_aux);
+18998:   set('cfg_contenido_persona',    cfg.contenido_persona);
+18999:   set('cfg_contenido_leads_meta', cfg.contenido_leads_meta);
+19000:   set('cfg_equipo_nps_meta',      cfg.equipo_nps_meta);
+19001: }
+19002: 
+19003: function _initComisMesSel() {
+19004:   const sel = document.getElementById('comisMes');
+19005:   if (!sel || sel.options.length > 0) return;
+19006:   const now = new Date();
+19007:   const meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+19008:   for (let i = 0; i < 12; i++) {
+19009:     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+19010:     const opt = document.createElement('option');
+19011:     opt.value = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+19012:     opt.textContent = meses[d.getMonth()] + ' ' + d.getFullYear();
+19013:     sel.appendChild(opt);
+19014:   }
+19015: }
+19016: 
+19017: function _comisMesVal() {
+19018:   const sel = document.getElementById('comisMes');
 ```
 
-### Coincidencia 158 — línea 19128
+### Coincidencia 158 — línea 19009
 
 ```html
-19116:   const list = _comisManualReact(y, m);
-19117:   if (!list.find(n => n.toLowerCase() === nombre.toLowerCase())) { list.push(nombre); _comisSetManualReact(y, m, list); }
-19118:   renderComisiones();
-19119: }
-19120: 
-19121: function removeManualReactivacion(nombre) {
-19122:   const [y, m] = _comisMesVal().split('-').map(Number);
-19123:   _comisSetManualReact(y, m, _comisManualReact(y,m).filter(n => n.toLowerCase() !== nombre.toLowerCase()));
-19124:   renderComisiones();
-19125: }
-19126: 
-19127: function marcarComisionPagada(persona) {
-19128:   const now = new Date().toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'});
-19129:   kvSet('comis_pago_'+persona+'_'+_comisMesVal(), now);
-19130:   renderComisiones();
-19131: }
-19132: function desmarcarComisionPagada(persona) {
-19133:   kvRemove('comis_pago_'+persona+'_'+_comisMesVal());
-19134:   renderComisiones();
-19135: }
-19136: 
-19137: function renderComisiones() {
-19138:   _initComisMesSel();
-19139:   const mes = _comisMesVal();
-19140:   if (!mes) return;
+18997:   set('cfg_contenido_split_aux',  cfg.contenido_split_aux);
+18998:   set('cfg_contenido_persona',    cfg.contenido_persona);
+18999:   set('cfg_contenido_leads_meta', cfg.contenido_leads_meta);
+19000:   set('cfg_equipo_nps_meta',      cfg.equipo_nps_meta);
+19001: }
+19002: 
+19003: function _initComisMesSel() {
+19004:   const sel = document.getElementById('comisMes');
+19005:   if (!sel || sel.options.length > 0) return;
+19006:   const now = new Date();
+19007:   const meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+19008:   for (let i = 0; i < 12; i++) {
+19009:     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+19010:     const opt = document.createElement('option');
+19011:     opt.value = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+19012:     opt.textContent = meses[d.getMonth()] + ' ' + d.getFullYear();
+19013:     sel.appendChild(opt);
+19014:   }
+19015: }
+19016: 
+19017: function _comisMesVal() {
+19018:   const sel = document.getElementById('comisMes');
+19019:   return sel ? sel.value : '';
+19020: }
+19021: 
 ```
 
-### Coincidencia 159 — línea 19129
+### Coincidencia 159 — línea 19009
 
 ```html
-19117:   if (!list.find(n => n.toLowerCase() === nombre.toLowerCase())) { list.push(nombre); _comisSetManualReact(y, m, list); }
-19118:   renderComisiones();
-19119: }
-19120: 
-19121: function removeManualReactivacion(nombre) {
-19122:   const [y, m] = _comisMesVal().split('-').map(Number);
-19123:   _comisSetManualReact(y, m, _comisManualReact(y,m).filter(n => n.toLowerCase() !== nombre.toLowerCase()));
-19124:   renderComisiones();
-19125: }
-19126: 
-19127: function marcarComisionPagada(persona) {
-19128:   const now = new Date().toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'});
-19129:   kvSet('comis_pago_'+persona+'_'+_comisMesVal(), now);
-19130:   renderComisiones();
-19131: }
-19132: function desmarcarComisionPagada(persona) {
-19133:   kvRemove('comis_pago_'+persona+'_'+_comisMesVal());
-19134:   renderComisiones();
-19135: }
-19136: 
-19137: function renderComisiones() {
-19138:   _initComisMesSel();
-19139:   const mes = _comisMesVal();
-19140:   if (!mes) return;
-19141:   const [year, month] = mes.split('-').map(Number);
+18997:   set('cfg_contenido_split_aux',  cfg.contenido_split_aux);
+18998:   set('cfg_contenido_persona',    cfg.contenido_persona);
+18999:   set('cfg_contenido_leads_meta', cfg.contenido_leads_meta);
+19000:   set('cfg_equipo_nps_meta',      cfg.equipo_nps_meta);
+19001: }
+19002: 
+19003: function _initComisMesSel() {
+19004:   const sel = document.getElementById('comisMes');
+19005:   if (!sel || sel.options.length > 0) return;
+19006:   const now = new Date();
+19007:   const meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+19008:   for (let i = 0; i < 12; i++) {
+19009:     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+19010:     const opt = document.createElement('option');
+19011:     opt.value = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+19012:     opt.textContent = meses[d.getMonth()] + ' ' + d.getFullYear();
+19013:     sel.appendChild(opt);
+19014:   }
+19015: }
+19016: 
+19017: function _comisMesVal() {
+19018:   const sel = document.getElementById('comisMes');
+19019:   return sel ? sel.value : '';
+19020: }
+19021: 
 ```
 
-### Coincidencia 160 — línea 19577
+### Coincidencia 160 — línea 19130
 
 ```html
-19565: 
-19566: function guardarMensaje() {
-19567:   const titulo = document.getElementById('msgTitulo').value.trim();
-19568:   const cat    = document.getElementById('msgCat').value;
-19569:   const texto  = document.getElementById('msgTexto').value.trim();
-19570:   if (!titulo || !texto) { toast('Completa el título y el mensaje', 'err'); return; }
-19571:   const msgs  = _getMensajesPre();
-19572:   const editId = document.getElementById('msgEditId').value;
-19573:   if (editId) {
-19574:     const idx = msgs.findIndex(m => m.id === editId);
-19575:     if (idx >= 0) msgs[idx] = { ...msgs[idx], titulo, cat, texto };
-19576:   } else {
-19577:     msgs.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2,5), titulo, cat, texto, created: Date.now() });
-19578:   }
-19579:   _setMensajesPre(msgs);
-19580:   closeModal('modalMensaje');
-19581:   renderMensajes();
-19582:   toast('Mensaje guardado ✓', 'ok');
-19583: }
-19584: 
-19585: function eliminarMensaje(id) {
-19586:   if (!confirm('¿Eliminar este mensaje?')) return;
-19587:   _setMensajesPre(_getMensajesPre().filter(m => m.id !== id));
-19588:   renderMensajes();
-19589:   toast('Mensaje eliminado', 'ok');
+19118:   const list = _comisManualReact(y, m);
+19119:   if (!list.find(n => n.toLowerCase() === nombre.toLowerCase())) { list.push(nombre); _comisSetManualReact(y, m, list); }
+19120:   renderComisiones();
+19121: }
+19122: 
+19123: function removeManualReactivacion(nombre) {
+19124:   const [y, m] = _comisMesVal().split('-').map(Number);
+19125:   _comisSetManualReact(y, m, _comisManualReact(y,m).filter(n => n.toLowerCase() !== nombre.toLowerCase()));
+19126:   renderComisiones();
+19127: }
+19128: 
+19129: function marcarComisionPagada(persona) {
+19130:   const now = new Date().toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'});
+19131:   kvSet('comis_pago_'+persona+'_'+_comisMesVal(), now);
+19132:   renderComisiones();
+19133: }
+19134: function desmarcarComisionPagada(persona) {
+19135:   kvRemove('comis_pago_'+persona+'_'+_comisMesVal());
+19136:   renderComisiones();
+19137: }
+19138: 
+19139: function renderComisiones() {
+19140:   _initComisMesSel();
+19141:   const mes = _comisMesVal();
+19142:   if (!mes) return;
 ```
 
-### Coincidencia 161 — línea 19577
+### Coincidencia 161 — línea 19131
 
 ```html
-19565: 
-19566: function guardarMensaje() {
-19567:   const titulo = document.getElementById('msgTitulo').value.trim();
-19568:   const cat    = document.getElementById('msgCat').value;
-19569:   const texto  = document.getElementById('msgTexto').value.trim();
-19570:   if (!titulo || !texto) { toast('Completa el título y el mensaje', 'err'); return; }
-19571:   const msgs  = _getMensajesPre();
-19572:   const editId = document.getElementById('msgEditId').value;
-19573:   if (editId) {
-19574:     const idx = msgs.findIndex(m => m.id === editId);
-19575:     if (idx >= 0) msgs[idx] = { ...msgs[idx], titulo, cat, texto };
-19576:   } else {
-19577:     msgs.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2,5), titulo, cat, texto, created: Date.now() });
-19578:   }
-19579:   _setMensajesPre(msgs);
-19580:   closeModal('modalMensaje');
-19581:   renderMensajes();
-19582:   toast('Mensaje guardado ✓', 'ok');
-19583: }
-19584: 
-19585: function eliminarMensaje(id) {
-19586:   if (!confirm('¿Eliminar este mensaje?')) return;
-19587:   _setMensajesPre(_getMensajesPre().filter(m => m.id !== id));
-19588:   renderMensajes();
-19589:   toast('Mensaje eliminado', 'ok');
+19119:   if (!list.find(n => n.toLowerCase() === nombre.toLowerCase())) { list.push(nombre); _comisSetManualReact(y, m, list); }
+19120:   renderComisiones();
+19121: }
+19122: 
+19123: function removeManualReactivacion(nombre) {
+19124:   const [y, m] = _comisMesVal().split('-').map(Number);
+19125:   _comisSetManualReact(y, m, _comisManualReact(y,m).filter(n => n.toLowerCase() !== nombre.toLowerCase()));
+19126:   renderComisiones();
+19127: }
+19128: 
+19129: function marcarComisionPagada(persona) {
+19130:   const now = new Date().toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'});
+19131:   kvSet('comis_pago_'+persona+'_'+_comisMesVal(), now);
+19132:   renderComisiones();
+19133: }
+19134: function desmarcarComisionPagada(persona) {
+19135:   kvRemove('comis_pago_'+persona+'_'+_comisMesVal());
+19136:   renderComisiones();
+19137: }
+19138: 
+19139: function renderComisiones() {
+19140:   _initComisMesSel();
+19141:   const mes = _comisMesVal();
+19142:   if (!mes) return;
+19143:   const [year, month] = mes.split('-').map(Number);
 ```
 
-### Coincidencia 162 — línea 19706
+### Coincidencia 162 — línea 19579
 
 ```html
-19694: function _loadRec() {
-19695:   try { return JSON.parse(localStorage.getItem(REC_KEY) || '[]'); } catch(e) { return []; }
-19696: }
-19697: function _saveRec(arr) {
-19698:   localStorage.setItem(REC_KEY, JSON.stringify(arr));
-19699: }
-19700: 
-19701: function _fmtCLP(n) {
-19702:   return '$' + Math.round(n).toLocaleString('es-CO');
-19703: }
-19704: 
-19705: function _recMesActual() {
-19706:   const now = new Date();
-19707:   return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-19708: }
-19709: 
-19710: function _initRecMesSel() {
-19711:   const sel = document.getElementById('recMesFiltro');
-19712:   if (!sel) return;
-19713:   const all = _loadRec();
-19714:   const meses = [...new Set(all.map(r => r.fecha.slice(0,7)))].sort().reverse();
-19715:   const actual = _recMesActual();
-19716:   if (!meses.includes(actual)) meses.unshift(actual);
-19717:   const cur = sel.value || actual;
-19718:   sel.innerHTML = meses.map(m => {
+19567: 
+19568: function guardarMensaje() {
+19569:   const titulo = document.getElementById('msgTitulo').value.trim();
+19570:   const cat    = document.getElementById('msgCat').value;
+19571:   const texto  = document.getElementById('msgTexto').value.trim();
+19572:   if (!titulo || !texto) { toast('Completa el título y el mensaje', 'err'); return; }
+19573:   const msgs  = _getMensajesPre();
+19574:   const editId = document.getElementById('msgEditId').value;
+19575:   if (editId) {
+19576:     const idx = msgs.findIndex(m => m.id === editId);
+19577:     if (idx >= 0) msgs[idx] = { ...msgs[idx], titulo, cat, texto };
+19578:   } else {
+19579:     msgs.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2,5), titulo, cat, texto, created: Date.now() });
+19580:   }
+19581:   _setMensajesPre(msgs);
+19582:   closeModal('modalMensaje');
+19583:   renderMensajes();
+19584:   toast('Mensaje guardado ✓', 'ok');
+19585: }
+19586: 
+19587: function eliminarMensaje(id) {
+19588:   if (!confirm('¿Eliminar este mensaje?')) return;
+19589:   _setMensajesPre(_getMensajesPre().filter(m => m.id !== id));
+19590:   renderMensajes();
+19591:   toast('Mensaje eliminado', 'ok');
 ```
 
-### Coincidencia 163 — línea 19707
+### Coincidencia 163 — línea 19579
 
 ```html
-19695:   try { return JSON.parse(localStorage.getItem(REC_KEY) || '[]'); } catch(e) { return []; }
-19696: }
-19697: function _saveRec(arr) {
-19698:   localStorage.setItem(REC_KEY, JSON.stringify(arr));
-19699: }
-19700: 
-19701: function _fmtCLP(n) {
-19702:   return '$' + Math.round(n).toLocaleString('es-CO');
-19703: }
-19704: 
-19705: function _recMesActual() {
-19706:   const now = new Date();
-19707:   return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-19708: }
-19709: 
-19710: function _initRecMesSel() {
-19711:   const sel = document.getElementById('recMesFiltro');
-19712:   if (!sel) return;
-19713:   const all = _loadRec();
-19714:   const meses = [...new Set(all.map(r => r.fecha.slice(0,7)))].sort().reverse();
-19715:   const actual = _recMesActual();
-19716:   if (!meses.includes(actual)) meses.unshift(actual);
-19717:   const cur = sel.value || actual;
-19718:   sel.innerHTML = meses.map(m => {
-19719:     const [y,mo] = m.split('-');
+19567: 
+19568: function guardarMensaje() {
+19569:   const titulo = document.getElementById('msgTitulo').value.trim();
+19570:   const cat    = document.getElementById('msgCat').value;
+19571:   const texto  = document.getElementById('msgTexto').value.trim();
+19572:   if (!titulo || !texto) { toast('Completa el título y el mensaje', 'err'); return; }
+19573:   const msgs  = _getMensajesPre();
+19574:   const editId = document.getElementById('msgEditId').value;
+19575:   if (editId) {
+19576:     const idx = msgs.findIndex(m => m.id === editId);
+19577:     if (idx >= 0) msgs[idx] = { ...msgs[idx], titulo, cat, texto };
+19578:   } else {
+19579:     msgs.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2,5), titulo, cat, texto, created: Date.now() });
+19580:   }
+19581:   _setMensajesPre(msgs);
+19582:   closeModal('modalMensaje');
+19583:   renderMensajes();
+19584:   toast('Mensaje guardado ✓', 'ok');
+19585: }
+19586: 
+19587: function eliminarMensaje(id) {
+19588:   if (!confirm('¿Eliminar este mensaje?')) return;
+19589:   _setMensajesPre(_getMensajesPre().filter(m => m.id !== id));
+19590:   renderMensajes();
+19591:   toast('Mensaje eliminado', 'ok');
 ```
 
-### Coincidencia 164 — línea 19707
+### Coincidencia 164 — línea 19708
 
 ```html
-19695:   try { return JSON.parse(localStorage.getItem(REC_KEY) || '[]'); } catch(e) { return []; }
-19696: }
-19697: function _saveRec(arr) {
-19698:   localStorage.setItem(REC_KEY, JSON.stringify(arr));
-19699: }
-19700: 
-19701: function _fmtCLP(n) {
-19702:   return '$' + Math.round(n).toLocaleString('es-CO');
-19703: }
-19704: 
-19705: function _recMesActual() {
-19706:   const now = new Date();
-19707:   return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-19708: }
-19709: 
-19710: function _initRecMesSel() {
-19711:   const sel = document.getElementById('recMesFiltro');
-19712:   if (!sel) return;
-19713:   const all = _loadRec();
-19714:   const meses = [...new Set(all.map(r => r.fecha.slice(0,7)))].sort().reverse();
-19715:   const actual = _recMesActual();
-19716:   if (!meses.includes(actual)) meses.unshift(actual);
-19717:   const cur = sel.value || actual;
-19718:   sel.innerHTML = meses.map(m => {
-19719:     const [y,mo] = m.split('-');
+19696: function _loadRec() {
+19697:   try { return JSON.parse(localStorage.getItem(REC_KEY) || '[]'); } catch(e) { return []; }
+19698: }
+19699: function _saveRec(arr) {
+19700:   localStorage.setItem(REC_KEY, JSON.stringify(arr));
+19701: }
+19702: 
+19703: function _fmtCLP(n) {
+19704:   return '$' + Math.round(n).toLocaleString('es-CO');
+19705: }
+19706: 
+19707: function _recMesActual() {
+19708:   const now = new Date();
+19709:   return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+19710: }
+19711: 
+19712: function _initRecMesSel() {
+19713:   const sel = document.getElementById('recMesFiltro');
+19714:   if (!sel) return;
+19715:   const all = _loadRec();
+19716:   const meses = [...new Set(all.map(r => r.fecha.slice(0,7)))].sort().reverse();
+19717:   const actual = _recMesActual();
+19718:   if (!meses.includes(actual)) meses.unshift(actual);
+19719:   const cur = sel.value || actual;
+19720:   sel.innerHTML = meses.map(m => {
 ```
 
-### Coincidencia 165 — línea 19816
+### Coincidencia 165 — línea 19709
 
 ```html
-19804:   const fecha    = document.getElementById('recInpFecha')?.value;
-19805:   const servicio = document.getElementById('recInpServicio')?.value;
-19806:   const venta    = parseFloat(document.getElementById('recInpVenta')?.value || '0');
-19807:   const nota     = document.getElementById('recInpNota')?.value.trim() || '';
-19808: 
-19809:   if (!paciente) { alert('Ingresa el nombre del paciente'); return; }
-19810:   if (!fecha)    { alert('Selecciona la fecha de la cita'); return; }
-19811:   if (!servicio) { alert('Selecciona el servicio'); return; }
-19812:   if (!venta || venta <= 0) { alert('Ingresa el valor de la venta'); return; }
-19813: 
-19814:   const comision = Math.round(venta * REC_PCT);
-19815:   const rec = {
-19816:     id: Date.now().toString(),
-19817:     fecha,
-19818:     paciente,
-19819:     servicio,
-19820:     venta,
-19821:     comision,
-19822:     nota,
-19823:     pagado: false,
-19824:     pagadoFecha: null
-19825:   };
-19826: 
-19827:   const all = _loadRec();
-19828:   all.push(rec);
+19697:   try { return JSON.parse(localStorage.getItem(REC_KEY) || '[]'); } catch(e) { return []; }
+19698: }
+19699: function _saveRec(arr) {
+19700:   localStorage.setItem(REC_KEY, JSON.stringify(arr));
+19701: }
+19702: 
+19703: function _fmtCLP(n) {
+19704:   return '$' + Math.round(n).toLocaleString('es-CO');
+19705: }
+19706: 
+19707: function _recMesActual() {
+19708:   const now = new Date();
+19709:   return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+19710: }
+19711: 
+19712: function _initRecMesSel() {
+19713:   const sel = document.getElementById('recMesFiltro');
+19714:   if (!sel) return;
+19715:   const all = _loadRec();
+19716:   const meses = [...new Set(all.map(r => r.fecha.slice(0,7)))].sort().reverse();
+19717:   const actual = _recMesActual();
+19718:   if (!meses.includes(actual)) meses.unshift(actual);
+19719:   const cur = sel.value || actual;
+19720:   sel.innerHTML = meses.map(m => {
+19721:     const [y,mo] = m.split('-');
 ```
 
-### Coincidencia 166 — línea 20096
+### Coincidencia 166 — línea 19709
 
 ```html
-20084:   kvSet(_refKey(mesStr, anio, nombre), estado);
-20085: }
-20086: 
-20087: function marcarRefEstado(mesStr, anio, nombre, estado) {
-20088:   _refSetEstado(mesStr, anio, nombre, estado);
-20089:   cargarCampañaReferidos();
-20090: }
-20091: 
-20092: function cargarCampañaReferidos() {
-20093:   const panel = document.getElementById('refCampañaPanel');
-20094:   if (!panel) return;
-20095: 
-20096:   const now   = new Date();
-20097:   const mes   = now.getMonth();
-20098:   const anio  = now.getFullYear();
-20099:   const MESES = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
-20100:   const mesStr = MESES[mes];
-20101: 
-20102:   const citas = (allData.citas || []).filter(c => {
-20103:     if (!c.fecha || c.estado === 'Cancelada' || esRegistroServ(c.servicio)) return false;
-20104:     const [y, m] = c.fecha.split('-');
-20105:     return +y === anio && +m === (mes + 1);
-20106:   });
-20107: 
-20108:   const vistos = {};
+19697:   try { return JSON.parse(localStorage.getItem(REC_KEY) || '[]'); } catch(e) { return []; }
+19698: }
+19699: function _saveRec(arr) {
+19700:   localStorage.setItem(REC_KEY, JSON.stringify(arr));
+19701: }
+19702: 
+19703: function _fmtCLP(n) {
+19704:   return '$' + Math.round(n).toLocaleString('es-CO');
+19705: }
+19706: 
+19707: function _recMesActual() {
+19708:   const now = new Date();
+19709:   return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+19710: }
+19711: 
+19712: function _initRecMesSel() {
+19713:   const sel = document.getElementById('recMesFiltro');
+19714:   if (!sel) return;
+19715:   const all = _loadRec();
+19716:   const meses = [...new Set(all.map(r => r.fecha.slice(0,7)))].sort().reverse();
+19717:   const actual = _recMesActual();
+19718:   if (!meses.includes(actual)) meses.unshift(actual);
+19719:   const cur = sel.value || actual;
+19720:   sel.innerHTML = meses.map(m => {
+19721:     const [y,mo] = m.split('-');
 ```
 
-### Coincidencia 167 — línea 20097
+### Coincidencia 167 — línea 19818
 
 ```html
-20085: }
-20086: 
-20087: function marcarRefEstado(mesStr, anio, nombre, estado) {
-20088:   _refSetEstado(mesStr, anio, nombre, estado);
-20089:   cargarCampañaReferidos();
-20090: }
-20091: 
-20092: function cargarCampañaReferidos() {
-20093:   const panel = document.getElementById('refCampañaPanel');
-20094:   if (!panel) return;
-20095: 
-20096:   const now   = new Date();
-20097:   const mes   = now.getMonth();
-20098:   const anio  = now.getFullYear();
-20099:   const MESES = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
-20100:   const mesStr = MESES[mes];
-20101: 
-20102:   const citas = (allData.citas || []).filter(c => {
-20103:     if (!c.fecha || c.estado === 'Cancelada' || esRegistroServ(c.servicio)) return false;
-20104:     const [y, m] = c.fecha.split('-');
-20105:     return +y === anio && +m === (mes + 1);
-20106:   });
-20107: 
-20108:   const vistos = {};
-20109:   const pacientes = [];
+19806:   const fecha    = document.getElementById('recInpFecha')?.value;
+19807:   const servicio = document.getElementById('recInpServicio')?.value;
+19808:   const venta    = parseFloat(document.getElementById('recInpVenta')?.value || '0');
+19809:   const nota     = document.getElementById('recInpNota')?.value.trim() || '';
+19810: 
+19811:   if (!paciente) { alert('Ingresa el nombre del paciente'); return; }
+19812:   if (!fecha)    { alert('Selecciona la fecha de la cita'); return; }
+19813:   if (!servicio) { alert('Selecciona el servicio'); return; }
+19814:   if (!venta || venta <= 0) { alert('Ingresa el valor de la venta'); return; }
+19815: 
+19816:   const comision = Math.round(venta * REC_PCT);
+19817:   const rec = {
+19818:     id: Date.now().toString(),
+19819:     fecha,
+19820:     paciente,
+19821:     servicio,
+19822:     venta,
+19823:     comision,
+19824:     nota,
+19825:     pagado: false,
+19826:     pagadoFecha: null
+19827:   };
+19828: 
+19829:   const all = _loadRec();
+19830:   all.push(rec);
 ```
 
 ### Coincidencia 168 — línea 20098
 
 ```html
-20086: 
-20087: function marcarRefEstado(mesStr, anio, nombre, estado) {
-20088:   _refSetEstado(mesStr, anio, nombre, estado);
-20089:   cargarCampañaReferidos();
-20090: }
-20091: 
-20092: function cargarCampañaReferidos() {
-20093:   const panel = document.getElementById('refCampañaPanel');
-20094:   if (!panel) return;
-20095: 
-20096:   const now   = new Date();
-20097:   const mes   = now.getMonth();
-20098:   const anio  = now.getFullYear();
-20099:   const MESES = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
-20100:   const mesStr = MESES[mes];
-20101: 
-20102:   const citas = (allData.citas || []).filter(c => {
-20103:     if (!c.fecha || c.estado === 'Cancelada' || esRegistroServ(c.servicio)) return false;
-20104:     const [y, m] = c.fecha.split('-');
-20105:     return +y === anio && +m === (mes + 1);
-20106:   });
-20107: 
-20108:   const vistos = {};
-20109:   const pacientes = [];
-20110:   citas.forEach(c => {
+20086:   kvSet(_refKey(mesStr, anio, nombre), estado);
+20087: }
+20088: 
+20089: function marcarRefEstado(mesStr, anio, nombre, estado) {
+20090:   _refSetEstado(mesStr, anio, nombre, estado);
+20091:   cargarCampañaReferidos();
+20092: }
+20093: 
+20094: function cargarCampañaReferidos() {
+20095:   const panel = document.getElementById('refCampañaPanel');
+20096:   if (!panel) return;
+20097: 
+20098:   const now   = new Date();
+20099:   const mes   = now.getMonth();
+20100:   const anio  = now.getFullYear();
+20101:   const MESES = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
+20102:   const mesStr = MESES[mes];
+20103: 
+20104:   const citas = (allData.citas || []).filter(c => {
+20105:     if (!c.fecha || c.estado === 'Cancelada' || esRegistroServ(c.servicio)) return false;
+20106:     const [y, m] = c.fecha.split('-');
+20107:     return +y === anio && +m === (mes + 1);
+20108:   });
+20109: 
+20110:   const vistos = {};
+```
+
+### Coincidencia 169 — línea 20099
+
+```html
+20087: }
+20088: 
+20089: function marcarRefEstado(mesStr, anio, nombre, estado) {
+20090:   _refSetEstado(mesStr, anio, nombre, estado);
+20091:   cargarCampañaReferidos();
+20092: }
+20093: 
+20094: function cargarCampañaReferidos() {
+20095:   const panel = document.getElementById('refCampañaPanel');
+20096:   if (!panel) return;
+20097: 
+20098:   const now   = new Date();
+20099:   const mes   = now.getMonth();
+20100:   const anio  = now.getFullYear();
+20101:   const MESES = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
+20102:   const mesStr = MESES[mes];
+20103: 
+20104:   const citas = (allData.citas || []).filter(c => {
+20105:     if (!c.fecha || c.estado === 'Cancelada' || esRegistroServ(c.servicio)) return false;
+20106:     const [y, m] = c.fecha.split('-');
+20107:     return +y === anio && +m === (mes + 1);
+20108:   });
+20109: 
+20110:   const vistos = {};
+20111:   const pacientes = [];
+```
+
+### Coincidencia 170 — línea 20100
+
+```html
+20088: 
+20089: function marcarRefEstado(mesStr, anio, nombre, estado) {
+20090:   _refSetEstado(mesStr, anio, nombre, estado);
+20091:   cargarCampañaReferidos();
+20092: }
+20093: 
+20094: function cargarCampañaReferidos() {
+20095:   const panel = document.getElementById('refCampañaPanel');
+20096:   if (!panel) return;
+20097: 
+20098:   const now   = new Date();
+20099:   const mes   = now.getMonth();
+20100:   const anio  = now.getFullYear();
+20101:   const MESES = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
+20102:   const mesStr = MESES[mes];
+20103: 
+20104:   const citas = (allData.citas || []).filter(c => {
+20105:     if (!c.fecha || c.estado === 'Cancelada' || esRegistroServ(c.servicio)) return false;
+20106:     const [y, m] = c.fecha.split('-');
+20107:     return +y === anio && +m === (mes + 1);
+20108:   });
+20109: 
+20110:   const vistos = {};
+20111:   const pacientes = [];
+20112:   citas.forEach(c => {
 ```
 
 ## Llamadas a showView('citas')
@@ -5267,186 +5327,186 @@ No se encontraron coincidencias.
 1572:       <span style="color:#fff;font-weight:700;font-size:1rem">Enviar por WhatsApp</span>
 ```
 
-### Coincidencia 2 — línea 18715
+### Coincidencia 2 — línea 18717
 
 ```html
-18703: function renderPasaporteQR(link) {
-18704:   const canvas = document.getElementById('pasQR');
-18705:   if (!canvas) return;
-18706:   let box = document.getElementById('pasQRBox');
-18707:   if (!box) {
-18708:     box = document.createElement('div');
-18709:     box.id = 'pasQRBox';
-18710:     box.style.cssText = 'width:112px;height:112px;border-radius:10px;border:1px solid var(--border);overflow:hidden;background:#F7F8FA;display:grid;place-items:center;flex-shrink:0';
-18711:     canvas.insertAdjacentElement('afterend', box);
-18712:   }
-18713:   box.innerHTML = '';
-18714:   canvas.style.display = 'none';
-18715:   if (typeof QRCode !== 'undefined') {
-18716:     if (QRCode.toCanvas) {
-18717:       canvas.style.display = 'block';
-18718:       box.style.display = 'none';
-18719:       QRCode.toCanvas(canvas, link, { width: 112, margin: 1, color: { dark: '#0A1A12', light: '#F7F8FA' } });
-18720:     } else {
-18721:       box.style.display = 'grid';
-18722:       new QRCode(box, { text: link, width: 112, height: 112, colorDark: '#0A1A12', colorLight: '#F7F8FA', correctLevel: QRCode.CorrectLevel.M });
-18723:     }
-18724:   } else {
-18725:     box.textContent = 'QR no disponible';
-18726:     box.style.fontSize = '11px';
-18727:     box.style.color = 'var(--muted)';
+18705: function renderPasaporteQR(link) {
+18706:   const canvas = document.getElementById('pasQR');
+18707:   if (!canvas) return;
+18708:   let box = document.getElementById('pasQRBox');
+18709:   if (!box) {
+18710:     box = document.createElement('div');
+18711:     box.id = 'pasQRBox';
+18712:     box.style.cssText = 'width:112px;height:112px;border-radius:10px;border:1px solid var(--border);overflow:hidden;background:#F7F8FA;display:grid;place-items:center;flex-shrink:0';
+18713:     canvas.insertAdjacentElement('afterend', box);
+18714:   }
+18715:   box.innerHTML = '';
+18716:   canvas.style.display = 'none';
+18717:   if (typeof QRCode !== 'undefined') {
+18718:     if (QRCode.toCanvas) {
+18719:       canvas.style.display = 'block';
+18720:       box.style.display = 'none';
+18721:       QRCode.toCanvas(canvas, link, { width: 112, margin: 1, color: { dark: '#0A1A12', light: '#F7F8FA' } });
+18722:     } else {
+18723:       box.style.display = 'grid';
+18724:       new QRCode(box, { text: link, width: 112, height: 112, colorDark: '#0A1A12', colorLight: '#F7F8FA', correctLevel: QRCode.CorrectLevel.M });
+18725:     }
+18726:   } else {
+18727:     box.textContent = 'QR no disponible';
+18728:     box.style.fontSize = '11px';
+18729:     box.style.color = 'var(--muted)';
 ```
 
-### Coincidencia 3 — línea 18716
+### Coincidencia 3 — línea 18718
 
 ```html
-18704:   const canvas = document.getElementById('pasQR');
-18705:   if (!canvas) return;
-18706:   let box = document.getElementById('pasQRBox');
-18707:   if (!box) {
-18708:     box = document.createElement('div');
-18709:     box.id = 'pasQRBox';
-18710:     box.style.cssText = 'width:112px;height:112px;border-radius:10px;border:1px solid var(--border);overflow:hidden;background:#F7F8FA;display:grid;place-items:center;flex-shrink:0';
-18711:     canvas.insertAdjacentElement('afterend', box);
-18712:   }
-18713:   box.innerHTML = '';
-18714:   canvas.style.display = 'none';
-18715:   if (typeof QRCode !== 'undefined') {
-18716:     if (QRCode.toCanvas) {
-18717:       canvas.style.display = 'block';
-18718:       box.style.display = 'none';
-18719:       QRCode.toCanvas(canvas, link, { width: 112, margin: 1, color: { dark: '#0A1A12', light: '#F7F8FA' } });
-18720:     } else {
-18721:       box.style.display = 'grid';
-18722:       new QRCode(box, { text: link, width: 112, height: 112, colorDark: '#0A1A12', colorLight: '#F7F8FA', correctLevel: QRCode.CorrectLevel.M });
-18723:     }
-18724:   } else {
-18725:     box.textContent = 'QR no disponible';
-18726:     box.style.fontSize = '11px';
-18727:     box.style.color = 'var(--muted)';
-18728:   }
+18706:   const canvas = document.getElementById('pasQR');
+18707:   if (!canvas) return;
+18708:   let box = document.getElementById('pasQRBox');
+18709:   if (!box) {
+18710:     box = document.createElement('div');
+18711:     box.id = 'pasQRBox';
+18712:     box.style.cssText = 'width:112px;height:112px;border-radius:10px;border:1px solid var(--border);overflow:hidden;background:#F7F8FA;display:grid;place-items:center;flex-shrink:0';
+18713:     canvas.insertAdjacentElement('afterend', box);
+18714:   }
+18715:   box.innerHTML = '';
+18716:   canvas.style.display = 'none';
+18717:   if (typeof QRCode !== 'undefined') {
+18718:     if (QRCode.toCanvas) {
+18719:       canvas.style.display = 'block';
+18720:       box.style.display = 'none';
+18721:       QRCode.toCanvas(canvas, link, { width: 112, margin: 1, color: { dark: '#0A1A12', light: '#F7F8FA' } });
+18722:     } else {
+18723:       box.style.display = 'grid';
+18724:       new QRCode(box, { text: link, width: 112, height: 112, colorDark: '#0A1A12', colorLight: '#F7F8FA', correctLevel: QRCode.CorrectLevel.M });
+18725:     }
+18726:   } else {
+18727:     box.textContent = 'QR no disponible';
+18728:     box.style.fontSize = '11px';
+18729:     box.style.color = 'var(--muted)';
+18730:   }
 ```
 
-### Coincidencia 4 — línea 18719
+### Coincidencia 4 — línea 18721
 
 ```html
-18707:   if (!box) {
-18708:     box = document.createElement('div');
-18709:     box.id = 'pasQRBox';
-18710:     box.style.cssText = 'width:112px;height:112px;border-radius:10px;border:1px solid var(--border);overflow:hidden;background:#F7F8FA;display:grid;place-items:center;flex-shrink:0';
-18711:     canvas.insertAdjacentElement('afterend', box);
-18712:   }
-18713:   box.innerHTML = '';
-18714:   canvas.style.display = 'none';
-18715:   if (typeof QRCode !== 'undefined') {
-18716:     if (QRCode.toCanvas) {
-18717:       canvas.style.display = 'block';
-18718:       box.style.display = 'none';
-18719:       QRCode.toCanvas(canvas, link, { width: 112, margin: 1, color: { dark: '#0A1A12', light: '#F7F8FA' } });
-18720:     } else {
-18721:       box.style.display = 'grid';
-18722:       new QRCode(box, { text: link, width: 112, height: 112, colorDark: '#0A1A12', colorLight: '#F7F8FA', correctLevel: QRCode.CorrectLevel.M });
-18723:     }
-18724:   } else {
-18725:     box.textContent = 'QR no disponible';
-18726:     box.style.fontSize = '11px';
-18727:     box.style.color = 'var(--muted)';
-18728:   }
-18729: }
-18730: 
-18731: function abrirPasaporte() {
+18709:   if (!box) {
+18710:     box = document.createElement('div');
+18711:     box.id = 'pasQRBox';
+18712:     box.style.cssText = 'width:112px;height:112px;border-radius:10px;border:1px solid var(--border);overflow:hidden;background:#F7F8FA;display:grid;place-items:center;flex-shrink:0';
+18713:     canvas.insertAdjacentElement('afterend', box);
+18714:   }
+18715:   box.innerHTML = '';
+18716:   canvas.style.display = 'none';
+18717:   if (typeof QRCode !== 'undefined') {
+18718:     if (QRCode.toCanvas) {
+18719:       canvas.style.display = 'block';
+18720:       box.style.display = 'none';
+18721:       QRCode.toCanvas(canvas, link, { width: 112, margin: 1, color: { dark: '#0A1A12', light: '#F7F8FA' } });
+18722:     } else {
+18723:       box.style.display = 'grid';
+18724:       new QRCode(box, { text: link, width: 112, height: 112, colorDark: '#0A1A12', colorLight: '#F7F8FA', correctLevel: QRCode.CorrectLevel.M });
+18725:     }
+18726:   } else {
+18727:     box.textContent = 'QR no disponible';
+18728:     box.style.fontSize = '11px';
+18729:     box.style.color = 'var(--muted)';
+18730:   }
+18731: }
+18732: 
+18733: function abrirPasaporte() {
 ```
 
-### Coincidencia 5 — línea 18722
+### Coincidencia 5 — línea 18724
 
 ```html
-18710:     box.style.cssText = 'width:112px;height:112px;border-radius:10px;border:1px solid var(--border);overflow:hidden;background:#F7F8FA;display:grid;place-items:center;flex-shrink:0';
-18711:     canvas.insertAdjacentElement('afterend', box);
-18712:   }
-18713:   box.innerHTML = '';
-18714:   canvas.style.display = 'none';
-18715:   if (typeof QRCode !== 'undefined') {
-18716:     if (QRCode.toCanvas) {
-18717:       canvas.style.display = 'block';
-18718:       box.style.display = 'none';
-18719:       QRCode.toCanvas(canvas, link, { width: 112, margin: 1, color: { dark: '#0A1A12', light: '#F7F8FA' } });
-18720:     } else {
-18721:       box.style.display = 'grid';
-18722:       new QRCode(box, { text: link, width: 112, height: 112, colorDark: '#0A1A12', colorLight: '#F7F8FA', correctLevel: QRCode.CorrectLevel.M });
-18723:     }
-18724:   } else {
-18725:     box.textContent = 'QR no disponible';
-18726:     box.style.fontSize = '11px';
-18727:     box.style.color = 'var(--muted)';
-18728:   }
-18729: }
-18730: 
-18731: function abrirPasaporte() {
-18732:   if (!_pasConfirmado) { toast('Selecciona un paciente de la lista primero', 'warn'); return; }
-18733:   const link = (_pasCurrent && _pasCurrent.link) || document.getElementById('pasLinkTexto').textContent;
-18734:   if (!link) { toast('Genera primero el enlace seguro', 'warn'); return; }
+18712:     box.style.cssText = 'width:112px;height:112px;border-radius:10px;border:1px solid var(--border);overflow:hidden;background:#F7F8FA;display:grid;place-items:center;flex-shrink:0';
+18713:     canvas.insertAdjacentElement('afterend', box);
+18714:   }
+18715:   box.innerHTML = '';
+18716:   canvas.style.display = 'none';
+18717:   if (typeof QRCode !== 'undefined') {
+18718:     if (QRCode.toCanvas) {
+18719:       canvas.style.display = 'block';
+18720:       box.style.display = 'none';
+18721:       QRCode.toCanvas(canvas, link, { width: 112, margin: 1, color: { dark: '#0A1A12', light: '#F7F8FA' } });
+18722:     } else {
+18723:       box.style.display = 'grid';
+18724:       new QRCode(box, { text: link, width: 112, height: 112, colorDark: '#0A1A12', colorLight: '#F7F8FA', correctLevel: QRCode.CorrectLevel.M });
+18725:     }
+18726:   } else {
+18727:     box.textContent = 'QR no disponible';
+18728:     box.style.fontSize = '11px';
+18729:     box.style.color = 'var(--muted)';
+18730:   }
+18731: }
+18732: 
+18733: function abrirPasaporte() {
+18734:   if (!_pasConfirmado) { toast('Selecciona un paciente de la lista primero', 'warn'); return; }
+18735:   const link = (_pasCurrent && _pasCurrent.link) || document.getElementById('pasLinkTexto').textContent;
+18736:   if (!link) { toast('Genera primero el enlace seguro', 'warn'); return; }
 ```
 
-### Coincidencia 6 — línea 18722
+### Coincidencia 6 — línea 18724
 
 ```html
-18710:     box.style.cssText = 'width:112px;height:112px;border-radius:10px;border:1px solid var(--border);overflow:hidden;background:#F7F8FA;display:grid;place-items:center;flex-shrink:0';
-18711:     canvas.insertAdjacentElement('afterend', box);
-18712:   }
-18713:   box.innerHTML = '';
-18714:   canvas.style.display = 'none';
-18715:   if (typeof QRCode !== 'undefined') {
-18716:     if (QRCode.toCanvas) {
-18717:       canvas.style.display = 'block';
-18718:       box.style.display = 'none';
-18719:       QRCode.toCanvas(canvas, link, { width: 112, margin: 1, color: { dark: '#0A1A12', light: '#F7F8FA' } });
-18720:     } else {
-18721:       box.style.display = 'grid';
-18722:       new QRCode(box, { text: link, width: 112, height: 112, colorDark: '#0A1A12', colorLight: '#F7F8FA', correctLevel: QRCode.CorrectLevel.M });
-18723:     }
-18724:   } else {
-18725:     box.textContent = 'QR no disponible';
-18726:     box.style.fontSize = '11px';
-18727:     box.style.color = 'var(--muted)';
-18728:   }
-18729: }
-18730: 
-18731: function abrirPasaporte() {
-18732:   if (!_pasConfirmado) { toast('Selecciona un paciente de la lista primero', 'warn'); return; }
-18733:   const link = (_pasCurrent && _pasCurrent.link) || document.getElementById('pasLinkTexto').textContent;
-18734:   if (!link) { toast('Genera primero el enlace seguro', 'warn'); return; }
+18712:     box.style.cssText = 'width:112px;height:112px;border-radius:10px;border:1px solid var(--border);overflow:hidden;background:#F7F8FA;display:grid;place-items:center;flex-shrink:0';
+18713:     canvas.insertAdjacentElement('afterend', box);
+18714:   }
+18715:   box.innerHTML = '';
+18716:   canvas.style.display = 'none';
+18717:   if (typeof QRCode !== 'undefined') {
+18718:     if (QRCode.toCanvas) {
+18719:       canvas.style.display = 'block';
+18720:       box.style.display = 'none';
+18721:       QRCode.toCanvas(canvas, link, { width: 112, margin: 1, color: { dark: '#0A1A12', light: '#F7F8FA' } });
+18722:     } else {
+18723:       box.style.display = 'grid';
+18724:       new QRCode(box, { text: link, width: 112, height: 112, colorDark: '#0A1A12', colorLight: '#F7F8FA', correctLevel: QRCode.CorrectLevel.M });
+18725:     }
+18726:   } else {
+18727:     box.textContent = 'QR no disponible';
+18728:     box.style.fontSize = '11px';
+18729:     box.style.color = 'var(--muted)';
+18730:   }
+18731: }
+18732: 
+18733: function abrirPasaporte() {
+18734:   if (!_pasConfirmado) { toast('Selecciona un paciente de la lista primero', 'warn'); return; }
+18735:   const link = (_pasCurrent && _pasCurrent.link) || document.getElementById('pasLinkTexto').textContent;
+18736:   if (!link) { toast('Genera primero el enlace seguro', 'warn'); return; }
 ```
 
 ## Función openPago
 
-### Coincidencia 1 — línea 17139
+### Coincidencia 1 — línea 17141
 
 ```html
-17127:     const msg = `Hola ${(c.nombre || '').split(' ')[0]}! \u2757 Te recuerdo que queda pendiente el pago de tu sesion del ${fmtDate(normDate(c.fecha))} por ${c.precio}. ¿Cuando lo puedes hacer efectivo? \uD83D\uDE4F`;
-17128:     const wa  = tel.length >= 7 ? `https://wa.me/57${tel.slice(-10)}?text=${encodeURIComponent(msg)}` : null;
-17129:     return `<div style="display:flex;justify-content:space-between;align-items:center;font-size:.82rem;padding:7px 12px;background:rgba(255,255,255,.6);border-radius:7px;gap:10px;flex-wrap:wrap">
-17130:       <span><strong>${c.nombre || '—'}</strong> · ${fmtDate(normDate(c.fecha))} · <span style="color:#92400e;font-weight:600">${c.precio}</span></span>
-17131:       <div style="display:flex;gap:6px">
-17132:         ${wa ? `<a href="${wa}" target="_blank" class="btn btn-sm" style="background:#d97706;color:#fff;border:none;text-decoration:none">💬 Cobrar WA</a>` : ''}
-17133:         <button class="btn btn-ghost btn-sm" onclick="openPago('${c.id}')">💳 Registrar pago</button>
-17134:       </div>
-17135:     </div>`;
-17136:   }).join('');
-17137: }
-17138: 
-17139: function openPago(citaId) {
-17140:   showView('pagos');
-17141:   setTimeout(() => {
-17142:     if (typeof fillPaymentSelectors === 'function') fillPaymentSelectors(citaId || '');
-17143:     const selector = document.getElementById('payCitaId');
-17144:     if (selector) {
-17145:       selector.value = citaId || '';
-17146:       selector.dispatchEvent(new Event('change', { bubbles: true }));
-17147:       selector.focus();
-17148:       selector.scrollIntoView({ behavior: 'smooth', block: 'center' });
-17149:     } else {
-17150:       toast('Se abrió Pagos, pero no se encontró la cita seleccionada', 'warn');
-17151:     }
+17129:     const msg = `Hola ${(c.nombre || '').split(' ')[0]}! \u2757 Te recuerdo que queda pendiente el pago de tu sesion del ${fmtDate(normDate(c.fecha))} por ${c.precio}. ¿Cuando lo puedes hacer efectivo? \uD83D\uDE4F`;
+17130:     const wa  = tel.length >= 7 ? `https://wa.me/57${tel.slice(-10)}?text=${encodeURIComponent(msg)}` : null;
+17131:     return `<div style="display:flex;justify-content:space-between;align-items:center;font-size:.82rem;padding:7px 12px;background:rgba(255,255,255,.6);border-radius:7px;gap:10px;flex-wrap:wrap">
+17132:       <span><strong>${c.nombre || '—'}</strong> · ${fmtDate(normDate(c.fecha))} · <span style="color:#92400e;font-weight:600">${c.precio}</span></span>
+17133:       <div style="display:flex;gap:6px">
+17134:         ${wa ? `<a href="${wa}" target="_blank" class="btn btn-sm" style="background:#d97706;color:#fff;border:none;text-decoration:none">💬 Cobrar WA</a>` : ''}
+17135:         <button class="btn btn-ghost btn-sm" onclick="openPago('${c.id}')">💳 Registrar pago</button>
+17136:       </div>
+17137:     </div>`;
+17138:   }).join('');
+17139: }
+17140: 
+17141: function openPago(citaId) {
+17142:   showView('pagos');
+17143:   setTimeout(() => {
+17144:     if (typeof fillPaymentSelectors === 'function') fillPaymentSelectors(citaId || '');
+17145:     const selector = document.getElementById('payCitaId');
+17146:     if (selector) {
+17147:       selector.value = citaId || '';
+17148:       selector.dispatchEvent(new Event('change', { bubbles: true }));
+17149:       selector.focus();
+17150:       selector.scrollIntoView({ behavior: 'smooth', block: 'center' });
+17151:     } else {
+17152:       toast('Se abrió Pagos, pero no se encontró la cita seleccionada', 'warn');
+17153:     }
 ```
 
 ## Función fillPaymentSelectors
