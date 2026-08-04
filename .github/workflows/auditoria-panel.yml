@@ -51,15 +51,18 @@ jobs:
       - name: Extraer controles reales de fase 4
         run: node tools/extract-phase4.mjs index.html
 
+      - name: Extraer fragmentos detallados de fase 4
+        run: node tools/extract-phase4-details.mjs index.html
+
       - name: Guardar correcciones e informes en la rama aislada
         run: |
-          if [ -z "$(git status --porcelain -- index.html AUDIT_CONTEXT.md AUDIT_PHASE2.md AUDIT_PHASE3.md AUDIT_PHASE4.md)" ]; then
+          if [ -z "$(git status --porcelain -- index.html AUDIT_CONTEXT.md AUDIT_PHASE2.md AUDIT_PHASE3.md AUDIT_PHASE4.md AUDIT_PHASE4_DETAILS.md)" ]; then
             echo "No había cambios seguros pendientes."
           else
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add index.html AUDIT_CONTEXT.md AUDIT_PHASE2.md AUDIT_PHASE3.md AUDIT_PHASE4.md
-            git commit -m "Revisar controles reales de fase 4"
+            git add index.html AUDIT_CONTEXT.md AUDIT_PHASE2.md AUDIT_PHASE3.md AUDIT_PHASE4.md AUDIT_PHASE4_DETAILS.md
+            git commit -m "Preparar detalles para corregir fase 4"
             git push origin HEAD:auditoria-panel-2026-08-04
           fi
 
