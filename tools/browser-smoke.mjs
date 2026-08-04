@@ -195,7 +195,16 @@ try {
   `;
   await cdp.send('Page.addScriptToEvaluateOnNewDocument', { source: preload });
   await cdp.send('Page.navigate', { url: `http://127.0.0.1:4173/${target}` });
-  await sleep(1200);
+  let panelReady = false;
+  for (let intento = 0; intento < 100; intento++) {
+    try {
+      panelReady = await evaluate(cdp, `document.readyState === 'complete' && typeof showView === 'function' && !!document.getElementById('loginScreen') && !!document.getElementById('adminApp')`);
+    } catch (_) {}
+    if (panelReady) break;
+    await sleep(100);
+  }
+  if (!panelReady) throw new Error('El panel no terminó de cargar en 10 segundos.');
+  await sleep(200);
 
   const basic = await evaluate(cdp, `(() => ({
     title: document.title,
