@@ -167,8 +167,31 @@ try {
         try {
           if (!action && init.body) action = JSON.parse(init.body).action || '';
         } catch (_) {}
+        const qaNow = new Date();
+        const qaDate = [
+          qaNow.getFullYear(),
+          String(qaNow.getMonth() + 1).padStart(2, '0'),
+          String(qaNow.getDate()).padStart(2, '0')
+        ].join('-');
+        const qaCita = {
+          id: 'QA-CITA',
+          ID: 'QA-CITA',
+          CitaID: 'QA-CITA',
+          nombre: 'QA Auditoría',
+          Cliente: 'QA Auditoría',
+          fecha: qaDate,
+          Fecha: qaDate,
+          hora: '10:00',
+          Hora: '10:00',
+          servicio: 'Descarga muscular completa',
+          Servicio: 'Descarga muscular completa',
+          estado: 'Pendiente de pago',
+          Estado: 'Pendiente de pago',
+          precio: '10000',
+          Precio: '10000'
+        };
         const common = {
-          ok: true, citas: [], pacientes: [], bloqueos: [], eventos: [], codigos: [],
+          ok: true, citas: [qaCita], pacientes: [], bloqueos: [], eventos: [], codigos: [],
           profesionales: [], pagos: [], cuentas: [], paquetes: [], comisiones: [],
           waitlist: [], queue: [], items: [], data: {}, kv: {}, history: [],
           currentUser: { id: 'qa', nombre: 'QA Auditoría', rol: 'Superadministradora' }
@@ -228,7 +251,7 @@ try {
         currentUser: {id:'qa',nombre:'QA Auditoría',rol:'Superadministradora'}
       };
     } catch (_) {}
-    try { operationsData = { citas: [], pagos: [], cuentas: [], paquetes: [], comisiones: [], waitlist: [] }; } catch (_) {}
+    try { operationsData = { citas: [...allData.citas], pagos: [], cuentas: [], paquetes: [], comisiones: [], waitlist: [] }; } catch (_) {}
     const login = document.getElementById('loginScreen'); if (login) login.style.display = 'none';
     const app = document.getElementById('adminApp'); if (app) app.style.display = 'block';
     return true;
