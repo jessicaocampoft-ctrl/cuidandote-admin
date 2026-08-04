@@ -1,0 +1,42 @@
+name: Diagnóstico aislado del flujo de pagos
+
+on:
+  push:
+    branches:
+      - hotfix-pagos-2026-08-04
+
+permissions:
+  contents: write
+
+concurrency:
+  group: diagnostico-pagos-hotfix
+  cancel-in-progress: false
+
+jobs:
+  diagnostico:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar rama hotfix
+        uses: actions/checkout@v4
+        with:
+          ref: hotfix-pagos-2026-08-04
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Extraer botón y funciones de pago
+        run: node tools/extract-payment-flow.mjs index.html
+
+      - name: Guardar diagnóstico en la rama hotfix
+        run: |
+          if [ -z "$(git status --porcelain -- PAYMENT_FLOW_CONTEXT.md)" ]; then
+            echo "El diagnóstico no cambió."
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add PAYMENT_FLOW_CONTEXT.md
+            git commit -m "Extraer contexto exacto del fallo de pagos"
+            git push origin HEAD:hotfix-pagos-2026-08-04
+          fi
