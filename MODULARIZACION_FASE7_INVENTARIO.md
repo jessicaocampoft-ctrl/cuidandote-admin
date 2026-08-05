@@ -1,9 +1,11 @@
-# Inventario estricto — Fase 7 Equipo clínico
+# Inventario completo — Fase 7 Equipo clínico
 
 - Declaraciones totales detectadas: 602
-- Candidatas estrictas: 26
+- Inicio del bloque: línea 6313
+- Fin del bloque: línea 7058
+- Funciones dentro del bloque: 63
 
-## Funciones candidatas
+## Todas las funciones del bloque
 
 - `byIdFrom` — línea 6313
 - `assignmentFor` — línea 6317
@@ -22,14 +24,51 @@
 - `teamConflictAppointments` — línea 6445
 - `renderTeamOperations` — línea 6455
 - `renderEquipo` — línea 6494
+- `openProfessionalSchedule` — línea 6575
+- `openProfessionalForm` — línea 6614
+- `showTemporaryPassword` — línea 6628
+- `copyTempPassword` — línea 6634 — async
 - `saveProfessionalForm` — línea 6651 — async
 - `resetProPassword` — línea 6672 — async
 - `togglePro` — línea 6679 — async
 - `deletePro` — línea 6685 — async
 - `abrirAsignarPro` — línea 6698
+- `renderAssignWarnings` — línea 6714
+- `saveAssignPro` — línea 6741 — async
+- `authorizeAssignPro` — línea 6764 — async
+- `markPayablePaid` — línea 6783 — async
+- `loadOperationsData` — línea 6791 — async
+- `setupOperationsModuleUI` — línea 6799 — async
+- `paymentAccountLabel` — línea 6807
+- `paymentCandidateAppointments` — línea 6815
+- `renderPaymentAppointmentList` — línea 6823
+- `selectPaymentAppointment` — línea 6831
+- `updateSelectedPaymentCard` — línea 6839
+- `updatePaymentProofLabel` — línea 6847
+- `fillPaymentSelectors` — línea 6855
+- `prefillPaymentFromAppointment` — línea 6863
+- `clearPaymentForm` — línea 6871
+- `abrirPagoCita` — línea 6879
+- `saveManualPayment` — línea 6887 — async
+- `readPaymentProofFile` — línea 6895 — async
+- `verifyPayment` — línea 6903 — async
+- `renderPagos` — línea 6911
+- `openPago` — línea 6919
+- `downloadOperationsCSV` — línea 6927
+- `exportPaymentsCSV` — línea 6937
+- `exportOperationsAuditCSV` — línea 6946
+- `fetchJsonWithTimeout` — línea 6954 — async
+- `openProfessionalLoginMode` — línea 6958
+- `backToAdminLogin` — línea 6962
+- `doProfessionalLogin` — línea 6966 — async
+- `changeProfessionalPassword` — línea 6970 — async
+- `showProfessionalApp` — línea 6974 — async
 - `loadProfessionalAgenda` — línea 6978 — async
+- `setProfessionalMode` — línea 6982
 - `renderProfessionalAgenda` — línea 6990
 - `markProfessionalAttended` — línea 7026 — async
+- `openProIssue` — línea 7036
+- `sendProfessionalIssue` — línea 7043 — async
 - `professionalSignout` — línea 7058
 
 ## Contexto alrededor de cada función
@@ -55,8 +94,6 @@ async function loadTeamData() {
   if (!TOKEN) return teamData;
   try {
     const d = await fetch(`${APPS_SCRIPT_URL}?action=teamData&token=${encodeURIComponent(TOKEN)}`).then(r => r.json());
-    if (d.ok) {
-      teamData = {
 ```
 
 ### assignmentFor
@@ -80,8 +117,6 @@ async function loadTeamData() {
       teamData = {
         profesionales: d.profesionales || [],
         asignaciones: d.asignaciones || [],
-        novedades: d.novedades || [],
-        auditoria: d.auditoria || [],
 ```
 
 ### professionalName
@@ -105,8 +140,6 @@ async function loadTeamData() {
         auditoria: d.auditoria || [],
         cuentas: d.cuentas || []
       };
-      (allData.citas || []).forEach(c => {
-        const a = assignmentFor(c.id);
 ```
 
 ### loadTeamData
@@ -130,8 +163,6 @@ async function loadTeamData() {
         c.profesionalId = a.ProfesionalID || '';
         c.estadoAutorizacion = a.EstadoAutorizacion || '';
         c.tarifaProfesional = a.Tarifa || '';
-      });
-    }
 ```
 
 ### activeProfessionals
@@ -155,8 +186,6 @@ function teamAssignedAppointments(proId = '') {
   const citas = (teamData.asignaciones || [])
     .filter(a => !proId || String(a.ProfesionalID || '') === String(proId))
     .map(a => {
-      const c = teamAppointmentById(a.CitaID);
-      return c ? { ...c, _assignment:a } : null;
 ```
 
 ### teamCleanText
@@ -180,8 +209,6 @@ function teamAssignedAppointments(proId = '') {
       return c ? { ...c, _assignment:a } : null;
     })
     .filter(Boolean)
-    .filter(c => isOperationalDate(c.fecha));
-  return citas.sort((a,b) => (`${normDate(a.fecha)} ${a.hora || ''}`).localeCompare(`${normDate(b.fecha)} ${b.hora || ''}`));
 ```
 
 ### teamAppointmentById
@@ -205,8 +232,6 @@ function teamAssignedAppointments(proId = '') {
   return citas.sort((a,b) => (`${normDate(a.fecha)} ${a.hora || ''}`).localeCompare(`${normDate(b.fecha)} ${b.hora || ''}`));
 }
 
-function teamIsInactiveAppointment(c) {
-  return ['Cancelada','Cancelada a tiempo','Cancelación tardía','Reprogramada','No asistió','Reembolsada'].includes(c?.estado || '');
 ```
 
 ### teamAssignedAppointments
@@ -230,8 +255,6 @@ function teamIsInactiveAppointment(c) {
 }
 
 function teamDateCode(dateStr) {
-  const codes = ['DOM','LUN','MAR','MIE','JUE','VIE','SAB'];
-  const d = new Date(`${normDate(dateStr)}T12:00:00`);
 ```
 
 ### teamIsInactiveAppointment
@@ -255,8 +278,6 @@ function teamAvailabilityDays(disponibilidad = '') {
   const dayIndex = code => codes.indexOf(code);
   const addRange = (from, to) => {
     const a = dayIndex(from), b = dayIndex(to);
-    if (a < 0 || b < 0) return;
-    if (a <= b) for (let i = a; i <= b; i++) found.add(codes[i]);
 ```
 
 ### teamDateCode
@@ -280,8 +301,6 @@ function teamAvailabilityDays(disponibilidad = '') {
     if (a <= b) for (let i = a; i <= b; i++) found.add(codes[i]);
     else { for (let i = a; i < codes.length; i++) found.add(codes[i]); for (let i = 0; i <= b; i++) found.add(codes[i]); }
   };
-  [...text.matchAll(/\b(DOM|LUN|MAR|MIE|JUE|VIE|SAB)\b\s*(?:-|A|AL|HASTA)\s*\b(DOM|LUN|MAR|MIE|JUE|VIE|SAB)\b/g)].forEach(m => addRange(m[1], m[2]));
-  codes.forEach(code => { if (new RegExp(`\\b${code}\\b`).test(text)) found.add(code); });
 ```
 
 ### teamAvailabilityDays
@@ -305,8 +324,6 @@ function teamAvailabilityDays(disponibilidad = '') {
 }
 
 function teamTimeToMinutes(value) {
-  const s = teamCleanText(value).replace(/\s+/g,'');
-  const m = s.match(/(\d{1,2})(?::?(\d{2}))?(am|pm)?/);
 ```
 
 ### teamTimeToMinutes
@@ -330,8 +347,6 @@ function teamAvailabilityRange(disponibilidad = '') {
   const start = teamTimeToMinutes(times[0]);
   const end = teamTimeToMinutes(times[1]);
   return start === null || end === null ? null : { start, end };
-}
-
 ```
 
 ### teamAvailabilityRange
@@ -355,8 +370,6 @@ function teamAvailabilityIssues(pro, cita) {
   if (disponibilidad && days.size && !days.has(code)) {
     issues.push(`Disponibilidad: este profesional figura con disponibilidad ${disponibilidad}, pero la cita es ${fmtDate(cita.fecha)}.`);
   }
-  const range = teamAvailabilityRange(disponibilidad);
-  const citaMin = teamTimeToMinutes(cita.hora);
 ```
 
 ### teamAvailabilityIssues
@@ -380,8 +393,6 @@ function teamAvailabilityIssues(pro, cita) {
   const servicios = teamCleanText(pro.servicios || pro.Servicios || '');
   const servicioCita = teamCleanText(cita.servicio || '');
   if (servicios && !['sin definir','todos','todo'].includes(servicios) && servicioCita) {
-    const tokens = servicios.split(/[,;\/|]+/).map(x => x.trim()).filter(Boolean);
-    const matches = tokens.some(t => servicioCita.includes(t) || t.includes(servicioCita));
 ```
 
 ### teamConflictAppointments
@@ -405,8 +416,6 @@ function renderTeamOperations(pros, pendientes, novedades) {
     const citasHoy = teamAssignedAppointments(p.id).filter(c => normDate(c.fecha) === hoyStr && !teamIsInactiveAppointment(c));
     return { pro:p, citas:citasHoy };
   });
-  const overloaded = todaysRows.filter(r => r.citas.length >= 5);
-  const withoutSchedule = activePros.filter(p => !(p.disponibilidad || '').trim());
 ```
 
 ### renderTeamOperations
@@ -430,8 +439,6 @@ function renderTeamOperations(pros, pendientes, novedades) {
   ];
   document.getElementById('equipoOperacion').innerHTML = `
     <div class="team-ops-grid">
-      <div class="team-panel">
-        <h2>Operación de hoy</h2>
 ```
 
 ### renderEquipo
@@ -455,8 +462,98 @@ function renderEquipo() {
   const porPagar = cuentas.filter(c => (c.Estado || '') !== 'Pagada');
 
   document.getElementById('equipoStats').innerHTML = [
-    ['Profesionales activos', pros.filter(p => (p.estado || '') === 'Activo').length],
-    ['Citas asignadas', citasAsignadasOperativas.length],
+```
+
+### openProfessionalSchedule
+
+```javascript
+
+function openProfessionalSchedule(id) {
+  const pro = byIdFrom(teamData.profesionales, 'id', id) || byIdFrom(teamData.profesionales, 'ID', id);
+  if (!pro) return toast('No encontré el fisioterapeuta', 'err');
+  const assignments = (teamData.asignaciones || []).filter(a => String(a.ProfesionalID || '') === String(id));
+  const citas = assignments
+    .map(a => {
+      const c = (allData.citas || []).find(x => String(x.id || x.ID || '') === String(a.CitaID || ''));
+      return c ? { ...c, _assignment: a } : null;
+    })
+    .filter(Boolean)
+    .filter(c => isOperationalDate(c.fecha))
+    .sort((a,b) => (`${normDate(a.fecha)} ${a.hora || ''}`).localeCompare(`${normDate(b.fecha)} ${b.hora || ''}`));
+  const hoyStr = today();
+  const proximas = citas.filter(c => normDate(c.fecha) >= hoyStr);
+  const anteriores = citas.filter(c => normDate(c.fecha) < hoyStr);
+  const ordered = [...proximas, ...anteriores];
+
+```
+
+### openProfessionalForm
+
+```javascript
+
+function openProfessionalForm(id='') {
+  const p = id ? byIdFrom(teamData.profesionales, 'id', id) : null;
+  document.getElementById('proFormTitle').textContent = p ? 'Editar fisioterapeuta' : 'Crear fisioterapeuta';
+  document.getElementById('teamProId').value = p?.id || '';
+  document.getElementById('teamProNombre').value = p?.nombre || '';
+  document.getElementById('teamProUsuario').value = p?.usuario || '';
+  document.getElementById('teamProEmail').value = p?.email || '';
+  document.getElementById('teamProRol').value = p?.rol || 'Fisioterapeuta';
+  document.getElementById('teamProEstado').value = p?.estado || 'Activo';
+  document.getElementById('teamProServicios').value = p?.servicios || '';
+  document.getElementById('teamProDisponibilidad').value = p?.disponibilidad || '';
+  openModal('modalProfesional');
+}
+
+function showTemporaryPassword(title, password) {
+  document.getElementById('tempPassTitle').textContent = title || 'Contraseña temporal';
+  document.getElementById('tempPassValue').textContent = password || '';
+```
+
+### showTemporaryPassword
+
+```javascript
+
+function showTemporaryPassword(title, password) {
+  document.getElementById('tempPassTitle').textContent = title || 'Contraseña temporal';
+  document.getElementById('tempPassValue').textContent = password || '';
+  openModal('modalClaveTemporal');
+}
+
+async function copyTempPassword() {
+  const value = document.getElementById('tempPassValue').textContent.trim();
+  if (!value) return;
+  try {
+    await navigator.clipboard.writeText(value);
+    toast('Contraseña copiada');
+  } catch(e) {
+    const ta = document.createElement('textarea');
+    ta.value = value;
+    document.body.appendChild(ta);
+    ta.select();
+```
+
+### copyTempPassword
+
+```javascript
+
+async function copyTempPassword() {
+  const value = document.getElementById('tempPassValue').textContent.trim();
+  if (!value) return;
+  try {
+    await navigator.clipboard.writeText(value);
+    toast('Contraseña copiada');
+  } catch(e) {
+    const ta = document.createElement('textarea');
+    ta.value = value;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    ta.remove();
+    toast('Contraseña copiada');
+  }
+}
+
 ```
 
 ### saveProfessionalForm
@@ -480,8 +577,6 @@ async function saveProfessionalForm() {
   closeModal('modalProfesional');
   await loadTeamData();
   renderEquipo();
-  if (d.tempPassword) showTemporaryPassword('Contraseña temporal creada', d.tempPassword);
-  else toast('Profesional actualizado');
 ```
 
 ### resetProPassword
@@ -505,8 +600,6 @@ async function deletePro(id, nombre) {
   const label = nombre || 'este fisioterapeuta';
   if (!confirm(`¿Eliminar a ${label} de la lista de fisioterapeutas?\n\nNo podrá ingresar al portal. El historial interno se conserva para auditoría.`)) return;
   const d = await fetch(`${APPS_SCRIPT_URL}?action=deleteProfessional&token=${encodeURIComponent(TOKEN)}&id=${encodeURIComponent(id)}`).then(r => r.json());
-  if (d.ok) {
-    await loadTeamData();
 ```
 
 ### togglePro
@@ -530,8 +623,6 @@ async function deletePro(id, nombre) {
   } else {
     toast(d.error || 'No se pudo eliminar', 'err');
   }
-}
-
 ```
 
 ### deletePro
@@ -555,8 +646,6 @@ function abrirAsignarPro(citaId) {
   const c = (allData.citas || []).find(x => String(x.id) === String(citaId));
   if (!c) return toast('No encontré la cita', 'err');
   const a = assignmentFor(citaId);
-  document.getElementById('assignCitaId').value = citaId;
-  document.getElementById('assignCitaResumen').innerHTML = `
 ```
 
 ### abrirAsignarPro
@@ -580,8 +669,696 @@ function abrirAsignarPro(citaId) {
 }
 
 function renderAssignWarnings() {
+```
+
+### renderAssignWarnings
+
+```javascript
+
+function renderAssignWarnings() {
   const box = document.getElementById('assignWarnings');
   if (!box) return;
+  const citaId = document.getElementById('assignCitaId')?.value || '';
+  const proId = document.getElementById('assignProfessionalId')?.value || '';
+  const cita = teamAppointmentById(citaId);
+  const pro = byIdFrom(teamData.profesionales, 'id', proId) || byIdFrom(teamData.profesionales, 'ID', proId);
+  if (!cita || !proId) {
+    box.innerHTML = '<div class="team-alert danger"><strong>Falta información</strong>Selecciona un fisioterapeuta activo para validar la asignación.</div>';
+    return;
+  }
+  const conflicts = teamConflictAppointments(proId, cita);
+  const availability = teamAvailabilityIssues(pro, cita);
+  const warnings = [];
+  if (conflicts.length) {
+    warnings.push({
+      tone:'danger',
+```
+
+### saveAssignPro
+
+```javascript
+
+async function saveAssignPro(options = {}) {
+  const { closeOnSuccess = true } = options;
+  const params = new URLSearchParams({
+    action:'assignProfessional',
+    token:TOKEN,
+    citaId:document.getElementById('assignCitaId').value,
+    profesionalId:document.getElementById('assignProfessionalId').value,
+    tarifa:'',
+    override:document.getElementById('assignOverride').value
+  });
+  const d = await fetch(`${APPS_SCRIPT_URL}?${params.toString()}`).then(r => r.json());
+  if (d.ok) {
+    await loadTeamData();
+    renderEquipo();
+    renderAgenda(true);
+    if (closeOnSuccess) closeModal('modalAsignarPro');
+    toast('Cita asignada');
+```
+
+### authorizeAssignPro
+
+```javascript
+
+async function authorizeAssignPro() {
+  const assigned = await saveAssignPro({ closeOnSuccess:false });
+  if (!assigned) return;
+  const params = new URLSearchParams({
+    action:'authorizeAppointment',
+    token:TOKEN,
+    citaId:document.getElementById('assignCitaId').value,
+    excepcion:document.getElementById('assignExcepcion').value
+  });
+  const d = await fetch(`${APPS_SCRIPT_URL}?${params.toString()}`).then(r => r.json());
+  if (d.ok) {
+    closeModal('modalAsignarPro');
+    await reload();
+    await loadTeamData();
+    renderEquipo();
+    toast('Cita autorizada para atender');
+  } else toast(d.error || 'No se pudo autorizar', 'err');
+```
+
+### markPayablePaid
+
+```javascript
+
+async function markPayablePaid(id) {
+  if (!confirm('¿Marcar esta cuenta como pagada?')) return;
+  const d = await fetch(`${APPS_SCRIPT_URL}?action=markPayablePaid&token=${encodeURIComponent(TOKEN)}&id=${encodeURIComponent(id)}`).then(r => r.json());
+  if (d.ok) { await loadTeamData(); renderEquipo(); toast('Cuenta marcada como pagada'); }
+  else toast(d.error || 'No se pudo actualizar', 'err');
+}
+
+// Adaptadores de compatibilidad — Fase 4 Pagos.
+async function loadOperationsData(...args) {
+  const module = window.PanelPayments;
+  if (!module || typeof module.loadOperationsData !== 'function') {
+    throw new Error('El módulo de Pagos no está disponible: loadOperationsData');
+  }
+  return await module.loadOperationsData(...args);
+}
+
+async function setupOperationsModuleUI(...args) {
+```
+
+### loadOperationsData
+
+```javascript
+// Adaptadores de compatibilidad — Fase 4 Pagos.
+async function loadOperationsData(...args) {
+  const module = window.PanelPayments;
+  if (!module || typeof module.loadOperationsData !== 'function') {
+    throw new Error('El módulo de Pagos no está disponible: loadOperationsData');
+  }
+  return await module.loadOperationsData(...args);
+}
+
+async function setupOperationsModuleUI(...args) {
+  const module = window.PanelPayments;
+  if (!module || typeof module.setupOperationsModuleUI !== 'function') {
+    throw new Error('El módulo de Pagos no está disponible: setupOperationsModuleUI');
+  }
+  return await module.setupOperationsModuleUI(...args);
+}
+
+function paymentAccountLabel(...args) {
+```
+
+### setupOperationsModuleUI
+
+```javascript
+
+async function setupOperationsModuleUI(...args) {
+  const module = window.PanelPayments;
+  if (!module || typeof module.setupOperationsModuleUI !== 'function') {
+    throw new Error('El módulo de Pagos no está disponible: setupOperationsModuleUI');
+  }
+  return await module.setupOperationsModuleUI(...args);
+}
+
+function paymentAccountLabel(...args) {
+  const module = window.PanelPayments;
+  if (!module || typeof module.paymentAccountLabel !== 'function') {
+    throw new Error('El módulo de Pagos no está disponible: paymentAccountLabel');
+  }
+  return module.paymentAccountLabel(...args);
+}
+
+function paymentCandidateAppointments(...args) {
+```
+
+### paymentAccountLabel
+
+```javascript
+
+function paymentAccountLabel(...args) {
+  const module = window.PanelPayments;
+  if (!module || typeof module.paymentAccountLabel !== 'function') {
+    throw new Error('El módulo de Pagos no está disponible: paymentAccountLabel');
+  }
+  return module.paymentAccountLabel(...args);
+}
+
+function paymentCandidateAppointments(...args) {
+  const module = window.PanelPayments;
+  if (!module || typeof module.paymentCandidateAppointments !== 'function') {
+    throw new Error('El módulo de Pagos no está disponible: paymentCandidateAppointments');
+  }
+  return module.paymentCandidateAppointments(...args);
+}
+
+function renderPaymentAppointmentList(...args) {
+```
+
+### paymentCandidateAppointments
+
+```javascript
+
+function paymentCandidateAppointments(...args) {
+  const module = window.PanelPayments;
+  if (!module || typeof module.paymentCandidateAppointments !== 'function') {
+    throw new Error('El módulo de Pagos no está disponible: paymentCandidateAppointments');
+  }
+  return module.paymentCandidateAppointments(...args);
+}
+
+function renderPaymentAppointmentList(...args) {
+  const module = window.PanelPayments;
+  if (!module || typeof module.renderPaymentAppointmentList !== 'function') {
+    throw new Error('El módulo de Pagos no está disponible: renderPaymentAppointmentList');
+  }
+  return module.renderPaymentAppointmentList(...args);
+}
+
+function selectPaymentAppointment(...args) {
+```
+
+### renderPaymentAppointmentList
+
+```javascript
+
+function renderPaymentAppointmentList(...args) {
+  const module = window.PanelPayments;
+  if (!module || typeof module.renderPaymentAppointmentList !== 'function') {
+    throw new Error('El módulo de Pagos no está disponible: renderPaymentAppointmentList');
+  }
+  return module.renderPaymentAppointmentList(...args);
+}
+
+function selectPaymentAppointment(...args) {
+  const module = window.PanelPayments;
+  if (!module || typeof module.selectPaymentAppointment !== 'function') {
+    throw new Error('El módulo de Pagos no está disponible: selectPaymentAppointment');
+  }
+  return module.selectPaymentAppointment(...args);
+}
+
+function updateSelectedPaymentCard(...args) {
+```
+
+### selectPaymentAppointment
+
+```javascript
+
+function selectPaymentAppointment(...args) {
+  const module = window.PanelPayments;
+  if (!module || typeof module.selectPaymentAppointment !== 'function') {
+    throw new Error('El módulo de Pagos no está disponible: selectPaymentAppointment');
+  }
+  return module.selectPaymentAppointment(...args);
+}
+
+function updateSelectedPaymentCard(...args) {
+  const module = window.PanelPayments;
+  if (!module || typeof module.updateSelectedPaymentCard !== 'function') {
+    throw new Error('El módulo de Pagos no está disponible: updateSelectedPaymentCard');
+  }
+  return module.updateSelectedPaymentCard(...args);
+}
+
+function updatePaymentProofLabel(...args) {
+```
+
+### updateSelectedPaymentCard
+
+```javascript
+
+function updateSelectedPaymentCard(...args) {
+  const module = window.PanelPayments;
+  if (!module || typeof module.updateSelectedPaymentCard !== 'function') {
+    throw new Error('El módulo de Pagos no está disponible: updateSelectedPaymentCard');
+  }
+  return module.updateSelectedPaymentCard(...args);
+}
+
+function updatePaymentProofLabel(...args) {
+  const module = window.PanelPayments;
+  if (!module || typeof module.updatePaymentProofLabel !== 'function') {
+    throw new Error('El módulo de Pagos no está disponible: updatePaymentProofLabel');
+  }
+  return module.updatePaymentProofLabel(...args);
+}
+
+function fillPaymentSelectors(...args) {
+```
+
+### updatePaymentProofLabel
+
+```javascript
+
+function updatePaymentProofLabel(...args) {
+  const module = window.PanelPayments;
+  if (!module || typeof module.updatePaymentProofLabel !== 'function') {
+    throw new Error('El módulo de Pagos no está disponible: updatePaymentProofLabel');
+  }
+  return module.updatePaymentProofLabel(...args);
+}
+
+function fillPaymentSelectors(...args) {
+  const module = window.PanelPayments;
+  if (!module || typeof module.fillPaymentSelectors !== 'function') {
+    throw new Error('El módulo de Pagos no está disponible: fillPaymentSelectors');
+  }
+  return module.fillPaymentSelectors(...args);
+}
+
+function prefillPaymentFromAppointment(...args) {
+```
+
+### fillPaymentSelectors
+
+```javascript
+
+function fillPaymentSelectors(...args) {
+  const module = window.PanelPayments;
+  if (!module || typeof module.fillPaymentSelectors !== 'function') {
+    throw new Error('El módulo de Pagos no está disponible: fillPaymentSelectors');
+  }
+  return module.fillPaymentSelectors(...args);
+}
+
+function prefillPaymentFromAppointment(...args) {
+  const module = window.PanelPayments;
+  if (!module || typeof module.prefillPaymentFromAppointment !== 'function') {
+    throw new Error('El módulo de Pagos no está disponible: prefillPaymentFromAppointment');
+  }
+  return module.prefillPaymentFromAppointment(...args);
+}
+
+function clearPaymentForm(...args) {
+```
+
+### prefillPaymentFromAppointment
+
+```javascript
+
+function prefillPaymentFromAppointment(...args) {
+  const module = window.PanelPayments;
+  if (!module || typeof module.prefillPaymentFromAppointment !== 'function') {
+    throw new Error('El módulo de Pagos no está disponible: prefillPaymentFromAppointment');
+  }
+  return module.prefillPaymentFromAppointment(...args);
+}
+
+function clearPaymentForm(...args) {
+  const module = window.PanelPayments;
+  if (!module || typeof module.clearPaymentForm !== 'function') {
+    throw new Error('El módulo de Pagos no está disponible: clearPaymentForm');
+  }
+  return module.clearPaymentForm(...args);
+}
+
+function abrirPagoCita(...args) {
+```
+
+### clearPaymentForm
+
+```javascript
+
+function clearPaymentForm(...args) {
+  const module = window.PanelPayments;
+  if (!module || typeof module.clearPaymentForm !== 'function') {
+    throw new Error('El módulo de Pagos no está disponible: clearPaymentForm');
+  }
+  return module.clearPaymentForm(...args);
+}
+
+function abrirPagoCita(...args) {
+  const module = window.PanelPayments;
+  if (!module || typeof module.abrirPagoCita !== 'function') {
+    throw new Error('El módulo de Pagos no está disponible: abrirPagoCita');
+  }
+  return module.abrirPagoCita(...args);
+}
+
+async function saveManualPayment(...args) {
+```
+
+### abrirPagoCita
+
+```javascript
+
+function abrirPagoCita(...args) {
+  const module = window.PanelPayments;
+  if (!module || typeof module.abrirPagoCita !== 'function') {
+    throw new Error('El módulo de Pagos no está disponible: abrirPagoCita');
+  }
+  return module.abrirPagoCita(...args);
+}
+
+async function saveManualPayment(...args) {
+  const module = window.PanelPayments;
+  if (!module || typeof module.saveManualPayment !== 'function') {
+    throw new Error('El módulo de Pagos no está disponible: saveManualPayment');
+  }
+  return await module.saveManualPayment(...args);
+}
+
+async function readPaymentProofFile(...args) {
+```
+
+### saveManualPayment
+
+```javascript
+
+async function saveManualPayment(...args) {
+  const module = window.PanelPayments;
+  if (!module || typeof module.saveManualPayment !== 'function') {
+    throw new Error('El módulo de Pagos no está disponible: saveManualPayment');
+  }
+  return await module.saveManualPayment(...args);
+}
+
+async function readPaymentProofFile(...args) {
+  const module = window.PanelPayments;
+  if (!module || typeof module.readPaymentProofFile !== 'function') {
+    throw new Error('El módulo de Pagos no está disponible: readPaymentProofFile');
+  }
+  return await module.readPaymentProofFile(...args);
+}
+
+async function verifyPayment(...args) {
+```
+
+### readPaymentProofFile
+
+```javascript
+
+async function readPaymentProofFile(...args) {
+  const module = window.PanelPayments;
+  if (!module || typeof module.readPaymentProofFile !== 'function') {
+    throw new Error('El módulo de Pagos no está disponible: readPaymentProofFile');
+  }
+  return await module.readPaymentProofFile(...args);
+}
+
+async function verifyPayment(...args) {
+  const module = window.PanelPayments;
+  if (!module || typeof module.verifyPayment !== 'function') {
+    throw new Error('El módulo de Pagos no está disponible: verifyPayment');
+  }
+  return await module.verifyPayment(...args);
+}
+
+function renderPagos(...args) {
+```
+
+### verifyPayment
+
+```javascript
+
+async function verifyPayment(...args) {
+  const module = window.PanelPayments;
+  if (!module || typeof module.verifyPayment !== 'function') {
+    throw new Error('El módulo de Pagos no está disponible: verifyPayment');
+  }
+  return await module.verifyPayment(...args);
+}
+
+function renderPagos(...args) {
+  const module = window.PanelPayments;
+  if (!module || typeof module.renderPagos !== 'function') {
+    throw new Error('El módulo de Pagos no está disponible: renderPagos');
+  }
+  return module.renderPagos(...args);
+}
+
+function openPago(...args) {
+```
+
+### renderPagos
+
+```javascript
+
+function renderPagos(...args) {
+  const module = window.PanelPayments;
+  if (!module || typeof module.renderPagos !== 'function') {
+    throw new Error('El módulo de Pagos no está disponible: renderPagos');
+  }
+  return module.renderPagos(...args);
+}
+
+function openPago(...args) {
+  const module = window.PanelPayments;
+  if (!module || typeof module.openPago !== 'function') {
+    throw new Error('El módulo de Pagos no está disponible: openPago');
+  }
+  return module.openPago(...args);
+}
+
+function downloadOperationsCSV(filename, rows) {
+```
+
+### openPago
+
+```javascript
+
+function openPago(...args) {
+  const module = window.PanelPayments;
+  if (!module || typeof module.openPago !== 'function') {
+    throw new Error('El módulo de Pagos no está disponible: openPago');
+  }
+  return module.openPago(...args);
+}
+
+function downloadOperationsCSV(filename, rows) {
+  const csv = rows.map(r => r.map(v => `"${String(v ?? '').replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob(['\uFEFF' + csv], {type:'text/csv;charset=utf-8;'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 800);
+}
+```
+
+### downloadOperationsCSV
+
+```javascript
+
+function downloadOperationsCSV(filename, rows) {
+  const csv = rows.map(r => r.map(v => `"${String(v ?? '').replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob(['\uFEFF' + csv], {type:'text/csv;charset=utf-8;'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 800);
+}
+
+function exportPaymentsCSV() {
+  const rows = [['ID','Código reserva','Cita','Cliente','Servicio/plan','Valor esperado','Valor recibido','Medio','Cuenta','Fecha pago','Fecha verificación','Estado','Verificó','Observaciones']];
+  (operationsData.pagos || []).forEach(p => rows.push([
+    p.ID, p.CodigoReserva, p.CitaID, p.Cliente, p.ServicioPlan, p.ValorEsperado, p.ValorRecibido,
+    p.MedioPago, paymentAccountLabel(p.CuentaReceptora), p.FechaPago, p.FechaVerificacion, p.EstadoPago, p.UsuarioVerifico, p.Observaciones
+  ]));
+  downloadOperationsCSV(`pagos_operativos_${today()}.csv`, rows);
+```
+
+### exportPaymentsCSV
+
+```javascript
+
+function exportPaymentsCSV() {
+  const rows = [['ID','Código reserva','Cita','Cliente','Servicio/plan','Valor esperado','Valor recibido','Medio','Cuenta','Fecha pago','Fecha verificación','Estado','Verificó','Observaciones']];
+  (operationsData.pagos || []).forEach(p => rows.push([
+    p.ID, p.CodigoReserva, p.CitaID, p.Cliente, p.ServicioPlan, p.ValorEsperado, p.ValorRecibido,
+    p.MedioPago, paymentAccountLabel(p.CuentaReceptora), p.FechaPago, p.FechaVerificacion, p.EstadoPago, p.UsuarioVerifico, p.Observaciones
+  ]));
+  downloadOperationsCSV(`pagos_operativos_${today()}.csv`, rows);
+}
+
+function exportOperationsAuditCSV() {
+  const rows = [['ID','Fecha','Usuario','Rol','Acción','Entidad','ID entidad','Antes','Después','Motivo']];
+  (operationsData.auditoria || []).forEach(a => rows.push([
+    a.ID, a.Fecha, a.UsuarioNombre, a.Rol, a.Accion, a.Entidad, a.EntidadID, a.ValorAnterior, a.ValorNuevo, a.Motivo
+  ]));
+  downloadOperationsCSV(`auditoria_operativa_${today()}.csv`, rows);
+}
+
+```
+
+### exportOperationsAuditCSV
+
+```javascript
+
+function exportOperationsAuditCSV() {
+  const rows = [['ID','Fecha','Usuario','Rol','Acción','Entidad','ID entidad','Antes','Después','Motivo']];
+  (operationsData.auditoria || []).forEach(a => rows.push([
+    a.ID, a.Fecha, a.UsuarioNombre, a.Rol, a.Accion, a.Entidad, a.EntidadID, a.ValorAnterior, a.ValorNuevo, a.Motivo
+  ]));
+  downloadOperationsCSV(`auditoria_operativa_${today()}.csv`, rows);
+}
+
+async function fetchJsonWithTimeout(url, options = {}, timeoutMs = 45000) {
+  return window.PanelApi.fetchJsonWithTimeout(url, options, timeoutMs);
+}
+
+function openProfessionalLoginMode() {
+  return window.PanelSession.openProfessionalLoginMode(_sessionBridge());
+}
+
+function backToAdminLogin() {
+```
+
+### fetchJsonWithTimeout
+
+```javascript
+
+async function fetchJsonWithTimeout(url, options = {}, timeoutMs = 45000) {
+  return window.PanelApi.fetchJsonWithTimeout(url, options, timeoutMs);
+}
+
+function openProfessionalLoginMode() {
+  return window.PanelSession.openProfessionalLoginMode(_sessionBridge());
+}
+
+function backToAdminLogin() {
+  return window.PanelSession.backToAdminLogin(_sessionBridge());
+}
+
+async function doProfessionalLogin() {
+  return window.PanelSession.doProfessionalLogin(_sessionBridge());
+}
+
+async function changeProfessionalPassword() {
+```
+
+### openProfessionalLoginMode
+
+```javascript
+
+function openProfessionalLoginMode() {
+  return window.PanelSession.openProfessionalLoginMode(_sessionBridge());
+}
+
+function backToAdminLogin() {
+  return window.PanelSession.backToAdminLogin(_sessionBridge());
+}
+
+async function doProfessionalLogin() {
+  return window.PanelSession.doProfessionalLogin(_sessionBridge());
+}
+
+async function changeProfessionalPassword() {
+  return window.PanelSession.changeProfessionalPassword(_sessionBridge());
+}
+
+async function showProfessionalApp() {
+```
+
+### backToAdminLogin
+
+```javascript
+
+function backToAdminLogin() {
+  return window.PanelSession.backToAdminLogin(_sessionBridge());
+}
+
+async function doProfessionalLogin() {
+  return window.PanelSession.doProfessionalLogin(_sessionBridge());
+}
+
+async function changeProfessionalPassword() {
+  return window.PanelSession.changeProfessionalPassword(_sessionBridge());
+}
+
+async function showProfessionalApp() {
+  return window.PanelSession.showProfessionalApp(_sessionBridge());
+}
+
+async function loadProfessionalAgenda() {
+```
+
+### doProfessionalLogin
+
+```javascript
+
+async function doProfessionalLogin() {
+  return window.PanelSession.doProfessionalLogin(_sessionBridge());
+}
+
+async function changeProfessionalPassword() {
+  return window.PanelSession.changeProfessionalPassword(_sessionBridge());
+}
+
+async function showProfessionalApp() {
+  return window.PanelSession.showProfessionalApp(_sessionBridge());
+}
+
+async function loadProfessionalAgenda() {
+  return window.PanelSession.loadProfessionalAgenda(_sessionBridge());
+}
+
+function setProfessionalMode(mode) {
+```
+
+### changeProfessionalPassword
+
+```javascript
+
+async function changeProfessionalPassword() {
+  return window.PanelSession.changeProfessionalPassword(_sessionBridge());
+}
+
+async function showProfessionalApp() {
+  return window.PanelSession.showProfessionalApp(_sessionBridge());
+}
+
+async function loadProfessionalAgenda() {
+  return window.PanelSession.loadProfessionalAgenda(_sessionBridge());
+}
+
+function setProfessionalMode(mode) {
+  professionalMode = mode;
+  document.querySelectorAll('.pro-seg').forEach(b => b.classList.remove('active'));
+  const btn = document.getElementById('proMode-' + mode);
+  if (btn) btn.classList.add('active');
+```
+
+### showProfessionalApp
+
+```javascript
+
+async function showProfessionalApp() {
+  return window.PanelSession.showProfessionalApp(_sessionBridge());
+}
+
+async function loadProfessionalAgenda() {
+  return window.PanelSession.loadProfessionalAgenda(_sessionBridge());
+}
+
+function setProfessionalMode(mode) {
+  professionalMode = mode;
+  document.querySelectorAll('.pro-seg').forEach(b => b.classList.remove('active'));
+  const btn = document.getElementById('proMode-' + mode);
+  if (btn) btn.classList.add('active');
+  renderProfessionalAgenda();
+}
+
+function renderProfessionalAgenda() {
 ```
 
 ### loadProfessionalAgenda
@@ -605,8 +1382,29 @@ function renderProfessionalAgenda() {
   const base = professionalAgenda.slice().sort((a,b) => (`${a.fecha} ${a.hora}`).localeCompare(`${b.fecha} ${b.hora}`));
   const start = new Date(selected + 'T00:00:00');
   const end = new Date(start); end.setDate(end.getDate() + 7);
+```
+
+### setProfessionalMode
+
+```javascript
+
+function setProfessionalMode(mode) {
+  professionalMode = mode;
+  document.querySelectorAll('.pro-seg').forEach(b => b.classList.remove('active'));
+  const btn = document.getElementById('proMode-' + mode);
+  if (btn) btn.classList.add('active');
+  renderProfessionalAgenda();
+}
+
+function renderProfessionalAgenda() {
+  const selected = document.getElementById('proDate').value || today();
+  const base = professionalAgenda.slice().sort((a,b) => (`${a.fecha} ${a.hora}`).localeCompare(`${b.fecha} ${b.hora}`));
+  const start = new Date(selected + 'T00:00:00');
+  const end = new Date(start); end.setDate(end.getDate() + 7);
   const list = base.filter(c => {
     const d = new Date(c.fecha + 'T00:00:00');
+    if (professionalMode === 'hoy') return c.fecha === today();
+    if (professionalMode === 'fecha') return c.fecha === selected;
 ```
 
 ### renderProfessionalAgenda
@@ -630,8 +1428,6 @@ function renderProfessionalAgenda() {
     const canAttend = c.puedeAtender && c.estado !== 'Sesión atendida';
     return `
     <article class="pro-card pro-appointment">
-      <div class="team-card-head">
-        <h3>${esc(c.nombre)}</h3>
 ```
 
 ### markProfessionalAttended
@@ -655,8 +1451,52 @@ function openProIssue(citaId) {
   openModal('modalProIssue');
 }
 
+```
+
+### openProIssue
+
+```javascript
+
+function openProIssue(citaId) {
+  document.getElementById('proIssueCitaId').value = citaId;
+  document.getElementById('proIssueTipo').value = 'Paciente no responde';
+  document.getElementById('proIssueObs').value = '';
+  openModal('modalProIssue');
+}
+
 async function sendProfessionalIssue() {
   const d = await fetch(APPS_SCRIPT_URL, {
+    method:'POST',
+    body:JSON.stringify({
+      action:'professionalReportIssue',
+      token:PROFESSIONAL_TOKEN,
+      citaId:document.getElementById('proIssueCitaId').value,
+      tipo:document.getElementById('proIssueTipo').value,
+      observacion:document.getElementById('proIssueObs').value.trim()
+    })
+```
+
+### sendProfessionalIssue
+
+```javascript
+
+async function sendProfessionalIssue() {
+  const d = await fetch(APPS_SCRIPT_URL, {
+    method:'POST',
+    body:JSON.stringify({
+      action:'professionalReportIssue',
+      token:PROFESSIONAL_TOKEN,
+      citaId:document.getElementById('proIssueCitaId').value,
+      tipo:document.getElementById('proIssueTipo').value,
+      observacion:document.getElementById('proIssueObs').value.trim()
+    })
+  }).then(r => r.json());
+  if (d.ok) { closeModal('modalProIssue'); toast('Novedad enviada a administración'); }
+  else toast(d.error || 'No se pudo enviar', 'err');
+}
+
+function professionalSignout() {
+  return window.PanelSession.logoutProfessional(_sessionBridge());
 ```
 
 ### professionalSignout
@@ -680,7 +1520,5 @@ async function doLogin() {
 function logout() {
   return window.PanelSession.logoutAdmin(_sessionBridge());
 }
-
-// ── GUARDAS DE SESIÓN MODULARIZADAS ──
 ```
 
