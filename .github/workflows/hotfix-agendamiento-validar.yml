@@ -1,0 +1,85 @@
+name: Hotfix — Validar agendamiento
+
+on:
+  push:
+    branches:
+      - hotfix-agendamiento-2026-08-05
+    paths:
+      - HOTFIX_AGENDAMIENTO_IMPLEMENTAR.md
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hotfix-agendamiento-2026-08-05
+  cancel-in-progress: false
+
+jobs:
+  validar-hotfix:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar rama aislada
+        uses: actions/checkout@v4
+        with:
+          ref: hotfix-agendamiento-2026-08-05
+          fetch-depth: 0
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Confirmar aislamiento y base publicada
+        run: |
+          test "$(git branch --show-current)" = "hotfix-agendamiento-2026-08-05"
+          git fetch origin main
+
+      - name: Aplicar hotfix
+        run: node tools/aplicar-hotfix-agendamiento.mjs index.html
+
+      - name: Validar hotfix
+        run: node tools/validar-hotfix-agendamiento.mjs index.html
+
+      - name: Confirmar alcance
+        run: |
+          CAMBIOS=$(git diff --name-only origin/main -- | grep -v -E '^(index\.html|tools/|\.github/workflows/|HOTFIX_AGENDAMIENTO_)' || true)
+          if [ -n "$CAMBIOS" ]; then
+            echo "Se detectaron cambios fuera del alcance:"
+            echo "$CAMBIOS"
+            exit 1
+          fi
+          git diff --exit-code origin/main -- admin-copy-tools.js || exit 1
+
+      - name: Generar informe
+        run: |
+          cat > HOTFIX_AGENDAMIENTO_RESULTADO.md <<'EOF'
+          # Resultado — Hotfix de agendamiento
+
+          - Se corrigió únicamente `submitAdminBookingMulti()` en `index.html`.
+          - Antes de crear, valida que la sesión administrativa continúe activa.
+          - Si la sesión venció, no envía `adminBook` y conserva todos los campos del formulario.
+          - Si Apps Script rechaza la cita, muestra el motivo exacto devuelto por el servidor.
+          - En errores parciales, informa cuántas citas se crearon y por qué fallaron las demás.
+          - El botón y su etiqueta se recuperan después de éxito, rechazo o fallo de conexión.
+          - Se validaron tres escenarios: sesión vencida, rechazo del servidor y creación correcta.
+          - No se modificaron Pagos, Pasaporte, Agenda, backend ni las ramas de modularización.
+          - No se publicó en `main` durante esta validación.
+          EOF
+
+      - name: Guardar resultado en rama aislada
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html HOTFIX_AGENDAMIENTO_RESULTADO.md
+          if git diff --cached --quiet; then
+            echo "El hotfix ya estaba aplicado."
+          else
+            git commit -m "Corregir errores ocultos al crear citas"
+            git push origin HEAD:hotfix-agendamiento-2026-08-05
+          fi
+
+      - name: Resumen
+        run: |
+          echo "HOTFIX DE AGENDAMIENTO VALIDADO"
+          echo "Todavía no se publicó en main."
