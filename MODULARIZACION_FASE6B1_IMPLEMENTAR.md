@@ -1,1 +1,1 @@
-Ejecutar la validación final de creación individual y múltiple en la rama aislada.
+Ejecutar la prueba final de creación de citas con el simulador corregido.
