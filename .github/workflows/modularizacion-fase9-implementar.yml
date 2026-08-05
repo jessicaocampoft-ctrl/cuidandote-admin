@@ -1,0 +1,109 @@
+name: Fase 9 — Modularizar Códigos REF y bono
+
+on:
+  push:
+    branches:
+      - modularizacion-panel-fase9-referidos-bonos-2026-08-05
+    paths:
+      - MODULARIZACION_FASE9_IMPLEMENTAR.md
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: modularizacion-panel-fase9-referidos-bonos-implementar
+  cancel-in-progress: false
+
+jobs:
+  modularizar-referidos:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar rama aislada
+        uses: actions/checkout@v4
+        with:
+          ref: modularizacion-panel-fase9-referidos-bonos-2026-08-05
+          fetch-depth: 0
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Confirmar aislamiento y base
+        run: |
+          test "$(git branch --show-current)" = "modularizacion-panel-fase9-referidos-bonos-2026-08-05"
+          git fetch origin modularizacion-panel-fase8-base-datos-2026-08-05
+          git fetch origin main
+
+      - name: Separar Códigos REF y bono
+        run: node tools/modularizar-referrals-fase9.mjs index.html
+
+      - name: Validar sintaxis y flujos
+        run: |
+          node --check js/modules/referrals.js
+          node tools/validar-referrals-fase9.mjs index.html js/modules/referrals.js
+
+      - name: Confirmar que las fases anteriores no cambiaron
+        run: |
+          git diff --exit-code origin/modularizacion-panel-fase8-base-datos-2026-08-05 -- \
+            js/core/config.js \
+            js/core/api.js \
+            js/core/navigation.js \
+            js/core/session.js \
+            js/modules/payments.js \
+            js/modules/passport.js \
+            js/modules/agenda.js \
+            js/modules/appointment-create.js \
+            js/modules/appointment-edit.js \
+            js/modules/team.js \
+            js/modules/database.js
+
+      - name: Confirmar alcance funcional
+        run: |
+          changed="$(git diff --name-only origin/modularizacion-panel-fase8-base-datos-2026-08-05 -- '*.html' 'js/**/*.js')"
+          printf '%s\n' "$changed"
+          unexpected="$(printf '%s\n' "$changed" | grep -Ev '^(index\.html|js/modules/referrals\.js)$' || true)"
+          test -z "$unexpected" || { echo "Cambios funcionales inesperados:"; echo "$unexpected"; exit 1; }
+          grep -q '<script src="js/modules/referrals.js"></script>' index.html
+          grep -q 'PanelReferrals' js/modules/referrals.js
+          ! grep -q 'function reload' js/modules/referrals.js
+          ! grep -q 'function loadTeamData' js/modules/referrals.js
+          ! grep -q 'function renderBasedatos' js/modules/referrals.js
+          ! grep -q 'function renderCalendar' js/modules/referrals.js
+
+      - name: Generar informe
+        run: |
+          cat > MODULARIZACION_FASE9_RESULTADO.md <<'EOF'
+          # Resultado de modularización — Fase 9 Códigos REF y bono
+
+          - `js/modules/referrals.js` creado.
+          - 6 funciones propias de referidos y bonos separadas de `index.html`.
+          - 3 constantes propias encapsuladas dentro del módulo.
+          - Los nombres usados por la vista permanecen mediante adaptadores compatibles.
+          - `reload`, `loadTeamData`, `toast` y `esc` permanecen compartidas.
+          - Tabla de códigos validada.
+          - Detección de bonos pendientes validada.
+          - Límite de dos bonos por mes validado.
+          - Generación de bono y vínculo con el código REF validados.
+          - Cambio de estado a `Usado` validado.
+          - Las Fases 1 a 8 permanecen sin cambios.
+          - No se modificó `main`, Apps Script ni el panel publicado.
+          EOF
+
+      - name: Guardar resultado solo en la rama aislada
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html js/modules/referrals.js MODULARIZACION_FASE9_RESULTADO.md
+          if git diff --cached --quiet; then
+            echo "La Fase 9 ya estaba actualizada."
+          else
+            git commit -m "Separar módulo Códigos REF y bono"
+            git push origin HEAD:modularizacion-panel-fase9-referidos-bonos-2026-08-05
+          fi
+
+      - name: Resumen
+        run: |
+          echo "FASE 9 COMPLETADA EN RAMA AISLADA"
+          echo "main y la Agenda publicada permanecen sin cambios."
