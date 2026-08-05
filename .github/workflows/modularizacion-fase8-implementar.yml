@@ -1,0 +1,109 @@
+name: Fase 8 — Modularizar Base de datos
+
+on:
+  push:
+    branches:
+      - modularizacion-panel-fase8-base-datos-2026-08-05
+    paths:
+      - MODULARIZACION_FASE8_IMPLEMENTAR.md
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: modularizacion-panel-fase8-base-datos-implementar
+  cancel-in-progress: false
+
+jobs:
+  modularizar-base-datos:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar rama aislada
+        uses: actions/checkout@v4
+        with:
+          ref: modularizacion-panel-fase8-base-datos-2026-08-05
+          fetch-depth: 0
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Confirmar aislamiento y base
+        run: |
+          test "$(git branch --show-current)" = "modularizacion-panel-fase8-base-datos-2026-08-05"
+          git fetch origin modularizacion-panel-fase7-equipo-clinico-2026-08-05
+          git fetch origin main
+
+      - name: Separar Base de datos
+        run: node tools/modularizar-database-fase8.mjs index.html
+
+      - name: Validar sintaxis y flujos
+        run: |
+          node --check js/modules/database.js
+          node tools/validar-database-fase8.mjs index.html js/modules/database.js
+
+      - name: Confirmar que las fases anteriores no cambiaron
+        run: |
+          git diff --exit-code origin/modularizacion-panel-fase7-equipo-clinico-2026-08-05 -- \
+            js/core/config.js \
+            js/core/api.js \
+            js/core/navigation.js \
+            js/core/session.js \
+            js/modules/payments.js \
+            js/modules/passport.js \
+            js/modules/agenda.js \
+            js/modules/appointment-create.js \
+            js/modules/appointment-edit.js \
+            js/modules/team.js
+
+      - name: Confirmar alcance funcional
+        run: |
+          changed="$(git diff --name-only origin/modularizacion-panel-fase7-equipo-clinico-2026-08-05 -- '*.html' 'js/**/*.js')"
+          printf '%s\n' "$changed"
+          unexpected="$(printf '%s\n' "$changed" | grep -Ev '^(index\.html|js/modules/database\.js)$' || true)"
+          test -z "$unexpected" || { echo "Cambios funcionales inesperados:"; echo "$unexpected"; exit 1; }
+          grep -q '<script src="js/modules/database.js"></script>' index.html
+          grep -q 'PanelDatabase' js/modules/database.js
+          ! grep -q 'function showView' js/modules/database.js
+          ! grep -q 'function agendarDesdePacienteRec' js/modules/database.js
+          ! grep -q 'function usarSesion' js/modules/database.js
+          ! grep -q 'function logChange' js/modules/database.js
+
+      - name: Generar informe
+        run: |
+          cat > MODULARIZACION_FASE8_RESULTADO.md <<'EOF'
+          # Resultado de modularización — Fase 8 Base de datos
+
+          - `js/modules/database.js` creado.
+          - 18 funciones de pacientes y reactivación separadas de `index.html`.
+          - El estado `_dbPacs` quedó encapsulado dentro del módulo.
+          - Los nombres usados por la vista permanecen mediante adaptadores compatibles.
+          - `agendarDesdePacienteRec` permanece en Crear cita.
+          - `usarSesion` permanece en Paquetes.
+          - El historial general (`logChange`, `renderChangeLog`, `toggleChangeLog`, `clearChangeLog`) permanece compartido.
+          - Códigos REF & BONO quedó fuera del alcance.
+          - Detección de pacientes duplicados validada.
+          - Campos de origen y referido validados.
+          - Mensajes y enlaces de WhatsApp para reactivación validados.
+          - Las Fases 1 a 7 permanecen sin cambios.
+          - No se modificó `main`, Apps Script ni el panel publicado.
+          EOF
+
+      - name: Guardar resultado solo en la rama aislada
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html js/modules/database.js MODULARIZACION_FASE8_RESULTADO.md
+          if git diff --cached --quiet; then
+            echo "La Fase 8 ya estaba actualizada."
+          else
+            git commit -m "Separar módulo Base de datos"
+            git push origin HEAD:modularizacion-panel-fase8-base-datos-2026-08-05
+          fi
+
+      - name: Resumen
+        run: |
+          echo "FASE 8 COMPLETADA EN RAMA AISLADA"
+          echo "main y la Agenda publicada permanecen sin cambios."

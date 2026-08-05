@@ -1,0 +1,72 @@
+name: Fase 8 — Inventario Base de datos
+
+on:
+  push:
+    branches:
+      - modularizacion-panel-fase8-base-datos-2026-08-05
+    paths:
+      - MODULARIZACION_FASE8_INVENTARIO.md
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: modularizacion-panel-fase8-base-datos-inventario
+  cancel-in-progress: false
+
+jobs:
+  inventario-base-datos:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar rama aislada
+        uses: actions/checkout@v4
+        with:
+          ref: modularizacion-panel-fase8-base-datos-2026-08-05
+          fetch-depth: 0
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Confirmar aislamiento
+        run: |
+          test "$(git branch --show-current)" = "modularizacion-panel-fase8-base-datos-2026-08-05"
+          git fetch origin modularizacion-panel-fase7-equipo-clinico-2026-08-05
+          git fetch origin main
+
+      - name: Generar inventario de Base de datos
+        run: node tools/inventario-basedatos-fase8.mjs index.html MODULARIZACION_FASE8_INVENTARIO_RESULTADO.md
+
+      - name: Validar alcance del inventario
+        run: |
+          test -s MODULARIZACION_FASE8_INVENTARIO_RESULTADO.md
+          grep -q 'Fase 8 Base de datos' MODULARIZACION_FASE8_INVENTARIO_RESULTADO.md
+          grep -q '`renderBasedatos`' MODULARIZACION_FASE8_INVENTARIO_RESULTADO.md
+          grep -q '`renderReactivacion`' MODULARIZACION_FASE8_INVENTARIO_RESULTADO.md
+          grep -q '`dbEditarPac`' MODULARIZACION_FASE8_INVENTARIO_RESULTADO.md
+          grep -q '`dbBorrarPac`' MODULARIZACION_FASE8_INVENTARIO_RESULTADO.md
+          grep -q 'Códigos REF & BONO quedó fuera' MODULARIZACION_FASE8_INVENTARIO_RESULTADO.md
+
+      - name: Confirmar que no cambió código funcional
+        run: |
+          git diff --exit-code origin/modularizacion-panel-fase7-equipo-clinico-2026-08-05 -- \
+            index.html js/core js/modules
+
+      - name: Guardar únicamente el informe
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add MODULARIZACION_FASE8_INVENTARIO_RESULTADO.md
+          if git diff --cached --quiet; then
+            echo "El inventario ya estaba actualizado."
+          else
+            git commit -m "Inventariar módulo Base de datos"
+            git push origin HEAD:modularizacion-panel-fase8-base-datos-2026-08-05
+          fi
+
+      - name: Resumen
+        run: |
+          echo "INVENTARIO FASE 8 COMPLETADO"
+          echo "No se modificó main ni el panel publicado."
