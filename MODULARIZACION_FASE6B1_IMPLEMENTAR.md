@@ -1,1 +1,1 @@
-Mostrar el mensaje exacto de validación faltante durante la creación simulada.
+Ejecutar la validación final de creación individual y múltiple en la rama aislada.
