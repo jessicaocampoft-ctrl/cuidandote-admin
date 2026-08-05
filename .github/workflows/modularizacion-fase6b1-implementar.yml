@@ -43,7 +43,7 @@ jobs:
         run: node --check js/modules/appointment-create.js
 
       - name: Probar creación individual y múltiple
-        run: node tools/validar-appointment-create-fase6b1.mjs index.html js/modules/appointment-create.js
+        run: node tools/validar-appointment-create-fase6b1-v2.mjs index.html js/modules/appointment-create.js
 
       - name: Confirmar que las fases anteriores no cambiaron
         run: |
