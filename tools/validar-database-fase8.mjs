@@ -113,7 +113,7 @@ for (const name of names) assert(typeof context.PanelDatabase[name] === 'functio
 
 const msg4 = context.PanelDatabase.msgSemana4('Ana García');
 const msg5 = context.PanelDatabase.msgSemana5('Ana García');
-assert(msg4.includes('Ana') && msg4.includes('4 semanas'), 'El mensaje de reactivación de 4 semanas cambió.');
+assert(msg4.includes('Ana') && msg4.includes('semana 4'), 'El mensaje de reactivación de semana 4 cambió.');
 assert(msg5.includes('Ana') && msg5.includes('5 semanas'), 'El mensaje de reactivación de 5 semanas cambió.');
 const wa = context.PanelDatabase.waRecordatorio('3001234567', 'Ana García', 4);
 assert(wa.startsWith('https://wa.me/573001234567?text='), 'El enlace de WhatsApp de reactivación cambió.');
