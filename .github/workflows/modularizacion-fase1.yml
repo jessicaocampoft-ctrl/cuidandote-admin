@@ -44,15 +44,18 @@ jobs:
       - name: Validar contrato y aislamiento
         run: node tools/validar-modularizacion-fase1.mjs
 
-      - name: Revisar que los archivos funcionales modificados sean los esperados
+      - name: Recorrer todas las vistas del menú en entorno aislado
+        run: node tools/probar-navegacion-modular.mjs
+
+      - name: Confirmar que no aparecieron cambios funcionales inesperados
         run: |
+          INESPERADOS="$(git status --porcelain | awk '{print $2}' | grep -Ev '^(index.html|js/core/navigation.js)$' || true)"
+          if [ -n "$INESPERADOS" ]; then
+            echo "Archivos inesperados:"
+            echo "$INESPERADOS"
+            exit 1
+          fi
           test -f js/core/navigation.js
-          STATUS_INDEX="$(git status --short -- index.html)"
-          STATUS_NAV="$(git status --short -- js/core/navigation.js)"
-          echo "index.html: $STATUS_INDEX"
-          echo "navigation.js: $STATUS_NAV"
-          test "$STATUS_INDEX" = " M index.html"
-          test "$STATUS_NAV" = "?? js/core/navigation.js"
 
       - name: Guardar resultado únicamente en la rama aislada
         run: |
@@ -60,7 +63,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add index.html js/core/navigation.js
           if git diff --cached --quiet; then
-            echo "La navegación ya estaba modularizada."
+            echo "La navegación ya estaba modularizada y no requirió cambios adicionales."
           else
             git commit -m "Modularizar navegación del panel sin cambiar su comportamiento"
             git push origin HEAD:modularizacion-panel-fase1-2026-08-04
@@ -69,4 +72,5 @@ jobs:
       - name: Resumen
         run: |
           echo "FASE 1 COMPLETADA EN RAMA AISLADA"
+          echo "Navegación probada en todas las vistas."
           echo "No se publicó ningún cambio en main."
