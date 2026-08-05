@@ -16,7 +16,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  inventario-sesion:
+  modularizar-sesion:
     runs-on: ubuntu-latest
     steps:
       - name: Descargar rama aislada
@@ -34,29 +34,43 @@ jobs:
         run: |
           test "$(git branch --show-current)" = "modularizacion-panel-fase3-sesion-2026-08-05"
           git fetch origin main
+          git fetch origin modularizacion-panel-fase2-api-2026-08-05
 
-      - name: Inventariar inicio de sesión y sesiones
-        run: node tools/inspect-session-phase3.mjs index.html
+      - name: Separar inicio de sesión y sesiones
+        run: node tools/modularizar-sesion-fase3.mjs index.html
 
-      - name: Extraer bloques exactos de sesión
-        run: node tools/extract-session-phase3-details.mjs index.html
+      - name: Validar sintaxis del módulo
+        run: node --check js/core/session.js
 
-      - name: Extraer restauración y cierre completos
-        run: node tools/extract-session-phase3-runtime.mjs index.html
+      - name: Probar accesos restauración cierre e inactividad
+        run: node tools/validar-sesion-fase3.mjs index.html js/core/session.js
 
-      - name: Guardar informes solo en la rama aislada
+      - name: Confirmar que las fases anteriores no cambiaron
+        run: |
+          git diff --exit-code origin/modularizacion-panel-fase2-api-2026-08-05 -- js/core/config.js js/core/api.js js/core/navigation.js
+
+      - name: Confirmar que no se modificaron módulos sensibles
+        run: |
+          git diff --unified=0 origin/modularizacion-panel-fase2-api-2026-08-05 -- index.html > /tmp/fase3.diff
+          if grep -E '^[-+].*(guardarProgresoPasaporte|saveManualPayment|aprobarPago|crearCita|renderPagos|passportSaveProgress)' /tmp/fase3.diff; then
+            echo "Se detectó un cambio fuera del alcance de sesión."
+            exit 1
+          fi
+
+      - name: Guardar resultado solo en la rama aislada
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add MODULARIZACION_FASE3_INVENTARIO.md MODULARIZACION_FASE3_DETALLE.md MODULARIZACION_FASE3_RUNTIME.md
+          git add index.html js/core/session.js
           if git diff --cached --quiet; then
-            echo "Los informes ya estaban actualizados."
+            echo "La Fase 3 ya estaba aplicada."
           else
-            git commit -m "Extraer restauración cierre e inactividad completos"
+            git commit -m "Separar inicio de sesión y manejo de sesiones"
             git push origin HEAD:modularizacion-panel-fase3-sesion-2026-08-05
           fi
 
       - name: Resumen
         run: |
-          echo "INVENTARIO DE FASE 3 COMPLETADO"
-          echo "No se modificó main ni se cambió la lógica del panel."
+          echo "FASE 3 SUPERADA"
+          echo "Inicio de sesión y sesiones quedaron separados en js/core/session.js."
+          echo "No se modificó main ni el panel publicado."
