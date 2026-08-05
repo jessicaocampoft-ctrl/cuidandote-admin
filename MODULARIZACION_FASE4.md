@@ -1,6 +1,6 @@
 # Modularización del panel — Fase 4
 
-Estado: inventario del módulo de Pagos en rama aislada.
+Estado: inventario estricto del módulo de Pagos en rama aislada.
 
 Objetivo:
 
@@ -10,6 +10,4 @@ Objetivo:
 - no modificar Pasaporte, Agenda, sesión ni otros módulos;
 - no publicar en `main` durante esta fase.
 
-Primero se genera un inventario exacto antes de mover código.
-
-Ejecución solicitada: 2026-08-05.
+El inventario general terminó. Ahora se ejecuta un inventario estricto basado en nombres de funciones, IDs y acciones reales.
