@@ -11,6 +11,15 @@ const signature = 'function showView(v) {';
 const adapter = `function showView(v) {\n  return window.PanelNavigation.showView(v);\n}`;
 const scriptTag = '<script src="js/core/navigation.js"></script>';
 
+if (html.includes(adapter) && html.includes(scriptTag) && fs.existsSync(modulePath)) {
+  const existingModule = fs.readFileSync(modulePath, 'utf8');
+  if (!existingModule.includes('window.PanelNavigation = Object.freeze({ showView });')) {
+    throw new Error('navigation.js existe, pero no exporta PanelNavigation.showView.');
+  }
+  console.log('La navegación ya estaba modularizada; se conserva sin cambios.');
+  process.exit(0);
+}
+
 function findFunctionEnd(source, start) {
   const open = source.indexOf('{', start);
   if (open < 0) throw new Error('No se encontró la apertura de showView.');
@@ -74,7 +83,7 @@ const bodyEnd = originalFunction.lastIndexOf('}');
 const body = originalFunction.slice(bodyStart, bodyEnd).trim();
 
 if (body.includes('window.PanelNavigation.showView')) {
-  throw new Error('showView ya parece ser un adaptador. No se volvió a modificar.');
+  throw new Error('showView ya parece ser un adaptador, pero falta el módulo o su etiqueta de carga.');
 }
 if (body.length < 300) {
   throw new Error('El cuerpo de showView es inesperadamente pequeño; se canceló la extracción.');
