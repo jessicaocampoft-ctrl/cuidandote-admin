@@ -1,0 +1,62 @@
+name: Hotfix sincronización Pasaporte
+
+on:
+  push:
+    branches:
+      - hotfix-pasaporte-sync-2026-08-04
+    paths:
+      - HOTFIX_PASAPORTE_SYNC.md
+
+permissions:
+  contents: write
+
+jobs:
+  aplicar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar rama
+        uses: actions/checkout@v4
+        with:
+          ref: hotfix-pasaporte-sync-2026-08-04
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Aplicar corrección
+        run: node tools/fix-passport-save-sync.mjs index.html
+
+      - name: Validar sintaxis JavaScript interna
+        run: |
+          node - <<'NODE'
+          const fs=require('fs');
+          const {spawnSync}=require('child_process');
+          const html=fs.readFileSync('index.html','utf8').replace(/^\uFEFF/,'');
+          const scripts=[...html.matchAll(/<script\b(?![^>]*\bsrc\s*=)[^>]*>([\s\S]*?)<\/script>/gi)]
+            .map(m=>m[1]).filter(s=>s.trim()&&!/^\s*[\[{]/.test(s));
+          fs.writeFileSync('/tmp/pasaporte-inline.js', scripts.join('\n;\n'));
+          const r=spawnSync(process.execPath,['--check','/tmp/pasaporte-inline.js'],{encoding:'utf8'});
+          process.stdout.write(r.stdout||'');
+          process.stderr.write(r.stderr||'');
+          process.exit(r.status||0);
+          NODE
+
+      - name: Verificar elementos del hotfix
+        run: |
+          grep -q "Guardando ' + requestedCount + ' de 16 sellos" index.html
+          grep -q "Progreso guardado correctamente" index.html
+          grep -q "controller.abort(), 120000" index.html
+          grep -q "action=passportEnsure" index.html
+
+      - name: Guardar index corregido
+        run: |
+          if git diff --quiet -- index.html; then
+            echo "El hotfix ya estaba aplicado."
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add index.html
+            git commit -m "Corregir guardado y sincronización del Pasaporte"
+            git push origin HEAD:hotfix-pasaporte-sync-2026-08-04
+          fi
