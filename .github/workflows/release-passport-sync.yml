@@ -1,0 +1,41 @@
+name: Preparar release limpia del Pasaporte
+
+on:
+  push:
+    branches:
+      - release-pasaporte-sync-2026-08-04
+    paths:
+      - RELEASE_PASAPORTE_SYNC.md
+
+permissions:
+  contents: write
+
+jobs:
+  preparar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar rama de release
+        uses: actions/checkout@v4
+        with:
+          ref: release-pasaporte-sync-2026-08-04
+
+      - name: Copiar únicamente el panel corregido
+        run: |
+          curl --fail --silent --show-error --location \
+            "https://raw.githubusercontent.com/jessicaocampoft-ctrl/cuidandote-admin/hotfix-pasaporte-sync-2026-08-04/index.html" \
+            --output index.html
+          test -s index.html
+          grep -q "Progreso guardado correctamente" index.html
+          grep -q "controller.abort(), 120000" index.html
+
+      - name: Publicar solo index.html en la rama de release
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          if git diff --cached --quiet; then
+            echo "La release ya contiene el panel corregido."
+          else
+            git commit -m "Preparar sincronización del Pasaporte"
+            git push origin HEAD:release-pasaporte-sync-2026-08-04
+          fi
