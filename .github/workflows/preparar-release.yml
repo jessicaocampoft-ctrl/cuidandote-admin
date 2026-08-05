@@ -1,0 +1,51 @@
+name: Preparar liberación limpia del panel
+
+on:
+  push:
+    branches:
+      - auditoria-panel-2026-08-04
+    paths:
+      - RELEASE_READY.md
+
+permissions:
+  contents: write
+
+jobs:
+  preparar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar la rama auditada
+        uses: actions/checkout@v4
+        with:
+          ref: auditoria-panel-2026-08-04
+          fetch-depth: 0
+
+      - name: Verificar que existen los archivos aprobados
+        run: |
+          test -s index.html
+          test -s vendor/qrcode.min.js
+          grep -qi '<!DOCTYPE html>' index.html
+          grep -q 'vendor/qrcode.min.js' index.html
+
+      - name: Guardar temporalmente los archivos aprobados
+        run: |
+          mkdir -p /tmp/cuidandote-release/vendor
+          cp index.html /tmp/cuidandote-release/index.html
+          cp vendor/qrcode.min.js /tmp/cuidandote-release/vendor/qrcode.min.js
+
+      - name: Crear rama limpia desde producción
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin main
+          git checkout -B release-panel-estable-2026-08-04 origin/main
+          mkdir -p vendor
+          cp /tmp/cuidandote-release/index.html index.html
+          cp /tmp/cuidandote-release/vendor/qrcode.min.js vendor/qrcode.min.js
+          git add index.html vendor/qrcode.min.js
+          if git diff --cached --quiet; then
+            echo "La versión de producción ya coincide con la auditada."
+          else
+            git commit -m "Preparar panel estable auditado"
+          fi
+          git push --force-with-lease origin release-panel-estable-2026-08-04
