@@ -1,6 +1,6 @@
 # Modularización del panel — Fase 3
 
-Estado: extracción exacta de inicio de sesión, restauración e inactividad en rama aislada.
+Estado: extracción del runtime completo de sesiones en rama aislada.
 
 Objetivo:
 
@@ -10,4 +10,4 @@ Objetivo:
 - no modificar Pagos, Pasaporte, Agenda ni sus llamadas específicas;
 - no publicar en `main` durante esta fase.
 
-El inventario inicial terminó. Ahora se extraen los bloques exactos antes de mover código.
+El inventario y el detalle inicial terminaron. Ahora se extraen completos la restauración automática, el cierre y la verificación de inactividad antes de mover código.
