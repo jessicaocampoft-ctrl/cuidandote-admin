@@ -1,26 +1,24 @@
 # Inventario de modularización — Fase 9 Códigos REF y bono
 
 - Vista delimitada: `vCodigos`.
-- Funciones propias seleccionadas: **8**.
-- Funciones asíncronas: **4**.
+- Funciones propias seleccionadas: **6**.
+- Funciones asíncronas: **2**.
 - Constantes propias detectadas: **3**.
 - Estados propios detectados: **0**.
-- Acciones API detectadas: **3**.
+- Acciones API detectadas: **2**.
 - IDs relacionados: **10**.
 - Agenda y las Fases 1 a 8 permanecen fuera del alcance.
+- `reload` y `loadTeamData` permanecen compartidas y fuera del módulo.
 
 ## Funciones propias seleccionadas
 - `_bonosReferidorMes`
 - `_mesAbrevActual`
 - `generarBono` — async
-- `loadTeamData` — async
 - `marcarUsado` — async
-- `reload` — async
 - `renderCodigos`
 - `updateBonosBadge`
 
 ## Manejadores declarados en la vista
-- `getElementById`
 - `renderCodigos`
 
 ## Constantes propias
@@ -33,11 +31,11 @@
 
 ## Acciones API
 - `actualizarCodigo`
-- `adminData`
 - `registrarCodigo`
 
 ## Funciones compartidas llamadas desde el módulo
 - `esc`
+- `reload`
 - `toast`
 
 ## Controles para una posible implementación
