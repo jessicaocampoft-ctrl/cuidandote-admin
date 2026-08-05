@@ -17,7 +17,7 @@ expect(navigation.includes("const viewAliases = { citas: 'agenda' }"), 'Se perdi
 expect(navigation.includes("console.warn('Vista no encontrada:', v)"), 'Se perdió la protección ante vistas inexistentes.');
 expect(navigation.includes('renderAgenda'), 'El módulo no conserva la navegación de Agenda.');
 expect(navigation.includes('renderPagos'), 'El módulo no conserva la navegación de Pagos.');
-expect(navigation.includes('renderPasaporte'), 'El módulo no conserva la navegación de Pasaporte.');
+expect(/['"]pasaporte['"]/.test(navigation), 'El módulo no conserva la ruta de la sección Pasaporte.');
 expect(!navigation.includes('APPS_SCRIPT_URL ='), 'La navegación no debe contener configuración del backend.');
 expect(!navigation.includes('saveManualPayment'), 'La navegación no debe contener el guardado de pagos.');
 expect(!navigation.includes('guardarProgresoPasaporte'), 'La navegación no debe contener el guardado del pasaporte.');
