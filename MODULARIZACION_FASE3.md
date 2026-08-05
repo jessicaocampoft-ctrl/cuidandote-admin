@@ -11,3 +11,5 @@ Objetivo:
 - no publicar en `main` durante esta fase.
 
 Primero se genera un inventario exacto antes de mover código.
+
+Ejecución solicitada: 2026-08-05.
