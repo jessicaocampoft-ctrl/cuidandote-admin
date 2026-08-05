@@ -2,7 +2,7 @@
 
 Inventariar la pantalla `vCodigos`, sus funciones, constantes, estados y acciones API antes de mover código.
 
-Reintento 2: el lector ahora tolera plantillas HTML anidadas dentro de `updateBonosBadge`; no se modifica el código funcional.
+Reintento 3: excluir `reload`, `loadTeamData` y llamadas nativas del navegador; conservar solamente las funciones propias de Códigos REF y bono.
 
 Controles obligatorios:
 - no modificar `main`;
