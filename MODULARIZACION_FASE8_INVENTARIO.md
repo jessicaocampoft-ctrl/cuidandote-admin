@@ -2,7 +2,7 @@
 
 Inventariar exclusivamente la vista y la lógica de Base de datos antes de trasladar funciones.
 
-Revisión 2: limitar la selección a funciones de pacientes, reactivación e historial de cambios; excluir expresamente Finanzas, KPI, Agenda y otros módulos mezclados en el archivo antiguo.
+Revisión 3: limitar la selección a funciones de pacientes, reactivación e historial de cambios; permitir `agendarDesdePacienteRec` como puente legítimo hacia Nueva cita y bloquear únicamente funciones exactas de otros módulos.
 
 Controles obligatorios:
 - no modificar `main`;
