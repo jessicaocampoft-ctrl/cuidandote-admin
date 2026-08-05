@@ -1,1 +1,1 @@
-Ejecutar el inventario estricto del módulo Equipo clínico en la rama aislada.
+Reejecutar el inventario corregido del módulo Equipo clínico en la rama aislada.
