@@ -1,0 +1,37 @@
+name: Fase 5 — Extraer bloques Pasaporte
+
+on:
+  push:
+    branches:
+      - modularizacion-panel-fase5-pasaporte-2026-08-05
+    paths:
+      - MODULARIZACION_FASE5_BLOQUES_TRIGGER.md
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  extraer-bloques:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: modularizacion-panel-fase5-pasaporte-2026-08-05
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Confirmar rama aislada
+        run: test "$(git branch --show-current)" = "modularizacion-panel-fase5-pasaporte-2026-08-05"
+      - name: Extraer bloques completos
+        run: node tools/extract-passport-phase5-blocks.mjs index.html
+      - name: Guardar resultado
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add MODULARIZACION_FASE5_BLOQUES.md
+          if ! git diff --cached --quiet; then
+            git commit -m "Extraer estado búsqueda y administración del Pasaporte"
+            git push origin HEAD:modularizacion-panel-fase5-pasaporte-2026-08-05
+          fi
