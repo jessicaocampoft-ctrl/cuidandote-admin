@@ -8,7 +8,7 @@ let source = fs.readFileSync(sourcePath, 'utf8');
 const createCall = "await context.PanelAppointmentCreate.submitAdminBooking();";
 const isolatedCreateCall = "const toastsBeforeCreate = toasts.length;\nawait context.PanelAppointmentCreate.submitAdminBooking();";
 const oldAssertion = "assert(reloads >= 1 && agendaRenders >= 1, 'No actualizó Agenda después de crear la cita.');";
-const newAssertion = "assert(!toasts.slice(toastsBeforeCreate).some(item => ['err','error'].includes(String(item.tone || '').toLowerCase())), 'La creación individual terminó con un error.');";
+const newAssertion = "console.log('QA_TOASTS_AFTER_CREATE', JSON.stringify(toasts.slice(toastsBeforeCreate)));\nassert(!toasts.slice(toastsBeforeCreate).some(item => ['err','error'].includes(String(item.tone || '').toLowerCase())), 'La creación individual terminó con un error.');";
 const oldHelpers = "  _renderMultiChips(){},\n";
 const newHelpers = "  _renderMultiChips(){},\n  _renderServiceChips(){},\n  _clearDuo(){},\n  quitarDescuento(){},\n  switchScheduleMode(mode){ this._scheduleMode = mode; },\n";
 const oldDuoState = "  _duoActive:false,\n";
