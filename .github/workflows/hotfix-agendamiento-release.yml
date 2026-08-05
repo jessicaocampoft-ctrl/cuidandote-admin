@@ -1,0 +1,60 @@
+name: Hotfix — Preparar liberación limpia de agendamiento
+
+on:
+  push:
+    branches:
+      - hotfix-agendamiento-2026-08-05
+    paths:
+      - HOTFIX_AGENDAMIENTO_RELEASE.md
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  preparar-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar hotfix validado
+        uses: actions/checkout@v4
+        with:
+          ref: hotfix-agendamiento-2026-08-05
+          fetch-depth: 0
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Repetir validación antes de liberar
+        run: node tools/validar-hotfix-agendamiento.mjs index.html
+
+      - name: Conservar solo el archivo funcional validado
+        run: cp index.html /tmp/index-hotfix-agendamiento.html
+
+      - name: Crear rama limpia desde main
+        run: |
+          git fetch origin main
+          git checkout -B release-hotfix-agendamiento-2026-08-05 origin/main
+          cp /tmp/index-hotfix-agendamiento.html index.html
+
+      - name: Confirmar diferencia mínima
+        run: |
+          CAMBIOS=$(git diff --name-only origin/main)
+          test "$CAMBIOS" = "index.html"
+          grep -q 'const erroresDetalle = \[\];' index.html
+          grep -q 'action=ping&token=' index.html
+          grep -q 'No se creó la cita:' index.html
+
+      - name: Publicar rama limpia, no main
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "Mostrar y prevenir errores al crear citas"
+          git push --force-with-lease origin HEAD:release-hotfix-agendamiento-2026-08-05
+
+      - name: Resumen
+        run: |
+          echo "Rama limpia preparada: release-hotfix-agendamiento-2026-08-05"
+          echo "Archivo funcional modificado: index.html"
