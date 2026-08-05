@@ -1,0 +1,102 @@
+name: Fase 6B1 — Modularizar Crear Citas
+
+on:
+  push:
+    branches:
+      - modularizacion-panel-fase6b1-crear-citas-2026-08-05
+    paths:
+      - MODULARIZACION_FASE6B1_IMPLEMENTAR.md
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: modularizacion-panel-fase6b1-crear-citas
+  cancel-in-progress: false
+
+jobs:
+  modularizar-crear-citas:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar rama aislada
+        uses: actions/checkout@v4
+        with:
+          ref: modularizacion-panel-fase6b1-crear-citas-2026-08-05
+          fetch-depth: 0
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Confirmar aislamiento y base
+        run: |
+          test "$(git branch --show-current)" = "modularizacion-panel-fase6b1-crear-citas-2026-08-05"
+          git fetch origin modularizacion-panel-fase6a-agenda-2026-08-05
+          git fetch origin main
+
+      - name: Separar creación de citas
+        run: node tools/modularizar-appointment-create-fase6b1.mjs index.html
+
+      - name: Validar sintaxis
+        run: node --check js/modules/appointment-create.js
+
+      - name: Probar creación individual y múltiple
+        run: node tools/validar-appointment-create-fase6b1.mjs index.html js/modules/appointment-create.js
+
+      - name: Confirmar que las fases anteriores no cambiaron
+        run: |
+          git diff --exit-code origin/modularizacion-panel-fase6a-agenda-2026-08-05 -- \
+            js/core/config.js js/core/api.js js/core/navigation.js js/core/session.js \
+            js/modules/payments.js js/modules/passport.js js/modules/agenda.js
+
+      - name: Confirmar que no se modificaron otros módulos
+        run: |
+          CAMBIOS=$(git diff --name-only origin/modularizacion-panel-fase6a-agenda-2026-08-05 -- 'js/modules/**' | grep -v '^js/modules/appointment-create.js$' || true)
+          if [ -n "$CAMBIOS" ]; then
+            echo "Se detectaron módulos ajenos modificados:"
+            echo "$CAMBIOS"
+            exit 1
+          fi
+
+      - name: Confirmar carga y adaptadores
+        run: |
+          grep -q 'global.PanelAppointmentCreate = Object.freeze' js/modules/appointment-create.js
+          grep -q '<script src="js/modules/appointment-create.js"></script>' index.html
+          test "$(grep -o 'script src="js/modules/appointment-create.js"' index.html | wc -l)" -eq 1
+
+      - name: Generar informe
+        run: |
+          cat > MODULARIZACION_FASE6B1_RESULTADO.md <<'EOF'
+          # Resultado de modularización — Fase 6B1 Crear citas
+
+          - `js/modules/appointment-create.js` creado.
+          - 19 funciones de apertura, precarga, cálculos, validación y creación separadas de `index.html`.
+          - Los nombres usados por botones, Pacientes, Seguimientos, Lista de espera y Calendario se conservaron mediante adaptadores.
+          - El bloqueo de doble envío, los modos de agenda, las fechas múltiples y el estado de segunda persona permanecen en `index.html`.
+          - Creación individual con `adminBook` validada.
+          - Creación múltiple en modo de fecha única validada.
+          - Rechazo de horas de medianoche y aceptación de 12:00 validados.
+          - Precarga desde lista de espera y apertura para domicilio validadas.
+          - Edición, reprogramación, cancelación y cambios de estado no fueron trasladados.
+          - Las Fases 1 a 6A permanecen sin cambios.
+          - No se modificó `main` ni el panel publicado.
+          EOF
+
+      - name: Guardar resultado solo en la rama aislada
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html js/modules/appointment-create.js MODULARIZACION_FASE6B1_RESULTADO.md
+          if git diff --cached --quiet; then
+            echo "La Fase 6B1 ya estaba aplicada."
+          else
+            git commit -m "Separar y validar creación de citas"
+            git push origin HEAD:modularizacion-panel-fase6b1-crear-citas-2026-08-05
+          fi
+
+      - name: Resumen
+        run: |
+          echo "FASE 6B1 COMPLETADA Y VALIDADA"
+          echo "No se publicó en main."
