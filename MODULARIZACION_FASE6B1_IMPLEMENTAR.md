@@ -1,1 +1,1 @@
-Repetir la separación y validación de creación de citas aislando los mensajes previos de prueba.
+Repetir la separación y validación con todas las dependencias del formulario simulado.
