@@ -2,7 +2,7 @@
 
 Inventariar exclusivamente la vista y la lógica de Base de datos antes de trasladar funciones.
 
-Revisión 3: limitar la selección a funciones de pacientes, reactivación e historial de cambios; permitir `agendarDesdePacienteRec` como puente legítimo hacia Nueva cita y bloquear únicamente funciones exactas de otros módulos.
+Revisión 4: excluir `showView` y la navegación compartida; conservar únicamente las funciones propias de pacientes, reactivación e historial de cambios y el estado `_dbPacs`.
 
 Controles obligatorios:
 - no modificar `main`;
