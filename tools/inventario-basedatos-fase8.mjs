@@ -96,6 +96,7 @@ function extractNamedFunction(source, name) {
 
 const ui = between(html, uiStartMarker, uiEndMarker, 'la interfaz de Base de datos');
 const uiHandlers = unique([...ui.matchAll(/\b(?:onclick|onchange|oninput|onkeyup|onsubmit)\s*=\s*['"][^'"]*?([A-Za-z_$][\w$]*)\s*\(/g)].map(m => m[1]));
+const sharedUiHandlers = new Set(['showView','openModal','closeModal']);
 
 const expectedModuleFunctions = [
   'initFormDB','renderBasedatos','renderReactivacion','limpiarFormDB','agregarPacienteDB',
@@ -106,7 +107,7 @@ const expectedModuleFunctions = [
 ];
 
 for (const handler of uiHandlers) {
-  if (!expectedModuleFunctions.includes(handler)) expectedModuleFunctions.push(handler);
+  if (!sharedUiHandlers.has(handler) && !expectedModuleFunctions.includes(handler)) expectedModuleFunctions.push(handler);
 }
 
 const functions = expectedModuleFunctions.map(name => extractNamedFunction(html, name));
@@ -131,9 +132,7 @@ const languageAndPlatform = new Set([
 ]);
 const externalDependencies = calls.filter(name => !functionNames.includes(name) && !languageAndPlatform.has(name));
 
-const stateCandidates = unique([
-  ...[...html.matchAll(/(?:^|\n)\s*(?:let|const|var)\s+(_dbPacs|_reac[A-Za-z_$]*|_notasTimer)\b/g)].map(m => m[1])
-]);
+const stateCandidates = /(?:^|\n)\s*let\s+_dbPacs\s*=/.test(html) ? ['_dbPacs'] : [];
 if (!stateCandidates.includes('_dbPacs')) throw new Error('No se encontró el estado _dbPacs.');
 
 if (!ui.includes('id="vBasedatos"')) throw new Error('No se encontró la vista vBasedatos.');
@@ -141,11 +140,11 @@ if (functionNames.length < 20 || functionNames.length > 35) {
   throw new Error(`Selección insegura de funciones: ${functionNames.length}.`);
 }
 const forbiddenModuleFunctions = new Set([
-  'renderCalendar','renderFinanzas','renderEquipo','saveManualPayment','renderPayments',
+  'showView','renderCalendar','renderFinanzas','renderEquipo','saveManualPayment','renderPayments',
   'renderPassport','openPassportEditor','renderAgenda','renderKPITablero'
 ]);
 if (functionNames.some(name => forbiddenModuleFunctions.has(name))) {
-  throw new Error('Se incluyó una función exacta de otro módulo.');
+  throw new Error('Se incluyó una función exacta de otro módulo o navegación compartida.');
 }
 
 const lines = [];
@@ -153,19 +152,20 @@ lines.push('# Inventario de modularización — Fase 8 Base de datos', '');
 lines.push('- Vista delimitada: `vBasedatos`.');
 lines.push(`- Funciones seleccionadas para el módulo: **${functionNames.length}**.`);
 lines.push(`- Funciones asíncronas: **${asyncFunctions.length}**.`);
-lines.push(`- Estados compartidos detectados: **${stateCandidates.length}**.`);
+lines.push(`- Estados propios detectados: **${stateCandidates.length}**.`);
 lines.push(`- Acciones API detectadas: **${actions.length}**.`);
 lines.push(`- IDs de interfaz relacionados: **${domIds.length}**.`);
 lines.push('- La sección Códigos REF & BONO quedó fuera del alcance de esta fase.');
+lines.push('- `showView` y la navegación general permanecen compartidas y fuera del módulo.');
 lines.push('- No se seleccionaron funciones exactas de Agenda, Finanzas, KPI, Pagos, Pasaporte ni Equipo clínico.');
 lines.push('');
 lines.push('## Funciones seleccionadas');
 for (const item of functions) lines.push(`- \`${item.name}\`${item.async ? ' — async' : ''}`);
 lines.push('');
 lines.push('## Manejadores declarados en la vista');
-for (const name of uiHandlers) lines.push(`- \`${name}\``);
+for (const name of uiHandlers) lines.push(`- \`${name}\`${sharedUiHandlers.has(name) ? ' — compartido, no se mueve' : ''}`);
 lines.push('');
-lines.push('## Estados que requieren encapsulación o adaptador');
+lines.push('## Estado propio que se encapsulará');
 for (const name of stateCandidates) lines.push(`- \`${name}\``);
 lines.push('');
 lines.push('## Acciones API');
@@ -178,10 +178,10 @@ lines.push('');
 lines.push('## Controles para la implementación');
 lines.push('- Crear `js/modules/database.js` únicamente con las funciones seleccionadas.');
 lines.push('- Conservar adaptadores con los mismos nombres en `index.html`.');
-lines.push('- No mover Códigos REF & BONO ni utilidades compartidas.');
+lines.push('- No mover `showView`, Códigos REF & BONO ni utilidades compartidas.');
 lines.push('- Verificar que Agenda, creación/edición de citas y los módulos de las Fases 1 a 7 no cambien.');
 lines.push('- No modificar `main`, Apps Script ni el panel publicado.');
 lines.push('');
 
 fs.writeFileSync(reportPath, lines.join('\n'), 'utf8');
-console.log(`Inventario Fase 8 corregido: ${functionNames.length} funciones y ${externalDependencies.length} dependencias externas.`);
+console.log(`Inventario Fase 8 final: ${functionNames.length} funciones y ${externalDependencies.length} dependencias externas.`);
