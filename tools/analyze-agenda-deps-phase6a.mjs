@@ -8,6 +8,7 @@ const roots = [
 
 function extract(start) {
   const open = source.indexOf('{', start);
+  if (open < 0) return null;
   let depth = 0, quote = '', escaped = false;
   for (let i = open; i < source.length; i++) {
     const ch = source[i], next = source[i + 1];
@@ -21,14 +22,18 @@ function extract(start) {
     if (ch === '/' && next === '/') { const end = source.indexOf('\n', i + 2); i = end < 0 ? source.length : end; continue; }
     if (ch === '/' && next === '*') { const end = source.indexOf('*/', i + 2); i = end < 0 ? source.length : end + 1; continue; }
     if (ch === '{') depth++;
-    if (ch === '}' && --depth === 0) return source.slice(start, i + 1);
+    if (ch === '}') {
+      depth--;
+      if (depth === 0) return source.slice(start, i + 1);
+    }
   }
-  throw new Error('Función sin cierre.');
+  return null;
 }
 
 const defs = new Map();
 for (const match of source.matchAll(/(?:async\s+)?function\s+([A-Za-z_$][\w$]*)\s*\(/g)) {
-  defs.set(match[1], extract(match.index));
+  const block = extract(match.index);
+  if (block) defs.set(match[1], block);
 }
 
 const reserved = new Set(['if','for','while','switch','catch','function','return','typeof','new','setTimeout','clearTimeout','setInterval','clearInterval','encodeURIComponent','decodeURIComponent','parseInt','parseFloat','Number','String','Boolean','Date','Array','Object','Math','JSON','Promise']);
