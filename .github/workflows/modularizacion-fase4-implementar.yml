@@ -1,0 +1,101 @@
+name: Fase 4 — Modularizar Pagos
+
+on:
+  push:
+    branches:
+      - modularizacion-panel-fase4-pagos-2026-08-05
+    paths:
+      - MODULARIZACION_FASE4_IMPLEMENTAR.md
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: modularizacion-panel-fase4-implementar
+  cancel-in-progress: false
+
+jobs:
+  modularizar-pagos:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar rama aislada
+        uses: actions/checkout@v4
+        with:
+          ref: modularizacion-panel-fase4-pagos-2026-08-05
+          fetch-depth: 0
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Confirmar aislamiento y base
+        run: |
+          test "$(git branch --show-current)" = "modularizacion-panel-fase4-pagos-2026-08-05"
+          git fetch origin modularizacion-panel-fase3-sesion-2026-08-05
+          git fetch origin main
+
+      - name: Separar el módulo de Pagos
+        run: node tools/modularizar-pagos-fase4.mjs index.html
+
+      - name: Validar sintaxis del módulo
+        run: node --check js/modules/payments.js
+
+      - name: Probar flujos principales de Pagos
+        run: node tools/validar-pagos-fase4.mjs index.html js/modules/payments.js
+
+      - name: Confirmar que las fases anteriores no cambiaron
+        run: |
+          git diff --exit-code origin/modularizacion-panel-fase3-sesion-2026-08-05 -- js/core/config.js js/core/api.js js/core/navigation.js js/core/session.js
+
+      - name: Confirmar que no se modificaron otros módulos
+        run: |
+          CAMBIOS=$(git diff --name-only origin/modularizacion-panel-fase3-sesion-2026-08-05 -- 'js/modules/**' | grep -v '^js/modules/payments.js$' || true)
+          if [ -n "$CAMBIOS" ]; then
+            echo "Se detectaron módulos ajenos modificados:"
+            echo "$CAMBIOS"
+            exit 1
+          fi
+
+      - name: Confirmar adaptadores y orden de carga
+        run: |
+          grep -q 'Adaptadores de compatibilidad — Fase 4 Pagos' index.html
+          grep -q '<script src="js/modules/payments.js"></script>' index.html
+          grep -q 'global.PanelPayments = Object.freeze' js/modules/payments.js
+          test "$(grep -o 'script src="js/modules/payments.js"' index.html | wc -l)" -eq 1
+
+      - name: Generar informe de resultado
+        run: |
+          cat > MODULARIZACION_FASE4_RESULTADO.md <<'EOF'
+          # Resultado de modularización — Fase 4 Pagos
+
+          - `js/modules/payments.js` creado.
+          - 17 funciones de Pagos separadas de `index.html`.
+          - Los nombres públicos usados por botones y otras vistas se conservaron mediante adaptadores.
+          - Registro con `COMPROBANTE_RECIBIDO` validado.
+          - Aprobación con `PAGO_APROBADO` validada.
+          - Rechazo con `PAGO_RECHAZADO` validado.
+          - Precarga de cita, valor, fecha y cuenta validada.
+          - Mensajes visibles y recuperación de botones validados.
+          - Apertura desde Agenda validada.
+          - Las Fases 1, 2 y 3 permanecen sin cambios.
+          - No se modificó `main` ni el panel publicado.
+          EOF
+
+      - name: Guardar resultado solo en la rama aislada
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html js/modules/payments.js MODULARIZACION_FASE4_RESULTADO.md
+          if git diff --cached --quiet; then
+            echo "La Fase 4 ya estaba aplicada."
+          else
+            git commit -m "Separar y validar el módulo de Pagos"
+            git push origin HEAD:modularizacion-panel-fase4-pagos-2026-08-05
+          fi
+
+      - name: Resumen
+        run: |
+          echo "FASE 4 COMPLETADA Y VALIDADA"
+          echo "No se publicó en main."
