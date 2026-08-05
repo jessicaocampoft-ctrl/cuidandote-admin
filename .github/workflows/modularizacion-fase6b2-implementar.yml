@@ -1,0 +1,99 @@
+name: Fase 6B2 — Modularizar edición de citas
+
+on:
+  push:
+    branches:
+      - modularizacion-panel-fase6b2-editar-citas-2026-08-05
+    paths:
+      - MODULARIZACION_FASE6B2_IMPLEMENTAR.md
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: modularizacion-panel-fase6b2-editar-citas
+  cancel-in-progress: false
+
+jobs:
+  modularizar-edicion-citas:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar rama aislada
+        uses: actions/checkout@v4
+        with:
+          ref: modularizacion-panel-fase6b2-editar-citas-2026-08-05
+          fetch-depth: 0
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Confirmar aislamiento y base
+        run: |
+          test "$(git branch --show-current)" = "modularizacion-panel-fase6b2-editar-citas-2026-08-05"
+          git fetch origin modularizacion-panel-fase6b1-crear-citas-2026-08-05
+          git fetch origin main
+
+      - name: Separar edición y estados de citas
+        run: node tools/modularizar-appointment-edit-fase6b2.mjs index.html
+
+      - name: Validar sintaxis
+        run: |
+          node --check js/modules/appointment-edit.js
+          node tools/validar-appointment-edit-fase6b2.mjs index.html js/modules/appointment-edit.js
+
+      - name: Confirmar que las fases anteriores no cambiaron
+        run: |
+          git diff --exit-code origin/modularizacion-panel-fase6b1-crear-citas-2026-08-05 -- \
+            js/core/config.js js/core/api.js js/core/navigation.js js/core/session.js \
+            js/modules/payments.js js/modules/passport.js js/modules/agenda.js js/modules/appointment-create.js
+
+      - name: Confirmar alcance funcional
+        run: |
+          CAMBIOS=$(git diff --name-only origin/modularizacion-panel-fase6b1-crear-citas-2026-08-05 -- 'js/**' | grep -v '^js/modules/appointment-edit.js$' || true)
+          if [ -n "$CAMBIOS" ]; then
+            echo "Se detectaron archivos JavaScript ajenos modificados:"
+            echo "$CAMBIOS"
+            exit 1
+          fi
+          grep -q 'global.PanelAppointmentEdit = Object.freeze' js/modules/appointment-edit.js
+          grep -q '<script src="js/modules/appointment-edit.js"></script>' index.html
+          test "$(grep -o 'script src="js/modules/appointment-edit.js"' index.html | wc -l)" -eq 1
+
+      - name: Generar informe
+        run: |
+          cat > MODULARIZACION_FASE6B2_RESULTADO.md <<'EOF'
+          # Resultado de modularización — Fase 6B2 Edición de citas
+
+          - `js/modules/appointment-edit.js` creado.
+          - 20 funciones de detalle, nota administrativa, reprogramación, cambio de estado, cancelación y edición separadas de `index.html`.
+          - Los mismos nombres usados por Agenda, Calendario, botones y modales se conservaron mediante adaptadores.
+          - `_cancelPendingId` permanece en `index.html` para conservar el estado compartido del modal.
+          - Reprogramación con `editBooking` validada.
+          - Cambio de estado con `updateStatus` validado.
+          - Cancelación con motivo mediante `cancelBooking` validada.
+          - Edición completa con `editBooking` validada.
+          - Recuperación de botones y error de red controlado validados.
+          - Creación, Pagos y Pasaporte no fueron trasladados ni modificados.
+          - Las Fases 1 a 6B1 permanecen sin cambios.
+          - No se modificó `main` ni el panel publicado.
+          EOF
+
+      - name: Guardar resultado solo en la rama aislada
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html js/modules/appointment-edit.js MODULARIZACION_FASE6B2_RESULTADO.md
+          if git diff --cached --quiet; then
+            echo "La Fase 6B2 ya estaba aplicada."
+          else
+            git commit -m "Separar y validar edición de citas"
+            git push origin HEAD:modularizacion-panel-fase6b2-editar-citas-2026-08-05
+          fi
+
+      - name: Resumen
+        run: |
+          echo "FASE 6B2 COMPLETADA Y VALIDADA"
+          echo "No se publicó en main."
