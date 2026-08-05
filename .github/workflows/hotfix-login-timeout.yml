@@ -1,0 +1,85 @@
+name: Hotfix — Tiempo de ingreso administrativo
+
+on:
+  push:
+    branches:
+      - hotfix-login-timeout-2026-08-05
+    paths:
+      - HOTFIX_LOGIN_TIMEOUT_EJECUTAR.md
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hotfix-login-timeout-2026-08-05
+  cancel-in-progress: false
+
+jobs:
+  validar-hotfix-login:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar rama aislada
+        uses: actions/checkout@v4
+        with:
+          ref: hotfix-login-timeout-2026-08-05
+          fetch-depth: 0
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Confirmar aislamiento y base
+        run: |
+          test "$(git branch --show-current)" = "hotfix-login-timeout-2026-08-05"
+          git fetch origin main
+          test "$(git merge-base HEAD origin/main)" = "4dad69fb9e39b34e4dbc6fe28ba802497e6cb8bf"
+
+      - name: Aplicar ajuste de tiempo de ingreso
+        run: node tools/hotfix-login-timeout.mjs index.html
+
+      - name: Validar sintaxis y contrato de sesión
+        run: node tools/validar-login-timeout.mjs index.html
+
+      - name: Confirmar alcance funcional mínimo
+        run: |
+          changed="$(git diff --name-only origin/main -- '*.html' 'js/**/*.js')"
+          printf '%s\n' "$changed"
+          test "$changed" = "index.html"
+          git diff --unified=3 origin/main -- index.html
+          added_timeout="$(git diff origin/main -- index.html | grep -c '^+.*120000' || true)"
+          removed_timeout="$(git diff origin/main -- index.html | grep -c '^-.*45000' || true)"
+          test "$added_timeout" = "1"
+          test "$removed_timeout" = "1"
+
+      - name: Generar informe
+        run: |
+          cat > HOTFIX_LOGIN_TIMEOUT_RESULTADO.md <<'EOF'
+          # Resultado — Hotfix tiempo de ingreso
+
+          - El ingreso administrativo mantiene el mismo usuario, contraseña y acción `adminLogin`.
+          - El tiempo máximo de espera cambia de 45 a 120 segundos.
+          - El almacenamiento del token y la apertura del panel permanecen sin cambios.
+          - Los scripts inline conservan sintaxis válida.
+          - El único archivo funcional modificado es `index.html`.
+          - Agenda, Pagos, Pasaporte, Equipo clínico y Apps Script no fueron modificados.
+          - Punto de retorno previo: `4dad69fb9e39b34e4dbc6fe28ba802497e6cb8bf`.
+          EOF
+
+      - name: Guardar resultado solo en la rama aislada
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html HOTFIX_LOGIN_TIMEOUT_RESULTADO.md
+          if git diff --cached --quiet; then
+            echo "El hotfix ya estaba aplicado."
+          else
+            git commit -m "Ampliar espera del ingreso administrativo"
+            git push origin HEAD:hotfix-login-timeout-2026-08-05
+          fi
+
+      - name: Resumen
+        run: |
+          echo "HOTFIX VALIDADO EN RAMA AISLADA"
+          echo "main y la Agenda publicada permanecen sin cambios."
