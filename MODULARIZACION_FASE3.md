@@ -1,6 +1,6 @@
 # Modularización del panel — Fase 3
 
-Estado: inventario de inicio de sesión y manejo de sesiones en rama aislada.
+Estado: extracción exacta de inicio de sesión, restauración e inactividad en rama aislada.
 
 Objetivo:
 
@@ -10,6 +10,4 @@ Objetivo:
 - no modificar Pagos, Pasaporte, Agenda ni sus llamadas específicas;
 - no publicar en `main` durante esta fase.
 
-Primero se genera un inventario exacto antes de mover código.
-
-Ejecución solicitada: 2026-08-05.
+El inventario inicial terminó. Ahora se extraen los bloques exactos antes de mover código.
