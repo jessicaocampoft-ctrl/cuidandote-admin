@@ -1,0 +1,100 @@
+name: Fase 6A — Modularizar Agenda
+
+on:
+  push:
+    branches:
+      - modularizacion-panel-fase6a-agenda-2026-08-05
+    paths:
+      - MODULARIZACION_FASE6A_IMPLEMENTAR.md
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: modularizacion-panel-fase6a-agenda
+  cancel-in-progress: false
+
+jobs:
+  modularizar-agenda:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar rama aislada
+        uses: actions/checkout@v4
+        with:
+          ref: modularizacion-panel-fase6a-agenda-2026-08-05
+          fetch-depth: 0
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Confirmar aislamiento y base
+        run: |
+          test "$(git branch --show-current)" = "modularizacion-panel-fase6a-agenda-2026-08-05"
+          git fetch origin modularizacion-panel-fase5-pasaporte-2026-08-05
+          git fetch origin main
+
+      - name: Separar Agenda y calendario
+        run: node tools/modularizar-agenda-fase6a.mjs index.html
+
+      - name: Validar sintaxis
+        run: node --check js/modules/agenda.js
+
+      - name: Probar aislamiento y contratos
+        run: node tools/validar-agenda-fase6a.mjs index.html js/modules/agenda.js
+
+      - name: Confirmar que las fases anteriores no cambiaron
+        run: |
+          git diff --exit-code origin/modularizacion-panel-fase5-pasaporte-2026-08-05 -- \
+            js/core/config.js js/core/api.js js/core/navigation.js js/core/session.js \
+            js/modules/payments.js js/modules/passport.js
+
+      - name: Confirmar que no se modificaron otros módulos
+        run: |
+          CAMBIOS=$(git diff --name-only origin/modularizacion-panel-fase5-pasaporte-2026-08-05 -- 'js/modules/**' | grep -v '^js/modules/agenda.js$' || true)
+          if [ -n "$CAMBIOS" ]; then
+            echo "Se detectaron módulos ajenos modificados:"
+            echo "$CAMBIOS"
+            exit 1
+          fi
+
+      - name: Confirmar carga y adaptadores
+        run: |
+          grep -q 'global.PanelAgenda = Object.freeze' js/modules/agenda.js
+          grep -q '<script src="js/modules/agenda.js"></script>' index.html
+          test "$(grep -o 'script src="js/modules/agenda.js"' index.html | wc -l)" -eq 1
+
+      - name: Generar informe
+        run: |
+          cat > MODULARIZACION_FASE6A_RESULTADO.md <<'EOF'
+          # Resultado de modularización — Fase 6A Agenda
+
+          - `js/modules/agenda.js` creado.
+          - 10 funciones de consulta, filtros y calendario separadas de `index.html`.
+          - Los nombres públicos usados por botones y otras vistas se conservaron mediante adaptadores.
+          - `getMonday`, la paginación y el estado inicial del calendario permanecen en `index.html` para evitar fallos durante la carga.
+          - No se trasladaron funciones que crean, editan, reprograman, cancelan o cambian estados de citas.
+          - No se detectaron operaciones POST ni acciones API de escritura en `agenda.js`.
+          - La sintaxis del módulo y de los scripts inline fue validada.
+          - Las Fases 1 a 5 permanecen sin cambios.
+          - No se modificó `main` ni el panel publicado.
+          EOF
+
+      - name: Guardar resultado solo en la rama aislada
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html js/modules/agenda.js MODULARIZACION_FASE6A_RESULTADO.md
+          if git diff --cached --quiet; then
+            echo "La Fase 6A ya estaba aplicada."
+          else
+            git commit -m "Separar y validar Agenda y calendario"
+            git push origin HEAD:modularizacion-panel-fase6a-agenda-2026-08-05
+          fi
+
+      - name: Resumen
+        run: |
+          echo "FASE 6A COMPLETADA Y VALIDADA"
+          echo "No se publicó en main."

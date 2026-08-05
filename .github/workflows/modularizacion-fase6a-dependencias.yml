@@ -1,0 +1,39 @@
+name: Fase 6A — Dependencias Agenda
+
+on:
+  push:
+    branches:
+      - modularizacion-panel-fase6a-agenda-2026-08-05
+    paths:
+      - MODULARIZACION_FASE6A_DEP_TRIGGER.md
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  dependencias-agenda:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: modularizacion-panel-fase6a-agenda-2026-08-05
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Confirmar rama aislada
+        run: test "$(git branch --show-current)" = "modularizacion-panel-fase6a-agenda-2026-08-05"
+      - name: Analizar dependencias
+        run: node tools/analyze-agenda-deps-phase6a.mjs index.html
+      - name: Guardar resultado
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add MODULARIZACION_FASE6A_DEPENDENCIAS.md
+          if git diff --cached --quiet; then
+            echo "Sin cambios."
+          else
+            git commit -m "Analizar dependencias seguras de Agenda"
+            git push origin HEAD:modularizacion-panel-fase6a-agenda-2026-08-05
+          fi
