@@ -1,0 +1,56 @@
+name: Modularización segura — Fase 2 API
+
+on:
+  push:
+    branches:
+      - modularizacion-panel-fase2-api-2026-08-05
+    paths:
+      - MODULARIZACION_FASE2.md
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: modularizacion-panel-fase2-api
+  cancel-in-progress: false
+
+jobs:
+  inventario-api:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar rama aislada
+        uses: actions/checkout@v4
+        with:
+          ref: modularizacion-panel-fase2-api-2026-08-05
+          fetch-depth: 0
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Confirmar aislamiento respecto a producción
+        run: |
+          test "$(git branch --show-current)" = "modularizacion-panel-fase2-api-2026-08-05"
+          git fetch origin main
+
+      - name: Generar inventario de configuración y llamadas API
+        run: node tools/inspect-api-phase2.mjs index.html
+
+      - name: Guardar inventario solo en la rama aislada
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add MODULARIZACION_FASE2_INVENTARIO.md
+          if git diff --cached --quiet; then
+            echo "El inventario ya estaba actualizado."
+          else
+            git commit -m "Inventariar configuración y comunicación con Apps Script"
+            git push origin HEAD:modularizacion-panel-fase2-api-2026-08-05
+          fi
+
+      - name: Resumen
+        run: |
+          echo "INVENTARIO DE FASE 2 COMPLETADO"
+          echo "No se modificó main ni se cambió la lógica del panel."
