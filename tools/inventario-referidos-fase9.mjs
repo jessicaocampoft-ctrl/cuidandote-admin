@@ -33,17 +33,18 @@ const ui = html.slice(sectionStart, sectionEnd + '</section>'.length);
 const declarations = unique([...html.matchAll(/(?:^|\n)(?:async\s+)?function\s+([A-Za-z_$][\w$]*)\s*\(/g)].map(m => m[1]));
 const declarationSet = new Set(declarations);
 const blocks = new Map(declarations.map(name => [name, extractNamedFunction(html, name)]));
-const uiHandlers = unique([...ui.matchAll(/\b(?:onclick|onchange|oninput|onkeyup|onsubmit)\s*=\s*['"][^'"]*?([A-Za-z_$][\w$]*)\s*\(/g)].map(m => m[1]));
+const uiHandlers = unique([...ui.matchAll(/\b(?:onclick|onchange|oninput|onkeyup|onsubmit)\s*=\s*['"][^'"]*?([A-Za-z_$][\w$]*)\s*\(/g)].map(m => m[1]))
+  .filter(name => declarationSet.has(name));
 
 const shared = new Set([
   'showView','openModal','closeModal','toast','esc','fmtDate','today','initDashboard',
   'formatCOP','rgba','chipColor','kvGet','kvSet','kvRemove','logChange','renderChangeLog',
-  'toggleChangeLog','clearChangeLog','agendarDesdePacienteRec','usarSesion'
+  'toggleChangeLog','clearChangeLog','agendarDesdePacienteRec','usarSesion','reload','loadTeamData'
 ]);
 const forbidden = new Set([
   'renderCalendar','submitAdminBooking','guardarEdicion','saveManualPayment','renderPagos',
   'passportSaveProgress','renderPassport','renderEquipo','renderFinanzas','renderKPITablero',
-  'renderBasedatos','renderReactivacion'
+  'renderBasedatos','renderReactivacion','reload','loadTeamData'
 ]);
 
 const seeds = unique([...uiHandlers.filter(name => declarationSet.has(name)), 'renderCodigos']);
@@ -94,6 +95,7 @@ lines.push(`- Estados propios detectados: **${stateNames.length}**.`);
 lines.push(`- Acciones API detectadas: **${actions.length}**.`);
 lines.push(`- IDs relacionados: **${domIds.length}**.`);
 lines.push('- Agenda y las Fases 1 a 8 permanecen fuera del alcance.');
+lines.push('- `reload` y `loadTeamData` permanecen compartidas y fuera del módulo.');
 lines.push('');
 lines.push('## Funciones propias seleccionadas');
 for (const name of selectedNames) lines.push(`- \`${name}\`${blocks.get(name).async ? ' — async' : ''}`);
