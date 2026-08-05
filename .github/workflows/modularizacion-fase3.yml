@@ -41,15 +41,18 @@ jobs:
       - name: Extraer bloques exactos de sesión
         run: node tools/extract-session-phase3-details.mjs index.html
 
+      - name: Extraer restauración y cierre completos
+        run: node tools/extract-session-phase3-runtime.mjs index.html
+
       - name: Guardar informes solo en la rama aislada
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add MODULARIZACION_FASE3_INVENTARIO.md MODULARIZACION_FASE3_DETALLE.md
+          git add MODULARIZACION_FASE3_INVENTARIO.md MODULARIZACION_FASE3_DETALLE.md MODULARIZACION_FASE3_RUNTIME.md
           if git diff --cached --quiet; then
             echo "Los informes ya estaban actualizados."
           else
-            git commit -m "Detallar inicio de sesión restauración e inactividad"
+            git commit -m "Extraer restauración cierre e inactividad completos"
             git push origin HEAD:modularizacion-panel-fase3-sesion-2026-08-05
           fi
 
