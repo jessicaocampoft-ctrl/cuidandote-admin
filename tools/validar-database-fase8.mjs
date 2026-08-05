@@ -17,9 +17,11 @@ function assert(condition, message) {
   if (!condition) throw new Error(message);
 }
 
-assert(html.includes('<script src="js/modules/database.js"></script>'), 'index.html no carga database.js.');
+const teamTag = '<script src="js/modules/team.js"></script>';
+const databaseTag = '<script src="js/modules/database.js"></script>';
+assert(html.includes(databaseTag), 'index.html no carga database.js.');
 assert((html.match(/script src="js\/modules\/database\.js"/g) || []).length === 1, 'database.js debe cargarse una sola vez.');
-assert(html.indexOf('team.js') < html.indexOf('database.js'), 'database.js debe cargar después de team.js.');
+assert(html.indexOf(teamTag) >= 0 && html.indexOf(teamTag) < html.indexOf(databaseTag), 'database.js debe cargar después de la etiqueta real de team.js.');
 
 for (const name of names) {
   const adapter = new RegExp(`\\b(?:async\\s+)?function\\s+${name.replace(/[$]/g,'\\$&')}\\s*\\(\.\.\.args\\)`);
