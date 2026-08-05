@@ -1,8 +1,8 @@
 # Ejecutar inventario — Fase 8 Base de datos
 
-Inventariar exclusivamente la vista y la lógica de Base de datos antes de trasladar funciones.
+Inventariar exclusivamente la vista y la lógica de pacientes y reactivación antes de trasladar funciones.
 
-Revisión 4: excluir `showView` y la navegación compartida; conservar únicamente las funciones propias de pacientes, reactivación e historial de cambios y el estado `_dbPacs`.
+Revisión 5: mantener fuera los puentes de Crear cita (`agendarDesdePacienteRec`), Paquetes (`usarSesion`) y el historial general (`logChange`, `renderChangeLog`, `toggleChangeLog`, `clearChangeLog`).
 
 Controles obligatorios:
 - no modificar `main`;
