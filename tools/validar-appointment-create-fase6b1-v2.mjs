@@ -10,7 +10,7 @@ const isolatedCreateCall = "const toastsBeforeCreate = toasts.length;\nawait con
 const oldAssertion = "assert(reloads >= 1 && agendaRenders >= 1, 'No actualizó Agenda después de crear la cita.');";
 const newAssertion = "assert(toasts.slice(toastsBeforeCreate).some(item => /cita creada|sesiones.*creadas/i.test(String(item.message || ''))), 'No mostró confirmación de creación.');";
 const oldHelpers = "  _renderMultiChips(){},\n";
-const newHelpers = "  _renderMultiChips(){},\n  _renderServiceChips(){},\n  _clearDuo(){},\n  quitarDescuento(){},\n  switchScheduleMode(mode){ this._scheduleMode = mode; },\n";
+const newHelpers = "  _renderMultiChips(){},\n  _renderServiceChips(){},\n  _clearDuo(){},\n  quitarDescuento(){},\n  switchScheduleMode(){},\n";
 const oldDuoState = "  _duoActive:false,\n";
 const newDuoState = "  _duoActive:false,\n  _cobrarDesplazamiento:true,\n";
 
