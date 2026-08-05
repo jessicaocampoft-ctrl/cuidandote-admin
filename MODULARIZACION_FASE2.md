@@ -1,6 +1,6 @@
 # Modularización del panel — Fase 2
 
-Estado: inventario técnico en rama aislada.
+Estado: extracción exacta de configuración y timeout en rama aislada.
 
 Objetivo:
 
@@ -10,4 +10,4 @@ Objetivo:
 - conservar las firmas actuales para que los módulos existentes sigan funcionando;
 - no publicar en `main` durante esta fase.
 
-Primero se genera un inventario exacto antes de mover código.
+El inventario inicial ya terminó. En esta ejecución se extraen los bloques exactos de `APPS_SCRIPT_URL`, `TOKEN` y `fetchJsonWithTimeout` antes de mover código.
