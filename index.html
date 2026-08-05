@@ -18857,20 +18857,104 @@ function renderPasaporteAdminTools() {
 }
 
 async function guardarProgresoPasaporte() {
-  if (!_pasCurrent || !_pasCurrent.id) { toast('Genera primero el enlace seguro', 'warn'); return; }
+  if (!_pasCurrent || !_pasCurrent.id) {
+    toast('Genera primero el enlace seguro', 'warn');
+    return;
+  }
+
+  const btn = document.querySelector('#pasAdminTools button[onclick="guardarProgresoPasaporte()"]');
+  let status = document.getElementById('pasSaveStatus');
+  if (!status) {
+    const editor = document.getElementById('pasProgressEditor');
+    if (editor) {
+      editor.insertAdjacentHTML('beforebegin', '<div id="pasSaveStatus" style="display:none;margin:0 0 12px;padding:10px 12px;border-radius:9px;font-size:.84rem;font-weight:600"></div>');
+      status = document.getElementById('pasSaveStatus');
+    }
+  }
+
+  const setStatus = (message, type) => {
+    if (!status) return;
+    const styles = {
+      info: 'display:block;background:rgba(37,99,235,.09);border:1px solid rgba(37,99,235,.22);color:#1d4ed8',
+      ok: 'display:block;background:rgba(22,163,74,.09);border:1px solid rgba(22,163,74,.22);color:#15803d',
+      error: 'display:block;background:rgba(220,38,38,.09);border:1px solid rgba(220,38,38,.22);color:#b91c1c'
+    };
+    status.style.cssText = styles[type] || styles.info;
+    status.textContent = message;
+  };
+
   const passport = {stamps:{}};
   document.querySelectorAll('.pasStamp').forEach(cb => passport.stamps[cb.dataset.n] = cb.checked);
   const descarga = {stamps:{}};
   document.querySelectorAll('.pasDescarga').forEach(cb => descarga.stamps[cb.dataset.n] = cb.checked);
-  const url = APPS_SCRIPT_URL + '?action=passportSaveProgress&token=' + encodeURIComponent(TOKEN)
-    + '&id=' + encodeURIComponent(_pasCurrent.id)
-    + '&passport=' + encodeURIComponent(JSON.stringify(passport))
-    + '&descarga=' + encodeURIComponent(JSON.stringify(descarga));
-  const data = await fetch(url).then(r => r.json());
-  if (!data.ok) { toast(data.error || 'No se pudo guardar el progreso', 'error'); return; }
-  _pasCurrent = data.passport;
-  renderPasaporteAdminTools();
-  toast('Progreso guardado', 'success');
+  const requestedCount = Object.values(passport.stamps).filter(Boolean).length;
+
+  const originalText = btn ? btn.textContent : '';
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Guardando…';
+  }
+  setStatus('Guardando ' + requestedCount + ' de 16 sellos…', 'info');
+
+  try {
+    const url = APPS_SCRIPT_URL + '?action=passportSaveProgress&token=' + encodeURIComponent(TOKEN)
+      + '&id=' + encodeURIComponent(_pasCurrent.id)
+      + '&passport=' + encodeURIComponent(JSON.stringify(passport))
+      + '&descarga=' + encodeURIComponent(JSON.stringify(descarga))
+      + '&_ts=' + Date.now();
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 120000);
+    let response;
+    try {
+      response = await fetch(url, {cache:'no-store', signal:controller.signal});
+    } finally {
+      clearTimeout(timer);
+    }
+
+    const raw = await response.text();
+    let data;
+    try {
+      data = JSON.parse(raw);
+    } catch (_) {
+      throw new Error('El servidor respondió en un formato inesperado.');
+    }
+    if (!response.ok || !data.ok) {
+      throw new Error(data.error || 'No se pudo guardar el progreso.');
+    }
+
+    _pasCurrent = data.passport || _pasCurrent;
+
+    // Volver a consultar el pasaporte desde el servidor para que el editor
+    // muestre exactamente la misma fuente de datos que la vista pública.
+    const nombre = document.getElementById('pasNombreInput').value.trim();
+    const verifyUrl = APPS_SCRIPT_URL + '?action=passportEnsure&token=' + encodeURIComponent(TOKEN)
+      + '&nombre=' + encodeURIComponent(nombre)
+      + '&telefono=' + encodeURIComponent(_pasTelefono || '')
+      + '&_ts=' + Date.now();
+    const verifyResponse = await fetch(verifyUrl, {cache:'no-store'});
+    const verifyRaw = await verifyResponse.text();
+    let verifyData = null;
+    try { verifyData = JSON.parse(verifyRaw); } catch (_) {}
+    if (verifyResponse.ok && verifyData && verifyData.ok && verifyData.passport) {
+      _pasCurrent = verifyData.passport;
+    }
+
+    renderPasaporteAdminTools();
+    setStatus('Progreso guardado correctamente: ' + requestedCount + '/16.', 'ok');
+    toast('Progreso guardado: ' + requestedCount + '/16', 'success');
+  } catch (error) {
+    const message = error && error.name === 'AbortError'
+      ? 'El servidor tardó demasiado. Actualiza el pasaporte antes de volver a guardar.'
+      : (error && error.message ? error.message : 'No se pudo guardar el progreso.');
+    setStatus(message, 'error');
+    toast(message, 'error');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = originalText || 'Guardar progreso';
+    }
+  }
 }
 
 async function regenerarTokenPasaporte() {
