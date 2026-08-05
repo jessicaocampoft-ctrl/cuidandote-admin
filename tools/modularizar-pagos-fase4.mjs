@@ -94,15 +94,8 @@ const adapters = `// Adaptadores de compatibilidad — Fase 4 Pagos.\n${exported
   return `${isAsync ? 'async ' : ''}function ${name}(...args) {\n  const module = window.PanelPayments;\n  if (!module || typeof module.${name} !== 'function') {\n    throw new Error('El módulo de Pagos no está disponible: ${name}');\n  }\n  return ${isAsync ? 'await ' : ''}module.${name}(...args);\n}`;
 }).join('\n\n')}\n\n`;
 
-// Retirar primero openPago para que sus posiciones no cambien inesperadamente.
-html = html.slice(0, openPagoBlock.start) + adapters.includes('function openPago')
-  ? html.slice(0, openPagoBlock.start) + html.slice(openPagoBlock.end)
-  : html;
-
-// La expresión anterior se mantiene explícita para evitar reemplazos ambiguos.
-if (html.includes(openPagoBlock.text)) {
-  html = html.replace(openPagoBlock.text, '');
-}
+// Retirar primero openPago; está después del bloque principal y no altera sus marcadores.
+html = html.slice(0, openPagoBlock.start) + html.slice(openPagoBlock.end);
 
 const currentBlockStart = html.indexOf(blockStartMarker);
 const currentBlockEnd = html.indexOf(blockEndMarker, currentBlockStart);
