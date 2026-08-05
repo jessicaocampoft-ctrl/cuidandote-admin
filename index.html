@@ -6139,6 +6139,7 @@ Acción: enviar mensaje de reenganche a los 14 pacientes que solo vinieron una v
 
 <script src="js/core/config.js"></script>
 <script src="js/core/api.js"></script>
+<script src="js/core/session.js"></script>
 <script src="js/core/navigation.js"></script>
 <script>
 // ══════════════════════════════════════════════════════════════
@@ -6254,13 +6255,59 @@ function isOperationalDate(dateStr) {
   return !!d && d >= ADMIN_OPERATIONS_START_DATE;
 }
 
+function _sessionBridge() {
+  return {
+    apiUrl: APPS_SCRIPT_URL,
+    document,
+    location,
+    sessionStorage,
+    setTimeout: window.setTimeout.bind(window),
+    setInterval: window.setInterval.bind(window),
+    inactivityMs: 30 * 60 * 1000,
+    fetchJsonWithTimeout,
+    toast,
+    today,
+    getAdminToken: () => TOKEN,
+    setAdminToken: value => { TOKEN = value || ''; },
+    getAdminUser: () => document.getElementById('userInput')?.value || '',
+    getAdminPassword: () => document.getElementById('pwInput')?.value || '',
+    setLoginTime: value => { _loginTime = value; },
+    setAllData: value => { allData = value; },
+    onAdminReady: async () => {
+      await loadAdminKV();
+      await loadTeamData();
+      reloadMetas();
+      _initSidebarState();
+      initDashboard();
+      await _runUrlRepairIfRequested();
+    },
+    reloadPage: () => location.reload(),
+    getProfessionalToken: () => PROFESSIONAL_TOKEN,
+    setProfessionalToken: value => { PROFESSIONAL_TOKEN = value || ''; },
+    getProfessionalSession: () => professionalSession,
+    setProfessionalSession: value => { professionalSession = value; },
+    setProfessionalAgenda: value => { professionalAgenda = value || []; },
+    getProfessionalUser: () => document.getElementById('proUser')?.value || '',
+    getProfessionalPassword: () => document.getElementById('proPass')?.value || '',
+    getProfessionalNewPassword: () => document.getElementById('proNewPass')?.value || '',
+    showProfessionalApp: () => showProfessionalApp(),
+    loadProfessionalAgenda: () => loadProfessionalAgenda(),
+    renderProfessionalAgenda,
+    logoutAdmin: () => logout(),
+    initAdminUX: () => {
+      initAdminUX2026();
+      const dashDate = document.getElementById('dashDate');
+      if (dashDate) {
+        dashDate.textContent = new Date().toLocaleDateString('es-CO', {
+          weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+        });
+      }
+    }
+  };
+}
+
 function showOnlyScreen(screenId) {
-  ['loginScreen','adminApp','proLoginScreen','proApp'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.style.display = id === screenId ? (id === 'adminApp' ? 'block' : 'flex') : 'none';
-  });
-  if (screenId === 'proApp') document.getElementById('proApp').style.display = 'block';
-  if (screenId === 'proLoginScreen') document.getElementById('proLoginScreen').style.display = 'block';
+  return window.PanelSession.showOnlyScreen(screenId, _sessionBridge());
 }
 
 function byIdFrom(list, key, val) {
@@ -7128,82 +7175,27 @@ async function fetchJsonWithTimeout(url, options = {}, timeoutMs = 45000) {
 }
 
 function openProfessionalLoginMode() {
-  location.hash = '/profesionales/login';
-  showOnlyScreen('proLoginScreen');
-  document.getElementById('proLoginErr').style.display = 'none';
+  return window.PanelSession.openProfessionalLoginMode(_sessionBridge());
 }
 
 function backToAdminLogin() {
-  location.hash = '';
-  showOnlyScreen(TOKEN ? 'adminApp' : 'loginScreen');
+  return window.PanelSession.backToAdminLogin(_sessionBridge());
 }
 
 async function doProfessionalLogin() {
-  const btn = document.getElementById('proLoginBtn');
-  const err = document.getElementById('proLoginErr');
-  err.style.display = 'none';
-  btn.disabled = true; btn.textContent = 'Verificando...';
-  try {
-    const d = await fetchJsonWithTimeout(APPS_SCRIPT_URL, {
-      method:'POST',
-      body:JSON.stringify({
-        action:'professionalLogin',
-        user:document.getElementById('proUser').value.trim(),
-        password:document.getElementById('proPass').value
-      })
-    }, 45000);
-    if (!d.ok) throw new Error(d.error || 'No pudimos iniciar sesión');
-    PROFESSIONAL_TOKEN = d.professionalToken;
-    professionalSession = d.professional;
-    sessionStorage.setItem('professionalToken', PROFESSIONAL_TOKEN);
-    if (professionalSession.debeCambiarPassword) {
-      document.getElementById('proFirstChangeBox').style.display = 'block';
-      toast('Cambia la contraseña temporal para continuar');
-    } else {
-      await showProfessionalApp();
-    }
-  } catch(e) {
-    err.textContent = e.message || 'Error de acceso';
-    err.style.display = 'block';
-  } finally {
-    btn.disabled = false; btn.textContent = 'Ingresar al portal';
-  }
+  return window.PanelSession.doProfessionalLogin(_sessionBridge());
 }
 
 async function changeProfessionalPassword() {
-  const currentPassword = document.getElementById('proPass').value;
-  const newPassword = document.getElementById('proNewPass').value;
-  const d = await fetch(APPS_SCRIPT_URL, {
-    method:'POST',
-    body:JSON.stringify({action:'professionalChangePassword', token:PROFESSIONAL_TOKEN, currentPassword, newPassword})
-  }).then(r => r.json());
-  if (!d.ok) return toast(d.error || 'No se pudo cambiar la contraseña', 'err');
-  toast('Contraseña actualizada');
-  document.getElementById('proFirstChangeBox').style.display = 'none';
-  await showProfessionalApp();
+  return window.PanelSession.changeProfessionalPassword(_sessionBridge());
 }
 
 async function showProfessionalApp() {
-  location.hash = '/profesionales/agenda';
-  showOnlyScreen('proApp');
-  document.getElementById('proWelcome').textContent = professionalSession ? `${professionalSession.nombre} · ${professionalSession.rol}` : 'Portal del equipo';
-  document.getElementById('proDate').value = today();
-  await loadProfessionalAgenda();
+  return window.PanelSession.showProfessionalApp(_sessionBridge());
 }
 
 async function loadProfessionalAgenda() {
-  if (!PROFESSIONAL_TOKEN) return openProfessionalLoginMode();
-  const d = await fetch(`${APPS_SCRIPT_URL}?action=professionalAgenda&token=${encodeURIComponent(PROFESSIONAL_TOKEN)}`).then(r => r.json());
-  if (!d.ok) {
-    sessionStorage.removeItem('professionalToken');
-    PROFESSIONAL_TOKEN = '';
-    toast(d.error || 'Sesión vencida', 'err');
-    return openProfessionalLoginMode();
-  }
-  professionalSession = d.professional;
-  document.getElementById('proWelcome').textContent = professionalSession ? `${professionalSession.nombre} · ${professionalSession.rol}` : 'Portal del equipo';
-  professionalAgenda = d.citas || [];
-  renderProfessionalAgenda();
+  return window.PanelSession.loadProfessionalAgenda(_sessionBridge());
 }
 
 function setProfessionalMode(mode) {
@@ -7283,11 +7275,7 @@ async function sendProfessionalIssue() {
 }
 
 function professionalSignout() {
-  sessionStorage.removeItem('professionalToken');
-  PROFESSIONAL_TOKEN = '';
-  professionalSession = null;
-  professionalAgenda = [];
-  openProfessionalLoginMode();
+  return window.PanelSession.logoutProfessional(_sessionBridge());
 }
 
 let _submittingBooking = false;
@@ -7295,125 +7283,21 @@ let _submittingPatient = false;
 let _loginTime = null;
 
 // ── LOGIN ──
-let _loginAttempts = 0;
-let _loginLockedUntil = 0;
 
 async function doLogin() {
-  const ahora = Date.now();
-  if (_loginLockedUntil > ahora) {
-    const segs = Math.ceil((_loginLockedUntil - ahora) / 1000);
-    const errEl = document.getElementById('loginErr');
-    errEl.textContent = `Demasiados intentos. Espera ${segs} segundo${segs !== 1 ? 's' : ''}.`;
-    errEl.style.display = 'block';
-    return;
-  }
-  const pw  = document.getElementById('pwInput').value.trim();
-  const user = (document.getElementById('userInput')?.value || '').trim();
-  const btn = document.getElementById('loginBtn');
-  if (!pw) return;
-  btn.textContent = 'Verificando...'; btn.disabled = true;
-  try {
-    const d = await fetchJsonWithTimeout(APPS_SCRIPT_URL, {
-      method: 'POST',
-      body: JSON.stringify({action: 'adminLogin', user, password: pw})
-    }, 45000);
-    if (d.ok) {
-      _loginAttempts = 0;
-      TOKEN = d.sessionToken;
-      sessionStorage.setItem('adminToken', d.sessionToken);
-      _loginTime = Date.now();
-      document.getElementById('loginScreen').style.display = 'none';
-      document.getElementById('adminApp').style.display   = 'block';
-      allData = d;
-      await loadAdminKV();
-      await loadTeamData();
-      reloadMetas();
-      _initSidebarState();
-      initDashboard();
-      await _runUrlRepairIfRequested();
-    } else {
-      _loginAttempts++;
-      const errEl = document.getElementById('loginErr');
-      if (_loginAttempts >= 5) {
-        _loginLockedUntil = Date.now() + 120000;
-        _loginAttempts = 0;
-        errEl.textContent = 'Demasiados intentos fallidos. Acceso bloqueado por 2 minutos.';
-      } else {
-        const restantes = 5 - _loginAttempts;
-        errEl.textContent = `Contraseña incorrecta. Intentos restantes: ${restantes}`;
-      }
-      errEl.style.display = 'block';
-    }
-  } catch(e) {
-    document.getElementById('loginErr').textContent = e.message || 'Error de conexión. Revisa tu internet.';
-    document.getElementById('loginErr').style.display = 'block';
-  }
-  btn.textContent = 'Ingresar'; btn.disabled = false;
+  return window.PanelSession.doAdminLogin(_sessionBridge());
 }
 
 function logout() {
-  sessionStorage.removeItem('adminToken');
-  location.reload();
+  return window.PanelSession.logoutAdmin(_sessionBridge());
 }
 
-// ── TIMEOUT DE INACTIVIDAD (30 min) ──
-let _lastActivity = Date.now();
-const _INACTIVITY_MS = 30 * 60 * 1000;
-
-function _resetActivity() { _lastActivity = Date.now(); }
-['click','keydown','scroll','touchstart'].forEach(ev =>
-  document.addEventListener(ev, _resetActivity, {passive: true})
-);
-setInterval(() => {
-  if (TOKEN && Date.now() - _lastActivity > _INACTIVITY_MS) {
-    toast('Sesión cerrada por inactividad (30 min).', 'warn');
-    setTimeout(logout, 1500);
-  }
-}, 60_000);
-
-// ── VERIFICAR SESIÓN AL VOLVER A LA PESTAÑA ──
-// Cubre el caso de suspensión del equipo donde JS se pausa y los timers no disparan
-document.addEventListener('visibilitychange', async () => {
-  if (document.visibilityState !== 'visible' || !TOKEN) return;
-  try {
-    const r = await fetch(`${APPS_SCRIPT_URL}?action=ping&token=${encodeURIComponent(TOKEN)}`).then(x => x.json());
-    if (!r.ok) {
-      toast('Sesión expirada. Volviendo al login...', 'warn');
-      setTimeout(logout, 1500);
-    }
-  } catch(e) {}
-});
+// ── GUARDAS DE SESIÓN MODULARIZADAS ──
+window.PanelSession.installAdminGuards(_sessionBridge());
 
 // Auto-login si tiene sesión guardada
 window.addEventListener('DOMContentLoaded', async () => {
-  initAdminUX2026();
-  document.getElementById('dashDate').textContent = new Date().toLocaleDateString('es-CO',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
-  if (location.hash.startsWith('#/profesionales') || location.hash.startsWith('#profesionales')) {
-    if (PROFESSIONAL_TOKEN) await showProfessionalApp();
-    else openProfessionalLoginMode();
-    return;
-  }
-  if (TOKEN) {
-    const btn = document.getElementById('loginBtn');
-    try {
-      const r = await fetch(APPS_SCRIPT_URL + '?action=adminData&token=' + encodeURIComponent(TOKEN));
-      const d = await r.json();
-      if (d.ok) {
-        _loginTime = Date.now();
-        document.getElementById('loginScreen').style.display = 'none';
-        document.getElementById('adminApp').style.display   = 'block';
-        allData = d;
-        await loadAdminKV();
-        await loadTeamData();
-        reloadMetas();
-        _initSidebarState();
-        initDashboard();
-        await _runUrlRepairIfRequested();
-          return;
-      }
-    } catch(e) {}
-    sessionStorage.removeItem('adminToken');
-  }
+  await window.PanelSession.restoreOnLoad(_sessionBridge());
 });
 
 async function _runUrlRepairIfRequested() {

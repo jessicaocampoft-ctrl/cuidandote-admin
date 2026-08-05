@@ -1,0 +1,76 @@
+name: Modularización segura — Fase 3 Sesión
+
+on:
+  push:
+    branches:
+      - modularizacion-panel-fase3-sesion-2026-08-05
+    paths:
+      - MODULARIZACION_FASE3.md
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: modularizacion-panel-fase3-sesion
+  cancel-in-progress: false
+
+jobs:
+  modularizar-sesion:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar rama aislada
+        uses: actions/checkout@v4
+        with:
+          ref: modularizacion-panel-fase3-sesion-2026-08-05
+          fetch-depth: 0
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Confirmar aislamiento respecto a producción
+        run: |
+          test "$(git branch --show-current)" = "modularizacion-panel-fase3-sesion-2026-08-05"
+          git fetch origin main
+          git fetch origin modularizacion-panel-fase2-api-2026-08-05
+
+      - name: Separar inicio de sesión y sesiones
+        run: node tools/modularizar-sesion-fase3.mjs index.html
+
+      - name: Validar sintaxis del módulo
+        run: node --check js/core/session.js
+
+      - name: Probar accesos restauración cierre e inactividad
+        run: node tools/validar-sesion-fase3.mjs index.html js/core/session.js
+
+      - name: Confirmar que las fases anteriores no cambiaron
+        run: |
+          git diff --exit-code origin/modularizacion-panel-fase2-api-2026-08-05 -- js/core/config.js js/core/api.js js/core/navigation.js
+
+      - name: Confirmar que no se modificaron módulos sensibles
+        run: |
+          git diff --unified=0 origin/modularizacion-panel-fase2-api-2026-08-05 -- index.html > /tmp/fase3.diff
+          if grep -E '^[-+].*(guardarProgresoPasaporte|saveManualPayment|aprobarPago|crearCita|renderPagos|passportSaveProgress)' /tmp/fase3.diff; then
+            echo "Se detectó un cambio fuera del alcance de sesión."
+            exit 1
+          fi
+
+      - name: Guardar resultado solo en la rama aislada
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html js/core/session.js
+          if git diff --cached --quiet; then
+            echo "La Fase 3 ya estaba aplicada."
+          else
+            git commit -m "Separar inicio de sesión y manejo de sesiones"
+            git push origin HEAD:modularizacion-panel-fase3-sesion-2026-08-05
+          fi
+
+      - name: Resumen
+        run: |
+          echo "FASE 3 SUPERADA"
+          echo "Inicio de sesión y sesiones quedaron separados en js/core/session.js."
+          echo "No se modificó main ni el panel publicado."
