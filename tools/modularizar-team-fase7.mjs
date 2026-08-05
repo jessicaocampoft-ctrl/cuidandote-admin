@@ -16,8 +16,8 @@ const names = [
   'openProfessionalSchedule','openProfessionalForm','showTemporaryPassword','copyTempPassword',
   'saveProfessionalForm','resetProPassword','togglePro','deletePro','abrirAsignarPro',
   'renderAssignWarnings','saveAssignPro','authorizeAssignPro','markPayablePaid',
-  'loadProfessionalAgenda','setProfessionalMode','renderProfessionalAgenda',
-  'markProfessionalAttended','openProIssue','sendProfessionalIssue'
+  'setProfessionalMode','renderProfessionalAgenda','markProfessionalAttended',
+  'openProIssue','sendProfessionalIssue'
 ];
 
 function extractNamedFunction(source, name) {
