@@ -20,14 +20,61 @@ const names = [
   'openProIssue','sendProfessionalIssue'
 ];
 
+function findFunctionBodyOpen(source, start, name) {
+  const paramsOpen = source.indexOf('(', start);
+  if (paramsOpen < 0) throw new Error(`No se encontró la apertura de parámetros de ${name}.`);
+
+  let parenDepth = 0;
+  let quote = '';
+  let escaped = false;
+
+  for (let i = paramsOpen; i < source.length; i++) {
+    const ch = source[i];
+    const next = source[i + 1];
+
+    if (quote) {
+      if (escaped) { escaped = false; continue; }
+      if (ch === '\\') { escaped = true; continue; }
+      if (ch === quote) quote = '';
+      continue;
+    }
+
+    if (ch === '"' || ch === "'" || ch === '`') { quote = ch; continue; }
+    if (ch === '/' && next === '/') {
+      const end = source.indexOf('\n', i + 2);
+      i = end < 0 ? source.length : end;
+      continue;
+    }
+    if (ch === '/' && next === '*') {
+      const end = source.indexOf('*/', i + 2);
+      i = end < 0 ? source.length : end + 1;
+      continue;
+    }
+
+    if (ch === '(') parenDepth++;
+    if (ch === ')') {
+      parenDepth--;
+      if (parenDepth === 0) {
+        let bodyOpen = i + 1;
+        while (bodyOpen < source.length && /\s/.test(source[bodyOpen])) bodyOpen++;
+        if (source[bodyOpen] !== '{') {
+          throw new Error(`No se encontró el cuerpo real de ${name} después de sus parámetros.`);
+        }
+        return bodyOpen;
+      }
+    }
+  }
+
+  throw new Error(`No se pudo cerrar la lista de parámetros de ${name}.`);
+}
+
 function extractNamedFunction(source, name) {
   const regex = new RegExp(`(?:async\\s+)?function\\s+${name.replace(/[$]/g, '\\$&')}\\s*\\(`, 'g');
   const matches = [...source.matchAll(regex)];
   if (matches.length !== 1) throw new Error(`${name} debe tener una única declaración; encontradas: ${matches.length}.`);
   const match = matches[0];
   const start = match.index;
-  const open = source.indexOf('{', start);
-  if (open < 0) throw new Error(`No se encontró la apertura de ${name}.`);
+  const open = findFunctionBodyOpen(source, start, name);
   let depth = 0, quote = '', escaped = false;
   for (let i = open; i < source.length; i++) {
     const ch = source[i], next = source[i + 1];
