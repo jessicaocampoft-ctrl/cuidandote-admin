@@ -12,9 +12,8 @@ const stateDeclaration = 'let _dbPacs = [];';
 const names = [
   'initFormDB','renderBasedatos','renderReactivacion','limpiarFormDB','agregarPacienteDB',
   'checkDupDB','dbEditarPac','guardarPacienteDB','dbBorrarPac','dbOnOrigenChange',
-  'dbReferidoFilter','agendarDesdePacienteRec','usarSesion','recCard','recEnviado',
-  'recEmailEnviado','_updateReacBtn','msgSemana4','msgSemana5','waRecordatorio',
-  'logChange','renderChangeLog','toggleChangeLog','clearChangeLog'
+  'dbReferidoFilter','recCard','recEnviado','recEmailEnviado','_updateReacBtn',
+  'msgSemana4','msgSemana5','waRecordatorio'
 ];
 
 function findBodyOpen(source, start, name) {
