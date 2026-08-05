@@ -1,0 +1,58 @@
+name: Modularización segura — Fase 4 Pagos
+
+on:
+  push:
+    branches:
+      - modularizacion-panel-fase4-pagos-2026-08-05
+    paths:
+      - MODULARIZACION_FASE4.md
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: modularizacion-panel-fase4-pagos
+  cancel-in-progress: false
+
+jobs:
+  inventario-pagos:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar rama aislada
+        uses: actions/checkout@v4
+        with:
+          ref: modularizacion-panel-fase4-pagos-2026-08-05
+          fetch-depth: 0
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Confirmar aislamiento respecto a producción
+        run: |
+          test "$(git branch --show-current)" = "modularizacion-panel-fase4-pagos-2026-08-05"
+          git fetch origin main
+
+      - name: Inventariar módulo de Pagos
+        run: |
+          node tools/inspect-payments-phase4.mjs index.html
+          node tools/inspect-payments-phase4-focused.mjs index.html
+
+      - name: Guardar inventarios solo en la rama aislada
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add MODULARIZACION_FASE4_INVENTARIO.md MODULARIZACION_FASE4_FOCAL.md
+          if git diff --cached --quiet; then
+            echo "Los inventarios ya estaban actualizados."
+          else
+            git commit -m "Precisar funciones y controles del módulo de Pagos"
+            git push origin HEAD:modularizacion-panel-fase4-pagos-2026-08-05
+          fi
+
+      - name: Resumen
+        run: |
+          echo "INVENTARIO DE FASE 4 COMPLETADO"
+          echo "No se modificó main ni la lógica publicada del panel."
