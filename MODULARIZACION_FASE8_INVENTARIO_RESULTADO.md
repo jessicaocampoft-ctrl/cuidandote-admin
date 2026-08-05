@@ -1,12 +1,13 @@
 # Inventario de modularización — Fase 8 Base de datos
 
 - Vista delimitada: `vBasedatos`.
-- Funciones seleccionadas para el módulo: **25**.
+- Funciones seleccionadas para el módulo: **24**.
 - Funciones asíncronas: **3**.
-- Estados compartidos detectados: **2**.
+- Estados propios detectados: **1**.
 - Acciones API detectadas: **5**.
 - IDs de interfaz relacionados: **31**.
 - La sección Códigos REF & BONO quedó fuera del alcance de esta fase.
+- `showView` y la navegación general permanecen compartidas y fuera del módulo.
 - No se seleccionaron funciones exactas de Agenda, Finanzas, KPI, Pagos, Pasaporte ni Equipo clínico.
 
 ## Funciones seleccionadas
@@ -34,7 +35,6 @@
 - `renderChangeLog`
 - `toggleChangeLog`
 - `clearChangeLog`
-- `showView`
 
 ## Manejadores declarados en la vista
 - `agregarPacienteDB`
@@ -45,12 +45,11 @@
 - `limpiarFormDB`
 - `renderBasedatos`
 - `renderReactivacion`
-- `showView`
+- `showView` — compartido, no se mueve
 - `toggleChangeLog`
 
-## Estados que requieren encapsulación o adaptador
+## Estado propio que se encapsulará
 - `_dbPacs`
-- `_notasTimer`
 
 ## Acciones API
 - `adminBook`
@@ -127,6 +126,6 @@
 ## Controles para la implementación
 - Crear `js/modules/database.js` únicamente con las funciones seleccionadas.
 - Conservar adaptadores con los mismos nombres en `index.html`.
-- No mover Códigos REF & BONO ni utilidades compartidas.
+- No mover `showView`, Códigos REF & BONO ni utilidades compartidas.
 - Verificar que Agenda, creación/edición de citas y los módulos de las Fases 1 a 7 no cambien.
 - No modificar `main`, Apps Script ni el panel publicado.
