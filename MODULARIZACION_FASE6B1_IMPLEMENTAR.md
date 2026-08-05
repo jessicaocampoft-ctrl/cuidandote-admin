@@ -1,1 +1,1 @@
-Ejecutar el diagnóstico temporal de la creación de citas en la rama aislada.
+Mostrar el mensaje exacto de validación faltante durante la creación simulada.
