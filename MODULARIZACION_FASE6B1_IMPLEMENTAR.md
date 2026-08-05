@@ -1,1 +1,1 @@
-Repetir la separación y validación con todas las dependencias del formulario simulado.
+Ejecutar el diagnóstico temporal de la creación de citas en la rama aislada.
