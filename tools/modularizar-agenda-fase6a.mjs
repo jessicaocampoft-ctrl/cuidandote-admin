@@ -15,7 +15,6 @@ const specs = [
   { name:'renderAgenda', signature:'function renderAgenda(keepPage = false)', async:false },
   { name:'clearFilters', signature:'function clearFilters()', async:false },
   { name:'filtrarHoy', signature:'function filtrarHoy()', async:false },
-  { name:'getMonday', signature:'function getMonday(d)', async:false },
   { name:'calPrev', signature:'function calPrev()', async:false },
   { name:'calNext', signature:'function calNext()', async:false },
   { name:'calToday', signature:'function calToday()', async:false },
