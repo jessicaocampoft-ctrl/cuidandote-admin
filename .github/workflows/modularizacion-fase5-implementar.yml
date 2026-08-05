@@ -1,0 +1,101 @@
+name: Fase 5 — Modularizar Pasaporte
+
+on:
+  push:
+    branches:
+      - modularizacion-panel-fase5-pasaporte-2026-08-05
+    paths:
+      - MODULARIZACION_FASE5_IMPLEMENTAR.md
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: modularizacion-panel-fase5-implementar
+  cancel-in-progress: false
+
+jobs:
+  modularizar-pasaporte:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar rama aislada
+        uses: actions/checkout@v4
+        with:
+          ref: modularizacion-panel-fase5-pasaporte-2026-08-05
+          fetch-depth: 0
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Confirmar aislamiento y base
+        run: |
+          test "$(git branch --show-current)" = "modularizacion-panel-fase5-pasaporte-2026-08-05"
+          git fetch origin modularizacion-panel-fase4-pagos-2026-08-05
+          git fetch origin main
+
+      - name: Separar el módulo de Pasaporte
+        run: node tools/modularizar-pasaporte-fase5.mjs index.html
+
+      - name: Validar sintaxis del módulo
+        run: node --check js/modules/passport.js
+
+      - name: Probar flujos principales del Pasaporte
+        run: node tools/validar-pasaporte-fase5.mjs index.html js/modules/passport.js
+
+      - name: Confirmar que las fases anteriores no cambiaron
+        run: |
+          git diff --exit-code origin/modularizacion-panel-fase4-pagos-2026-08-05 -- js/core/config.js js/core/api.js js/core/navigation.js js/core/session.js js/modules/payments.js
+
+      - name: Confirmar que no se modificaron otros módulos
+        run: |
+          CAMBIOS=$(git diff --name-only origin/modularizacion-panel-fase4-pagos-2026-08-05 -- 'js/modules/**' | grep -v '^js/modules/passport.js$' || true)
+          if [ -n "$CAMBIOS" ]; then
+            echo "Se detectaron módulos ajenos modificados:"
+            echo "$CAMBIOS"
+            exit 1
+          fi
+
+      - name: Confirmar adaptadores y orden de carga
+        run: |
+          grep -q 'Adaptadores de compatibilidad — Fase 5 Pasaporte' index.html
+          grep -q '<script src="js/modules/passport.js"></script>' index.html
+          grep -q 'global.PanelPassport = Object.freeze' js/modules/passport.js
+          test "$(grep -o 'script src="js/modules/passport.js"' index.html | wc -l)" -eq 1
+
+      - name: Generar informe de resultado
+        run: |
+          cat > MODULARIZACION_FASE5_RESULTADO.md <<'EOF'
+          # Resultado de modularización — Fase 5 Pasaporte
+
+          - `js/modules/passport.js` creado.
+          - 19 funciones públicas y el estado interno del Pasaporte separados de `index.html`.
+          - Los nombres usados por botones, Pacientes y otras vistas se conservaron mediante adaptadores.
+          - Búsqueda y selección de paciente validadas.
+          - Generación del enlace seguro con `passportEnsure` validada.
+          - Apertura, copia, WhatsApp y QR validados.
+          - Editor de 16 sellos y reto de descarga validado.
+          - Guardado con `passportSaveProgress` y sincronización posterior validados.
+          - Regeneración de token, desactivación y reactivación validadas.
+          - Las Fases 1, 2, 3 y 4 permanecen sin cambios.
+          - No se modificó `main` ni el panel publicado.
+          EOF
+
+      - name: Guardar resultado solo en la rama aislada
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html js/modules/passport.js MODULARIZACION_FASE5_RESULTADO.md
+          if git diff --cached --quiet; then
+            echo "La Fase 5 ya estaba aplicada."
+          else
+            git commit -m "Separar y validar el módulo de Pasaporte"
+            git push origin HEAD:modularizacion-panel-fase5-pasaporte-2026-08-05
+          fi
+
+      - name: Resumen
+        run: |
+          echo "FASE 5 COMPLETADA Y VALIDADA"
+          echo "No se publicó en main."
