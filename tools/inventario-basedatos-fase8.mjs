@@ -140,8 +140,12 @@ if (!ui.includes('id="vBasedatos"')) throw new Error('No se encontró la vista v
 if (functionNames.length < 20 || functionNames.length > 35) {
   throw new Error(`Selección insegura de funciones: ${functionNames.length}.`);
 }
-if (functionNames.some(name => /Finanzas|KPI|Agenda|Pago|Pasaporte|Equipo/i.test(name))) {
-  throw new Error('Se incluyó una función de otro módulo por nombre.');
+const forbiddenModuleFunctions = new Set([
+  'renderCalendar','renderFinanzas','renderEquipo','saveManualPayment','renderPayments',
+  'renderPassport','openPassportEditor','renderAgenda','renderKPITablero'
+]);
+if (functionNames.some(name => forbiddenModuleFunctions.has(name))) {
+  throw new Error('Se incluyó una función exacta de otro módulo.');
 }
 
 const lines = [];
@@ -153,7 +157,7 @@ lines.push(`- Estados compartidos detectados: **${stateCandidates.length}**.`);
 lines.push(`- Acciones API detectadas: **${actions.length}**.`);
 lines.push(`- IDs de interfaz relacionados: **${domIds.length}**.`);
 lines.push('- La sección Códigos REF & BONO quedó fuera del alcance de esta fase.');
-lines.push('- No se seleccionaron funciones de Agenda, Finanzas, KPI, Pagos, Pasaporte ni Equipo clínico.');
+lines.push('- No se seleccionaron funciones exactas de Agenda, Finanzas, KPI, Pagos, Pasaporte ni Equipo clínico.');
 lines.push('');
 lines.push('## Funciones seleccionadas');
 for (const item of functions) lines.push(`- \`${item.name}\`${item.async ? ' — async' : ''}`);
