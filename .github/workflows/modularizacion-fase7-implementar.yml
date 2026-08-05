@@ -1,0 +1,99 @@
+name: Fase 7 — Modularizar Equipo clínico
+
+on:
+  push:
+    branches:
+      - modularizacion-panel-fase7-equipo-clinico-2026-08-05
+    paths:
+      - MODULARIZACION_FASE7_IMPLEMENTAR.md
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: modularizacion-panel-fase7-equipo-clinico
+  cancel-in-progress: false
+
+jobs:
+  modularizar-equipo:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar rama aislada
+        uses: actions/checkout@v4
+        with:
+          ref: modularizacion-panel-fase7-equipo-clinico-2026-08-05
+          fetch-depth: 0
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Confirmar aislamiento y base
+        run: |
+          test "$(git branch --show-current)" = "modularizacion-panel-fase7-equipo-clinico-2026-08-05"
+          git fetch origin modularizacion-panel-fase6b2-editar-citas-2026-08-05
+          git fetch origin main
+
+      - name: Separar Equipo clínico
+        run: node tools/modularizar-team-fase7.mjs index.html
+
+      - name: Validar sintaxis y flujos
+        run: |
+          node --check js/modules/team.js
+          node tools/validar-team-fase7.mjs index.html js/modules/team.js
+
+      - name: Confirmar que las fases anteriores no cambiaron
+        run: |
+          git diff --exit-code origin/modularizacion-panel-fase6b2-editar-citas-2026-08-05 -- \
+            js/core/config.js js/core/api.js js/core/navigation.js js/core/session.js \
+            js/modules/payments.js js/modules/passport.js js/modules/agenda.js \
+            js/modules/appointment-create.js js/modules/appointment-edit.js
+
+      - name: Confirmar alcance funcional
+        run: |
+          CAMBIOS=$(git diff --name-only origin/modularizacion-panel-fase6b2-editar-citas-2026-08-05 -- 'js/**' | grep -v '^js/modules/team.js$' || true)
+          if [ -n "$CAMBIOS" ]; then
+            echo "Se detectaron archivos JavaScript ajenos modificados:"
+            echo "$CAMBIOS"
+            exit 1
+          fi
+          grep -q 'global.PanelTeam = Object.freeze' js/modules/team.js
+          grep -q '<script src="js/modules/team.js"></script>' index.html
+          test "$(grep -o 'script src="js/modules/team.js"' index.html | wc -l)" -eq 1
+
+      - name: Generar informe
+        run: |
+          cat > MODULARIZACION_FASE7_RESULTADO.md <<'EOF'
+          # Resultado de modularización — Fase 7 Equipo clínico
+
+          - `js/modules/team.js` creado.
+          - 35 funciones de profesionales, disponibilidad, asignaciones, autorizaciones, cuentas y portal profesional separadas de `index.html`.
+          - Los nombres usados por botones, Agenda, Sesión y portal profesional se conservaron mediante adaptadores.
+          - `loadProfessionalAgenda` y `professionalSignout` permanecen en Sesión.
+          - Las funciones de Pagos permanecen en `payments.js`.
+          - Interpretación de días y horarios de disponibilidad validada.
+          - Detección de choques de agenda validada.
+          - Carga `teamData` y enlace de asignaciones con citas validados.
+          - Registro de sesión atendida y reporte de novedades profesionales validados.
+          - Las Fases 1 a 6B2 permanecen sin cambios.
+          - No se modificó `main` ni el panel publicado.
+          EOF
+
+      - name: Guardar resultado solo en la rama aislada
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html js/modules/team.js MODULARIZACION_FASE7_RESULTADO.md
+          if git diff --cached --quiet; then
+            echo "La Fase 7 ya estaba aplicada."
+          else
+            git commit -m "Separar y validar Equipo clínico"
+            git push origin HEAD:modularizacion-panel-fase7-equipo-clinico-2026-08-05
+          fi
+
+      - name: Resumen
+        run: |
+          echo "FASE 7 COMPLETADA Y VALIDADA"
+          echo "No se publicó en main."
