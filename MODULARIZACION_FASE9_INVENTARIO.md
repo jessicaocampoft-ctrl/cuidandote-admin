@@ -2,6 +2,8 @@
 
 Inventariar la pantalla `vCodigos`, sus funciones, constantes, estados y acciones API antes de mover código.
 
+Reintento 2: el lector ahora tolera plantillas HTML anidadas dentro de `updateBonosBadge`; no se modifica el código funcional.
+
 Controles obligatorios:
 - no modificar `main`;
 - no publicar cambios;
