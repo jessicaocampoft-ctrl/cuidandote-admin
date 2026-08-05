@@ -1,16 +1,15 @@
 # Inventario de modularización — Fase 8 Base de datos
 
 - Vista delimitada: `vBasedatos`.
-- Funciones seleccionadas para el módulo: **24**.
+- Funciones propias seleccionadas: **18**.
 - Funciones asíncronas: **3**.
 - Estados propios detectados: **1**.
 - Acciones API detectadas: **5**.
 - IDs de interfaz relacionados: **31**.
-- La sección Códigos REF & BONO quedó fuera del alcance de esta fase.
-- `showView` y la navegación general permanecen compartidas y fuera del módulo.
-- No se seleccionaron funciones exactas de Agenda, Finanzas, KPI, Pagos, Pasaporte ni Equipo clínico.
+- Códigos REF & BONO quedó fuera del alcance.
+- Crear cita, Paquetes, historial general, navegación, Agenda, Finanzas, KPI, Pagos, Pasaporte y Equipo clínico permanecen externos.
 
-## Funciones seleccionadas
+## Funciones propias seleccionadas
 - `initFormDB`
 - `renderBasedatos`
 - `renderReactivacion`
@@ -22,8 +21,6 @@
 - `dbBorrarPac` — async
 - `dbOnOrigenChange`
 - `dbReferidoFilter`
-- `agendarDesdePacienteRec`
-- `usarSesion`
 - `recCard`
 - `recEnviado`
 - `recEmailEnviado`
@@ -31,22 +28,18 @@
 - `msgSemana4`
 - `msgSemana5`
 - `waRecordatorio`
-- `logChange`
-- `renderChangeLog`
-- `toggleChangeLog`
-- `clearChangeLog`
 
-## Manejadores declarados en la vista
+## Manejadores de la vista
 - `agregarPacienteDB`
 - `checkDupDB`
-- `clearChangeLog`
+- `clearChangeLog` — compartido, no se mueve
 - `dbOnOrigenChange`
 - `dbReferidoFilter`
 - `limpiarFormDB`
 - `renderBasedatos`
 - `renderReactivacion`
 - `showView` — compartido, no se mueve
-- `toggleChangeLog`
+- `toggleChangeLog` — compartido, no se mueve
 
 ## Estado propio que se encapsulará
 - `_dbPacs`
@@ -58,11 +51,10 @@
 - `generarCodigo`
 - `registrarCodigo`
 
-## Dependencias compartidas que deben permanecer externas
-- `_getPkAsignados`
-- `_savePkAsignados`
+## Dependencias compartidas que permanecen externas
 - `add`
 - `agendarDesdePaciente`
+- `agendarDesdePacienteRec`
 - `chipColor`
 - `cita`
 - `citas`
@@ -71,7 +63,6 @@
 - `diffDias`
 - `entries`
 - `enviarEmailUno`
-- `Error`
 - `esRegistroServ`
 - `filter`
 - `find`
@@ -87,9 +78,8 @@
 - `join`
 - `json`
 - `kvGet`
-- `kvRemove`
-- `kvSet`
 - `localeCompare`
+- `logChange`
 - `map`
 - `marcarRecordatorioEnviado`
 - `normDate`
@@ -99,7 +89,6 @@
 - `parse`
 - `push`
 - `reload`
-- `renderPaquetes`
 - `replace`
 - `rgba`
 - `Set`
@@ -112,20 +101,27 @@
 - `toast`
 - `today`
 - `toLocalDateStr`
-- `toLocaleString`
 - `toLowerCase`
 - `toUpperCase`
 - `trim`
-- `unshift`
 - `values`
 - `var`
 - `waBtn`
 - `waEncuesta`
 - `waReacUrl`
 
+## Funciones verificadas como externas
+- `showView`
+- `agendarDesdePacienteRec`
+- `usarSesion`
+- `logChange`
+- `renderChangeLog`
+- `toggleChangeLog`
+- `clearChangeLog`
+
 ## Controles para la implementación
-- Crear `js/modules/database.js` únicamente con las funciones seleccionadas.
+- Crear `js/modules/database.js` solo con pacientes y reactivación.
 - Conservar adaptadores con los mismos nombres en `index.html`.
-- No mover `showView`, Códigos REF & BONO ni utilidades compartidas.
-- Verificar que Agenda, creación/edición de citas y los módulos de las Fases 1 a 7 no cambien.
+- No mover los puentes de Crear cita, Paquetes ni historial general.
+- Verificar que Agenda y los módulos de las Fases 1 a 7 no cambien.
 - No modificar `main`, Apps Script ni el panel publicado.
