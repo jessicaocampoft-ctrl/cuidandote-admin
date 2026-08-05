@@ -1,13 +1,20 @@
 # Modularización del panel — Fase 2
 
-Estado: extracción exacta de configuración y timeout en rama aislada.
+Estado: ejecución final en rama aislada.
 
 Objetivo:
 
-- identificar la configuración del backend;
-- localizar las funciones comunes de comunicación con Apps Script;
-- separar después `js/core/config.js` y `js/core/api.js` sin modificar Pagos, Pasaporte, Agenda ni autenticación;
-- conservar las firmas actuales para que los módulos existentes sigan funcionando;
+- crear `js/core/config.js` con la dirección de Apps Script;
+- crear `js/core/api.js` con el control de timeout y validación JSON;
+- conservar adaptadores compatibles en `index.html`;
+- no modificar Pagos, Pasaporte, Agenda ni autenticación;
 - no publicar en `main` durante esta fase.
 
-El inventario inicial ya terminó. En esta ejecución se extraen los bloques exactos de `APPS_SCRIPT_URL`, `TOKEN` y `fetchJsonWithTimeout` antes de mover código.
+Validaciones previstas:
+
+- sintaxis de ambos módulos;
+- respuesta JSON válida;
+- respuesta vacía;
+- respuesta inválida;
+- cancelación por tiempo máximo;
+- confirmación de que `navigation.js` y los módulos funcionales permanecen intactos.
