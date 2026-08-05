@@ -8,79 +8,21 @@ function unique(values) {
   return [...new Set(values.filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es'));
 }
 
-function findBodyOpen(source, start, name) {
-  const paramsOpen = source.indexOf('(', start);
-  if (paramsOpen < 0) throw new Error(`No se encontró la apertura de parámetros de ${name}.`);
-  let depth = 0, quote = '', escaped = false;
-  for (let i = paramsOpen; i < source.length; i++) {
-    const ch = source[i], next = source[i + 1];
-    if (quote) {
-      if (escaped) { escaped = false; continue; }
-      if (ch === '\\') { escaped = true; continue; }
-      if (ch === quote) quote = '';
-      continue;
-    }
-    if (ch === '"' || ch === "'" || ch === '`') { quote = ch; continue; }
-    if (ch === '/' && next === '/') {
-      const end = source.indexOf('\n', i + 2);
-      i = end < 0 ? source.length : end;
-      continue;
-    }
-    if (ch === '/' && next === '*') {
-      const end = source.indexOf('*/', i + 2);
-      i = end < 0 ? source.length : end + 1;
-      continue;
-    }
-    if (ch === '(') depth++;
-    if (ch === ')') {
-      depth--;
-      if (depth === 0) {
-        let bodyOpen = i + 1;
-        while (bodyOpen < source.length && /\s/.test(source[bodyOpen])) bodyOpen++;
-        if (source[bodyOpen] !== '{') throw new Error(`No se encontró el cuerpo real de ${name}.`);
-        return bodyOpen;
-      }
-    }
-  }
-  throw new Error(`No se pudo cerrar la lista de parámetros de ${name}.`);
-}
-
+// Para este inventario solo se necesitan dependencias y nombres. Se delimita cada
+// función por la siguiente declaración de nivel superior para tolerar plantillas
+// literales anidadas como las usadas por updateBonosBadge.
 function extractNamedFunction(source, name) {
-  const regex = new RegExp(`(?:async\\s+)?function\\s+${name.replace(/[$]/g, '\\$&')}\\s*\\(`, 'g');
+  const escaped = name.replace(/[$]/g, '\\$&');
+  const regex = new RegExp(`(?:^|\\n)((?:async\\s+)?function\\s+${escaped}\\s*\\()`, 'g');
   const matches = [...source.matchAll(regex)];
   if (matches.length !== 1) throw new Error(`${name} debe tener una única declaración; encontradas: ${matches.length}.`);
-  const start = matches[0].index;
-  const open = findBodyOpen(source, start, name);
-  let depth = 0, quote = '', escaped = false;
-  for (let i = open; i < source.length; i++) {
-    const ch = source[i], next = source[i + 1];
-    if (quote) {
-      if (escaped) { escaped = false; continue; }
-      if (ch === '\\') { escaped = true; continue; }
-      if (ch === quote) quote = '';
-      continue;
-    }
-    if (ch === '"' || ch === "'" || ch === '`') { quote = ch; continue; }
-    if (ch === '/' && next === '/') {
-      const end = source.indexOf('\n', i + 2);
-      i = end < 0 ? source.length : end;
-      continue;
-    }
-    if (ch === '/' && next === '*') {
-      const end = source.indexOf('*/', i + 2);
-      i = end < 0 ? source.length : end + 1;
-      continue;
-    }
-    if (ch === '{') depth++;
-    if (ch === '}') {
-      depth--;
-      if (depth === 0) {
-        const text = source.slice(start, i + 1);
-        return {name, text, async:/^async\s+function/.test(text)};
-      }
-    }
-  }
-  throw new Error(`No se pudo cerrar ${name}.`);
+  const start = matches[0].index + (matches[0][0].startsWith('\n') ? 1 : 0);
+  const nextRegex = /\n(?:async\s+)?function\s+[A-Za-z_$][\w$]*\s*\(/g;
+  nextRegex.lastIndex = start + 1;
+  const next = nextRegex.exec(source);
+  const end = next ? next.index + 1 : source.length;
+  const text = source.slice(start, end).trimEnd();
+  return {name, text, async:/^async\s+function/.test(text)};
 }
 
 const sectionStart = html.indexOf('<section id="vCodigos"');
@@ -88,7 +30,7 @@ const sectionEnd = html.indexOf('</section>', sectionStart);
 if (sectionStart < 0 || sectionEnd < 0) throw new Error('No se pudo delimitar la vista vCodigos.');
 const ui = html.slice(sectionStart, sectionEnd + '</section>'.length);
 
-const declarations = unique([...html.matchAll(/(?:^|\n)\s*(?:async\s+)?function\s+([A-Za-z_$][\w$]*)\s*\(/g)].map(m => m[1]));
+const declarations = unique([...html.matchAll(/(?:^|\n)(?:async\s+)?function\s+([A-Za-z_$][\w$]*)\s*\(/g)].map(m => m[1]));
 const declarationSet = new Set(declarations);
 const blocks = new Map(declarations.map(name => [name, extractNamedFunction(html, name)]));
 const uiHandlers = unique([...ui.matchAll(/\b(?:onclick|onchange|oninput|onkeyup|onsubmit)\s*=\s*['"][^'"]*?([A-Za-z_$][\w$]*)\s*\(/g)].map(m => m[1]));
@@ -126,7 +68,7 @@ if (crossed.length) throw new Error(`Se incluyeron funciones de otros módulos: 
 
 const selectedSource = selectedNames.map(name => blocks.get(name).text).join('\n\n');
 const constants = ['BONO_VALOR','BONO_MAX_MES','_MES_EN'].filter(name => new RegExp(`\\b${name}\\b`).test(selectedSource));
-const stateNames = unique([...html.matchAll(/(?:^|\n)\s*(?:let|var)\s+([A-Za-z_$][\w$]*)\s*=/g)]
+const stateNames = unique([...html.matchAll(/(?:^|\n)(?:let|var)\s+([A-Za-z_$][\w$]*)\s*=/g)]
   .map(m => m[1])
   .filter(name => new RegExp(`\\b${name}\\b`).test(selectedSource))
   .filter(name => /^_(?:cod|bono|ref)/i.test(name)));
