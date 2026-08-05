@@ -43,7 +43,7 @@ jobs:
         run: node --check js/modules/payments.js
 
       - name: Probar flujos principales de Pagos
-        run: node tools/validar-pagos-fase4.mjs index.html js/modules/payments.js
+        run: node tools/validar-pagos-fase4-v2.mjs index.html js/modules/payments.js
 
       - name: Confirmar que las fases anteriores no cambiaron
         run: |
