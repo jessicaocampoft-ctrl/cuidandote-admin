@@ -1,0 +1,57 @@
+name: Hotfix — Diagnóstico de agendamiento
+
+on:
+  push:
+    branches:
+      - hotfix-agendamiento-2026-08-05
+    paths:
+      - HOTFIX_AGENDAMIENTO_TRIGGER.md
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  diagnosticar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar rama aislada
+        uses: actions/checkout@v4
+        with:
+          ref: hotfix-agendamiento-2026-08-05
+          fetch-depth: 0
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Confirmar aislamiento
+        run: |
+          test "$(git branch --show-current)" = "hotfix-agendamiento-2026-08-05"
+          git fetch origin main
+
+      - name: Descargar fuente del backend
+        run: |
+          curl --fail --location --silent --show-error \
+            https://raw.githubusercontent.com/jessicaocampoft-ctrl/jessicaocampoft-ctrl.github.io/main/google-apps-script.js \
+            --output backend-google-apps-script.js
+
+      - name: Generar diagnóstico
+        run: node tools/diagnosticar-agendamiento-hotfix.mjs index.html backend-google-apps-script.js HOTFIX_AGENDAMIENTO_DIAGNOSTICO.md
+
+      - name: Confirmar que no cambió el código funcional
+        run: |
+          git diff --exit-code origin/main -- index.html admin-copy-tools.js
+
+      - name: Guardar diagnóstico solo en hotfix
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add HOTFIX_AGENDAMIENTO_DIAGNOSTICO.md
+          if git diff --cached --quiet; then
+            echo "Diagnóstico sin cambios."
+          else
+            git commit -m "Diagnosticar fallo de agendamiento"
+            git push origin HEAD:hotfix-agendamiento-2026-08-05
+          fi
