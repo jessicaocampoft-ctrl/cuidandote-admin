@@ -96,21 +96,20 @@ function extractNamedFunction(source, name) {
 
 const ui = between(html, uiStartMarker, uiEndMarker, 'la interfaz de Base de datos');
 const uiHandlers = unique([...ui.matchAll(/\b(?:onclick|onchange|oninput|onkeyup|onsubmit)\s*=\s*['"][^'"]*?([A-Za-z_$][\w$]*)\s*\(/g)].map(m => m[1]));
-const sharedUiHandlers = new Set(['showView','openModal','closeModal']);
+const sharedUiHandlers = new Set(['showView','openModal','closeModal','toggleChangeLog','clearChangeLog']);
 
-const expectedModuleFunctions = [
+const moduleFunctionNames = [
   'initFormDB','renderBasedatos','renderReactivacion','limpiarFormDB','agregarPacienteDB',
   'checkDupDB','dbEditarPac','guardarPacienteDB','dbBorrarPac','dbOnOrigenChange',
-  'dbReferidoFilter','agendarDesdePacienteRec','usarSesion','recCard','recEnviado',
-  'recEmailEnviado','_updateReacBtn','msgSemana4','msgSemana5','waRecordatorio',
-  'logChange','renderChangeLog','toggleChangeLog','clearChangeLog'
+  'dbReferidoFilter','recCard','recEnviado','recEmailEnviado','_updateReacBtn',
+  'msgSemana4','msgSemana5','waRecordatorio'
 ];
 
 for (const handler of uiHandlers) {
-  if (!sharedUiHandlers.has(handler) && !expectedModuleFunctions.includes(handler)) expectedModuleFunctions.push(handler);
+  if (!sharedUiHandlers.has(handler) && !moduleFunctionNames.includes(handler)) moduleFunctionNames.push(handler);
 }
 
-const functions = expectedModuleFunctions.map(name => extractNamedFunction(html, name));
+const functions = moduleFunctionNames.map(name => extractNamedFunction(html, name));
 const moduleSource = functions.map(item => item.text).join('\n\n');
 const functionNames = functions.map(item => item.name);
 const asyncFunctions = functions.filter(item => item.async).map(item => item.name);
@@ -134,35 +133,34 @@ const externalDependencies = calls.filter(name => !functionNames.includes(name) 
 
 const stateCandidates = /(?:^|\n)\s*let\s+_dbPacs\s*=/.test(html) ? ['_dbPacs'] : [];
 if (!stateCandidates.includes('_dbPacs')) throw new Error('No se encontró el estado _dbPacs.');
-
 if (!ui.includes('id="vBasedatos"')) throw new Error('No se encontró la vista vBasedatos.');
-if (functionNames.length < 20 || functionNames.length > 35) {
-  throw new Error(`Selección insegura de funciones: ${functionNames.length}.`);
+if (functionNames.length < 15 || functionNames.length > 22) throw new Error(`Selección insegura de funciones: ${functionNames.length}.`);
+
+const mustRemainExternal = [
+  'showView','agendarDesdePacienteRec','usarSesion','logChange','renderChangeLog',
+  'toggleChangeLog','clearChangeLog','renderCalendar','renderFinanzas','renderEquipo',
+  'saveManualPayment','renderPassport','renderAgenda'
+];
+if (functionNames.some(name => mustRemainExternal.includes(name))) {
+  throw new Error('Se incluyó una función que debe permanecer en otro módulo o compartida.');
 }
-const forbiddenModuleFunctions = new Set([
-  'showView','renderCalendar','renderFinanzas','renderEquipo','saveManualPayment','renderPayments',
-  'renderPassport','openPassportEditor','renderAgenda','renderKPITablero'
-]);
-if (functionNames.some(name => forbiddenModuleFunctions.has(name))) {
-  throw new Error('Se incluyó una función exacta de otro módulo o navegación compartida.');
-}
+for (const name of mustRemainExternal.slice(0, 7)) extractNamedFunction(html, name);
 
 const lines = [];
 lines.push('# Inventario de modularización — Fase 8 Base de datos', '');
 lines.push('- Vista delimitada: `vBasedatos`.');
-lines.push(`- Funciones seleccionadas para el módulo: **${functionNames.length}**.`);
+lines.push(`- Funciones propias seleccionadas: **${functionNames.length}**.`);
 lines.push(`- Funciones asíncronas: **${asyncFunctions.length}**.`);
 lines.push(`- Estados propios detectados: **${stateCandidates.length}**.`);
 lines.push(`- Acciones API detectadas: **${actions.length}**.`);
 lines.push(`- IDs de interfaz relacionados: **${domIds.length}**.`);
-lines.push('- La sección Códigos REF & BONO quedó fuera del alcance de esta fase.');
-lines.push('- `showView` y la navegación general permanecen compartidas y fuera del módulo.');
-lines.push('- No se seleccionaron funciones exactas de Agenda, Finanzas, KPI, Pagos, Pasaporte ni Equipo clínico.');
+lines.push('- Códigos REF & BONO quedó fuera del alcance.');
+lines.push('- Crear cita, Paquetes, historial general, navegación, Agenda, Finanzas, KPI, Pagos, Pasaporte y Equipo clínico permanecen externos.');
 lines.push('');
-lines.push('## Funciones seleccionadas');
+lines.push('## Funciones propias seleccionadas');
 for (const item of functions) lines.push(`- \`${item.name}\`${item.async ? ' — async' : ''}`);
 lines.push('');
-lines.push('## Manejadores declarados en la vista');
+lines.push('## Manejadores de la vista');
 for (const name of uiHandlers) lines.push(`- \`${name}\`${sharedUiHandlers.has(name) ? ' — compartido, no se mueve' : ''}`);
 lines.push('');
 lines.push('## Estado propio que se encapsulará');
@@ -172,16 +170,19 @@ lines.push('## Acciones API');
 if (actions.length) for (const action of actions) lines.push(`- \`${action}\``);
 else lines.push('- No se detectaron acciones API literales.');
 lines.push('');
-lines.push('## Dependencias compartidas que deben permanecer externas');
+lines.push('## Dependencias compartidas que permanecen externas');
 for (const name of externalDependencies) lines.push(`- \`${name}\``);
 lines.push('');
+lines.push('## Funciones verificadas como externas');
+for (const name of mustRemainExternal.slice(0, 7)) lines.push(`- \`${name}\``);
+lines.push('');
 lines.push('## Controles para la implementación');
-lines.push('- Crear `js/modules/database.js` únicamente con las funciones seleccionadas.');
+lines.push('- Crear `js/modules/database.js` solo con pacientes y reactivación.');
 lines.push('- Conservar adaptadores con los mismos nombres en `index.html`.');
-lines.push('- No mover `showView`, Códigos REF & BONO ni utilidades compartidas.');
-lines.push('- Verificar que Agenda, creación/edición de citas y los módulos de las Fases 1 a 7 no cambien.');
+lines.push('- No mover los puentes de Crear cita, Paquetes ni historial general.');
+lines.push('- Verificar que Agenda y los módulos de las Fases 1 a 7 no cambien.');
 lines.push('- No modificar `main`, Apps Script ni el panel publicado.');
 lines.push('');
 
 fs.writeFileSync(reportPath, lines.join('\n'), 'utf8');
-console.log(`Inventario Fase 8 final: ${functionNames.length} funciones y ${externalDependencies.length} dependencias externas.`);
+console.log(`Inventario Fase 8 definitivo: ${functionNames.length} funciones propias.`);
