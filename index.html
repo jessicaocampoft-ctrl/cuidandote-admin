@@ -6137,10 +6137,12 @@ Acción: enviar mensaje de reenganche a los 14 pacientes que solo vinieron una v
   </div>
 </div>
 
+<script src="js/core/config.js"></script>
+<script src="js/core/api.js"></script>
 <script src="js/core/navigation.js"></script>
 <script>
 // ══════════════════════════════════════════════════════════════
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx7biQkVS9l1nU4AYQeOmQzbPcKebOUJ5UmX97vCJDaXg5s-9y0-mgSrE0ANZXZJ8Hd/exec';
+const APPS_SCRIPT_URL = window.PanelConfig.APPS_SCRIPT_URL;
 
 // ── KV SYNC — datos persistentes sincronizados en todos los dispositivos via GAS ──
 let _gasKV = {};
@@ -7122,25 +7124,7 @@ function exportOperationsAuditCSV() {
 }
 
 async function fetchJsonWithTimeout(url, options = {}, timeoutMs = 45000) {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    const response = await fetch(url, { ...options, signal: controller.signal });
-    const raw = (await response.text()).replace(/^\uFEFF/, '').trim();
-    if (!raw) throw new Error('El servidor respondió vacío. Intenta nuevamente.');
-    try {
-      return JSON.parse(raw);
-    } catch (_) {
-      throw new Error('El servidor devolvió una respuesta inválida. Intenta nuevamente.');
-    }
-  } catch (error) {
-    if (error && error.name === 'AbortError') {
-      throw new Error('El servidor tardó demasiado. Intenta nuevamente.');
-    }
-    throw error;
-  } finally {
-    clearTimeout(timeout);
-  }
+  return window.PanelApi.fetchJsonWithTimeout(url, options, timeoutMs);
 }
 
 function openProfessionalLoginMode() {
