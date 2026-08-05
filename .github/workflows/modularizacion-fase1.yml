@@ -46,9 +46,13 @@ jobs:
 
       - name: Revisar que los archivos funcionales modificados sean los esperados
         run: |
-          MODIFICADOS="$(git diff --name-only origin/main -- index.html js/core/navigation.js)"
-          echo "$MODIFICADOS"
-          test "$MODIFICADOS" = $'index.html\njs/core/navigation.js'
+          test -f js/core/navigation.js
+          STATUS_INDEX="$(git status --short -- index.html)"
+          STATUS_NAV="$(git status --short -- js/core/navigation.js)"
+          echo "index.html: $STATUS_INDEX"
+          echo "navigation.js: $STATUS_NAV"
+          test "$STATUS_INDEX" = " M index.html"
+          test "$STATUS_NAV" = "?? js/core/navigation.js"
 
       - name: Guardar resultado únicamente en la rama aislada
         run: |
