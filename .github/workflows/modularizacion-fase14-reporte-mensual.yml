@@ -1,0 +1,105 @@
+name: Fase 14 — Reporte mensual
+
+on:
+  push:
+    branches:
+      - modularizacion-panel-fase14-reporte-mensual-2026-08-06
+    paths:
+      - MODULARIZACION_FASE14_REPORTE_MENSUAL.md
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: modularizacion-panel-fase14-reporte-mensual
+  cancel-in-progress: false
+
+jobs:
+  modularizar-reporte:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar rama aislada
+        uses: actions/checkout@v4
+        with:
+          ref: modularizacion-panel-fase14-reporte-mensual-2026-08-06
+          fetch-depth: 0
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Confirmar aislamiento y base
+        run: |
+          test "$(git branch --show-current)" = "modularizacion-panel-fase14-reporte-mensual-2026-08-06"
+          git fetch origin modularizacion-panel-fase13-metas-presupuesto-2026-08-06
+          git fetch origin main
+          git show origin/modularizacion-panel-fase13-metas-presupuesto-2026-08-06:index.html > /tmp/fase13-index.html
+          git merge-base --is-ancestor origin/modularizacion-panel-fase13-metas-presupuesto-2026-08-06 HEAD
+
+      - name: Separar reporte mensual
+        run: node tools/modularizar-reporte-mensual-fase14.mjs index.html
+
+      - name: Validar sintaxis y paridad
+        run: |
+          node --check js/modules/monthly-report.js
+          node --check tools/validar-reporte-mensual-fase14.mjs
+          node tools/validar-reporte-mensual-fase14.mjs /tmp/fase13-index.html index.html js/modules/monthly-report.js
+
+      - name: Confirmar aislamiento funcional
+        run: |
+          git diff --exit-code origin/modularizacion-panel-fase13-metas-presupuesto-2026-08-06 -- js/core
+          git diff --exit-code origin/modularizacion-panel-fase13-metas-presupuesto-2026-08-06 -- js/modules ':!js/modules/monthly-report.js'
+          ! grep -q 'fetch(' js/modules/monthly-report.js
+          ! grep -q 'APPS_SCRIPT_URL' js/modules/monthly-report.js
+          ! grep -q 'action=' js/modules/monthly-report.js
+          grep -q 'function copiarReporteMes' index.html
+          grep -q 'function imprimirReporteMes' index.html
+          grep -q 'function copiarBriefClaude' index.html
+          grep -q 'global.PanelMonthlyReport = Object.freeze' js/modules/monthly-report.js
+          test "$(grep -o 'script src="js/modules/monthly-report.js"' index.html | wc -l)" -eq 1
+
+      - name: Confirmar módulos anteriores
+        run: |
+          for f in agenda appointment-create appointment-edit budget database finance kpi packages passport payments referrals team; do
+            test -f "js/modules/$f.js"
+          done
+
+      - name: Generar informe final
+        run: |
+          cat > MODULARIZACION_FASE14_RESULTADO.md <<'EOF'
+          # Resultado de modularización — Fase 14 Reporte mensual
+
+          - `js/modules/monthly-report.js` creado.
+          - Se trasladaron 6 funciones: apertura, cierre, tres helpers de composición y construcción completa del reporte mensual.
+          - Los mismos nombres públicos permanecen en `index.html` mediante adaptadores compatibles.
+          - Se verificó paridad exacta de los cuerpos frente a la Fase 13.
+          - Se validó la API pública congelada `PanelMonthlyReport`.
+          - Se probaron los helpers de título, fila y celda con datos QA.
+          - Copiar, imprimir y generar el brief para Claude permanecen como consumidores compartidos en `index.html`.
+          - No se introdujeron llamadas nuevas al servidor.
+          - Finanzas, KPI, Presupuesto, Pagos, Agenda y los módulos anteriores permanecen sin cambios.
+          - No se modificó `main`, Apps Script ni el panel publicado.
+          EOF
+
+      - name: Guardar resultado solo en la rama aislada
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html js/modules/monthly-report.js MODULARIZACION_FASE14_RESULTADO.md
+          if git diff --cached --quiet; then
+            echo "La Fase 14 ya estaba aplicada."
+            exit 0
+          fi
+          git commit -m "Separar y validar reporte mensual"
+          for intento in 1 2 3; do
+            git fetch origin modularizacion-panel-fase14-reporte-mensual-2026-08-06
+            git rebase origin/modularizacion-panel-fase14-reporte-mensual-2026-08-06
+            if git push origin HEAD:modularizacion-panel-fase14-reporte-mensual-2026-08-06; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "No se pudo guardar el resultado después de tres intentos seguros."
+          exit 1
