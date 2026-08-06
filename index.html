@@ -8036,118 +8036,68 @@ function chipState(st) {
   return '<span class="chip chip-warn">' + (st||'—') + '</span>';
 }
 
-function waNombre(nombre) {
-  return (nombre||'').split(' ')[0];
-}
-
-function waFechaES(fecha) {
-  const DIAS  = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
-  const MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
-  const dp = normDate(fecha).split('-');
-  if (dp.length < 3 || !dp[0]) return normDate(fecha);
-  const obj = new Date(+dp[0], +dp[1]-1, +dp[2]);
-  return DIAS[obj.getDay()] + ' ' + +dp[2] + ' de ' + MESES[+dp[1]-1] + ' de ' + dp[0];
-}
-
-function waAmPm(hora) {
-  const [h, m] = hora.split(':').map(Number);
-  const ampm = h < 12 ? 'AM' : 'PM';
-  const h12 = h % 12 || 12;
-  return h12 + ':' + String(m).padStart(2,'0') + ' ' + ampm;
-}
-
-function ordinalES(n) {
-  const s = ['','ra','da','ra','ta','ta','ta','ma','va','na','ma'];
-  return n + (n <= 10 ? s[n] : 'ra');
-}
-
-function getInfoSesion(nombre, servicio, fecha) {
-  const total = sesionesPorPaquete[servicio];
-  if (!total) return null;
-  const norm  = (nombre||'').toLowerCase().trim();
-  const hasta = normDate(fecha);
-  const lista = (allData && allData.citas) ? allData.citas : [];
-  const numero = lista.filter(c =>
-    (c.nombre||'').toLowerCase().trim() === norm &&
-    c.servicio === servicio &&
-    c.estado !== 'Cancelada' &&
-    normDate(c.fecha) <= hasta
-  ).length;
-  return { numero: Math.max(1, numero), total };
-}
-
-function waLink(tel, nombre, fecha, hora, serv, precio, modalidad) {
-  const t = String(tel||'').replace(/\D/g,'');
-  if (!t || t.length < 7) return null;
-  const phone = t.length <= 10 ? '57'+t : t;
-  const conPago  = /descarga|valoraci/i.test(serv);
-  const infoSes  = getInfoSesion(nombre, serv, fecha);
-  const servLine = infoSes
-    ? '*' + serv + '* — ' + ordinalES(infoSes.numero) + ' sesion de ' + infoSes.total
-    : '*' + serv + '*';
-  const lines = [
-    'Hola ' + waNombre(nombre) + '! Te escribo para confirmar tu cita \ud83d\udccb',
-    '',
-    servLine,
-    '' + waFechaES(fecha) + ' · ' + waAmPm(hora),
-    '\uD83D\uDCCD ' + (modalidad === 'Domicilio' ? 'A domicilio' : 'En sitio'),
-  ];
-  if (conPago && precio) {
-    lines.push(
-      '',
-      '\u2B50 Valor: *' + precio + '*',
-      '',
-      'Para el pago:',
-      '\uD83C\uDFE6 Bancolombia Ahorros: 91257857099',
-      '\uD83D\uDCF1 Nequi: 3136467945',
-      '\uD83D\uDDDD\uFE0F Llave: 1010124692',
-      'Titular: Jessica Andrea Ocampo Barbosa'
-    );
+function waNombre(...args) {
+  const module = window.PanelWhatsAppTools;
+  if (!module || typeof module.waNombre !== 'function') {
+    throw new Error('El módulo Herramientas de WhatsApp no está disponible: waNombre');
   }
-  lines.push(
-    '',
-    'Respóndeme:',
-    '✅ *1* — Sí confirmo mi asistencia',
-    '❌ *2* — Necesito cancelar o cambiar el horario',
-    '',
-    'Gracias! — Cuidándote Fisioterapia'
-  );
-  return 'https://wa.me/' + phone + '?text=' + encodeURIComponent(lines.join('\n'));
+  return module.waNombre(...args);
 }
 
-function waLinkRec(tel, nombre, fecha, hora, serv) {
-  const t = String(tel||'').replace(/\D/g,'');
-  if (!t || t.length < 7) return null;
-  const phone   = t.length <= 10 ? '57'+t : t;
-  const infoSes = getInfoSesion(nombre, serv, fecha);
-  const sesStr  = infoSes
-    ? 'tu ' + ordinalES(infoSes.numero) + ' sesion de ' + infoSes.total + ' de *' + serv + '*'
-    : 'tu cita de *' + serv + '*';
-  const msg = 'Hola ' + waNombre(nombre) + '! Te recuerdo ' + sesStr + ' el ' + waFechaES(fecha) + ' a las ' + waAmPm(hora) + '. Recuerda llegar unos minutos antes con ropa comoda. \uD83D\uDCAA\n\nCualquier duda me avisas. Hasta pronto! — Cuidándote Fisioterapia';
-  return 'https://wa.me/' + phone + '?text=' + encodeURIComponent(msg);
+function waFechaES(...args) {
+  const module = window.PanelWhatsAppTools;
+  if (!module || typeof module.waFechaES !== 'function') {
+    throw new Error('El módulo Herramientas de WhatsApp no está disponible: waFechaES');
+  }
+  return module.waFechaES(...args);
 }
 
-function waLinkSeg(tel, nombre, serv, notaAdmin) {
-  const t = String(tel||'').replace(/\D/g,'');
-  if (!t || t.length < 7) return null;
-  const phone = t.length <= 10 ? '57'+t : t;
-  const s = serv.toLowerCase();
-  let det;
-  if      (s.includes('descarga') && (s.includes('cuello') || s.includes('espalda'))) det = 'la sesión de descarga muscular en cuello y espalda';
-  else if (s.includes('descarga') && s.includes('pierna'))  det = 'la sesión de descarga muscular en piernas';
-  else if (s.includes('descarga')) det = 'la sesión de descarga muscular';
-  else if (s.includes('readapt'))  det = 'la sesión de readaptación funcional';
-  else if (s.includes('valorac'))  det = 'la sesión de valoración funcional';
-  else if (s.includes('gimnasio')) det = 'la sesión de gimnasio';
-  else if (s.includes('empresa'))  det = 'la sesión empresarial';
-  else det = 'la sesión de ' + serv.toLowerCase();
-  // Detectar nota de relación: si notaAdmin contiene [PARA: ...]
-  const paraMatch = notaAdmin && notaAdmin.match(/\[PARA:\s*([^\]]+)\]/i);
-  const paraQuien = paraMatch ? paraMatch[1].trim() : null;
-  const msg = paraQuien
-    ? 'Hola ' + waNombre(nombre) + '! \uD83D\uDC4B Espero que esten bien. ¿Como le fue a ' + paraQuien + ' con ' + det + '? Quedo atenta a cualquier duda o molestia. \uD83D\uDE4F\n\n— Cuidándote Fisioterapia'
-    : 'Hola ' + waNombre(nombre) + '! \uD83D\uDC4B Espero que estes bien. ¿Como te fue con ' + det + '? Quedo atenta a cualquier duda o molestia. \uD83D\uDE4F\n\n— Cuidándote Fisioterapia';
-  return 'https://wa.me/' + phone + '?text=' + encodeURIComponent(msg);
+function waAmPm(...args) {
+  const module = window.PanelWhatsAppTools;
+  if (!module || typeof module.waAmPm !== 'function') {
+    throw new Error('El módulo Herramientas de WhatsApp no está disponible: waAmPm');
+  }
+  return module.waAmPm(...args);
+}
+
+function ordinalES(...args) {
+  const module = window.PanelWhatsAppTools;
+  if (!module || typeof module.ordinalES !== 'function') {
+    throw new Error('El módulo Herramientas de WhatsApp no está disponible: ordinalES');
+  }
+  return module.ordinalES(...args);
+}
+
+function getInfoSesion(...args) {
+  const module = window.PanelWhatsAppTools;
+  if (!module || typeof module.getInfoSesion !== 'function') {
+    throw new Error('El módulo Herramientas de WhatsApp no está disponible: getInfoSesion');
+  }
+  return module.getInfoSesion(...args);
+}
+
+function waLink(...args) {
+  const module = window.PanelWhatsAppTools;
+  if (!module || typeof module.waLink !== 'function') {
+    throw new Error('El módulo Herramientas de WhatsApp no está disponible: waLink');
+  }
+  return module.waLink(...args);
+}
+
+function waLinkRec(...args) {
+  const module = window.PanelWhatsAppTools;
+  if (!module || typeof module.waLinkRec !== 'function') {
+    throw new Error('El módulo Herramientas de WhatsApp no está disponible: waLinkRec');
+  }
+  return module.waLinkRec(...args);
+}
+
+function waLinkSeg(...args) {
+  const module = window.PanelWhatsAppTools;
+  if (!module || typeof module.waLinkSeg !== 'function') {
+    throw new Error('El módulo Herramientas de WhatsApp no está disponible: waLinkSeg');
+  }
+  return module.waLinkSeg(...args);
 }
 
 function waEncuesta(tel, nombre) {
@@ -11152,423 +11102,164 @@ function renderKPITablero(...args) {
 // ══════════════════════════════════════════════════════════════
 // COPIAR Y COMPARTIR INFORMACIÓN DE GESTIÓN
 // ══════════════════════════════════════════════════════════════
-function _copyGestionMesKey(d = new Date()) {
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
-}
-
-function _copyGestionPeriodo() {
-  const now = new Date();
-  const meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
-  return `${meses[now.getMonth()]} de ${now.getFullYear()}`;
-}
-
-function _copyGestionTop(map, limit = 5) {
-  return Object.entries(map || {})
-    .sort((a,b) => b[1] - a[1])
-    .slice(0, limit)
-    .map(([k,v]) => `${k}: ${v}`)
-    .join('\n') || 'Sin datos registrados';
-}
-
-function _copyGestionData() {
-  const now = new Date();
-  const monthKey = _copyGestionMesKey(now);
-  const citasAll = allData.citas || [];
-  const eventosAll = allData.eventos || [];
-  const pacientesAll = allData.pacientes || [];
-  const pros = (allData.profesionales || allData.fisioterapeutas || allData.team || []);
-  const manual = getKPIManual ? getKPIManual() : {};
-  const cfg = getKPIConfig ? getKPIConfig() : {};
-  const citasMesAll = citasAll.filter(c => normDate(c.fecha || '').startsWith(monthKey) && !esRegistroServ(c.servicio));
-  const citasMesActivas = citasMesAll.filter(c => !String(c.estado || '').toLowerCase().includes('cancel'));
-  const eventosMes = eventosAll.filter(e => normDate(e.fecha || '').startsWith(monthKey));
-  const sesionesAtendidas = citasMesAll.filter(c => String(c.estado || '').toLowerCase().includes('atendida')).length;
-  const cancelaciones = citasMesAll.filter(c => String(c.estado || '').toLowerCase().includes('cancel')).length;
-  const noAsistencias = citasMesAll.filter(c => String(c.estado || '').toLowerCase().includes('no asist')).length;
-  const ventasGeneradas = citasMesActivas.reduce((s,c) => s + parsePrecio(c.precio), 0) + eventosMes.reduce((s,e) => s + parsePrecio(e.cobro), 0);
-  const ingresosCobrados = (typeof calcCobradoMes === 'function') ? calcCobradoMes() : ventasGeneradas;
-  const pagosPendientesLista = citasMesActivas.filter(c => {
-    const estado = String(c.estado || '').toLowerCase();
-    return estado.includes('pendiente de pago') || estado.includes('pago por verificar') || estado.includes('rechazado');
-  });
-  const pendienteCobrar = pagosPendientesLista.reduce((s,c) => s + parsePrecio(c.precio), 0);
-  const egresosMes = (typeof getEgresos === 'function' ? getEgresos() : [])
-    .filter(e => String(e.fecha || '').startsWith(monthKey))
-    .reduce((s,e) => s + (Number(e.monto) || parsePrecio(e.monto)), 0);
-  const ganancia = ingresosCobrados - egresosMes;
-  const metaMensual = cfg.meta_ventas_mes || window.META_VENTAS_MES || 0;
-  const cumplimiento = metaMensual > 0 ? Math.round((ingresosCobrados / metaMensual) * 100) : 0;
-  const faltante = Math.max(0, metaMensual - ingresosCobrados);
-
-  const pacienteMes = {};
-  citasMesActivas.forEach(c => { if (c.nombre) pacienteMes[String(c.nombre).trim().toLowerCase()] = c.nombre; });
-  let personasNuevas = 0;
-  let personasRecurrentes = 0;
-  Object.keys(pacienteMes).forEach(key => {
-    const tuvoAntes = citasAll.some(c => String(c.nombre || '').trim().toLowerCase() === key && normDate(c.fecha || '') < monthKey + '-01' && !String(c.estado || '').toLowerCase().includes('cancel'));
-    if (tuvoAntes) personasRecurrentes++; else personasNuevas++;
-  });
-
-  const servicios = {};
-  const horarios = {};
-  citasMesActivas.forEach(c => {
-    const serv = c.servicio || 'Sin servicio';
-    servicios[serv] = (servicios[serv] || 0) + 1;
-    const h = String(c.hora || '').slice(0,2) + ':00';
-    if (h && h !== ':00') horarios[h] = (horarios[h] || 0) + 1;
-  });
-  const serviciosArr = Object.entries(servicios).sort((a,b) => b[1] - a[1]);
-  const horariosArr = Object.entries(horarios).sort((a,b) => b[1] - a[1]);
-  const paquetesVendidos = citasMesActivas.filter(c => String(c.servicio || '').toLowerCase().includes('paquete')).length;
-  const ticketPromedio = citasMesActivas.length ? Math.round(ventasGeneradas / citasMesActivas.length) : 0;
-
-  const leadsRecibidos = typeof getLeadsMes === 'function' ? getLeadsMes() : (manual.leads || 0);
-  const leadsConvertidos = manual.convertidos || citasMesActivas.length;
-  const ocupacion = _copyGestionOcupacion(citasMesActivas.length + eventosMes.length, now);
-
-  const reactivar = _copyGestionReactivar(citasAll, pacientesAll);
-  const candidatosPaquete = _copyGestionCandidatosPaquete(citasAll);
-  const disponibilidadPros = pros.length
-    ? pros.map(p => `${p.nombre || p.Nombre || 'Profesional'}: ${p.disponibilidad || p.Disponibilidad || 'Sin disponibilidad registrada'}`).join('\n')
-    : 'Sin fisioterapeutas registrados';
-
-  return {
-    periodo: _copyGestionPeriodo(),
-    metaMensual, ingresosCobrados, ventasGeneradas, pendienteCobrar, egresosMes, ganancia, cumplimiento, faltante,
-    citasProgramadas: citasMesActivas.length,
-    sesionesAtendidas,
-    personasNuevas,
-    personasRecurrentes,
-    paquetesVendidos,
-    ticketPromedio,
-    ocupacion,
-    cancelaciones,
-    noAsistencias,
-    leadsRecibidos,
-    leadsConvertidos,
-    serviciosMasVendidos: serviciosArr.slice(0,5).map(([s,n]) => `${s}: ${n}`).join('\n') || 'Sin datos',
-    serviciosMenosVendidos: serviciosArr.slice(-5).map(([s,n]) => `${s}: ${n}`).join('\n') || 'Sin datos',
-    horariosMayorOcupacion: horariosArr.slice(0,5).map(([h,n]) => `${h}: ${n} cita(s)`).join('\n') || 'Sin datos',
-    horariosMenorOcupacion: horariosArr.slice(-5).map(([h,n]) => `${h}: ${n} cita(s)`).join('\n') || 'Sin datos',
-    disponibilidadPros,
-    pagosPendientesLista,
-    reactivar,
-    candidatosPaquete,
-    estrategiasEjecutadas: localStorage.getItem('gestion_estrategias_mes') || 'Sin registrar',
-    resultadosObtenidos: localStorage.getItem('gestion_resultados_mes') || 'Sin registrar',
-    observaciones: localStorage.getItem('gestion_observaciones_mes') || 'Sin registrar'
-  };
-}
-
-function _copyGestionOcupacion(citasProgramadas, date) {
-  const y = date.getFullYear(), m = date.getMonth();
-  const days = new Date(y, m + 1, 0).getDate();
-  let capacidad = 0;
-  for (let d = 1; d <= days; d++) {
-    const dow = new Date(y, m, d).getDay();
-    if (dow === 0) continue;
-    if (dow === 1) capacidad += 8;
-    else if (dow === 6) capacidad += 2;
-    else capacidad += 9;
+function _copyGestionMesKey(...args) {
+  const module = window.PanelWhatsAppTools;
+  if (!module || typeof module._copyGestionMesKey !== 'function') {
+    throw new Error('El módulo Herramientas de WhatsApp no está disponible: _copyGestionMesKey');
   }
-  return capacidad ? Math.round((citasProgramadas / capacidad) * 100) + '%' : 'Sin capacidad calculada';
+  return module._copyGestionMesKey(...args);
 }
 
-function _copyGestionReactivar(citasAll, pacientesAll) {
-  const last = {};
-  citasAll.forEach(c => {
-    if (!c.nombre || String(c.estado || '').toLowerCase().includes('cancel')) return;
-    const key = String(c.nombre).trim().toLowerCase();
-    const f = normDate(c.fecha || '');
-    if (!last[key] || f > last[key].fecha) last[key] = {nombre:c.nombre, telefono:c.telefono || c.phone || '', fecha:f, servicio:c.servicio || ''};
-  });
-  const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 42);
-  const cutoffStr = normDate(cutoff);
-  return Object.values(last)
-    .filter(p => p.fecha && p.fecha < cutoffStr)
-    .sort((a,b) => a.fecha.localeCompare(b.fecha))
-    .slice(0,40);
-}
-
-function _copyGestionCandidatosPaquete(citasAll) {
-  const map = {};
-  citasAll.forEach(c => {
-    if (!c.nombre || String(c.estado || '').toLowerCase().includes('cancel')) return;
-    const key = String(c.nombre).trim().toLowerCase();
-    if (!map[key]) map[key] = {nombre:c.nombre, telefono:c.telefono || c.phone || '', total:0, paquete:false, ultimo:normDate(c.fecha || '')};
-    map[key].total++;
-    if (String(c.servicio || '').toLowerCase().includes('paquete')) map[key].paquete = true;
-    const f = normDate(c.fecha || '');
-    if (f > map[key].ultimo) map[key].ultimo = f;
-  });
-  return Object.values(map).filter(p => p.total >= 2 && !p.paquete).sort((a,b) => b.total - a.total).slice(0,40);
-}
-
-function _copyGestionDiagnostico(d) {
-  const ok = [];
-  const att = [];
-  if (d.cumplimiento >= 80) ok.push(`Cumplimiento de meta en ${d.cumplimiento}%.`);
-  else att.push(`Faltan ${fmtPeso(d.faltante)} para llegar a la meta mensual.`);
-  if (d.pendienteCobrar > 0) att.push(`Hay ${fmtPeso(d.pendienteCobrar)} pendiente por cobrar.`);
-  if (d.cancelaciones > 0) att.push(`Se registran ${d.cancelaciones} cancelación(es) este mes.`);
-  if (d.reactivar.length) att.push(`Hay ${d.reactivar.length} persona(s) para reactivar.`);
-  if (d.candidatosPaquete.length) ok.push(`Hay ${d.candidatosPaquete.length} candidato(s) para ofrecer paquetes.`);
-  if (!ok.length) ok.push('Hay información suficiente para tomar decisiones de gestión.');
-  if (!att.length) att.push('No se detectan alertas administrativas fuertes con los datos actuales.');
-  return {ok, att};
-}
-
-function _copyGestionAcciones(d) {
-  return [
-    `Contactar ${d.reactivar.length} persona(s) para reactivación.`,
-    `Revisar y cerrar ${d.pagosPendientesLista.length} pago(s) pendiente(s).`,
-    `Ofrecer paquetes a ${d.candidatosPaquete.length} candidato(s) con sesiones sueltas.`,
-    'Revisar horarios de baja ocupación y mover campañas hacia esas franjas.',
-    'Revisar el servicio más vendido y crear una oferta complementaria.'
-  ];
-}
-
-function _copyGestionTexto(kind) {
-  const d = _copyGestionData();
-  const diag = _copyGestionDiagnostico(d);
-  const acciones = _copyGestionAcciones(d);
-  const money = v => fmtPeso(v || 0);
-  const baseFin = [
-    `Periodo: ${d.periodo}`,
-    '',
-    'RESUMEN FINANCIERO',
-    `* Ingresos cobrados: ${money(d.ingresosCobrados)}`,
-    `* Ventas generadas: ${money(d.ventasGeneradas)}`,
-    `* Pendiente por cobrar: ${money(d.pendienteCobrar)}`,
-    `* Gastos: ${money(d.egresosMes)}`,
-    `* Ganancia estimada: ${money(d.ganancia)}`,
-    `* Meta mensual: ${money(d.metaMensual)}`,
-    `* Cumplimiento: ${d.cumplimiento}%`,
-    `* Dinero faltante: ${money(d.faltante)}`
-  ];
-  let text = '';
-  if (kind === 'ejecutivo') {
-    text = ['RESUMEN EJECUTIVO — CUIDÁNDOTE FISIOTERAPIA', ...baseFin, '', 'PUNTOS CLAVE', ...diag.ok.map(x => `* ${x}`), ...diag.att.map(x => `* ${x}`), '', 'PRÓXIMAS ACCIONES', ...acciones.map((x,i)=>`${i+1}. ${x}`)].join('\n');
-  } else if (kind === 'indicadores') {
-    text = ['INDICADORES DE GESTIÓN — CUIDÁNDOTE FISIOTERAPIA', `Periodo: ${d.periodo}`, '', ...baseFin.slice(2), '', 'OPERACIÓN', `* Citas programadas: ${d.citasProgramadas}`, `* Sesiones atendidas: ${d.sesionesAtendidas}`, `* Ocupación total: ${d.ocupacion}`, `* Cancelaciones: ${d.cancelaciones}`, `* No asistencias: ${d.noAsistencias}`, '', 'CLIENTES Y VENTAS', `* Personas nuevas: ${d.personasNuevas}`, `* Personas recurrentes: ${d.personasRecurrentes}`, `* Leads recibidos: ${d.leadsRecibidos}`, `* Leads convertidos: ${d.leadsConvertidos}`, `* Paquetes vendidos: ${d.paquetesVendidos}`, `* Ticket promedio: ${money(d.ticketPromedio)}`].join('\n');
-  } else if (kind === 'diagnostico') {
-    text = ['DIAGNÓSTICO DE GESTIÓN — CUIDÁNDOTE FISIOTERAPIA', `Periodo: ${d.periodo}`, '', 'Lo que está funcionando:', ...diag.ok.map(x => `* ${x}`), '', 'Lo que necesita atención:', ...diag.att.map(x => `* ${x}`)].join('\n');
-  } else if (kind === 'estrategias') {
-    text = ['ESTRATEGIAS RECOMENDADAS — CUIDÁNDOTE FISIOTERAPIA', `Periodo: ${d.periodo}`, '', ...acciones.map((x,i)=>`${i+1}. ${x}`), '', 'Estrategias ejecutadas:', d.estrategiasEjecutadas, '', 'Resultados obtenidos:', d.resultadosObtenidos].join('\n');
-  } else if (kind === 'plan') {
-    text = ['PLAN DE ACCIÓN — CUIDÁNDOTE FISIOTERAPIA', `Periodo: ${d.periodo}`, '', ...acciones.map((x,i)=>`${i+1}. ${x}`), '', 'Prioridad sugerida:', '1. Cobros pendientes.', '2. Reactivación.', '3. Ofertas de paquetes.', '4. Optimización de horarios.'].join('\n');
-  } else if (kind === 'asesor') {
-    text = _copyGestionAsesorText(d);
-  } else {
-    text = ['DIRECCIÓN Y CRECIMIENTO', `Periodo: ${d.periodo}`, '', '1. RESUMEN FINANCIERO', `Ingresos cobrados: ${money(d.ingresosCobrados)}`, `Ventas generadas: ${money(d.ventasGeneradas)}`, `Pendiente por cobrar: ${money(d.pendienteCobrar)}`, `Meta mensual: ${money(d.metaMensual)}`, `Cumplimiento: ${d.cumplimiento}%`, `Dinero faltante: ${money(d.faltante)}`, '', '2. DIAGNÓSTICO', '', 'Lo que está funcionando:', ...diag.ok.map(x => `* ${x}`), '', 'Lo que necesita atención:', ...diag.att.map(x => `* ${x}`), '', '3. ACCIONES PRIORITARIAS', ...acciones.map((x,i)=>`${i+1}. ${x}`), '', '4. SERVICIOS', 'Servicios más vendidos:', d.serviciosMasVendidos, '', 'Servicios menos vendidos:', d.serviciosMenosVendidos, '', '5. CAPACIDAD', 'Horarios con mayor ocupación:', d.horariosMayorOcupacion, '', 'Horarios con menor ocupación:', d.horariosMenorOcupacion].join('\n');
+function _copyGestionPeriodo(...args) {
+  const module = window.PanelWhatsAppTools;
+  if (!module || typeof module._copyGestionPeriodo !== 'function') {
+    throw new Error('El módulo Herramientas de WhatsApp no está disponible: _copyGestionPeriodo');
   }
-  return _copyPlainText(text);
+  return module._copyGestionPeriodo(...args);
 }
 
-function copyGestionTexto(kind) {
-  return _copyGestionTexto(kind);
-}
-
-function _copyGestionAsesorText(d) {
-  const money = v => fmtPeso(v || 0);
-  return [
-    'ANÁLISIS MENSUAL DE CUIDÁNDOTE FISIOTERAPIA',
-    '',
-    `Periodo: ${d.periodo}`,
-    `Meta mensual: ${money(d.metaMensual)}`,
-    '',
-    'RESUMEN FINANCIERO',
-    `* Ingresos cobrados: ${money(d.ingresosCobrados)}`,
-    `* Ventas generadas: ${money(d.ventasGeneradas)}`,
-    `* Pendiente por cobrar: ${money(d.pendienteCobrar)}`,
-    `* Gastos: ${money(d.egresosMes)}`,
-    `* Ganancia estimada: ${money(d.ganancia)}`,
-    `* Cumplimiento de la meta: ${d.cumplimiento}%`,
-    '',
-    'OPERACIÓN',
-    `* Citas programadas: ${d.citasProgramadas}`,
-    `* Sesiones atendidas: ${d.sesionesAtendidas}`,
-    `* Cancelaciones: ${d.cancelaciones}`,
-    `* No asistencias: ${d.noAsistencias}`,
-    `* Ocupación total: ${d.ocupacion}`,
-    '',
-    'CLIENTES Y VENTAS',
-    `* Personas nuevas: ${d.personasNuevas}`,
-    `* Personas recurrentes: ${d.personasRecurrentes}`,
-    `* Leads recibidos: ${d.leadsRecibidos}`,
-    `* Leads convertidos: ${d.leadsConvertidos}`,
-    `* Paquetes vendidos: ${d.paquetesVendidos}`,
-    `* Ticket promedio: ${money(d.ticketPromedio)}`,
-    '',
-    'CAPACIDAD DEL EQUIPO',
-    `* Disponibilidad por profesional:\n${d.disponibilidadPros}`,
-    `* Horarios con baja ocupación:\n${d.horariosMenorOcupacion}`,
-    '* Citas que podrían delegarse: revisar citas próximas de servicios presenciales o de descarga muscular.',
-    '',
-    'OPORTUNIDADES',
-    `* Leads sin seguimiento: revisar contador y mensajes pendientes.`,
-    `* Personas para reactivar: ${d.reactivar.length}`,
-    `* Candidatos para paquetes: ${d.candidatosPaquete.length}`,
-    '* Paquetes próximos a terminar: revisar módulo de paquetes.',
-    `* Pagos pendientes: ${d.pagosPendientesLista.length}`,
-    '',
-    'SERVICIOS',
-    `* Servicios más vendidos:\n${d.serviciosMasVendidos}`,
-    `* Servicios menos vendidos:\n${d.serviciosMenosVendidos}`,
-    '* Servicios más rentables: revisar estructura de costos.',
-    '* Servicios con menor rentabilidad: revisar estructura de costos.',
-    '',
-    'ACCIONES DEL MES',
-    `* Estrategias ejecutadas: ${d.estrategiasEjecutadas}`,
-    `* Resultado: ${d.resultadosObtenidos}`,
-    '* Ingreso generado: calcular según campañas registradas.',
-    '',
-    'OBSERVACIONES',
-    d.observaciones,
-    '',
-    'Actúa como asesor estratégico de Cuidándote Fisioterapia. Analiza esta información y entrégame:',
-    '',
-    '1. Diagnóstico del mes.',
-    '2. Principales problemas.',
-    '3. Oportunidades de ingresos.',
-    '4. Cinco acciones prioritarias.',
-    '5. Personas o segmentos que debemos contactar.',
-    '6. Estrategias para llegar a la meta.',
-    '7. Actividades que debe realizar administración.',
-    '8. Actividades que se pueden delegar a los fisioterapeutas.',
-    '9. Riesgos.',
-    '10. Próximo paso inmediato.',
-    '',
-    'No inventes datos. Basa todas las recomendaciones únicamente en la información entregada.'
-  ].join('\n');
-}
-
-async function _copyPlainText(text) {
-  const clean = String(text || '').replace(/\n{3,}/g, '\n\n').trim();
-  try {
-    if (navigator.clipboard && window.isSecureContext) {
-      await navigator.clipboard.writeText(clean);
-      _copyOk();
-      return true;
-    }
-  } catch(e) {}
-  _showCopyFallback(clean);
-  return false;
-}
-
-function _copyOk() {
-  toast('Información copiada correctamente', 'ok');
-  const estados = document.querySelectorAll('.copyGestionStatus');
-  estados.forEach(el => { el.style.display = 'inline-flex'; });
-  clearTimeout(window._copyGestionStatusTimer);
-  window._copyGestionStatusTimer = setTimeout(() => {
-    estados.forEach(el => { el.style.display = 'none'; });
-  }, 2200);
-}
-
-function _showCopyFallback(text, title='Copiar manualmente') {
-  let modal = document.getElementById('copyFallbackModal');
-  if (!modal) {
-    modal = document.createElement('div');
-    modal.id = 'copyFallbackModal';
-    modal.className = 'modal-bg';
-    modal.style.cssText = 'display:none;position:fixed;inset:0;background:rgba(0,0,0,.42);z-index:9999;align-items:center;justify-content:center;padding:18px';
-    modal.innerHTML = `<div class="modal-card" style="max-width:760px;width:100%;background:var(--s1);border:1px solid var(--border);border-radius:18px;padding:22px;box-shadow:0 24px 80px rgba(0,0,0,.22)">
-      <div class="modal-title" id="copyFallbackTitle" style="margin-bottom:8px">Copiar manualmente</div>
-      <p style="font-size:.85rem;color:var(--muted);margin-bottom:10px">Tu navegador no permitió copiar automáticamente. Selecciona el texto y cópialo manualmente.</p>
-      <textarea id="copyFallbackText" style="width:100%;min-height:320px;resize:vertical;background:var(--s2);border:1px solid var(--border);border-radius:12px;color:var(--text);padding:12px;font-family:var(--font-m);font-size:.84rem;line-height:1.55"></textarea>
-      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px;flex-wrap:wrap">
-        <button class="btn btn-ghost" onclick="document.getElementById('copyFallbackModal').style.display='none'">Cerrar</button>
-        <button class="btn btn-teal" onclick="document.getElementById('copyFallbackText').select();document.execCommand('copy');_copyOk()">Copiar selección</button>
-      </div>
-    </div>`;
-    document.body.appendChild(modal);
+function _copyGestionTop(...args) {
+  const module = window.PanelWhatsAppTools;
+  if (!module || typeof module._copyGestionTop !== 'function') {
+    throw new Error('El módulo Herramientas de WhatsApp no está disponible: _copyGestionTop');
   }
-  document.getElementById('copyFallbackTitle').textContent = title;
-  const ta = document.getElementById('copyFallbackText');
-  ta.value = text;
-  modal.style.display = 'flex';
-  setTimeout(() => { ta.focus(); ta.select(); }, 80);
+  return module._copyGestionTop(...args);
 }
 
-function abrirCopiarListaGestion() {
-  const d = _copyGestionData();
-  const groups = [
-    ['Pagos pendientes', d.pagosPendientesLista.map(c => `${c.nombre} | ${normDate(c.fecha)} | ${c.servicio} | ${fmtPeso(parsePrecio(c.precio))}`)],
-    ['Personas para reactivar', d.reactivar.map(p => `${p.nombre} | última cita: ${p.fecha} | ${p.telefono || 'sin teléfono'}`)],
-    ['Candidatos para paquetes', d.candidatosPaquete.map(p => `${p.nombre} | ${p.total} sesiones | ${p.telefono || 'sin teléfono'}`)]
-  ];
-  const text = groups.map(([title, items]) => `${title.toUpperCase()}\n${items.length ? items.map((x,i)=>`${i+1}. ${x}`).join('\n') : 'Sin registros'}`).join('\n\n');
-  return _copyPlainText(text);
-}
-
-function copiarInfoPersonaGestion() {
-  const nombre = prompt('Escribe el nombre de la persona que quieres copiar:');
-  if (!nombre) return;
-  const key = nombre.trim().toLowerCase();
-  const citas = (allData.citas || []).filter(c => String(c.nombre || '').toLowerCase().includes(key) && !esRegistroServ(c.servicio));
-  if (!citas.length) { toast('No encontré citas para esa persona', 'warn'); return; }
-  citas.sort((a,b) => normDate(b.fecha).localeCompare(normDate(a.fecha)));
-  const c0 = citas[0];
-  const total = citas.length;
-  const pagado = citas.filter(c => String(c.estado || '').toLowerCase().includes('atendida') || String(c.estado || '').toLowerCase().includes('confirm')).length;
-  const text = [
-    'INFORMACIÓN ADMINISTRATIVA DE PERSONA',
-    '',
-    `Nombre: ${c0.nombre}`,
-    `Teléfono: ${c0.telefono || c0.phone || 'Sin registrar'}`,
-    `Correo: ${c0.email || 'Sin registrar'}`,
-    `Total de citas registradas: ${total}`,
-    `Citas confirmadas/atendidas: ${pagado}`,
-    `Última cita: ${normDate(c0.fecha)} ${c0.hora || ''}`,
-    `Último servicio: ${c0.servicio || 'Sin servicio'}`,
-    `Estado último registro: ${c0.estado || 'Sin estado'}`,
-    '',
-    'Historial reciente:',
-    ...citas.slice(0,8).map((c,i)=>`${i+1}. ${normDate(c.fecha)} ${c.hora || ''} | ${c.servicio || ''} | ${c.estado || ''}`)
-  ].join('\n');
-  return _copyPlainText(text);
-}
-
-function abrirMensajeWAGestion() {
-  const d = _copyGestionData();
-  const persona = d.reactivar[0] || d.candidatosPaquete[0] || null;
-  const nombre = persona ? persona.nombre.split(' ')[0] : 'Hola';
-  const phone = persona ? String(persona.telefono || '').replace(/\D/g,'') : '';
-  const msg = `Hola ${nombre}, te saludamos de Cuidándote Fisioterapia. Queríamos saber cómo has seguido y ayudarte a retomar tu proceso si lo necesitas. Tenemos horarios disponibles esta semana. ¿Quieres que te compartamos opciones?`;
-  _showWhatsAppCopyModal(msg, phone);
-}
-
-function _showWhatsAppCopyModal(msg, phone='') {
-  let modal = document.getElementById('waCopyGestionModal');
-  if (!modal) {
-    modal = document.createElement('div');
-    modal.id = 'waCopyGestionModal';
-    modal.className = 'modal-bg';
-    modal.style.cssText = 'display:none;position:fixed;inset:0;background:rgba(0,0,0,.42);z-index:9999;align-items:center;justify-content:center;padding:18px';
-    modal.innerHTML = `<div class="modal-card" style="max-width:660px;width:100%;background:var(--s1);border:1px solid var(--border);border-radius:18px;padding:22px;box-shadow:0 24px 80px rgba(0,0,0,.22)">
-      <div class="modal-title" style="margin-bottom:8px">Mensaje para WhatsApp</div>
-      <p style="font-size:.85rem;color:var(--muted);margin-bottom:10px">Revísalo, edítalo y luego cópialo o abre WhatsApp. No se envía automáticamente.</p>
-      <input id="waCopyGestionPhone" placeholder="Teléfono opcional" style="width:100%;margin-bottom:10px;background:var(--s2);border:1px solid var(--border);border-radius:10px;color:var(--text);padding:10px 12px">
-      <textarea id="waCopyGestionText" style="width:100%;min-height:170px;resize:vertical;background:var(--s2);border:1px solid var(--border);border-radius:12px;color:var(--text);padding:12px;font-family:var(--font-b);font-size:.9rem;line-height:1.55"></textarea>
-      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px;flex-wrap:wrap">
-        <button class="btn btn-ghost" onclick="document.getElementById('waCopyGestionModal').style.display='none'">Cerrar</button>
-        <button class="btn btn-ghost" onclick="_copyPlainText(document.getElementById('waCopyGestionText').value)">Copiar mensaje</button>
-        <button class="btn btn-teal" onclick="_openWAGestionPrepared()">Abrir WhatsApp</button>
-      </div>
-    </div>`;
-    document.body.appendChild(modal);
+function _copyGestionData(...args) {
+  const module = window.PanelWhatsAppTools;
+  if (!module || typeof module._copyGestionData !== 'function') {
+    throw new Error('El módulo Herramientas de WhatsApp no está disponible: _copyGestionData');
   }
-  document.getElementById('waCopyGestionPhone').value = phone || '';
-  document.getElementById('waCopyGestionText').value = msg;
-  modal.style.display = 'flex';
+  return module._copyGestionData(...args);
 }
 
-function _openWAGestionPrepared() {
-  const phone = String(document.getElementById('waCopyGestionPhone').value || '').replace(/\D/g,'');
-  const text = document.getElementById('waCopyGestionText').value || '';
-  const url = phone ? `https://wa.me/57${phone.replace(/^57/,'')}?text=${encodeURIComponent(text)}` : `https://wa.me/?text=${encodeURIComponent(text)}`;
-  window.open(url, '_blank');
+function _copyGestionOcupacion(...args) {
+  const module = window.PanelWhatsAppTools;
+  if (!module || typeof module._copyGestionOcupacion !== 'function') {
+    throw new Error('El módulo Herramientas de WhatsApp no está disponible: _copyGestionOcupacion');
+  }
+  return module._copyGestionOcupacion(...args);
+}
+
+function _copyGestionReactivar(...args) {
+  const module = window.PanelWhatsAppTools;
+  if (!module || typeof module._copyGestionReactivar !== 'function') {
+    throw new Error('El módulo Herramientas de WhatsApp no está disponible: _copyGestionReactivar');
+  }
+  return module._copyGestionReactivar(...args);
+}
+
+function _copyGestionCandidatosPaquete(...args) {
+  const module = window.PanelWhatsAppTools;
+  if (!module || typeof module._copyGestionCandidatosPaquete !== 'function') {
+    throw new Error('El módulo Herramientas de WhatsApp no está disponible: _copyGestionCandidatosPaquete');
+  }
+  return module._copyGestionCandidatosPaquete(...args);
+}
+
+function _copyGestionDiagnostico(...args) {
+  const module = window.PanelWhatsAppTools;
+  if (!module || typeof module._copyGestionDiagnostico !== 'function') {
+    throw new Error('El módulo Herramientas de WhatsApp no está disponible: _copyGestionDiagnostico');
+  }
+  return module._copyGestionDiagnostico(...args);
+}
+
+function _copyGestionAcciones(...args) {
+  const module = window.PanelWhatsAppTools;
+  if (!module || typeof module._copyGestionAcciones !== 'function') {
+    throw new Error('El módulo Herramientas de WhatsApp no está disponible: _copyGestionAcciones');
+  }
+  return module._copyGestionAcciones(...args);
+}
+
+function _copyGestionTexto(...args) {
+  const module = window.PanelWhatsAppTools;
+  if (!module || typeof module._copyGestionTexto !== 'function') {
+    throw new Error('El módulo Herramientas de WhatsApp no está disponible: _copyGestionTexto');
+  }
+  return module._copyGestionTexto(...args);
+}
+
+function copyGestionTexto(...args) {
+  const module = window.PanelWhatsAppTools;
+  if (!module || typeof module.copyGestionTexto !== 'function') {
+    throw new Error('El módulo Herramientas de WhatsApp no está disponible: copyGestionTexto');
+  }
+  return module.copyGestionTexto(...args);
+}
+
+function _copyGestionAsesorText(...args) {
+  const module = window.PanelWhatsAppTools;
+  if (!module || typeof module._copyGestionAsesorText !== 'function') {
+    throw new Error('El módulo Herramientas de WhatsApp no está disponible: _copyGestionAsesorText');
+  }
+  return module._copyGestionAsesorText(...args);
+}
+
+async function _copyPlainText(...args) {
+  const module = window.PanelWhatsAppTools;
+  if (!module || typeof module._copyPlainText !== 'function') {
+    throw new Error('El módulo Herramientas de WhatsApp no está disponible: _copyPlainText');
+  }
+  return await module._copyPlainText(...args);
+}
+
+function _copyOk(...args) {
+  const module = window.PanelWhatsAppTools;
+  if (!module || typeof module._copyOk !== 'function') {
+    throw new Error('El módulo Herramientas de WhatsApp no está disponible: _copyOk');
+  }
+  return module._copyOk(...args);
+}
+
+function _showCopyFallback(...args) {
+  const module = window.PanelWhatsAppTools;
+  if (!module || typeof module._showCopyFallback !== 'function') {
+    throw new Error('El módulo Herramientas de WhatsApp no está disponible: _showCopyFallback');
+  }
+  return module._showCopyFallback(...args);
+}
+
+function abrirCopiarListaGestion(...args) {
+  const module = window.PanelWhatsAppTools;
+  if (!module || typeof module.abrirCopiarListaGestion !== 'function') {
+    throw new Error('El módulo Herramientas de WhatsApp no está disponible: abrirCopiarListaGestion');
+  }
+  return module.abrirCopiarListaGestion(...args);
+}
+
+function copiarInfoPersonaGestion(...args) {
+  const module = window.PanelWhatsAppTools;
+  if (!module || typeof module.copiarInfoPersonaGestion !== 'function') {
+    throw new Error('El módulo Herramientas de WhatsApp no está disponible: copiarInfoPersonaGestion');
+  }
+  return module.copiarInfoPersonaGestion(...args);
+}
+
+function abrirMensajeWAGestion(...args) {
+  const module = window.PanelWhatsAppTools;
+  if (!module || typeof module.abrirMensajeWAGestion !== 'function') {
+    throw new Error('El módulo Herramientas de WhatsApp no está disponible: abrirMensajeWAGestion');
+  }
+  return module.abrirMensajeWAGestion(...args);
+}
+
+function _showWhatsAppCopyModal(...args) {
+  const module = window.PanelWhatsAppTools;
+  if (!module || typeof module._showWhatsAppCopyModal !== 'function') {
+    throw new Error('El módulo Herramientas de WhatsApp no está disponible: _showWhatsAppCopyModal');
+  }
+  return module._showWhatsAppCopyModal(...args);
+}
+
+function _openWAGestionPrepared(...args) {
+  const module = window.PanelWhatsAppTools;
+  if (!module || typeof module._openWAGestionPrepared !== 'function') {
+    throw new Error('El módulo Herramientas de WhatsApp no está disponible: _openWAGestionPrepared');
+  }
+  return module._openWAGestionPrepared(...args);
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -13154,30 +12845,20 @@ async function reactivarPasaporte(...args) {
   }); // bubble phase: los onclick inline (markWaSent, etc.) disparan primero, luego prevenimos la navegacion
 })();
 
-function cerrarWaCopyModal() {
-  document.getElementById('waCopyModal').style.display = 'none';
+function cerrarWaCopyModal(...args) {
+  const module = window.PanelWhatsAppTools;
+  if (!module || typeof module.cerrarWaCopyModal !== 'function') {
+    throw new Error('El módulo Herramientas de WhatsApp no está disponible: cerrarWaCopyModal');
+  }
+  return module.cerrarWaCopyModal(...args);
 }
 
-function copiarMsgWA() {
-  const txt = document.getElementById('waCopyText').textContent;
-  navigator.clipboard.writeText(txt).then(() => {
-    const btn = document.getElementById('waCopyBtn');
-    const orig = btn.textContent;
-    btn.textContent = '✅ ¡Copiado!';
-    setTimeout(() => btn.textContent = orig, 2500);
-    toast('Mensaje copiado. Pégalo en WhatsApp Web 💬', 'ok');
-  }).catch(() => {
-    // Fallback para navegadores sin clipboard API
-    const ta = document.createElement('textarea');
-    ta.value = txt;
-    ta.style.position = 'fixed';
-    ta.style.opacity  = '0';
-    document.body.appendChild(ta);
-    ta.select();
-    document.execCommand('copy');
-    document.body.removeChild(ta);
-    toast('Mensaje copiado. Pégalo en WhatsApp Web 💬', 'ok');
-  });
+function copiarMsgWA(...args) {
+  const module = window.PanelWhatsAppTools;
+  if (!module || typeof module.copiarMsgWA !== 'function') {
+    throw new Error('El módulo Herramientas de WhatsApp no está disponible: copiarMsgWA');
+  }
+  return module.copiarMsgWA(...args);
 }
 
 // ── GUÍA KPIs — acordeón ──
@@ -13745,235 +13426,143 @@ function copiarDisponibilidadWA() {
 
 <script>
 // ── MENSAJES PREDETERMINADOS ──
-const _MSG_CATS = {
-  recordatorio:   { label: '🔔 Recordatorio',   color: '#3b82f6' },
-  reagendamiento: { label: '📅 Reagendamiento', color: '#8b5cf6' },
-  seguimiento:    { label: '💬 Seguimiento',    color: '#1BBFB0' },
-  promocion:      { label: '🎯 Promoción',       color: '#f59e0b' },
-  general:        { label: '📋 General',         color: '#6b7280' }
-};
-let _msgCatActiva = '';
 
-function _getMensajesPre() {
-  try { return JSON.parse(kvGet('mensajes_pre') || '[]'); } catch(e) { return []; }
-}
-function _setMensajesPre(arr) { kvSet('mensajes_pre', JSON.stringify(arr)); }
 
-const _MSG_DEFAULTS = [
-  { id:'def1', cat:'recordatorio',   titulo:'Confirmación de cita',
-    texto:'Hola {nombre}! Te escribo para confirmar tu cita 📋\n\n*{servicio}*\n{fecha} · {hora}\n📍 En sitio\n\nResponde:\n✅ *1* — Sí confirmo mi asistencia\n❌ *2* — Necesito cancelar o cambiar el horario\n\nGracias! — Cuidándote Fisioterapia', created:0 },
-  { id:'def2', cat:'recordatorio',   titulo:'Recordatorio de cita (día anterior)',
-    texto:'Hola {nombre}! 👋 Te recuerdo tu cita de *{servicio}* mañana {fecha} a las {hora}. Recuerda llegar unos minutos antes con ropa cómoda. 💪\n\nCualquier duda me avisas. — Cuidándote Fisioterapia', created:0 },
-  { id:'def3', cat:'seguimiento',    titulo:'Post-sesión — Descarga muscular',
-    texto:'Hola {nombre}! 👋 Soy Jessica. Han pasado 2 días desde tu sesión de Descarga Muscular. ¿Cómo te has sentido? ¿Notas mejoría en la zona trabajada? Cualquier molestia me cuentas para ajustar tu próximo plan. 💪', created:0 },
-  { id:'def4', cat:'seguimiento',    titulo:'Post-sesión — Valoración funcional',
-    texto:'Hola {nombre}! 👋 Soy Jessica. ¿Cómo te has sentido después de la Valoración Funcional de ayer? Si tienes alguna duda sobre los hallazgos o el plan que conversamos, quedo atenta. 🙏', created:0 },
-  { id:'def5', cat:'seguimiento',    titulo:'Post-sesión — Readaptación funcional',
-    texto:'Hola {nombre}! 👋 Soy Jessica. ¿Cómo te ha ido con los ejercicios del plan de ayer? Recuerda hacer las repeticiones que acordamos. Si sientes alguna molestia o duda, me cuentas para ajustarlo. 💪', created:0 },
-  { id:'def6', cat:'seguimiento',    titulo:'Encuesta de satisfacción',
-    texto:'Hola {nombre}! 😊 Tu opinión me importa mucho. ¿Me regalas 2 minutos para contarme cómo fue tu experiencia? 🙏\n\nhttps://forms.gle/srX1enyKN59n8TfQA\n\n⭐ ¡Premio! Cuando termines la encuesta, envíame un pantallazo y en tu próxima sesión te regalo 10 min de Botas de Compresión 💪\n\nGracias por confiar en mí! — Cuidándote Fisioterapia', created:0 },
-  { id:'def7', cat:'reagendamiento', titulo:'Recordatorio semana 5 (35–41 días)',
-    texto:'Hola {nombre}! 👋 Te escribimos de Cuidándote Fisioterapia. Ya van 5 semanas desde tu última sesión de Descarga Muscular. La próxima semana sería el momento ideal para reagendar antes de que el cuerpo empiece a acumular tensión. ¿Te agendo?', created:0 },
-  { id:'def8', cat:'reagendamiento', titulo:'Recordatorio semana 6 (42–48 días)',
-    texto:'Hola {nombre}! 👋 Te escribimos de Cuidándote Fisioterapia. Ya se cumplieron las 6 semanas desde tu última sesión de Descarga Muscular — es el momento de reagendar. Mantener la frecuencia es lo que hace que los resultados se sostengan. ¿Te agendo esta semana?', created:0 },
-  { id:'def9', cat:'reagendamiento', titulo:'Urgente semana 7+ (49+ días)',
-    texto:'Hola {nombre}! 👋 Te escribimos de Cuidándote Fisioterapia. Hace más de un mes desde tu última sesión de Descarga Muscular. El cuerpo ya empieza a acumular tensión de nuevo. ¿Cuándo te viene bien retomar? Cuéntame y coordinamos. 💪', created:0 },
-  { id:'def10', cat:'promocion',     titulo:'Renovación de paquete (1 sesión restante)',
-    texto:'Hola {nombre}! ❗ Te aviso que te queda solo 1 sesión en tu paquete. ¿Renovamos antes de que se acabe para no perder el ritmo? 💪\n— Cuidándote Fisioterapia', created:0 },
-  { id:'def11', cat:'promocion',     titulo:'Paquete vencido — invitación a renovar',
-    texto:'Hola {nombre}! ❌ Tu paquete venció. Si quieres seguir con tu plan, podemos renovarlo ahora. ¿Te interesa? 🙏\n— Cuidándote Fisioterapia', created:0 },
-  { id:'def12', cat:'general',       titulo:'Envío de link Pasaporte',
-    texto:'Hola {nombre}! 👋 Aquí te comparto tu link de seguimiento personal donde puedes ver el historial de tus sesiones. 📱\n\n{link_pasaporte}\n\n— Cuidándote Fisioterapia', created:0 }
-];
 
-function _initMensajesPre() {
-  if (kvGet('mensajes_pre_seeded')) return;
-  _setMensajesPre(_MSG_DEFAULTS);
-  kvSet('mensajes_pre_seeded', '1');
-}
-
-function renderMensajes() {
-  _initMensajesPre();
-  const grid = document.getElementById('msgGrid');
-  if (!grid) return;
-  const msgs = _getMensajesPre();
-  const filtrados = _msgCatActiva ? msgs.filter(m => m.cat === _msgCatActiva) : msgs;
-  if (!filtrados.length) {
-    grid.innerHTML = '<div class="empty"><div style="font-size:2.5rem;margin-bottom:12px">💬</div><div>No hay mensajes aquí todavía.<br>Crea el primero con <strong>+ Nuevo mensaje</strong></div></div>';
-    return;
+function _getMensajesPre(...args) {
+  const module = window.PanelMessageLibrary;
+  if (!module || typeof module._getMensajesPre !== 'function') {
+    throw new Error('El módulo Mensajes preparados no está disponible: _getMensajesPre');
   }
-  grid.innerHTML = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px">'
-    + filtrados.map(_msgCard).join('') + '</div>';
+  return module._getMensajesPre(...args);
 }
-
-function _msgCard(m) {
-  const cat = _MSG_CATS[m.cat] || _MSG_CATS.general;
-  const preview = m.texto.length > 130 ? m.texto.slice(0, 130) + '…' : m.texto;
-  return `<div style="background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:20px;border-left:3px solid ${cat.color};display:flex;flex-direction:column;gap:12px">
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
-      <div>
-        <div style="font-family:var(--font-h);font-size:1rem;font-weight:600;margin-bottom:5px">${m.titulo}</div>
-        <span style="font-size:.72rem;font-weight:700;color:${cat.color};background:${cat.color}1a;padding:2px 9px;border-radius:99px">${cat.label}</span>
-      </div>
-      <div style="display:flex;gap:2px;flex-shrink:0">
-        <button onclick="editarMensaje('${m.id}')" title="Editar" style="background:none;border:none;cursor:pointer;color:var(--muted);padding:5px;border-radius:6px;font-size:.95rem" onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color='var(--muted)'">✏️</button>
-        <button onclick="eliminarMensaje('${m.id}')" title="Eliminar" style="background:none;border:none;cursor:pointer;color:var(--muted);padding:5px;border-radius:6px;font-size:.95rem" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='var(--muted)'">🗑️</button>
-      </div>
-    </div>
-    <div style="font-size:.84rem;color:var(--muted);line-height:1.65;white-space:pre-wrap;flex:1">${preview}</div>
-    <button onclick="copiarMensajePre('${m.id}')" style="padding:10px 16px;background:var(--primary);color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:var(--font-b);font-size:.84rem;font-weight:600" onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">
-      📋 Copiar mensaje
-    </button>
-  </div>`;
-}
-
-function setMsgCat(cat) {
-  _msgCatActiva = cat;
-  document.querySelectorAll('[id^="msgChip-"]').forEach(c => c.classList.remove('active'));
-  const chip = document.getElementById('msgChip-' + (cat || 'all'));
-  if (chip) chip.classList.add('active');
-  renderMensajes();
-}
-
-function abrirNuevoMensaje() {
-  document.getElementById('msgModalTitle').textContent = 'Nuevo mensaje';
-  document.getElementById('msgEditId').value = '';
-  document.getElementById('msgTitulo').value = '';
-  document.getElementById('msgCat').value = _msgCatActiva || 'recordatorio';
-  document.getElementById('msgTexto').value = '';
-  openModal('modalMensaje');
-  setTimeout(() => document.getElementById('msgTitulo').focus(), 100);
-}
-
-function editarMensaje(id) {
-  const m = _getMensajesPre().find(x => x.id === id);
-  if (!m) return;
-  document.getElementById('msgModalTitle').textContent = 'Editar mensaje';
-  document.getElementById('msgEditId').value = id;
-  document.getElementById('msgTitulo').value = m.titulo;
-  document.getElementById('msgCat').value = m.cat;
-  document.getElementById('msgTexto').value = m.texto;
-  openModal('modalMensaje');
-}
-
-function guardarMensaje() {
-  const titulo = document.getElementById('msgTitulo').value.trim();
-  const cat    = document.getElementById('msgCat').value;
-  const texto  = document.getElementById('msgTexto').value.trim();
-  if (!titulo || !texto) { toast('Completa el título y el mensaje', 'err'); return; }
-  const msgs  = _getMensajesPre();
-  const editId = document.getElementById('msgEditId').value;
-  if (editId) {
-    const idx = msgs.findIndex(m => m.id === editId);
-    if (idx >= 0) msgs[idx] = { ...msgs[idx], titulo, cat, texto };
-  } else {
-    msgs.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2,5), titulo, cat, texto, created: Date.now() });
+function _setMensajesPre(...args) {
+  const module = window.PanelMessageLibrary;
+  if (!module || typeof module._setMensajesPre !== 'function') {
+    throw new Error('El módulo Mensajes preparados no está disponible: _setMensajesPre');
   }
-  _setMensajesPre(msgs);
-  closeModal('modalMensaje');
-  renderMensajes();
-  toast('Mensaje guardado ✓', 'ok');
+  return module._setMensajesPre(...args);
 }
 
-function eliminarMensaje(id) {
-  if (!confirm('¿Eliminar este mensaje?')) return;
-  _setMensajesPre(_getMensajesPre().filter(m => m.id !== id));
-  renderMensajes();
-  toast('Mensaje eliminado', 'ok');
+
+
+function _initMensajesPre(...args) {
+  const module = window.PanelMessageLibrary;
+  if (!module || typeof module._initMensajesPre !== 'function') {
+    throw new Error('El módulo Mensajes preparados no está disponible: _initMensajesPre');
+  }
+  return module._initMensajesPre(...args);
 }
 
-function copiarMensajePre(id) {
-  const m = _getMensajesPre().find(x => x.id === id);
-  if (!m) return;
-  navigator.clipboard.writeText(m.texto)
-    .then(() => toast('Copiado al portapapeles ✓', 'ok'))
-    .catch(() => {
-      const ta = document.createElement('textarea');
-      ta.value = m.texto; document.body.appendChild(ta); ta.select();
-      document.execCommand('copy'); document.body.removeChild(ta);
-      toast('Copiado al portapapeles ✓', 'ok');
-    });
+function renderMensajes(...args) {
+  const module = window.PanelMessageLibrary;
+  if (!module || typeof module.renderMensajes !== 'function') {
+    throw new Error('El módulo Mensajes preparados no está disponible: renderMensajes');
+  }
+  return module.renderMensajes(...args);
+}
+
+function _msgCard(...args) {
+  const module = window.PanelMessageLibrary;
+  if (!module || typeof module._msgCard !== 'function') {
+    throw new Error('El módulo Mensajes preparados no está disponible: _msgCard');
+  }
+  return module._msgCard(...args);
+}
+
+function setMsgCat(...args) {
+  const module = window.PanelMessageLibrary;
+  if (!module || typeof module.setMsgCat !== 'function') {
+    throw new Error('El módulo Mensajes preparados no está disponible: setMsgCat');
+  }
+  return module.setMsgCat(...args);
+}
+
+function abrirNuevoMensaje(...args) {
+  const module = window.PanelMessageLibrary;
+  if (!module || typeof module.abrirNuevoMensaje !== 'function') {
+    throw new Error('El módulo Mensajes preparados no está disponible: abrirNuevoMensaje');
+  }
+  return module.abrirNuevoMensaje(...args);
+}
+
+function editarMensaje(...args) {
+  const module = window.PanelMessageLibrary;
+  if (!module || typeof module.editarMensaje !== 'function') {
+    throw new Error('El módulo Mensajes preparados no está disponible: editarMensaje');
+  }
+  return module.editarMensaje(...args);
+}
+
+function guardarMensaje(...args) {
+  const module = window.PanelMessageLibrary;
+  if (!module || typeof module.guardarMensaje !== 'function') {
+    throw new Error('El módulo Mensajes preparados no está disponible: guardarMensaje');
+  }
+  return module.guardarMensaje(...args);
+}
+
+function eliminarMensaje(...args) {
+  const module = window.PanelMessageLibrary;
+  if (!module || typeof module.eliminarMensaje !== 'function') {
+    throw new Error('El módulo Mensajes preparados no está disponible: eliminarMensaje');
+  }
+  return module.eliminarMensaje(...args);
+}
+
+function copiarMensajePre(...args) {
+  const module = window.PanelMessageLibrary;
+  if (!module || typeof module.copiarMensajePre !== 'function') {
+    throw new Error('El módulo Mensajes preparados no está disponible: copiarMensajePre');
+  }
+  return module.copiarMensajePre(...args);
 }
 
 // ── GUIONES WA ──
-function gEditarToggle(id, btn) {
-  const ta = document.getElementById(id);
-  if (!ta) return;
-  const editing = ta.readOnly;
-  if (editing) {
-    ta.readOnly = false;
-    ta.style.background = 'var(--bg, #fff)';
-    ta.style.cursor = 'text';
-    ta.style.border = '2px solid var(--primary, #0ea5e9)';
-    ta.style.outline = 'none';
-    btn.textContent = '✕ Cerrar edición';
-    btn.classList.remove('btn-ghost');
-    btn.classList.add('btn-teal');
-    ta.focus();
-  } else {
-    ta.readOnly = true;
-    ta.style.background = 'var(--s2)';
-    ta.style.cursor = 'default';
-    ta.style.border = '1px solid var(--border)';
-    btn.textContent = '✏️ Editar';
-    btn.classList.remove('btn-teal');
-    btn.classList.add('btn-ghost');
-    gAutoGuardar(id);
+function gEditarToggle(...args) {
+  const module = window.PanelMessageLibrary;
+  if (!module || typeof module.gEditarToggle !== 'function') {
+    throw new Error('El módulo Mensajes preparados no está disponible: gEditarToggle');
   }
+  return module.gEditarToggle(...args);
 }
 
-function gAutoGuardar(id) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  gFitHeight(el);
-  localStorage.setItem('gMsg_' + id, el.value);
+function gAutoGuardar(...args) {
+  const module = window.PanelMessageLibrary;
+  if (!module || typeof module.gAutoGuardar !== 'function') {
+    throw new Error('El módulo Mensajes preparados no está disponible: gAutoGuardar');
+  }
+  return module.gAutoGuardar(...args);
 }
-function gFitHeight(ta) {
-  ta.style.height = 'auto';
-  ta.style.height = ta.scrollHeight + 'px';
+function gFitHeight(...args) {
+  const module = window.PanelMessageLibrary;
+  if (!module || typeof module.gFitHeight !== 'function') {
+    throw new Error('El módulo Mensajes preparados no está disponible: gFitHeight');
+  }
+  return module.gFitHeight(...args);
 }
-function gCargarGuardados() {
-  document.querySelectorAll('textarea[id^="gMsg-"]').forEach(el => {
-    const saved = localStorage.getItem('gMsg_' + el.id);
-    if (saved !== null) el.value = saved;
-    gFitHeight(el);
-  });
+function gCargarGuardados(...args) {
+  const module = window.PanelMessageLibrary;
+  if (!module || typeof module.gCargarGuardados !== 'function') {
+    throw new Error('El módulo Mensajes preparados no está disponible: gCargarGuardados');
+  }
+  return module.gCargarGuardados(...args);
 }
 document.addEventListener('DOMContentLoaded', gCargarGuardados);
 
-function gTabSwitch(tab) {
-  ['servicios','paquetes','membresias','recuperacion'].forEach(t => {
-    const el = document.getElementById('gTab-' + t);
-    const btn = document.getElementById('tabN' + t.charAt(0).toUpperCase() + t.slice(1)) || document.getElementById('tab' + t.charAt(0).toUpperCase() + t.slice(1));
-    if (el) el.style.display = t === tab ? 'block' : 'none';
-    if (btn) {
-      btn.className = t === tab ? 'btn btn-teal btn-sm' : 'btn btn-ghost btn-sm';
-    }
-  });
+function gTabSwitch(...args) {
+  const module = window.PanelMessageLibrary;
+  if (!module || typeof module.gTabSwitch !== 'function') {
+    throw new Error('El módulo Mensajes preparados no está disponible: gTabSwitch');
+  }
+  return module.gTabSwitch(...args);
 }
-function gCopiar(id, btn) {
-  const el = document.getElementById(id); const txt = el.tagName === "TEXTAREA" ? el.value : el.innerText;
-  navigator.clipboard.writeText(txt).then(() => {
-    const orig = btn.textContent;
-    btn.textContent = '✅ Copiado';
-    btn.style.background = '#16a34a';
-    btn.style.color = '#fff';
-    setTimeout(() => {
-      btn.textContent = orig;
-      btn.style.background = '';
-      btn.style.color = '';
-    }, 2000);
-  }).catch(() => {
-    const range = document.createRange();
-    range.selectNode(document.getElementById(id));
-    window.getSelection().removeAllRanges();
-    window.getSelection().addRange(range);
-    document.execCommand('copy');
-    window.getSelection().removeAllRanges();
-    const orig = btn.textContent;
-    btn.textContent = '✅ Copiado';
-    setTimeout(() => { btn.textContent = orig; }, 2000);
-  });
+function gCopiar(...args) {
+  const module = window.PanelMessageLibrary;
+  if (!module || typeof module.gCopiar !== 'function') {
+    throw new Error('El módulo Mensajes preparados no está disponible: gCopiar');
+  }
+  return module.gCopiar(...args);
 }
 </script>
 
@@ -14312,6 +13901,8 @@ document.addEventListener('DOMContentLoaded', () => {
 <script src="js/modules/patient-follow-up.js"></script>
 <script src="js/modules/patient-recovery.js"></script>
 <script src="js/modules/operations-automation.js"></script>
+<script src="js/modules/whatsapp-tools.js"></script>
+<script src="js/modules/message-library.js"></script>
 </body>
 </html>
 
