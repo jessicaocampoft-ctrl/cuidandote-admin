@@ -6,68 +6,89 @@ const recoveryPath = 'js/modules/patient-recovery.js';
 let source = fs.readFileSync(indexPath, 'utf8');
 
 const followNames = [
-  'toggleSegFiltro',
-  'segReagendo',
-  'segToggleR',
-  'segWaSent',
-  'segMarkWa',
-  'segLogAction',
-  'limpiarLogSeguimiento',
-  'esDescargaMusc',
-  'esReadaptacion',
-  'readapZona',
-  'setReadapZona',
-  'renderSeguimiento',
-  '_renderSegLista',
-  '_segCard',
-  '_segCardReadap',
-  '_renderSegLog',
+  'toggleSegFiltro','segReagendo','segToggleR','segWaSent','segMarkWa','segLogAction',
+  'limpiarLogSeguimiento','esDescargaMusc','esReadaptacion','readapZona','setReadapZona',
+  'renderSeguimiento','_renderSegLista','_segCard','_segCardReadap','_renderSegLog',
   'exportarSeguimientoCSV',
 ];
 
 const recoveryNames = [
-  '_loadRec',
-  '_saveRec',
-  '_fmtCLP',
-  '_recMesActual',
-  '_initRecMesSel',
-  'renderRecuperaciones',
-  'registrarRecuperacion',
-  'marcarPagado',
-  'desmarcarPago',
-  'eliminarRecuperacion',
-  'pagarTodasComisiones',
-  'cargarInactivos',
-  '_recPreguntaDolencia',
-  '_renderRecMsgSelector',
-  'renderInactivos',
-  '_waIconSvg',
-  '_recInactivoCard',
-  'preRellenaRecuperacion',
+  '_loadRec','_saveRec','_fmtCLP','_recMesActual','_initRecMesSel','renderRecuperaciones',
+  'registrarRecuperacion','marcarPagado','desmarcarPago','eliminarRecuperacion',
+  'pagarTodasComisiones','cargarInactivos','_recPreguntaDolencia','_renderRecMsgSelector',
+  'renderInactivos','_waIconSvg','_recInactivoCard','preRellenaRecuperacion',
 ];
+
+function skipQuoted(text, start, quote) {
+  for (let i = start + 1; i < text.length; i++) {
+    if (text[i] === '\\') { i++; continue; }
+    if (text[i] === quote) return i + 1;
+  }
+  return text.length;
+}
+
+function skipLineComment(text, start) {
+  const end = text.indexOf('\n', start + 2);
+  return end < 0 ? text.length : end;
+}
+
+function skipBlockComment(text, start) {
+  const end = text.indexOf('*/', start + 2);
+  return end < 0 ? text.length : end + 2;
+}
+
+function skipTemplateExpression(text, start) {
+  let depth = 1;
+  for (let i = start; i < text.length;) {
+    const ch = text[i], next = text[i + 1];
+    if (ch === "'" || ch === '"') { i = skipQuoted(text, i, ch); continue; }
+    if (ch === '`') { i = skipTemplate(text, i); continue; }
+    if (ch === '/' && next === '/') { i = skipLineComment(text, i); continue; }
+    if (ch === '/' && next === '*') { i = skipBlockComment(text, i); continue; }
+    if (ch === '{') depth++;
+    else if (ch === '}') {
+      depth--;
+      if (depth === 0) return i + 1;
+    }
+    i++;
+  }
+  return text.length;
+}
+
+function skipTemplate(text, start) {
+  for (let i = start + 1; i < text.length;) {
+    const ch = text[i], next = text[i + 1];
+    if (ch === '\\') { i += 2; continue; }
+    if (ch === '`') return i + 1;
+    if (ch === '$' && next === '{') { i = skipTemplateExpression(text, i + 2); continue; }
+    i++;
+  }
+  return text.length;
+}
+
+function skipSpecial(text, i) {
+  const ch = text[i], next = text[i + 1];
+  if (ch === "'" || ch === '"') return skipQuoted(text, i, ch);
+  if (ch === '`') return skipTemplate(text, i);
+  if (ch === '/' && next === '/') return skipLineComment(text, i);
+  if (ch === '/' && next === '*') return skipBlockComment(text, i);
+  return i;
+}
 
 function findBodyBrace(text, start) {
   const openParen = text.indexOf('(', start);
   if (openParen < 0) return -1;
-  let depth = 0, quote = '', escaped = false, lineComment = false, blockComment = false;
-  for (let i = openParen; i < text.length; i++) {
-    const ch = text[i], next = text[i + 1];
-    if (lineComment) { if (ch === '\n') lineComment = false; continue; }
-    if (blockComment) { if (ch === '*' && next === '/') { blockComment = false; i++; } continue; }
-    if (quote) {
-      if (escaped) { escaped = false; continue; }
-      if (ch === '\\') { escaped = true; continue; }
-      if (ch === quote) quote = '';
-      continue;
-    }
-    if (ch === '/' && next === '/') { lineComment = true; i++; continue; }
-    if (ch === '/' && next === '*') { blockComment = true; i++; continue; }
-    if (ch === '"' || ch === "'" || ch === '`') { quote = ch; continue; }
+  let depth = 0;
+  for (let i = openParen; i < text.length;) {
+    const skipped = skipSpecial(text, i);
+    if (skipped !== i) { i = skipped; continue; }
+    const ch = text[i];
     if (ch === '(') depth++;
-    if (ch === ')') {
+    else if (ch === ')') {
       depth--;
       if (depth === 0) return text.indexOf('{', i + 1);
     }
+    i++;
   }
   return -1;
 }
@@ -79,28 +100,20 @@ function extractNamedFunction(text, name) {
   const start = matches[0].index + (matches[0][0].startsWith('\n') ? 1 : 0);
   const brace = findBodyBrace(text, start);
   if (brace < 0) throw new Error(`${name}: no se encontró el cuerpo.`);
-  let depth = 0, quote = '', escaped = false, lineComment = false, blockComment = false;
-  for (let i = brace; i < text.length; i++) {
-    const ch = text[i], next = text[i + 1];
-    if (lineComment) { if (ch === '\n') lineComment = false; continue; }
-    if (blockComment) { if (ch === '*' && next === '/') { blockComment = false; i++; } continue; }
-    if (quote) {
-      if (escaped) { escaped = false; continue; }
-      if (ch === '\\') { escaped = true; continue; }
-      if (ch === quote) quote = '';
-      continue;
-    }
-    if (ch === '/' && next === '/') { lineComment = true; i++; continue; }
-    if (ch === '/' && next === '*') { blockComment = true; i++; continue; }
-    if (ch === '"' || ch === "'" || ch === '`') { quote = ch; continue; }
+  let depth = 0;
+  for (let i = brace; i < text.length;) {
+    const skipped = skipSpecial(text, i);
+    if (skipped !== i) { i = skipped; continue; }
+    const ch = text[i];
     if (ch === '{') depth++;
-    if (ch === '}') {
+    else if (ch === '}') {
       depth--;
       if (depth === 0) {
         const body = text.slice(start, i + 1);
         return { start, end: i + 1, body, isAsync: /^async\s+function/.test(body) };
       }
     }
+    i++;
   }
   throw new Error(`${name}: cuerpo sin cierre.`);
 }
@@ -111,20 +124,11 @@ function extractDeclaration(text, name) {
   if (matches.length !== 1) throw new Error(`${name}: se esperaba una declaración y se encontraron ${matches.length}.`);
   const start = matches[0].index + (matches[0][0].startsWith('\n') ? 1 : 0);
   const eq = text.indexOf('=', start);
-  let paren = 0, brace = 0, bracket = 0, quote = '', escaped = false, lineComment = false, blockComment = false;
-  for (let i = eq + 1; i < text.length; i++) {
-    const ch = text[i], next = text[i + 1];
-    if (lineComment) { if (ch === '\n') lineComment = false; continue; }
-    if (blockComment) { if (ch === '*' && next === '/') { blockComment = false; i++; } continue; }
-    if (quote) {
-      if (escaped) { escaped = false; continue; }
-      if (ch === '\\') { escaped = true; continue; }
-      if (ch === quote) quote = '';
-      continue;
-    }
-    if (ch === '/' && next === '/') { lineComment = true; i++; continue; }
-    if (ch === '/' && next === '*') { blockComment = true; i++; continue; }
-    if (ch === '"' || ch === "'" || ch === '`') { quote = ch; continue; }
+  let paren = 0, brace = 0, bracket = 0;
+  for (let i = eq + 1; i < text.length;) {
+    const skipped = skipSpecial(text, i);
+    if (skipped !== i) { i = skipped; continue; }
+    const ch = text[i];
     if (ch === '(') paren++;
     else if (ch === ')') paren--;
     else if (ch === '{') brace++;
@@ -134,6 +138,7 @@ function extractDeclaration(text, name) {
     else if (ch === ';' && paren === 0 && brace === 0 && bracket === 0) {
       return { start, end: i + 1, body: text.slice(start, i + 1) };
     }
+    i++;
   }
   throw new Error(`${name}: declaración sin cierre.`);
 }
