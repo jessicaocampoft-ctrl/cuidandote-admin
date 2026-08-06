@@ -1,1 +1,1 @@
-Reejecutar la separación y validación de Metas y Presupuesto con la comprobación corregida del orden de scripts.
+Reejecutar la separación y validación de Metas y Presupuesto incluyendo la sincronización de precios configurados.
