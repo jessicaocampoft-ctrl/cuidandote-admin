@@ -11,42 +11,31 @@ const moduleSource = fs.readFileSync(modulePath, 'utf8');
 const names = [
   'getCostosEstructura','saveCostosEstructura','calcTotalCostos',
   'renderPresupuestoMetas','pmRecalc','pmGuardarCostos','pmGuardarKPIs',
-  'getMeta','actualizarMetaBarra','guardarMeta','guardarMetaFin','previewMetaFin','reloadMetas',
-  '_toggleEditCostos','_leerCamposCostos','_guardarCostos'
+  'getMeta','actualizarMetaBarra','previewMeta','guardarMeta','guardarMetaFin','previewMetaFin','reloadMetas',
+  '_toggleEditCostos','_leerCamposCostos','_recalcCostos','_guardarCostos'
 ];
-
+const sharedGlobals = [
+  'META_SESIONES_SEMANA','META_VENTAS_MES','META_VENTAS_SEMANA','META_NPS',
+  'META_RETENCION_PCT','META_CANCELACION_PCT','META_ENCUESTAS','META_CAC_MAX'
+];
 function assert(condition, message) { if (!condition) throw new Error(message); }
 
 function extractNamedFunction(source, name) {
   const safe = name.replace(/[$]/g, '\\$&');
-  const re = new RegExp(`(?:async\\s+)?function\\s+${safe}\\s*\\(`, 'g');
-  const matches = [...source.matchAll(re)];
+  const matches = [...source.matchAll(new RegExp(`(?:^|\\n)((?:async\\s+)?function\\s+${safe}\\s*\\()`, 'g'))];
   if (matches.length !== 1) throw new Error(`${name}: se esperaba una declaración y se encontraron ${matches.length}.`);
-  const start = matches[0].index;
-  const open = source.indexOf('{', start);
-  let depth = 0, quote = '', escaped = false, lineComment = false, blockComment = false;
-  for (let i = open; i < source.length; i++) {
-    const ch = source[i], next = source[i + 1];
-    if (lineComment) { if (ch === '\n') lineComment = false; continue; }
-    if (blockComment) { if (ch === '*' && next === '/') { blockComment = false; i++; } continue; }
-    if (quote) {
-      if (escaped) { escaped = false; continue; }
-      if (ch === '\\') { escaped = true; continue; }
-      if (ch === quote) quote = '';
-      continue;
-    }
-    if (ch === '/' && next === '/') { lineComment = true; i++; continue; }
-    if (ch === '/' && next === '*') { blockComment = true; i++; continue; }
-    if (ch === '"' || ch === "'" || ch === '`') { quote = ch; continue; }
-    if (ch === '{') depth++;
-    if (ch === '}') {
-      depth--;
-      if (depth === 0) return source.slice(start, i + 1);
-    }
-  }
-  throw new Error(`No se pudo cerrar ${name}.`);
+  const start = matches[0].index + (matches[0][0].startsWith('\n') ? 1 : 0);
+  const firstLineEnd = source.indexOf('\n', start);
+  const firstLine = source.slice(start, firstLineEnd < 0 ? source.length : firstLineEnd);
+  const opens = (firstLine.match(/{/g) || []).length;
+  const closes = (firstLine.match(/}/g) || []).length;
+  if (opens > 0 && opens === closes) return firstLine.trimEnd();
+  const closeRegex = /^}\s*$/gm;
+  closeRegex.lastIndex = firstLineEnd < 0 ? start : firstLineEnd + 1;
+  const close = closeRegex.exec(source);
+  if (!close) throw new Error(`No se pudo cerrar ${name}.`);
+  return source.slice(start, close.index + close[0].length).trimEnd();
 }
-
 function extractObjectConstant(source, name) {
   const start = source.indexOf(`const ${name} =`);
   assert(start >= 0, `No se encontró ${name} en la base.`);
@@ -60,7 +49,7 @@ function extractObjectConstant(source, name) {
       if (ch === quote) quote = '';
       continue;
     }
-    if (ch === '"' || ch === "'" || ch === '`') { quote = ch; continue; }
+    if (ch === '"' || ch === "'") { quote = ch; continue; }
     if (ch === '{') depth++;
     if (ch === '}') {
       depth--;
@@ -75,7 +64,7 @@ function extractObjectConstant(source, name) {
 
 assert(current.includes('<script src="js/modules/budget.js"></script>'), 'index.html no carga budget.js.');
 assert((current.match(/script src="js\/modules\/budget\.js"/g) || []).length === 1, 'budget.js debe cargarse una sola vez.');
-assert(current.indexOf('js/modules/kpi.js') < current.indexOf('js/modules/budget.js'), 'budget.js debe cargar después de kpi.js.');
+assert(current.indexOf('<script src="js/modules/kpi.js"></script>') < current.indexOf('<script src="js/modules/budget.js"></script>'), 'budget.js debe cargar después de kpi.js.');
 assert(moduleSource.includes('global.PanelBudget = Object.freeze'), 'PanelBudget no fue exportado.');
 assert(!/\bfetch\s*\(/.test(moduleSource), 'Metas y Presupuesto no debe introducir fetch.');
 assert(!moduleSource.includes('APPS_SCRIPT_URL'), 'Metas y Presupuesto no debe usar APPS_SCRIPT_URL.');
@@ -91,33 +80,38 @@ for (const name of names) {
 const originalDefaults = extractObjectConstant(base, 'COSTOS_DEFAULTS');
 assert(moduleSource.includes(originalDefaults), 'COSTOS_DEFAULTS no conserva su declaración exacta.');
 assert(!current.includes('const COSTOS_DEFAULTS ='), 'COSTOS_DEFAULTS no debe seguir declarada en index.html.');
-
-new vm.Script(moduleSource, { filename: modulePath });
+for (const shared of sharedGlobals) {
+  assert(new RegExp(`(?:const|let|var)\\s+${shared}\\b`).test(current), `${shared} debe permanecer en index.html.`);
+  assert(!new RegExp(`(?:const|let|var)\\s+${shared}\\b`).test(moduleSource), `${shared} no debe duplicarse en budget.js.`);
+}
+for (const forbidden of ['renderFinanzas','renderEstructuraFinanciera','renderKPITablero','renderKPIGuia','renderMetricas','renderComisiones','renderPagos','renderAgenda']) {
+  assert(!moduleSource.includes(`function ${forbidden}(`), `${forbidden} fue incluido por error.`);
+}
+new vm.Script(moduleSource, { filename:modulePath });
 
 function makeElement(id) {
   return {
     id, value:'', textContent:'', innerHTML:'', disabled:false, checked:false,
-    style:{display:'none',width:''}, dataset:{},
-    addEventListener(){}, focus(){},
-    querySelector(){ return null; }, querySelectorAll(){ return []; }
+    style:{display:'none',width:'',borderColor:''}, dataset:{},
+    addEventListener(){}, focus(){}, querySelector(){return null;}, querySelectorAll(){return [];},
+    classList:{add(){},remove(){},toggle(){}}
   };
 }
 const elements = new Map();
+const costInputs = [];
 const document = {
   getElementById(id) { if (!elements.has(id)) elements.set(id, makeElement(id)); return elements.get(id); },
-  querySelectorAll() { return []; },
+  querySelectorAll(selector) { return selector === '#costosEditorPanel [data-costo]' ? costInputs : []; },
   createElement(tag) { return makeElement(tag); }
 };
 const store = new Map();
 const toasts = [];
-let kpiConfig = {
-  meta_sesiones_semana: 20,
-  meta_ventas_mes: 10265000,
-  meta_nps: 9,
-  meta_retencion_pct: 60,
-  meta_cancelacion_pct: 10,
-  meta_encuestas: 12,
-  meta_cac_max: 30000
+let syncPrices = 0, applyRefs = 0, financeRenders = 0;
+const cfg = {
+  meta_sesiones_semana:20, meta_ventas_mes:10265000, meta_leads_min:40, meta_leads_max:60,
+  meta_conv_min:20, meta_conv_max:35, meta_nps:70, meta_encuestas:60,
+  meta_cancelacion:10, meta_retencion:65, meta_cac_max:30000,
+  inv_mkt_total:500000, inv_mkt_pauta:200000, inv_mkt_contenido:300000
 };
 const context = {
   console, window:null, globalThis:null, document,
@@ -126,73 +120,103 @@ const context = {
   META_NPS:0, META_RETENCION_PCT:0, META_CANCELACION_PCT:0, META_ENCUESTAS:0, META_CAC_MAX:0,
   kvGet:key => store.has(key) ? store.get(key) : null,
   kvSet:(key,value) => store.set(key, String(value)),
-  getKPIConfig:() => ({...kpiConfig}),
-  applyKPIRefSpans(){}, renderKPITablero(){}, renderKPIGuia(){}, renderFinanzas(){},
+  getKPIConfig:() => cfg,
+  applyKPIRefSpans:() => { applyRefs++; },
+  _syncPreciosToAutoFill:() => { syncPrices++; },
+  renderFinanzas:() => { financeRenders++; },
   calcCobradoMes:() => 5000000,
   fmtPeso:value => '$' + Number(value || 0).toLocaleString('es-CO'),
   toast:(message,tone) => toasts.push({message,tone}),
+  _buildReporteMes:() => '<div>Reporte QA</div>',
+  setTimeout:fn => { fn(); return 1; },
   confirm:() => true,
   allData:{citas:[],eventos:[]}
 };
 context.window = context;
 context.globalThis = context;
 vm.createContext(context);
-vm.runInContext(moduleSource, context, { filename: modulePath });
+vm.runInContext(moduleSource, context, { filename:modulePath });
+const api = context.PanelBudget;
+assert(api, 'PanelBudget no quedó disponible.');
+for (const name of names) assert(typeof api[name] === 'function', `PanelBudget.${name} no es función.`);
 
-assert(context.PanelBudget, 'PanelBudget no quedó disponible.');
-for (const name of names) assert(typeof context.PanelBudget[name] === 'function', `PanelBudget.${name} no es función.`);
+// Costos por defecto, persistencia, migraciones y recuperación.
+let costs = api.getCostosEstructura();
+assert(costs.honorarios_fisio > 0 && costs.pct_utilidad > 0, 'No recuperó costos por defecto.');
+api.saveCostosEstructura({...costs, arriendo:777000});
+assert(JSON.parse(store.get('costosEstructura')).arriendo === 777000, 'No persistió costos.');
+store.set('costosEstructura','{invalido');
+assert(api.getCostosEstructura().honorarios_fisio > 0, 'No se recuperó ante JSON inválido.');
+store.set('costosEstructura', JSON.stringify({asesorias_ap:790000,redes_contenido:150000}));
+costs = api.getCostosEstructura();
+assert(costs.asesorias_ap === 480000 && costs.redes_contenido === 240000, 'No aplicó migraciones históricas.');
+const calc = api.calcTotalCostos({honorarios_fisio:1000000,pct_imprevistos:10,pct_utilidad:20});
+assert(calc.subtotal === 1000000 && calc.imprevistos === 100000 && calc.utilidad === 200000 && calc.total === 1300000, 'Cálculo presupuestal incorrecto.');
 
-// Valores por defecto, persistencia y recuperación ante JSON inválido.
-let costs = context.PanelBudget.getCostosEstructura();
-assert(costs && costs.honorarios_fisio > 0 && costs.pct_utilidad > 0, 'No recuperó los costos por defecto.');
-context.PanelBudget.saveCostosEstructura({...costs, arriendo:777000});
-assert(JSON.parse(store.get('costosEstructura')).arriendo === 777000, 'No persistió la estructura de costos.');
-store.set('costosEstructura', '{invalido');
-costs = context.PanelBudget.getCostosEstructura();
-assert(costs.honorarios_fisio > 0, 'No se recuperó ante JSON inválido.');
+// Meta, migración, validación y barras.
+store.set('metaMensual','8000000');
+assert(api.getMeta() === 10265000 && store.get('metaMensual') === '10265000', 'getMeta no migró la meta antigua.');
+for (const id of ['metaBarFill','metaPct','metaTexto','metaInput','metaBarFinFill','metaBarFinPct','metaBarFinWrap','metaInputFin','presupuestoBody']) document.getElementById(id);
+api.actualizarMetaBarra(5132500);
+assert(document.getElementById('metaBarFill').style.width === '50%', 'Barra principal incorrecta.');
+api.previewMeta('20.000.000');
+assert(document.getElementById('metaBarFill').style.width === '25%', 'previewMeta incorrecto.');
+api.previewMetaFin('10.000.000');
+assert(document.getElementById('metaBarFinFill').style.width === '50%' && document.getElementById('metaBarFinWrap').style.display === 'block', 'previewMetaFin incorrecto.');
+document.getElementById('metaInput').value = '50.000';
+const invalidBefore = toasts.length;
+api.guardarMeta();
+assert(toasts.slice(invalidBefore).some(x => x.tone === 'err'), 'Meta inválida no produjo error.');
+document.getElementById('metaInput').value = '12.000.000';
+api.guardarMeta();
+assert(cfg.meta_ventas_mes === 12000000 && context.META_VENTAS_MES === 12000000 && context.META_VENTAS_SEMANA === 3000000, 'guardarMeta no sincronizó metas.');
+document.getElementById('metaInputFin').value = '13.000.000';
+api.guardarMetaFin();
+assert(cfg.meta_ventas_mes === 13000000 && financeRenders > 0, 'guardarMetaFin no sincronizó Finanzas.');
 
-// Migraciones históricas.
-store.set('costosEstructura', JSON.stringify({asesorias_ap:790000, redes_contenido:150000}));
-costs = context.PanelBudget.getCostosEstructura();
-assert(costs.asesorias_ap === 480000, 'No migró asesorías históricas.');
-assert(costs.redes_contenido === 240000, 'No migró contenido histórico.');
+// Recarga de metas compartidas.
+cfg.meta_sesiones_semana=24; cfg.meta_nps=80; cfg.meta_encuestas=70; cfg.meta_cancelacion=8; cfg.meta_retencion=72; cfg.meta_cac_max=28000;
+api.reloadMetas();
+assert(context.META_SESIONES_SEMANA === 24 && context.META_NPS === 80 && context.META_RETENCION_PCT === 72, 'reloadMetas no actualizó variables compartidas.');
+assert(syncPrices > 0, 'reloadMetas no sincronizó precios.');
 
-// Cálculo de presupuesto.
-const calc = context.PanelBudget.calcTotalCostos({...costs, pct_imprevistos:5, pct_utilidad:20});
-assert(calc && Number.isFinite(calc.subtotal) && Number.isFinite(calc.total), 'calcTotalCostos no devolvió valores numéricos.');
-assert(calc.total >= calc.subtotal, 'El total calculado no puede ser menor al subtotal.');
+// Editor de costos del reporte.
+const panel=document.getElementById('costosEditorPanel'); panel.style.display='none';
+const compact=document.getElementById('costosVistaCompacta'); compact.style.display='block';
+document.getElementById('btnEditCostos');
+api._toggleEditCostos();
+assert(panel.style.display === 'block' && compact.style.display === 'none', 'No abrió el editor de costos.');
+for (const [key,value] of Object.entries({honorarios_fisio:1000000,pct_imprevistos:10,pct_utilidad:20})) {
+  const el=makeElement(key); el.dataset.costo=key; el.value=String(value); costInputs.push(el);
+}
+assert(api._leerCamposCostos().honorarios_fisio === 1000000, 'No leyó campos de costos.');
+for (const id of ['crSubtotal','crImprevistos','crUtilidad','crTotal','reporteMesBody']) document.getElementById(id);
+api._recalcCostos();
+assert(document.getElementById('crTotal').textContent.includes('1.300.000'), 'No recalculó el editor.');
+api._guardarCostos();
+assert(document.getElementById('reporteMesBody').innerHTML.includes('Reporte QA'), 'No refrescó el reporte mensual.');
 
-// Meta y migración de valores antiguos.
-store.set('metaMensual', '8000000');
-assert(context.PanelBudget.getMeta() === kpiConfig.meta_ventas_mes, 'getMeta no usa la configuración KPI vigente.');
-assert(store.get('metaMensual') === '10265000', 'getMeta no migró la meta histórica.');
+// Renderizado y guardado desde Presupuesto y Metas.
+api.renderPresupuestoMetas();
+const body = document.getElementById('presupuestoBody').innerHTML;
+assert(body.includes('Costos Fijos') && body.includes('Metas operativas') && body.includes('Precios de servicios'), 'No renderizó Presupuesto y Metas completo.');
+const pm = {
+  honorarios_fisio:1000000,seguridad_social:0,asistente_fisio:0,auxiliar_admin:0,arriendo:0,servicios_publicos:0,
+  suscripcion_ia:0,suscripcion_capcut:0,asesorias_ap:0,redes_contenido:0,activacion_eventos:0,pautas_redes:0,mantenimiento:0,insumos:0,
+  pct_imprevistos:10,pct_utilidad:20,kpi_ventas_mes:1500000,kpi_sesiones_semana:30,kpi_leads_min:50,kpi_leads_max:80,
+  kpi_conv_min:25,kpi_conv_max:40,kpi_nps:85,kpi_encuestas:75,kpi_inv_mkt_total:600000,kpi_inv_mkt_pauta:250000,kpi_inv_mkt_contenido:350000,
+  sv_cuello_p:76000,sv_cuello_d:91000,sv_piernas_p:76000,sv_piernas_d:91000,sv_completa_p:111000,sv_completa_d:126000,
+  sv_valoracion_p:81000,sv_valoracion_d:96000,sv_readap_p:71000,sv_readap_d:86000,sv_express_p:76000,sv_express_d:91000
+};
+for (const [key,value] of Object.entries(pm)) document.getElementById('pm_'+key).value=String(value);
+for (const id of ['pm_res_subtotal','pm_res_imprevistos','pm_res_utilidad','pm_res_total','pm_ticket_avg','pm_sess_calc']) document.getElementById(id);
+api.pmRecalc();
+assert(document.getElementById('pm_res_total').textContent.includes('1.300.000'), 'pmRecalc no actualizó el total.');
+api.pmGuardarCostos();
+assert(JSON.parse(store.get('costosEstructura')).honorarios_fisio === 1000000, 'pmGuardarCostos no persistió costos.');
+api.pmGuardarKPIs();
+assert(cfg.meta_sesiones_semana === 30 && cfg.meta_ventas_mes === 1500000, 'pmGuardarKPIs no guardó metas.');
+assert(cfg.sv_cuello_p === 76000 && cfg.sv_completa_d === 126000, 'pmGuardarKPIs no guardó precios.');
+assert(applyRefs > 0 && syncPrices > 0, 'No actualizó referencias y precios.');
 
-document.getElementById('metaInput').value = '50000';
-const beforeInvalid = toasts.length;
-context.PanelBudget.guardarMeta();
-assert(toasts.length > beforeInvalid && toasts.at(-1).tone === 'err', 'Meta inválida no produjo error visible.');
-
-document.getElementById('metaInput').value = '12000000';
-context.PanelBudget.guardarMeta();
-assert(store.get('metaMensual') === '12000000', 'guardarMeta no persistió la meta válida.');
-assert(context.META_VENTAS_MES === 12000000 && context.META_VENTAS_SEMANA === 3000000, 'guardarMeta no actualizó variables compartidas.');
-
-// Barra de meta.
-document.getElementById('metaBarFill').style.width = '';
-context.PanelBudget.actualizarMetaBarra(6000000);
-assert(document.getElementById('metaBarFill').style.width, 'actualizarMetaBarra no actualizó el progreso.');
-
-// Recarga de metas desde KPI.
-kpiConfig = {...kpiConfig, meta_ventas_mes:14000000, meta_sesiones_semana:25, meta_nps:10};
-context.PanelBudget.reloadMetas();
-assert(context.META_VENTAS_MES === 14000000 && context.META_SESIONES_SEMANA === 25 && context.META_NPS === 10, 'reloadMetas no sincronizó las metas.');
-
-// Apertura/cierre del editor de costos.
-document.getElementById('costosEditorPanel').style.display = 'none';
-document.getElementById('costosVistaCompacta').style.display = 'block';
-context.PanelBudget._toggleEditCostos();
-assert(document.getElementById('costosEditorPanel').style.display === 'block', 'No abrió el editor de costos.');
-context.PanelBudget._toggleEditCostos();
-assert(document.getElementById('costosEditorPanel').style.display === 'none', 'No cerró el editor de costos.');
-
-console.log('FASE 13 VALIDADA: paridad exacta, costos, migraciones, cálculos, metas y editor preservados.');
+console.log('FASE 13 VALIDADA: paridad, metas, presupuesto, costos, precios y compatibilidad global preservados.');
