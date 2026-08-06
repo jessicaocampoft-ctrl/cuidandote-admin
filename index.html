@@ -10503,339 +10503,131 @@ function agendarDesdePacienteRec(...args) {
 // ══════════════════════════════════════════════════════════════
 
 // Filtros activos
-let _segFiltros = new Set(['sem3','sem4','sem5','reagendo','readap']);
 
-function toggleSegFiltro(f) {
-  if (_segFiltros.has(f)) _segFiltros.delete(f);
-  else _segFiltros.add(f);
-  const idMap = { sem3:'3', sem4:'4', sem5:'5', reagendo:'R', readap:'Readap' };
-  const chip = document.getElementById('segChip' + (idMap[f] || f));
-  if (chip) chip.classList.toggle('active', _segFiltros.has(f));
-  _renderSegLista(window._segData || [], window._segReadapData || []);
+
+function toggleSegFiltro(...args) {
+  const module = window.PanelPatientFollowUp;
+  if (!module || typeof module.toggleSegFiltro !== 'function') {
+    throw new Error('El módulo Seguimiento de pacientes no está disponible: toggleSegFiltro');
+  }
+  return module.toggleSegFiltro(...args);
 }
 
 // Helpers KV sync seguimiento
-function segReagendo(nombre)    { return !!kvGet('seg_reagendo_'+nombre); }
-function segToggleR(nombre)     {
-  const now = new Date(), y = now.getFullYear(), m = now.getMonth()+1;
-  if (segReagendo(nombre)) {
-    kvRemove('seg_reagendo_'+nombre);
-    _comisSetManualReact(y, m, _comisManualReact(y,m).filter(n => n.toLowerCase() !== nombre.toLowerCase()));
-  } else {
-    kvSet('seg_reagendo_'+nombre,'1');
-    segLogAction(nombre,'reagendo','Marcado como Reagendó ✓');
-    const list = _comisManualReact(y, m);
-    if (!list.find(n => n.toLowerCase() === nombre.toLowerCase())) { list.push(nombre); _comisSetManualReact(y, m, list); }
+function segReagendo(...args) {
+  const module = window.PanelPatientFollowUp;
+  if (!module || typeof module.segReagendo !== 'function') {
+    throw new Error('El módulo Seguimiento de pacientes no está disponible: segReagendo');
   }
-  renderSeguimiento();
+  return module.segReagendo(...args);
 }
-function segWaSent(nombre, tipo){ return !!kvGet('seg_wa_'+tipo+'_'+nombre); }
-function segMarkWa(nombre, tipo, dias) {
-  kvSet('seg_wa_'+tipo+'_'+nombre, Date.now());
-  const label = tipo==='sem3' ? 'WA aviso 3 semanas' : tipo==='sem4' ? 'WA semana 4' : 'WA semana 5+';
-  segLogAction(nombre, tipo, label + ' enviado (' + dias + ' días sin descarga)');
-  renderSeguimiento();
+function segToggleR(...args) {
+  const module = window.PanelPatientFollowUp;
+  if (!module || typeof module.segToggleR !== 'function') {
+    throw new Error('El módulo Seguimiento de pacientes no está disponible: segToggleR');
+  }
+  return module.segToggleR(...args);
+}
+function segWaSent(...args) {
+  const module = window.PanelPatientFollowUp;
+  if (!module || typeof module.segWaSent !== 'function') {
+    throw new Error('El módulo Seguimiento de pacientes no está disponible: segWaSent');
+  }
+  return module.segWaSent(...args);
+}
+function segMarkWa(...args) {
+  const module = window.PanelPatientFollowUp;
+  if (!module || typeof module.segMarkWa !== 'function') {
+    throw new Error('El módulo Seguimiento de pacientes no está disponible: segMarkWa');
+  }
+  return module.segMarkWa(...args);
 }
 
 // Log de acciones
-function segLogAction(nombre, tipo, accion) {
-  const log = JSON.parse(kvGet('seg_log') || '[]');
-  log.unshift({ nombre, tipo, accion, fecha: new Date().toLocaleString('es-CO',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) });
-  if (log.length > 80) log.length = 80;
-  kvSet('seg_log', JSON.stringify(log));
-}
-function limpiarLogSeguimiento() {
-  if (!confirm('¿Limpiar todo el historial de seguimientos?')) return;
-  kvRemove('seg_log');
-  _renderSegLog();
-  toast('Historial limpiado');
-}
-
-function esDescargaMusc(serv) {
-  const s = (serv||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
-  return s.includes('descarga');
-}
-
-function esReadaptacion(serv) {
-  const s = (serv||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
-  return s.includes('readaptacion') || s.includes('readap');
-}
-
-function readapZona(nombre) {
-  return kvGet('seg_readap_zona_'+nombre) || '';
-}
-function setReadapZona(nombre, zona) {
-  if (zona) kvSet('seg_readap_zona_'+nombre, zona);
-  else kvRemove('seg_readap_zona_'+nombre);
-}
-
-function renderSeguimiento() {
-  const lista = document.getElementById('segLista');
-  if (!lista) return;
-  lista.innerHTML = '<div class="loading-wrap"><div class="spinner"></div></div>';
-
-  const now = new Date(); now.setHours(0,0,0,0);
-
-  // Mapa: última descarga por paciente
-  const map = {};
-  allData.citas
-    .filter(c => c.estado !== 'Cancelada' && !esRegistroServ(c.servicio) && esDescargaMusc(c.servicio))
-    .forEach(c => {
-      const nombre = (c.nombre||'').trim();
-      const fecha  = normDate(c.fecha);
-      if (!nombre || !fecha) return;
-      if (!map[nombre] || fecha > map[nombre].fecha) {
-        map[nombre] = { nombre, telefono: c.telefono||'', email: c.email||'', fecha, servicio: c.servicio, notaAdmin: c.notaAdmin||'' };
-      }
-    });
-
-  // Calcular días y semana — descargas
-  const pacientes = Object.values(map).map(p => {
-    const [y,m,d] = p.fecha.split('-');
-    const last = new Date(+y,+m-1,+d);
-    const dias = Math.floor((now - last) / 86400000);
-    let semana = null;
-    if      (dias >= 35 && dias < 42) semana = 'sem3';
-    else if (dias >= 42 && dias < 49) semana = 'sem4';
-    else if (dias >= 49)              semana = 'sem5';
-    return { ...p, dias, semana };
-  }).filter(p => p.semana !== null);
-
-  // Mapa: última readaptación por paciente
-  const mapR = {};
-  allData.citas
-    .filter(c => c.estado !== 'Cancelada' && !esRegistroServ(c.servicio) && esReadaptacion(c.servicio))
-    .forEach(c => {
-      const nombre = (c.nombre||'').trim();
-      const fecha  = normDate(c.fecha);
-      if (!nombre || !fecha) return;
-      if (!mapR[nombre] || fecha > mapR[nombre].fecha) {
-        mapR[nombre] = { nombre, telefono: c.telefono||'', email: c.email||'', fecha, servicio: c.servicio, notaAdmin: c.notaAdmin||'' };
-      }
-    });
-
-  const readapPacs = Object.values(mapR).map(p => {
-    const [y,m,d] = p.fecha.split('-');
-    const last = new Date(+y,+m-1,+d);
-    const dias = Math.floor((now - last) / 86400000);
-    return { ...p, dias };
-  });
-
-  // Contar
-  const c3 = pacientes.filter(p=>p.semana==='sem3').length;
-  const c4 = pacientes.filter(p=>p.semana==='sem4').length;
-  const c5 = pacientes.filter(p=>p.semana==='sem5').length;
-  const cR = pacientes.filter(p=>segReagendo(p.nombre)).length;
-  const cReadap = readapPacs.filter(p=>!segReagendo(p.nombre)).length;
-
-  ['3','4','5','R'].forEach(k => {
-    const el = document.getElementById('segCount'+k);
-    if (el) el.textContent = k==='3'?c3:k==='4'?c4:k==='5'?c5:cR;
-  });
-  const elReadap = document.getElementById('segCountReadap');
-  if (elReadap) elReadap.textContent = cReadap;
-
-  // Badge sidebar
-  const pendientes = c3 + c4 + c5 + cReadap;
-  const badge = document.getElementById('badgeSeguimiento');
-  if (badge) { badge.textContent = pendientes; badge.style.display = pendientes > 0 ? 'inline':'none'; }
-
-  window._segData = pacientes;
-  window._segReadapData = readapPacs;
-  _renderSegLista(pacientes, readapPacs);
-  _renderSegLog();
-}
-
-function _renderSegLista(pacientes, readapPacs) {
-  const lista = document.getElementById('segLista');
-  if (!lista) return;
-
-  readapPacs = readapPacs || window._segReadapData || [];
-
-  // Descargas: separar reagendados
-  const activos    = pacientes.filter(p => !segReagendo(p.nombre));
-  const reagendados = pacientes.filter(p =>  segReagendo(p.nombre));
-
-  // Readaptación: separar reagendados
-  const readapActivos    = readapPacs.filter(p => !segReagendo(p.nombre));
-  const readapReagendados = readapPacs.filter(p =>  segReagendo(p.nombre));
-
-  const descargaCards = [
-    ...(_segFiltros.has('sem3') ? activos.filter(p=>p.semana==='sem3').sort((a,b)=>a.dias-b.dias) : []),
-    ...(_segFiltros.has('sem4') ? activos.filter(p=>p.semana==='sem4').sort((a,b)=>a.dias-b.dias) : []),
-    ...(_segFiltros.has('sem5') ? activos.filter(p=>p.semana==='sem5').sort((a,b)=>b.dias-a.dias) : []),
-    ...(_segFiltros.has('reagendo') ? reagendados : []),
-  ];
-
-  const readapCards = [
-    ...(_segFiltros.has('readap') ? readapActivos.sort((a,b)=>b.dias-a.dias) : []),
-    ...(_segFiltros.has('reagendo') ? readapReagendados : []),
-  ];
-
-  if (!descargaCards.length && !readapCards.length) {
-    lista.innerHTML = '<div class="empty" style="padding:50px 20px"><p>No hay pacientes en estas categorías</p></div>';
-    return;
+function segLogAction(...args) {
+  const module = window.PanelPatientFollowUp;
+  if (!module || typeof module.segLogAction !== 'function') {
+    throw new Error('El módulo Seguimiento de pacientes no está disponible: segLogAction');
   }
-
-  let html = '';
-  if (descargaCards.length) {
-    html += descargaCards.map(p => _segCard(p)).join('');
+  return module.segLogAction(...args);
+}
+function limpiarLogSeguimiento(...args) {
+  const module = window.PanelPatientFollowUp;
+  if (!module || typeof module.limpiarLogSeguimiento !== 'function') {
+    throw new Error('El módulo Seguimiento de pacientes no está disponible: limpiarLogSeguimiento');
   }
-  if (readapCards.length) {
-    if (descargaCards.length) html += `<div style="margin:18px 0 10px;font-size:.78rem;font-weight:700;color:#0369a1;letter-spacing:.04em;text-transform:uppercase">Readaptación Funcional</div>`;
-    html += readapCards.map(p => _segCardReadap(p)).join('');
-  }
-  lista.innerHTML = html;
+  return module.limpiarLogSeguimiento(...args);
 }
 
-function _segCard(p) {
-  const reagendado = segReagendo(p.nombre);
-  const initials   = p.nombre.split(' ').map(x=>x[0]).join('').toUpperCase().slice(0,2);
-  const pct        = Math.min(Math.round(p.dias / 35 * 100), 100);
-  const waSent3    = segWaSent(p.nombre,'sem3');
-  const waSent4    = segWaSent(p.nombre,'sem4');
-  const waSent5    = segWaSent(p.nombre,'sem5');
-
-  const colorMap   = { sem3:'#7c3aed', sem4:'var(--warn)', sem5:'var(--err)' };
-  const fillMap    = { sem3:'rgba(124,58,237,.5)', sem4:'#d97706', sem5:'#dc2626' };
-  const color      = colorMap[p.semana] || 'var(--primary)';
-  const fillColor  = fillMap[p.semana]  || 'var(--primary)';
-
-  const labelMap   = { sem3:'Semana 3 — aviso previo', sem4:'Semana 4 — momento ideal', sem5:'Semana 5+ — urgente' };
-  const label      = labelMap[p.semana] || '';
-
-  const tel   = String(p.telefono||'').replace(/\D/g,'');
-  const phone = tel.length<=10 ? '57'+tel : tel;
-  const hasWA = tel.length >= 7;
-
-  // Mensajes WA — personalizados según tipo de descarga y nota de relación
-  const primero = p.nombre.split(' ')[0];
-  const sn = (p.servicio||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
-  const zonaDesc = sn.includes('cuello') || sn.includes('espalda') ? 'de cuello y espalda'
-    : sn.includes('pierna') ? 'de piernas'
-    : 'completa';
-  const _paraM = (p.notaAdmin||'').match(/\[PARA:\s*([^\]]+)\]/i);
-  const paraQuien = _paraM ? _paraM[1].trim() : null;
-  const sujeto3 = paraQuien ? `la última sesión de descarga muscular ${zonaDesc} de ${paraQuien}` : `tu última sesión de descarga muscular ${zonaDesc}`;
-  const sujeto4 = paraQuien ? `la última descarga muscular ${zonaDesc} de ${paraQuien}` : `tu última descarga muscular ${zonaDesc}`;
-  const sujeto5 = paraQuien ? `la última sesión de descarga muscular ${zonaDesc} de ${paraQuien}` : `tu última sesión de descarga muscular ${zonaDesc}`;
-  const cierre3 = paraQuien ? '¿Reagendamos?' : '¿Te agendo?';
-  const cierre4 = paraQuien ? '¿Reagendamos esta semana?' : '¿Te agendo esta semana?';
-  const cierre5 = paraQuien ? '¿Cuando les viene bien retomar? Cuentame y coordinamos. \uD83D\uDCAA' : '¿Cuando te viene bien retomar? Cuentame y coordinamos. \uD83D\uDCAA';
-  const msg3 = `Hola ${primero}! \uD83D\uDC4B Te escribimos de Cuidándote Fisioterapia. Ya van 3 semanas desde ${sujeto3}. La proxima semana seria el momento ideal para reagendar antes de que el cuerpo empiece a acumular tension. ${cierre3}`;
-  const msg4 = `Hola ${primero}! \uD83D\uDC4B Te escribimos de Cuidándote Fisioterapia. Ya se cumplieron las 4 semanas desde ${sujeto4} — es el momento de reagendar. Mantener la frecuencia es lo que hace que los resultados se sostengan. ${cierre4}`;
-  const msg5 = `Hola ${primero}! \uD83D\uDC4B Te escribimos de Cuidándote Fisioterapia. Hace mas de un mes desde ${sujeto5}. El cuerpo ya empieza a acumular tension de nuevo. ${cierre5}`;
-
-  const wa3 = hasWA ? `https://wa.me/${phone}?text=${encodeURIComponent(msg3)}` : null;
-  const wa4 = hasWA ? `https://wa.me/${phone}?text=${encodeURIComponent(msg4)}` : null;
-  const wa5 = hasWA ? `https://wa.me/${phone}?text=${encodeURIComponent(msg5)}` : null;
-
-  return `<div class="seg-card ${reagendado?'reagendado':''}">
-    <div class="pac-badge" style="flex-shrink:0;background:rgba(27,191,176,.08);border-color:${reagendado?'var(--ok)':color}">${initials}</div>
-    <div style="flex:1;min-width:160px">
-      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-        <span style="font-weight:600;font-size:.9rem">${p.nombre}</span>
-        ${reagendado
-          ? `<span style="font-size:.72rem;color:var(--ok);font-weight:700;background:rgba(22,163,74,.1);border:1px solid rgba(22,163,74,.3);border-radius:99px;padding:1px 8px">✓ Reagendó</span>`
-          : `<span style="font-size:.72rem;color:${color};font-weight:700;font-family:var(--font-m)">${label}</span>`}
-      </div>
-      <div style="font-size:.78rem;color:var(--muted);margin-top:2px">${p.servicio} · última: ${fmtDate(p.fecha)}</div>
-      <div class="seg-days-bar" style="width:180px">
-        <div class="seg-days-fill" style="width:${pct}%;background:${reagendado?'var(--ok)':fillColor}"></div>
-      </div>
-      <div style="font-family:var(--font-m);font-size:.7rem;color:${reagendado?'var(--ok)':color};margin-top:2px;font-weight:600">${p.dias} días sin descarga muscular</div>
-    </div>
-    <div style="display:flex;gap:6px;flex-wrap:wrap;flex-shrink:0">
-      ${reagendado ? `
-        <button class="btn btn-ghost btn-sm" onclick="segToggleR('${p.nombre.replace(/'/g,"\\'")}')">↩ Desmarcar</button>
-      ` : `
-        ${p.semana==='sem3' && wa3 ? `<a href="${wa3}" target="_blank" class="btn btn-sm btn-purple" onclick="segMarkWa('${p.nombre.replace(/'/g,"\\'")}','sem3',${p.dias})" style="${waSent3?'opacity:.55':''}">💬 WA ${waSent3?'(enviado)':'Sem 3'}</a>` : ''}
-        ${(p.semana==='sem4'||p.semana==='sem3') && wa4 ? `<a href="${wa4}" target="_blank" class="btn btn-wa btn-sm" onclick="segMarkWa('${p.nombre.replace(/'/g,"\\'")}','sem4',${p.dias})" style="${waSent4?'opacity:.55':''}">💬 WA ${waSent4?'(enviado)':'Sem 4'}</a>` : ''}
-        ${p.semana==='sem5' && wa5 ? `<a href="${wa5}" target="_blank" class="btn btn-err btn-sm" onclick="segMarkWa('${p.nombre.replace(/'/g,"\\'")}','sem5',${p.dias})" style="${waSent5?'opacity:.55':''}">💬 WA ${waSent5?'(enviado)':'Sem 5+'}</a>` : ''}
-        ${p.email && p.email.includes('@') ? `<a href="mailto:${p.email}" class="btn btn-ghost btn-sm">📧</a>` : ''}
-        <button class="btn btn-ghost btn-sm" onclick="agendarDesdeSeg('${encodeURIComponent(p.nombre)}','${encodeURIComponent(p.telefono)}','${encodeURIComponent(p.email)}')">+ Agendar</button>
-        <button class="btn btn-ghost btn-sm" style="color:var(--ok);border-color:rgba(22,163,74,.3)" onclick="segToggleR('${p.nombre.replace(/'/g,"\\'")}')">✓ Reagendó</button>
-      `}
-    </div>
-  </div>`;
-}
-
-function _segCardReadap(p) {
-  const reagendado = segReagendo(p.nombre);
-  const initials   = p.nombre.split(' ').map(x=>x[0]).join('').toUpperCase().slice(0,2);
-  const zona       = readapZona(p.nombre);
-  const tel        = String(p.telefono||'').replace(/\D/g,'');
-  const phone      = tel.length<=10 ? '57'+tel : tel;
-  const hasWA      = tel.length >= 7;
-  const primero    = p.nombre.split(' ')[0];
-  const uid        = p.nombre.replace(/[^a-zA-Z0-9]/g,'_');
-  const waSent     = segWaSent(p.nombre,'readap');
-  const _paraMR = (p.notaAdmin||'').match(/\[PARA:\s*([^\]]+)\]/i);
-  const paraQuienR = _paraMR ? _paraMR[1].trim() : null;
-
-  const msgReadap = zona
-    ? paraQuienR
-      ? `Hola ${primero}! \uD83D\uDC4B Te escribimos de Cuidándote Fisioterapia. ¿Como ha estado ${paraQuienR} con el proceso de readaptacion funcional de ${zona}? Queria saber como se siente y si quieren continuar con el plan. ¿Me cuentas como va? \uD83D\uDCAA`
-      : `Hola ${primero}! \uD83D\uDC4B Te escribimos de Cuidándote Fisioterapia. ¿Como has estado con tu proceso de readaptacion funcional de ${zona}? Queria saber como te sientes y si quieres continuar con tu plan. ¿Me cuentas como vas? \uD83D\uDCAA`
-    : null;
-  const waReadap = (hasWA && msgReadap) ? `https://wa.me/${phone}?text=${encodeURIComponent(msgReadap)}` : null;
-
-  return `<div class="seg-card ${reagendado?'reagendado':''}" style="border-left:3px solid #0369a1">
-    <div class="pac-badge" style="flex-shrink:0;background:rgba(3,105,161,.08);border-color:${reagendado?'var(--ok)':'#0369a1'}">${initials}</div>
-    <div style="flex:1;min-width:160px">
-      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-        <span style="font-weight:600;font-size:.9rem">${p.nombre}</span>
-        ${reagendado
-          ? `<span style="font-size:.72rem;color:var(--ok);font-weight:700;background:rgba(22,163,74,.1);border:1px solid rgba(22,163,74,.3);border-radius:99px;padding:1px 8px">✓ Reagendó</span>`
-          : `<span style="font-size:.72rem;color:#0369a1;font-weight:700;font-family:var(--font-m)">Readaptación Funcional</span>`}
-      </div>
-      <div style="font-size:.78rem;color:var(--muted);margin-top:2px">${p.servicio} · última: ${fmtDate(p.fecha)} · ${p.dias} días</div>
-      ${!reagendado ? `
-      <div style="margin-top:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-        <label style="font-size:.75rem;color:var(--muted);flex-shrink:0">Articulación/zona:</label>
-        <input
-          id="readapZona_${uid}"
-          type="text"
-          value="${zona}"
-          placeholder="ej: espalda, rodilla, hombro..."
-          style="font-size:.78rem;padding:4px 8px;border:1px solid var(--border);border-radius:6px;background:var(--s1);color:var(--text);outline:none;width:180px"
-          oninput="setReadapZona('${p.nombre.replace(/'/g,"\\'")}', this.value); _renderSegLista(window._segData||[], window._segReadapData||[])"
-          onfocus="this.style.borderColor='#0369a1'"
-          onblur="this.style.borderColor='var(--border)'"
-        />
-        ${zona ? `<span style="font-size:.72rem;color:#0369a1">✓ guardado</span>` : `<span style="font-size:.72rem;color:var(--muted)">Llena para generar mensaje WA</span>`}
-      </div>` : ''}
-    </div>
-    <div style="display:flex;gap:6px;flex-wrap:wrap;flex-shrink:0">
-      ${reagendado ? `
-        <button class="btn btn-ghost btn-sm" onclick="segToggleR('${p.nombre.replace(/'/g,"\\'")}')">↩ Desmarcar</button>
-      ` : `
-        ${waReadap
-          ? `<a href="${waReadap}" target="_blank" class="btn btn-sm" style="background:#0369a1;color:#fff" onclick="segMarkWa('${p.nombre.replace(/'/g,"\\'")}','readap',${p.dias})" ${waSent?'style="opacity:.55"':''}>💬 WA ${waSent?'(enviado)':'Seguimiento'}</a>`
-          : `<span style="font-size:.75rem;color:var(--muted);padding:5px 8px">${hasWA?'Llena la zona primero':'Sin teléfono'}</span>`}
-        ${p.email && p.email.includes('@') ? `<a href="mailto:${p.email}" class="btn btn-ghost btn-sm">📧</a>` : ''}
-        <button class="btn btn-ghost btn-sm" onclick="agendarDesdeSeg('${encodeURIComponent(p.nombre)}','${encodeURIComponent(p.telefono)}','${encodeURIComponent(p.email)}')">+ Agendar</button>
-        <button class="btn btn-ghost btn-sm" style="color:var(--ok);border-color:rgba(22,163,74,.3)" onclick="segToggleR('${p.nombre.replace(/'/g,"\\'")}')">✓ Reagendó</button>
-      `}
-    </div>
-  </div>`;
-}
-
-function _renderSegLog() {
-  const el = document.getElementById('segLog');
-  if (!el) return;
-  const log = JSON.parse(kvGet('seg_log') || '[]');
-  if (!log.length) {
-    el.innerHTML = '<div class="empty" style="padding:24px 0"><p>Aún no hay acciones registradas</p></div>';
-    return;
+function esDescargaMusc(...args) {
+  const module = window.PanelPatientFollowUp;
+  if (!module || typeof module.esDescargaMusc !== 'function') {
+    throw new Error('El módulo Seguimiento de pacientes no está disponible: esDescargaMusc');
   }
-  const dotColors = { sem3:'#7c3aed', sem4:'#d97706', sem5:'#dc2626', reagendo:'#16a34a', readap:'#0369a1' };
-  el.innerHTML = `<div style="max-height:320px;overflow-y:auto;padding-right:4px">` +
-    log.map(l => `<div class="seg-log-item">
-      <div class="seg-log-dot" style="background:${dotColors[l.tipo]||'var(--primary)'}"></div>
-      <div class="seg-log-time">${l.fecha}</div>
-      <div style="flex:1"><strong style="font-size:.83rem">${l.nombre}</strong> — <span style="color:var(--muted)">${l.accion}</span></div>
-    </div>`).join('') + `</div>`;
+  return module.esDescargaMusc(...args);
+}
+
+function esReadaptacion(...args) {
+  const module = window.PanelPatientFollowUp;
+  if (!module || typeof module.esReadaptacion !== 'function') {
+    throw new Error('El módulo Seguimiento de pacientes no está disponible: esReadaptacion');
+  }
+  return module.esReadaptacion(...args);
+}
+
+function readapZona(...args) {
+  const module = window.PanelPatientFollowUp;
+  if (!module || typeof module.readapZona !== 'function') {
+    throw new Error('El módulo Seguimiento de pacientes no está disponible: readapZona');
+  }
+  return module.readapZona(...args);
+}
+function setReadapZona(...args) {
+  const module = window.PanelPatientFollowUp;
+  if (!module || typeof module.setReadapZona !== 'function') {
+    throw new Error('El módulo Seguimiento de pacientes no está disponible: setReadapZona');
+  }
+  return module.setReadapZona(...args);
+}
+
+function renderSeguimiento(...args) {
+  const module = window.PanelPatientFollowUp;
+  if (!module || typeof module.renderSeguimiento !== 'function') {
+    throw new Error('El módulo Seguimiento de pacientes no está disponible: renderSeguimiento');
+  }
+  return module.renderSeguimiento(...args);
+}
+
+function _renderSegLista(...args) {
+  const module = window.PanelPatientFollowUp;
+  if (!module || typeof module._renderSegLista !== 'function') {
+    throw new Error('El módulo Seguimiento de pacientes no está disponible: _renderSegLista');
+  }
+  return module._renderSegLista(...args);
+}
+
+function _segCard(...args) {
+  const module = window.PanelPatientFollowUp;
+  if (!module || typeof module._segCard !== 'function') {
+    throw new Error('El módulo Seguimiento de pacientes no está disponible: _segCard');
+  }
+  return module._segCard(...args);
+}
+
+function _segCardReadap(...args) {
+  const module = window.PanelPatientFollowUp;
+  if (!module || typeof module._segCardReadap !== 'function') {
+    throw new Error('El módulo Seguimiento de pacientes no está disponible: _segCardReadap');
+  }
+  return module._segCardReadap(...args);
+}
+
+function _renderSegLog(...args) {
+  const module = window.PanelPatientFollowUp;
+  if (!module || typeof module._renderSegLog !== 'function') {
+    throw new Error('El módulo Seguimiento de pacientes no está disponible: _renderSegLog');
+  }
+  return module._renderSegLog(...args);
 }
 
 function agendarDesdeSeg(...args) {
@@ -10871,28 +10663,12 @@ async function limpiarHorariosInvalidosAuto() {
   // Administración puede agendar horarios especiales manualmente y deben permanecer visibles.
   return;
 }
-function exportarSeguimientoCSV() {
-  const data  = window._segData || [];
-  const dataR = window._segReadapData || [];
-  if (!data.length && !dataR.length) { toast('No hay datos para exportar', 'err'); return; }
-  const header = ['Nombre','Teléfono','Email','Tipo','Servicio','Última sesión','Días','Semana/Zona','Reagendó','WA Enviado'];
-  const rowsD = data.map(p => [
-    p.nombre, p.telefono, p.email, 'Descarga muscular', p.servicio, p.fecha, p.dias,
-    p.semana==='sem3'?'Semana 3':p.semana==='sem4'?'Semana 4':'Semana 5+',
-    segReagendo(p.nombre)?'Sí':'No',
-    (segWaSent(p.nombre,'sem3')||segWaSent(p.nombre,'sem4')||segWaSent(p.nombre,'sem5'))?'Sí':'No'
-  ]);
-  const rowsR = dataR.map(p => [
-    p.nombre, p.telefono, p.email, 'Readaptación Funcional', p.servicio, p.fecha, p.dias,
-    readapZona(p.nombre)||'—',
-    segReagendo(p.nombre)?'Sí':'No',
-    segWaSent(p.nombre,'readap')?'Sí':'No'
-  ]);
-  const csv = [header,...rowsD,...rowsR].map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');
-  const blob = new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'});
-  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-  a.download = 'seguimiento_'+today()+'.csv'; a.click();
-  toast('CSV exportado');
+function exportarSeguimientoCSV(...args) {
+  const module = window.PanelPatientFollowUp;
+  if (!module || typeof module.exportarSeguimientoCSV !== 'function') {
+    throw new Error('El módulo Seguimiento de pacientes no está disponible: exportarSeguimientoCSV');
+  }
+  return module.exportarSeguimientoCSV(...args);
 }
 
 // ── MODALS ──
@@ -14391,388 +14167,156 @@ function gCopiar(id, btn) {
 // ══════════════════════════════════════════
 //  RECUPERACIÓN DE PACIENTES
 // ══════════════════════════════════════════
-const REC_KEY = 'recuperaciones_v1';
+
 const REC_PCT = 0.05;
 
-function _loadRec() {
-  try { return JSON.parse(localStorage.getItem(REC_KEY) || '[]'); } catch(e) { return []; }
-}
-function _saveRec(arr) {
-  localStorage.setItem(REC_KEY, JSON.stringify(arr));
-}
-
-function _fmtCLP(n) {
-  return '$' + Math.round(n).toLocaleString('es-CO');
-}
-
-function _recMesActual() {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-}
-
-function _initRecMesSel() {
-  const sel = document.getElementById('recMesFiltro');
-  if (!sel) return;
-  const all = _loadRec();
-  const meses = [...new Set(all.map(r => r.fecha.slice(0,7)))].sort().reverse();
-  const actual = _recMesActual();
-  if (!meses.includes(actual)) meses.unshift(actual);
-  const cur = sel.value || actual;
-  sel.innerHTML = meses.map(m => {
-    const [y,mo] = m.split('-');
-    const label = new Date(y, mo-1, 1).toLocaleDateString('es-CO', {month:'long', year:'numeric'});
-    return `<option value="${m}" ${m===cur?'selected':''}>${label.charAt(0).toUpperCase()+label.slice(1)}</option>`;
-  }).join('');
-}
-
-function renderRecuperaciones() {
-  _initRecMesSel();
-  const mes   = document.getElementById('recMesFiltro')?.value || _recMesActual();
-  const busq  = (document.getElementById('recBuscar')?.value || '').toLowerCase().trim();
-  const estFl = document.getElementById('recFiltroEstado')?.value || 'todos';
-
-  const all = _loadRec();
-
-  // --- resumen del mes seleccionado (sin filtros de búsqueda) ---
-  const desMes = all.filter(r => r.fecha.startsWith(mes));
-  const totalVentas   = desMes.reduce((s,r) => s + r.venta, 0);
-  const totalComision = desMes.reduce((s,r) => s + r.comision, 0);
-  const totalPendiente= desMes.filter(r => !r.pagado).reduce((s,r) => s + r.comision, 0);
-
-  const elTotal    = document.getElementById('recResTotal');
-  const elVentas   = document.getElementById('recResVentas');
-  const elComision = document.getElementById('recResComision');
-  const elPendiente= document.getElementById('recResPendiente');
-  const elBtnPagar = document.getElementById('recBtnPagarTodo');
-
-  if (elTotal)     elTotal.textContent     = desMes.length;
-  if (elVentas)    elVentas.textContent    = _fmtCLP(totalVentas);
-  if (elComision)  elComision.textContent  = _fmtCLP(totalComision);
-  if (elPendiente) elPendiente.textContent = _fmtCLP(totalPendiente);
-  if (elBtnPagar)  elBtnPagar.style.display = totalPendiente > 0 ? 'inline-block' : 'none';
-
-  // --- tabla con filtros ---
-  let filas = all.filter(r => r.fecha.startsWith(mes));
-  if (busq)           filas = filas.filter(r => r.paciente.toLowerCase().includes(busq));
-  if (estFl !== 'todos') filas = filas.filter(r => estFl === 'pagado' ? r.pagado : !r.pagado);
-  filas.sort((a,b) => b.fecha.localeCompare(a.fecha));
-
-  const tbody = document.getElementById('recTablaBody');
-  const pie   = document.getElementById('recTotalesPie');
-  if (!tbody) return;
-
-  if (filas.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="7" style="padding:40px;text-align:center;color:var(--muted)">No hay recuperaciones para este período</td></tr>`;
-    if (pie) pie.style.display = 'none';
-    return;
+function _loadRec(...args) {
+  const module = window.PanelPatientRecovery;
+  if (!module || typeof module._loadRec !== 'function') {
+    throw new Error('El módulo Recuperación de pacientes no está disponible: _loadRec');
   }
-
-  const totalFilVenta  = filas.reduce((s,r) => s + r.venta, 0);
-  const totalFilComis  = filas.reduce((s,r) => s + r.comision, 0);
-  const totalFilPend   = filas.filter(r=>!r.pagado).reduce((s,r)=>s+r.comision,0);
-
-  tbody.innerHTML = filas.map(r => {
-    const fechaFmt = new Date(r.fecha + 'T12:00:00').toLocaleDateString('es-CO', {day:'2-digit',month:'short',year:'numeric'});
-    const badge = r.pagado
-      ? `<span style="background:#d1fae5;color:#065f46;padding:3px 10px;border-radius:20px;font-size:.72rem;font-family:var(--font-m);white-space:nowrap">✓ Pagado</span>`
-      : `<span style="background:#fef3c7;color:#92400e;padding:3px 10px;border-radius:20px;font-size:.72rem;font-family:var(--font-m);white-space:nowrap">⏳ Pendiente</span>`;
-    const btnPagar = r.pagado
-      ? `<button onclick="desmarcarPago('${r.id}')" title="Desmarcar pago" style="padding:4px 10px;background:var(--s2);color:var(--muted);border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:.73rem">↺</button>`
-      : `<button onclick="marcarPagado('${r.id}')" style="padding:4px 10px;background:#10b981;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:.73rem;white-space:nowrap">✓ Pagar</button>`;
-    const btnDel = `<button onclick="eliminarRecuperacion('${r.id}')" title="Eliminar" style="padding:4px 8px;background:var(--s2);color:var(--err,#ef4444);border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:.73rem;margin-left:4px">✕</button>`;
-    const notaTxt = r.nota ? `<div style="font-size:.72rem;color:var(--muted);margin-top:2px">${r.nota}</div>` : '';
-    return `<tr style="border-top:1px solid var(--border)">
-      <td style="padding:10px 16px;white-space:nowrap;font-size:.82rem">${fechaFmt}</td>
-      <td style="padding:10px 16px"><div style="font-weight:600">${r.paciente}</div>${notaTxt}</td>
-      <td style="padding:10px 16px;color:var(--muted)">${r.servicio}</td>
-      <td style="padding:10px 16px;text-align:right;font-family:var(--font-m);white-space:nowrap">${_fmtCLP(r.venta)}</td>
-      <td style="padding:10px 16px;text-align:right;font-family:var(--font-m);color:#10b981;font-weight:600;white-space:nowrap">${_fmtCLP(r.comision)}</td>
-      <td style="padding:10px 16px;text-align:center">${badge}</td>
-      <td style="padding:10px 16px;text-align:center;white-space:nowrap">${btnPagar}${btnDel}</td>
-    </tr>`;
-  }).join('');
-
-  if (pie) {
-    pie.style.display = 'flex';
-    pie.innerHTML = `
-      <span style="color:var(--muted)">Ventas filtradas: <strong style="color:var(--text)">${_fmtCLP(totalFilVenta)}</strong></span>
-      <span style="color:var(--muted)">Comisión total: <strong style="color:#10b981">${_fmtCLP(totalFilComis)}</strong></span>
-      ${totalFilPend > 0 ? `<span style="color:var(--muted)">Pendiente: <strong style="color:#f59e0b">${_fmtCLP(totalFilPend)}</strong></span>` : ''}
-    `;
+  return module._loadRec(...args);
+}
+function _saveRec(...args) {
+  const module = window.PanelPatientRecovery;
+  if (!module || typeof module._saveRec !== 'function') {
+    throw new Error('El módulo Recuperación de pacientes no está disponible: _saveRec');
   }
+  return module._saveRec(...args);
 }
 
-function registrarRecuperacion() {
-  const paciente = document.getElementById('recInpPaciente')?.value.trim();
-  const fecha    = document.getElementById('recInpFecha')?.value;
-  const servicio = document.getElementById('recInpServicio')?.value;
-  const venta    = parseFloat(document.getElementById('recInpVenta')?.value || '0');
-  const nota     = document.getElementById('recInpNota')?.value.trim() || '';
-
-  if (!paciente) { alert('Ingresa el nombre del paciente'); return; }
-  if (!fecha)    { alert('Selecciona la fecha de la cita'); return; }
-  if (!servicio) { alert('Selecciona el servicio'); return; }
-  if (!venta || venta <= 0) { alert('Ingresa el valor de la venta'); return; }
-
-  const comision = Math.round(venta * REC_PCT);
-  const rec = {
-    id: Date.now().toString(),
-    fecha,
-    paciente,
-    servicio,
-    venta,
-    comision,
-    nota,
-    pagado: false,
-    pagadoFecha: null
-  };
-
-  const all = _loadRec();
-  all.push(rec);
-  _saveRec(all);
-
-  // Limpiar formulario
-  document.getElementById('recInpPaciente').value = '';
-  document.getElementById('recInpFecha').value    = '';
-  document.getElementById('recInpServicio').value = '';
-  document.getElementById('recInpVenta').value    = '';
-  document.getElementById('recInpNota').value     = '';
-  document.getElementById('recInpComisionCalc').value = '$0';
-
-  const msg = document.getElementById('recGuardadoMsg');
-  if (msg) { msg.style.display = 'inline'; setTimeout(() => { msg.style.display = 'none'; }, 2500); }
-
-  renderRecuperaciones();
-  if (typeof toast === 'function') toast(`Recuperación registrada — comisión: ${_fmtCLP(comision)}`, 'ok');
+function _fmtCLP(...args) {
+  const module = window.PanelPatientRecovery;
+  if (!module || typeof module._fmtCLP !== 'function') {
+    throw new Error('El módulo Recuperación de pacientes no está disponible: _fmtCLP');
+  }
+  return module._fmtCLP(...args);
 }
 
-function marcarPagado(id) {
-  const all = _loadRec();
-  const rec = all.find(r => r.id === id);
-  if (!rec) return;
-  rec.pagado = true;
-  rec.pagadoFecha = today();
-  _saveRec(all);
-  renderRecuperaciones();
-  if (typeof toast === 'function') toast(`Comisión ${_fmtCLP(rec.comision)} marcada como pagada`, 'ok');
+function _recMesActual(...args) {
+  const module = window.PanelPatientRecovery;
+  if (!module || typeof module._recMesActual !== 'function') {
+    throw new Error('El módulo Recuperación de pacientes no está disponible: _recMesActual');
+  }
+  return module._recMesActual(...args);
 }
 
-function desmarcarPago(id) {
-  const all = _loadRec();
-  const rec = all.find(r => r.id === id);
-  if (!rec) return;
-  rec.pagado = false;
-  rec.pagadoFecha = null;
-  _saveRec(all);
-  renderRecuperaciones();
+function _initRecMesSel(...args) {
+  const module = window.PanelPatientRecovery;
+  if (!module || typeof module._initRecMesSel !== 'function') {
+    throw new Error('El módulo Recuperación de pacientes no está disponible: _initRecMesSel');
+  }
+  return module._initRecMesSel(...args);
 }
 
-function eliminarRecuperacion(id) {
-  if (!confirm('¿Eliminar este registro? Esta acción no se puede deshacer.')) return;
-  const all = _loadRec().filter(r => r.id !== id);
-  _saveRec(all);
-  renderRecuperaciones();
-  if (typeof toast === 'function') toast('Registro eliminado', 'ok');
+function renderRecuperaciones(...args) {
+  const module = window.PanelPatientRecovery;
+  if (!module || typeof module.renderRecuperaciones !== 'function') {
+    throw new Error('El módulo Recuperación de pacientes no está disponible: renderRecuperaciones');
+  }
+  return module.renderRecuperaciones(...args);
 }
 
-function pagarTodasComisiones() {
-  const mes = document.getElementById('recMesFiltro')?.value || _recMesActual();
-  const all = _loadRec();
-  let cnt = 0;
-  all.forEach(r => {
-    if (r.fecha.startsWith(mes) && !r.pagado) {
-      r.pagado = true;
-      r.pagadoFecha = today();
-      cnt++;
-    }
-  });
-  if (cnt === 0) return;
-  _saveRec(all);
-  renderRecuperaciones();
-  if (typeof toast === 'function') toast(`${cnt} comisión${cnt>1?'es':''} marcada${cnt>1?'s':''} como pagada${cnt>1?'s':''}`, 'ok');
+function registrarRecuperacion(...args) {
+  const module = window.PanelPatientRecovery;
+  if (!module || typeof module.registrarRecuperacion !== 'function') {
+    throw new Error('El módulo Recuperación de pacientes no está disponible: registrarRecuperacion');
+  }
+  return module.registrarRecuperacion(...args);
+}
+
+function marcarPagado(...args) {
+  const module = window.PanelPatientRecovery;
+  if (!module || typeof module.marcarPagado !== 'function') {
+    throw new Error('El módulo Recuperación de pacientes no está disponible: marcarPagado');
+  }
+  return module.marcarPagado(...args);
+}
+
+function desmarcarPago(...args) {
+  const module = window.PanelPatientRecovery;
+  if (!module || typeof module.desmarcarPago !== 'function') {
+    throw new Error('El módulo Recuperación de pacientes no está disponible: desmarcarPago');
+  }
+  return module.desmarcarPago(...args);
+}
+
+function eliminarRecuperacion(...args) {
+  const module = window.PanelPatientRecovery;
+  if (!module || typeof module.eliminarRecuperacion !== 'function') {
+    throw new Error('El módulo Recuperación de pacientes no está disponible: eliminarRecuperacion');
+  }
+  return module.eliminarRecuperacion(...args);
+}
+
+function pagarTodasComisiones(...args) {
+  const module = window.PanelPatientRecovery;
+  if (!module || typeof module.pagarTodasComisiones !== 'function') {
+    throw new Error('El módulo Recuperación de pacientes no está disponible: pagarTodasComisiones');
+  }
+  return module.pagarTodasComisiones(...args);
 }
 
 // ── Carga pacientes inactivos 3+ meses desde GAS ──
-async function cargarInactivos() {
-  const panel = document.getElementById('recInactivosPanel');
-  const btn   = document.getElementById('recBtnCargar');
-  if (!panel) return;
-  panel.innerHTML = '<div style="text-align:center;padding:30px"><div class="spinner"></div><div style="margin-top:10px;color:var(--muted);font-size:.83rem">Consultando base de datos...</div></div>';
-  if (btn) { btn.disabled = true; btn.style.opacity = '0.6'; }
-  try {
-    const r = await fetch(`${APPS_SCRIPT_URL}?action=getInactivos&token=${encodeURIComponent(TOKEN)}`);
-    const d = await r.json();
-    if (!d.ok) { panel.innerHTML = `<div style="color:var(--err,#ef4444);padding:20px">Error: ${d.error||'Sin respuesta del servidor'}</div>`; return; }
-    renderInactivos(d.inactivos || []);
-  } catch(e) {
-    panel.innerHTML = '<div style="color:var(--err,#ef4444);padding:20px">Error de conexión. Verifica que el GAS esté actualizado y vuelve a intentarlo.</div>';
-  } finally {
-    if (btn) { btn.disabled = false; btn.style.opacity = '1'; }
+async function cargarInactivos(...args) {
+  const module = window.PanelPatientRecovery;
+  if (!module || typeof module.cargarInactivos !== 'function') {
+    throw new Error('El módulo Recuperación de pacientes no está disponible: cargarInactivos');
   }
+  return await module.cargarInactivos(...args);
 }
 
 let _recCurrentLista = [];
 let _recMsgTipo = 0;
 
-function _recPreguntaDolencia(servicio) {
-  const s = (servicio || '').toLowerCase();
-  if (s.includes('cuello') || s.includes('espalda'))  return '¿cómo sigues del cuello y la espalda?';
-  if (s.includes('pierna'))                            return '¿cómo sigues de las piernas?';
-  if (s.includes('completa'))                          return '¿cómo sigues con la tensión muscular?';
-  if (s.includes('valorac'))                           return '¿cómo sigues con tu proceso?';
-  if (s.includes('readapt'))                           return '¿cómo sigues con tu readaptación?';
-  if (s.includes('recuper') || s.includes('full'))     return '¿cómo sigues con tu recuperación?';
-  return '¿cómo sigues de salud?';
-}
-
-const _recMensajes = [
-  {
-    label: 'Chequeo amigable',
-    desc:  'Pregunta por la dolencia, sin presionar',
-    fn: (nombre1, meses, servicio) => {
-      const q = _recPreguntaDolencia(servicio);
-      return `Hola ${nombre1}! Te escribe el equipo de Cuidándote Fisioterapia 👋 ${q} Hace ${meses} ${meses===1?'mes':'meses'} que no te vemos por aquí — te escribimos porque sabemos que el cuerpo lo agradece cuando mantiene la rutina de descarga. ¿Quieres agendar una sesión esta semana? 💪`;
-    }
-  },
-  {
-    label: 'Recordatorio de resultados',
-    desc:  'Recuerda cómo se sentía después de la sesión',
-    fn: (nombre1, meses, servicio) => {
-      const q = _recPreguntaDolencia(servicio);
-      return `Hola ${nombre1}! Te escribe el equipo de Cuidándote Fisioterapia 💙 ${q}\n\n¿Recuerdas cómo te sentiste después de tu última sesión? Ese alivio y esa ligereza que notaste... el cuerpo lo puede volver a tener.\n\nHace ${meses} ${meses===1?'mes':'meses'} que no tienes una descarga — cuando la tensión se acumula, cuesta más recuperarla. ¿Te agendamos esta semana? 🙌`;
-    }
-  },
-  {
-    label: 'Directo con fecha',
-    desc:  'Propone agendar sin rodeos',
-    fn: (nombre1, meses, servicio) => {
-      const q = _recPreguntaDolencia(servicio);
-      return `Hola ${nombre1}! Te escribe el equipo de Cuidándote Fisioterapia. ${q} Llevas ${meses} ${meses===1?'mes':'meses'} sin sesión y quería avisarte que tenemos disponibilidad esta semana.\n\n¿Te puedo apartar un espacio? Solo dime qué día te queda mejor. 📅`;
-    }
-  },
-  {
-    label: 'Bienestar y cuidado',
-    desc:  'Tono empático, centrado en la salud',
-    fn: (nombre1, meses, servicio) => {
-      const q = _recPreguntaDolencia(servicio);
-      return `Hola ${nombre1}! Te escribe el equipo de Cuidándote Fisioterapia 🌿 ${q}\n\nSabemos que la vida se pone ocupada — han pasado ${meses} ${meses===1?'mes':'meses'} desde tu última visita. Solo queríamos recordarte que cuidarte no es un lujo, es una necesidad. Cuando estés listo para retomar, aquí estamos 💚`;
-    }
+function _recPreguntaDolencia(...args) {
+  const module = window.PanelPatientRecovery;
+  if (!module || typeof module._recPreguntaDolencia !== 'function') {
+    throw new Error('El módulo Recuperación de pacientes no está disponible: _recPreguntaDolencia');
   }
-];
-
-function _renderRecMsgSelector() {
-  return `<div style="margin-bottom:16px;padding:12px 14px;background:var(--s2);border:1px solid var(--border);border-radius:10px">
-    <div style="font-size:.75rem;color:var(--muted);font-family:var(--font-m);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em">Mensaje para enviar por WA</div>
-    <div style="display:flex;flex-direction:column;gap:6px">
-      ${_recMensajes.map((m, i) => `
-        <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;padding:8px 10px;border-radius:8px;border:1px solid ${_recMsgTipo===i?'var(--primary)':'var(--border)'};background:${_recMsgTipo===i?'rgba(13,148,136,.06)':'transparent'};transition:all .15s" onclick="_recMsgTipo=${i};renderInactivos(_recCurrentLista)">
-          <input type="radio" name="recMsg" ${_recMsgTipo===i?'checked':''} style="margin-top:2px;accent-color:var(--primary);flex-shrink:0">
-          <div>
-            <div style="font-size:.82rem;font-weight:600;color:var(--text)">${m.label}</div>
-            <div style="font-size:.75rem;color:var(--muted);margin-top:1px">${m.desc}</div>
-          </div>
-        </label>`).join('')}
-    </div>
-  </div>`;
+  return module._recPreguntaDolencia(...args);
 }
 
-function renderInactivos(lista) {
-  const panel = document.getElementById('recInactivosPanel');
-  if (!panel) return;
-  _recCurrentLista = lista;
 
-  if (lista.length === 0) {
-    panel.innerHTML = '<div style="text-align:center;color:var(--ok,#10b981);padding:30px;font-size:.9rem">✅ No hay pacientes inactivos de 2+ meses en la base de datos</div>';
-    return;
+
+function _renderRecMsgSelector(...args) {
+  const module = window.PanelPatientRecovery;
+  if (!module || typeof module._renderRecMsgSelector !== 'function') {
+    throw new Error('El módulo Recuperación de pacientes no está disponible: _renderRecMsgSelector');
   }
-
-  const grupos = {};
-  lista.forEach(p => {
-    const g = p.dias >= 180 ? '6m+' : p.dias >= 120 ? '4-6m' : p.dias >= 90 ? '3-4m' : '2-3m';
-    if (!grupos[g]) grupos[g] = [];
-    grupos[g].push(p);
-  });
-
-  const gCfg = [
-    { key:'6m+',  label:'Más de 6 meses sin sesión',    color:'#ef4444', bg:'#fef2f2', border:'#fecaca' },
-    { key:'4-6m', label:'Entre 4 y 6 meses sin sesión', color:'#f59e0b', bg:'#fffbeb', border:'#fde68a' },
-    { key:'3-4m', label:'Entre 3 y 4 meses sin sesión', color:'#3b82f6', bg:'#eff6ff', border:'#bfdbfe' },
-    { key:'2-3m', label:'Entre 2 y 3 meses sin sesión', color:'#8b5cf6', bg:'#f5f3ff', border:'#ddd6fe' },
-  ];
-
-  let html = `<div style="font-size:.8rem;color:var(--muted);margin-bottom:16px">${lista.length} paciente${lista.length!==1?'s':''} sin sesión desde hace 2+ meses</div>`;
-
-  gCfg.forEach(gc => {
-    const ps = grupos[gc.key];
-    if (!ps || ps.length === 0) return;
-    html += `<div style="margin-bottom:20px">
-      <div style="font-size:.75rem;font-family:var(--font-m);color:${gc.color};text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;font-weight:600">${gc.label} · ${ps.length} paciente${ps.length!==1?'s':''}</div>
-      <div style="display:flex;flex-direction:column;gap:8px">
-        ${ps.map(p => _recInactivoCard(p, gc)).join('')}
-      </div>
-    </div>`;
-  });
-
-  panel.innerHTML = html;
+  return module._renderRecMsgSelector(...args);
 }
 
-function _waIconSvg() {
-  return `<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.12 1.533 5.845L0 24l6.335-1.524A11.944 11.944 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.891 0-3.659-.511-5.18-1.401l-.37-.221-3.762.905.955-3.667-.24-.377A9.944 9.944 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>`;
-}
-
-function _recInactivoCard(p, gc) {
-  const nombre1 = p.nombre.split(' ')[0];
-  const t = (p.telefono||'').replace(/\D/g,'');
-  const phone = t.length <= 10 && t.length >= 7 ? '57'+t : t;
-  const meses = Math.round(p.dias / 30);
-  const fechaFmt = p.lastFecha ? new Date(p.lastFecha+'T12:00:00').toLocaleDateString('es-CO',{day:'2-digit',month:'short',year:'numeric'}) : '—';
-
-  const preNombre   = p.nombre.replace(/'/g,"\\'");
-  const preServicio = (p.lastServicio||'').replace(/'/g,"\\'");
-  const registrarBtn = `<button onclick="preRellenaRecuperacion('${preNombre}','${preServicio}')" style="padding:5px 10px;background:var(--primary);color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:.72rem;font-family:var(--font-b);white-space:nowrap">✓ Registrar</button>`;
-
-  const etiquetas = ['👋 Chequeo','💆 Resultados','📅 Directo','🌿 Bienestar'];
-  const waBtns = phone.length >= 9
-    ? _recMensajes.map((m, i) => {
-        const url = `https://wa.me/${phone}?text=${encodeURIComponent(m.fn(nombre1, meses, p.lastServicio))}`;
-        return `<a href="${url}" target="_blank" title="${m.label}" style="padding:5px 9px;background:#25D366;color:#fff;border-radius:6px;font-size:.7rem;font-family:var(--font-b);text-decoration:none;white-space:nowrap;display:inline-flex;align-items:center;gap:3px">${_waIconSvg()} ${etiquetas[i]}</a>`;
-      }).join('')
-    : `<span style="font-size:.72rem;color:var(--muted)">Sin tel.</span>`;
-
-  return `<div style="background:${gc.bg};border:1px solid ${gc.border};border-radius:10px;padding:12px 14px">
-    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-      <div style="width:36px;height:36px;border-radius:50%;background:${gc.color};color:#fff;display:flex;align-items:center;justify-content:center;font-family:var(--font-h);font-weight:700;font-size:.85rem;flex-shrink:0">${p.nombre.charAt(0).toUpperCase()}</div>
-      <div style="flex:1;min-width:0">
-        <div style="font-weight:700;font-size:.88rem;color:var(--text)">${p.nombre}</div>
-        <div style="font-size:.75rem;color:var(--muted);margin-top:1px">${p.lastServicio||'—'} · última: ${fechaFmt}</div>
-        <div style="font-size:.75rem;font-weight:600;color:${gc.color};margin-top:2px">${p.dias} días sin sesión (${meses} ${meses===1?'mes':'meses'})</div>
-      </div>
-      <div style="flex-shrink:0">${registrarBtn}</div>
-    </div>
-    <div style="margin-top:10px;padding-top:10px;border-top:1px solid ${gc.border};display:flex;gap:6px;flex-wrap:wrap;align-items:center">
-      <span style="font-size:.7rem;color:var(--muted);font-family:var(--font-m);white-space:nowrap">Enviar por WA:</span>
-      ${waBtns}
-    </div>
-  </div>`;
-}
-
-function preRellenaRecuperacion(nombre, servicio) {
-  const inpNombre = document.getElementById('recInpPaciente');
-  const inpServ   = document.getElementById('recInpServicio');
-  const inpFecha  = document.getElementById('recInpFecha');
-  if (inpNombre) inpNombre.value = nombre;
-  if (inpFecha && !inpFecha.value) inpFecha.value = today();
-  // Intentar hacer match del servicio en el select
-  if (inpServ && servicio) {
-    const opts = Array.from(inpServ.options);
-    const srv  = servicio.toLowerCase();
-    const match = opts.find(o => srv.includes(o.value.toLowerCase()) || o.value.toLowerCase().includes(srv.split(' ')[0].toLowerCase()));
-    if (match) inpServ.value = match.value;
+function renderInactivos(...args) {
+  const module = window.PanelPatientRecovery;
+  if (!module || typeof module.renderInactivos !== 'function') {
+    throw new Error('El módulo Recuperación de pacientes no está disponible: renderInactivos');
   }
-  // Scroll suave al formulario
-  const form = document.getElementById('recInpVenta');
-  if (form) { form.scrollIntoView({ behavior:'smooth', block:'center' }); form.focus(); }
-  if (typeof toast === 'function') toast(`Formulario pre-llenado para ${nombre}`, 'ok');
+  return module.renderInactivos(...args);
+}
+
+function _waIconSvg(...args) {
+  const module = window.PanelPatientRecovery;
+  if (!module || typeof module._waIconSvg !== 'function') {
+    throw new Error('El módulo Recuperación de pacientes no está disponible: _waIconSvg');
+  }
+  return module._waIconSvg(...args);
+}
+
+function _recInactivoCard(...args) {
+  const module = window.PanelPatientRecovery;
+  if (!module || typeof module._recInactivoCard !== 'function') {
+    throw new Error('El módulo Recuperación de pacientes no está disponible: _recInactivoCard');
+  }
+  return module._recInactivoCard(...args);
+}
+
+function preRellenaRecuperacion(...args) {
+  const module = window.PanelPatientRecovery;
+  if (!module || typeof module.preRellenaRecuperacion !== 'function') {
+    throw new Error('El módulo Recuperación de pacientes no está disponible: preRellenaRecuperacion');
+  }
+  return module.preRellenaRecuperacion(...args);
 }
 
 // ── CAMPAÑA DE REFERIDOS DEL MES ──
@@ -14951,6 +14495,8 @@ document.addEventListener('DOMContentLoaded', () => {
   <script src="js/modules/monthly-report.js"></script>
 <script src="js/modules/smart-metrics.js"></script>
 <script src="js/modules/income-analysis.js"></script>
+<script src="js/modules/patient-follow-up.js"></script>
+<script src="js/modules/patient-recovery.js"></script>
 </body>
 </html>
 

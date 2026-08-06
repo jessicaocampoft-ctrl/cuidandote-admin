@@ -1,0 +1,106 @@
+name: Fase 17 — Seguimiento y recuperación
+
+on:
+  push:
+    branches:
+      - modularizacion-panel-fase17-seguimiento-recuperacion-2026-08-06
+    paths:
+      - MODULARIZACION_FASE17_SEGUIMIENTO_RECUPERACION.md
+      - tools/modularizar-seguimiento-recuperacion-fase17.mjs
+      - tools/validar-seguimiento-recuperacion-fase17.mjs
+      - .github/workflows/modularizacion-fase17-seguimiento-recuperacion.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: fase17-seguimiento-recuperacion
+  cancel-in-progress: false
+
+jobs:
+  modularizar-seguimiento-recuperacion:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar rama aislada
+        uses: actions/checkout@v4
+        with:
+          ref: modularizacion-panel-fase17-seguimiento-recuperacion-2026-08-06
+          fetch-depth: 0
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Confirmar aislamiento y bases
+        shell: bash
+        run: |
+          test "$(git branch --show-current)" = "modularizacion-panel-fase17-seguimiento-recuperacion-2026-08-06"
+          git fetch origin modularizacion-panel-fase16-ingresos-analisis-2026-08-06
+          git fetch origin modularizacion-panel-fase15-metricas-inteligentes-2026-08-06
+          git fetch origin main
+          git merge-base --is-ancestor origin/modularizacion-panel-fase16-ingresos-analisis-2026-08-06 HEAD
+          git show origin/modularizacion-panel-fase16-ingresos-analisis-2026-08-06:index.html > /tmp/fase16-index.html
+          git show origin/modularizacion-panel-fase15-metricas-inteligentes-2026-08-06:index.html > /tmp/fase15-index.html
+
+      - name: Separar seguimiento y recuperación
+        run: node tools/modularizar-seguimiento-recuperacion-fase17.mjs index.html
+
+      - name: Validar sintaxis, paridad y estados
+        shell: bash
+        run: |
+          node --check tools/modularizar-seguimiento-recuperacion-fase17.mjs
+          node --check tools/validar-seguimiento-recuperacion-fase17.mjs
+          node --check js/modules/patient-follow-up.js
+          node --check js/modules/patient-recovery.js
+          node tools/validar-seguimiento-recuperacion-fase17.mjs /tmp/fase16-index.html index.html js/modules/patient-follow-up.js js/modules/patient-recovery.js
+
+      - name: Confirmar módulos anteriores
+        shell: bash
+        run: |
+          find js -type f -name '*.js' -print0 | xargs -0 -n1 node --check
+          node tools/validar-ingresos-fase16.mjs /tmp/fase15-index.html index.html js/modules/income-analysis.js
+
+      - name: Confirmar aislamiento funcional
+        shell: bash
+        run: |
+          git diff --exit-code origin/modularizacion-panel-fase16-ingresos-analisis-2026-08-06 -- google-apps-script.js
+          git merge-base --is-ancestor origin/modularizacion-panel-fase16-ingresos-analisis-2026-08-06 HEAD
+          bad="$(git diff --name-only origin/modularizacion-panel-fase16-ingresos-analisis-2026-08-06 | grep -Ev '^(index\.html|js/modules/patient-follow-up\.js|js/modules/patient-recovery\.js|tools/modularizar-seguimiento-recuperacion-fase17\.mjs|tools/validar-seguimiento-recuperacion-fase17\.mjs|MODULARIZACION_FASE17_SEGUIMIENTO_RECUPERACION\.md|MODULARIZACION_FASE17_RESULTADO\.md|\.github/workflows/modularizacion-fase17-seguimiento-recuperacion\.yml)$' || true)"
+          if [ -n "$bad" ]; then
+            echo "Archivos fuera del alcance:"
+            echo "$bad"
+            exit 1
+          fi
+
+      - name: Generar informe final
+        shell: bash
+        run: |
+          cat > MODULARIZACION_FASE17_RESULTADO.md <<'EOF'
+          # Resultado Fase 17 — Seguimiento y recuperación
+
+          - Módulo `js/modules/patient-follow-up.js` creado.
+          - Módulo `js/modules/patient-recovery.js` creado.
+          - 17 funciones de seguimiento trasladadas.
+          - 18 funciones de recuperación trasladadas.
+          - `_segFiltros`, `REC_KEY` y `_recMensajes` encapsuladas.
+          - `REC_PCT`, `_recCurrentLista` y `_recMsgTipo` permanecen compartidas por compatibilidad.
+          - Consulta existente `getInactivos` conservada sin acciones nuevas.
+          - Paridad exacta, sintaxis, recuperación ante JSON inválido y API pública validadas.
+          - Módulos de las Fases 1 a 16 conservados.
+          - `main`, Apps Script y producción no modificados.
+          EOF
+
+      - name: Guardar resultado solo en la rama aislada
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html js/modules/patient-follow-up.js js/modules/patient-recovery.js MODULARIZACION_FASE17_RESULTADO.md
+          if git diff --cached --quiet; then
+            echo "No hay cambios funcionales nuevos para guardar."
+            exit 0
+          fi
+          git commit -m "Separar y validar Seguimiento y recuperación"
+          git pull --rebase origin modularizacion-panel-fase17-seguimiento-recuperacion-2026-08-06
+          git push origin HEAD:modularizacion-panel-fase17-seguimiento-recuperacion-2026-08-06
