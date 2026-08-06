@@ -11,12 +11,12 @@ permissions:
   contents: write
 
 concurrency:
-  group: fase25-utilidades-integracion-final-v3
+  group: fase25-utilidades-integracion-final-v4
   cancel-in-progress: false
 
 jobs:
   integrar-y-validar:
-    runs-on: windows-latest
+    runs-on: macos-latest
     steps:
       - name: Descargar rama aislada
         uses: actions/checkout@v4
