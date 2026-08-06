@@ -87,7 +87,7 @@ fs.writeFileSync('js/modules/shared-utils.js', buildModule('PanelUtils', utility
 fs.writeFileSync('js/modules/shared-storage.js', `(function (global) {\n'use strict';\n\n${storageBlock}\n\nglobal.PanelStorage = Object.freeze({\n    ${storageFunctions.join(',\n    ')}\n  });\n})(typeof window !== 'undefined' ? window : globalThis);\n`);
 
 // 3. Cargar primero las dependencias compartidas y luego todos los módulos de dominio.
-const anchor = '<script src="js/modules/agenda.js"></script>';
+const anchor = '<script src="js/modules/payments.js"></script>';
 assert(source.includes(anchor), 'No se encontró el primer módulo de dominio para insertar las utilidades.');
 assert(!source.includes('js/modules/shared-utils.js'), 'shared-utils.js ya estaba cargado.');
 assert(!source.includes('js/modules/shared-storage.js'), 'shared-storage.js ya estaba cargado.');
