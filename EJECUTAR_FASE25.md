@@ -1,1 +1,1 @@
-Ejecutar la separación final de utilidades compartidas y la regresión completa del panel.
+Ejecutar la separación final de utilidades compartidas y la regresión completa del panel en runner Ubuntu 22.04.
