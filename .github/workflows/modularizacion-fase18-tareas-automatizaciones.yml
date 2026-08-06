@@ -1,0 +1,103 @@
+name: Fase 18 — Tareas y automatizaciones
+
+on:
+  push:
+    branches:
+      - modularizacion-panel-fase18-tareas-automatizaciones-2026-08-06
+    paths:
+      - MODULARIZACION_FASE18_TAREAS_AUTOMATIZACIONES.md
+      - tools/modularizar-tareas-automatizaciones-fase18.mjs
+      - tools/validar-tareas-automatizaciones-fase18.mjs
+      - .github/workflows/modularizacion-fase18-tareas-automatizaciones.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: fase18-tareas-automatizaciones
+  cancel-in-progress: false
+
+jobs:
+  modularizar-tareas-automatizaciones:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar rama aislada
+        uses: actions/checkout@v4
+        with:
+          ref: modularizacion-panel-fase18-tareas-automatizaciones-2026-08-06
+          fetch-depth: 0
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Confirmar aislamiento y bases
+        shell: bash
+        run: |
+          test "$(git branch --show-current)" = "modularizacion-panel-fase18-tareas-automatizaciones-2026-08-06"
+          git fetch origin modularizacion-panel-fase17-seguimiento-recuperacion-2026-08-06
+          git fetch origin modularizacion-panel-fase16-ingresos-analisis-2026-08-06
+          git fetch origin main
+          git merge-base --is-ancestor origin/modularizacion-panel-fase17-seguimiento-recuperacion-2026-08-06 HEAD
+          git show origin/modularizacion-panel-fase17-seguimiento-recuperacion-2026-08-06:index.html > /tmp/fase17-index.html
+          git show origin/modularizacion-panel-fase16-ingresos-analisis-2026-08-06:index.html > /tmp/fase16-index.html
+
+      - name: Separar Tareas y automatizaciones
+        run: node tools/modularizar-tareas-automatizaciones-fase18.mjs index.html
+
+      - name: Validar sintaxis, paridad y estados
+        shell: bash
+        run: |
+          node --check tools/modularizar-tareas-automatizaciones-fase18.mjs
+          node --check tools/validar-tareas-automatizaciones-fase18.mjs
+          node --check js/modules/operations-automation.js
+          node tools/validar-tareas-automatizaciones-fase18.mjs /tmp/fase17-index.html index.html js/modules/operations-automation.js
+
+      - name: Confirmar módulos anteriores
+        shell: bash
+        run: |
+          find js -type f -name '*.js' -print0 | xargs -0 -n1 node --check
+          node tools/validar-seguimiento-recuperacion-fase17.mjs /tmp/fase16-index.html index.html js/modules/patient-follow-up.js js/modules/patient-recovery.js
+
+      - name: Confirmar aislamiento funcional
+        shell: bash
+        run: |
+          git diff --exit-code origin/modularizacion-panel-fase17-seguimiento-recuperacion-2026-08-06 -- google-apps-script.js
+          git merge-base --is-ancestor origin/modularizacion-panel-fase17-seguimiento-recuperacion-2026-08-06 HEAD
+          bad="$(git diff --name-only origin/modularizacion-panel-fase17-seguimiento-recuperacion-2026-08-06 | grep -Ev '^(index\.html|js/modules/operations-automation\.js|tools/modularizar-tareas-automatizaciones-fase18\.mjs|tools/validar-tareas-automatizaciones-fase18\.mjs|MODULARIZACION_FASE18_TAREAS_AUTOMATIZACIONES\.md|MODULARIZACION_FASE18_RESULTADO\.md|\.github/workflows/modularizacion-fase18-tareas-automatizaciones\.yml)$' || true)"
+          if [ -n "$bad" ]; then
+            echo "Archivos fuera del alcance:"
+            echo "$bad"
+            exit 1
+          fi
+
+      - name: Generar informe final
+        shell: bash
+        run: |
+          cat > MODULARIZACION_FASE18_RESULTADO.md <<'EOF'
+          # Resultado Fase 18 — Tareas y automatizaciones operativas
+
+          - Módulo `js/modules/operations-automation.js` creado.
+          - 18 funciones trasladadas con paridad exacta.
+          - 14 funciones corresponden a tareas, plantillas, filtros y estados.
+          - 4 funciones corresponden a citas pasadas, cobros atrasados y alerta de semana floja.
+          - `_TPL_DEFAULT` y `_tareaFiltros` quedaron encapsuladas.
+          - No se añadieron llamadas ni acciones nuevas al servidor.
+          - Módulos de las Fases 1 a 17 conservados.
+          - `main`, Apps Script y producción no modificados.
+          EOF
+
+      - name: Guardar resultado solo en la rama aislada
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html js/modules/operations-automation.js MODULARIZACION_FASE18_RESULTADO.md
+          if git diff --cached --quiet; then
+            echo "No hay cambios funcionales nuevos para guardar."
+            exit 0
+          fi
+          git commit -m "Separar y validar Tareas y automatizaciones"
+          git pull --rebase origin modularizacion-panel-fase18-tareas-automatizaciones-2026-08-06
+          git push origin HEAD:modularizacion-panel-fase18-tareas-automatizaciones-2026-08-06
