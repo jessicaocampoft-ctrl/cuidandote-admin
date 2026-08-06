@@ -3,3 +3,5 @@
 Ejecutar la validación completa del módulo `kpi.js` sobre código, configuración, persistencia, cálculos, renderizado y explorador.
 
 La validación debe confirmar que las fuentes compartidas y las Fases 1 a 11 permanecen sin cambios. No modificar `main`, Apps Script ni el panel publicado.
+
+Reejecución: comprobación de acciones del servidor corregida sin modificar el módulo.
