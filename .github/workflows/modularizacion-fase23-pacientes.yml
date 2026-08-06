@@ -1,0 +1,115 @@
+name: Fase 23 — Pacientes, historial y búsqueda
+
+on:
+  push:
+    branches:
+      - modularizacion-panel-fase23-pacientes-historial-busqueda-2026-08-06
+    paths:
+      - MODULARIZACION_FASE23_PACIENTES_HISTORIAL_BUSQUEDA.md
+      - .github/workflows/modularizacion-fase23-pacientes.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: fase23-pacientes-historial-busqueda
+  cancel-in-progress: false
+
+jobs:
+  modularizar-pacientes:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar rama aislada
+        uses: actions/checkout@v4
+        with:
+          ref: modularizacion-panel-fase23-pacientes-historial-busqueda-2026-08-06
+          fetch-depth: 0
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Confirmar aislamiento y bases
+        shell: bash
+        run: |
+          test "$(git branch --show-current)" = "modularizacion-panel-fase23-pacientes-historial-busqueda-2026-08-06"
+          git fetch origin modularizacion-panel-fase22-comisiones-2026-08-06
+          git fetch origin modularizacion-panel-fase21-operacion-agenda-2026-08-06
+          git fetch origin modularizacion-panel-fase20-voz-recordatorios-calendario-2026-08-06
+          git fetch origin modularizacion-panel-fase19-whatsapp-mensajes-2026-08-06
+          git fetch origin main
+          git merge-base --is-ancestor origin/modularizacion-panel-fase22-comisiones-2026-08-06 HEAD
+          git show origin/modularizacion-panel-fase22-comisiones-2026-08-06:index.html > /tmp/fase22-index.html
+          git show origin/modularizacion-panel-fase21-operacion-agenda-2026-08-06:index.html > /tmp/fase21-index.html
+          git show origin/modularizacion-panel-fase20-voz-recordatorios-calendario-2026-08-06:index.html > /tmp/fase20-index.html
+          git show origin/modularizacion-panel-fase19-whatsapp-mensajes-2026-08-06:index.html > /tmp/fase19-index.html
+
+      - name: Ajustar expectativas nominales de prueba
+        run: |
+          sed -i "s/'historialBody'/'modalHistorialContent'/" tools/validar-pacientes-fase23.mjs
+          sed -i "s/'updatePatient'/'editPatient'/" tools/validar-pacientes-fase23.mjs
+
+      - name: Separar pacientes, historial y búsqueda
+        run: node tools/modularizar-pacientes-fase23.mjs index.html
+
+      - name: Validar sintaxis, paridad y comportamiento
+        shell: bash
+        run: |
+          node --check tools/modularizar-pacientes-fase23.mjs
+          node --check tools/validar-pacientes-fase23.mjs
+          node --check js/modules/patient-search.js
+          node --check js/modules/patient-records.js
+          node tools/validar-pacientes-fase23.mjs /tmp/fase22-index.html index.html js/modules/patient-search.js js/modules/patient-records.js
+
+      - name: Confirmar módulos anteriores
+        shell: bash
+        run: |
+          find js -type f -name '*.js' -print0 | xargs -0 -n1 node --check
+          node tools/validar-comisiones-fase22.mjs /tmp/fase21-index.html index.html js/modules/commissions.js
+          node tools/validar-operacion-agenda-fase21.mjs /tmp/fase20-index.html index.html js/modules/waitlist.js js/modules/schedule-operations.js js/modules/events-agreements.js
+          node tools/validar-voz-recordatorios-fase20.mjs /tmp/fase19-index.html index.html js/modules/voice-assistant.js js/modules/reminders.js
+
+      - name: Confirmar aislamiento funcional
+        shell: bash
+        run: |
+          git diff --exit-code origin/modularizacion-panel-fase22-comisiones-2026-08-06 -- google-apps-script.js
+          git merge-base --is-ancestor origin/modularizacion-panel-fase22-comisiones-2026-08-06 HEAD
+          bad="$(git diff --name-only origin/modularizacion-panel-fase22-comisiones-2026-08-06 | grep -Ev '^(index\.html|js/modules/patient-search\.js|js/modules/patient-records\.js|tools/modularizar-pacientes-fase23\.mjs|tools/validar-pacientes-fase23\.mjs|MODULARIZACION_FASE23_PACIENTES_HISTORIAL_BUSQUEDA\.md|MODULARIZACION_FASE23_RESULTADO\.md|\.github/workflows/modularizacion-fase23-pacientes\.yml)$' || true)"
+          if [ -n "$bad" ]; then
+            echo "Archivos fuera del alcance:"
+            echo "$bad"
+            exit 1
+          fi
+
+      - name: Generar informe final
+        shell: bash
+        run: |
+          cat > MODULARIZACION_FASE23_RESULTADO.md <<'EOF'
+          # Resultado Fase 23 — Pacientes, historial y búsqueda
+
+          - Módulo `js/modules/patient-search.js` creado.
+          - Módulo `js/modules/patient-records.js` creado.
+          - 2 funciones de búsqueda trasladadas.
+          - 13 funciones de pacientes e historial trasladadas.
+          - `_pacs` encapsulado.
+          - `_normStr`, `fillPatient`, Agenda y Base de datos conservados en sus ubicaciones compartidas.
+          - Acciones existentes `editPatient` y `deletePatient` conservadas sin agregar acciones nuevas.
+          - Historial local limitado a 150 movimientos y exportación CSV conservados.
+          - Módulos de las Fases 1 a 22 conservados.
+          - `main`, Apps Script y producción no modificados.
+          EOF
+
+      - name: Guardar resultado solo en la rama aislada
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html js/modules/patient-search.js js/modules/patient-records.js tools/validar-pacientes-fase23.mjs MODULARIZACION_FASE23_RESULTADO.md
+          if git diff --cached --quiet; then
+            echo "No hay cambios funcionales nuevos para guardar."
+            exit 0
+          fi
+          git commit -m "Separar y validar Pacientes, historial y búsqueda"
+          git pull --rebase origin modularizacion-panel-fase23-pacientes-historial-busqueda-2026-08-06
+          git push origin HEAD:modularizacion-panel-fase23-pacientes-historial-busqueda-2026-08-06
