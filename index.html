@@ -7292,42 +7292,44 @@ function goAgendaPatient(...args) {
 }
 
 // ── LISTA DE ESPERA (sincronizada con Google Sheets; fallback local) ──
-function _getWaitList() {
-  try { return JSON.parse(localStorage.getItem('adminWaitList') || '[]'); }
-  catch(e) { return []; }
+function _getWaitList(...args) {
+  const module = window.PanelWaitlist;
+  if (!module || typeof module._getWaitList !== 'function') {
+    throw new Error('El módulo Lista de espera no está disponible: _getWaitList');
+  }
+  return module._getWaitList(...args);
 }
-function _saveWaitList(list) { localStorage.setItem('adminWaitList', JSON.stringify(list)); }
-let _waitLoaded = false;
-
-async function _syncWaitList() {
-  try {
-    const d = await fetch(`${APPS_SCRIPT_URL}?action=getWaitlist&token=${encodeURIComponent(TOKEN)}`).then(r=>r.json());
-    if (d.ok) { _saveWaitList(d.items || []); _waitLoaded = true; return true; }
-  } catch(e) {}
-  return false;
-}
-
-async function addWaitPatient() {
-  const nombre = document.getElementById('waitNombre').value.trim();
-  const telefono = document.getElementById('waitTelefono').value.trim();
-  const servicio = document.getElementById('waitServicio').value.trim();
-  const preferencia = document.getElementById('waitPreferencia').value.trim();
-  if (!nombre || !telefono) { toast('Nombre y teléfono son obligatorios','err'); return; }
-  const item = {id:'w'+Date.now(),nombre,telefono,servicio,preferencia,creado:new Date().toISOString()};
-  try {
-    const d = await fetch(`${APPS_SCRIPT_URL}?action=addWaitlist&token=${encodeURIComponent(TOKEN)}&data=${encodeURIComponent(JSON.stringify(item))}`).then(r=>r.json());
-    if (!d.ok) throw new Error(d.error||'No se pudo sincronizar');
-    item.id = d.id || item.id;
-  } catch(e) { toast('Guardado localmente; se sincronizará cuando actualices el servidor','warn'); }
-  const list = _getWaitList(); list.unshift(item); _saveWaitList(list); _waitLoaded = true;
-  ['waitNombre','waitTelefono','waitServicio','waitPreferencia'].forEach(id => document.getElementById(id).value='');
-  renderWaitList(); toast('Paciente agregado a la lista de espera');
+function _saveWaitList(...args) {
+  const module = window.PanelWaitlist;
+  if (!module || typeof module._saveWaitList !== 'function') {
+    throw new Error('El módulo Lista de espera no está disponible: _saveWaitList');
+  }
+  return module._saveWaitList(...args);
 }
 
-async function removeWaitPatient(id) {
-  try { await fetch(`${APPS_SCRIPT_URL}?action=removeWaitlist&token=${encodeURIComponent(TOKEN)}&id=${encodeURIComponent(id)}`).then(r=>r.json()); } catch(e) {}
-  _saveWaitList(_getWaitList().filter(p => p.id !== id));
-  renderWaitList(); toast('Paciente retirado de la lista');
+
+async function _syncWaitList(...args) {
+  const module = window.PanelWaitlist;
+  if (!module || typeof module._syncWaitList !== 'function') {
+    throw new Error('El módulo Lista de espera no está disponible: _syncWaitList');
+  }
+  return await module._syncWaitList(...args);
+}
+
+async function addWaitPatient(...args) {
+  const module = window.PanelWaitlist;
+  if (!module || typeof module.addWaitPatient !== 'function') {
+    throw new Error('El módulo Lista de espera no está disponible: addWaitPatient');
+  }
+  return await module.addWaitPatient(...args);
+}
+
+async function removeWaitPatient(...args) {
+  const module = window.PanelWaitlist;
+  if (!module || typeof module.removeWaitPatient !== 'function') {
+    throw new Error('El módulo Lista de espera no está disponible: removeWaitPatient');
+  }
+  return await module.removeWaitPatient(...args);
 }
 
 function bookWaitPatient(...args) {
@@ -7338,20 +7340,12 @@ function bookWaitPatient(...args) {
   return module.bookWaitPatient(...args);
 }
 
-async function renderWaitList(force=false) {
-  const el = document.getElementById('waitList'); if (!el) return;
-  if (!_waitLoaded || force) await _syncWaitList();
-  const q = _normStr(document.getElementById('waitSearch')?.value || '');
-  const all = _getWaitList();
-  const list = all.filter(p => !q || _normStr(`${p.nombre} ${p.servicio} ${p.preferencia}`).includes(q));
-  document.getElementById('waitCount').textContent = all.length;
-  if (!list.length) { el.innerHTML = '<div class="empty-compact">No hay pacientes en espera. Agrega el primero cuando alguien solicite un horario ocupado.</div>'; return; }
-  el.innerHTML = list.map(p => {
-    const phone = String(p.telefono||'').replace(/\D/g,'');
-    const wa = `https://wa.me/57${phone.replace(/^57/,'')}?text=${encodeURIComponent(`Hola ${p.nombre}, se liberó un horario en nuestra agenda. ¿Te gustaría tomarlo?`)}`;
-    const fecha = new Date(p.creado).toLocaleDateString('es-CO',{day:'numeric',month:'short'});
-    return `<div class="wait-card"><div class="wait-avatar">${esc((p.nombre||'?').charAt(0).toUpperCase())}</div><div class="wait-info"><div class="wait-name">${esc(p.nombre)}</div><div class="wait-meta">${esc(p.servicio||'Cualquier servicio')} · ${esc(p.preferencia||'Sin preferencia')} · desde ${fecha}</div></div><div class="ops-actions"><a class="btn btn-wa btn-sm" href="${wa}" target="_blank" rel="noopener">WhatsApp</a><button class="btn btn-teal btn-sm" onclick="bookWaitPatient('${p.id}')">Agendar</button><button class="btn btn-err btn-sm" onclick="removeWaitPatient('${p.id}')" aria-label="Retirar a ${esc(p.nombre)}">Retirar</button></div></div>`;
-  }).join('');
+async function renderWaitList(...args) {
+  const module = window.PanelWaitlist;
+  if (!module || typeof module.renderWaitList !== 'function') {
+    throw new Error('El módulo Lista de espera no está disponible: renderWaitList');
+  }
+  return await module.renderWaitList(...args);
 }
 
 // ── CENTRO DE AUTOMATIZACIONES ──
@@ -7741,8 +7735,12 @@ function getAbonoNota() {
 }
 
 // ── CITAS RECURRENTES ──
-function toggleRecurringPanel() {
-  // Mantenida por compatibilidad — el nuevo sistema usa switchScheduleMode
+function toggleRecurringPanel(...args) {
+  const module = window.PanelScheduleOperations;
+  if (!module || typeof module.toggleRecurringPanel !== 'function') {
+    throw new Error('El módulo Operación de agenda no está disponible: toggleRecurringPanel');
+  }
+  return module.toggleRecurringPanel(...args);
 }
 
 // ══════════════════════════════════════════════════
@@ -7752,68 +7750,44 @@ let _scheduleMode    = 'unica';   // 'unica' | 'multiple' | 'recurrente'
 let _multiDates      = [];        // [{date, time}, ...]
 let _selectedServices = [];       // ['Descarga Muscular — Cuello y Espalda', 'Readaptación Funcional', ...]
 
-function switchScheduleMode(mode) {
-  _scheduleMode = mode;
-  ['unica','multiple','recurrente'].forEach(m => {
-    const tab   = document.getElementById('schedTab-' + m);
-    const panel = document.getElementById('schedPanel-' + m);
-    if (tab)   tab.classList.toggle('active', m === mode);
-    if (panel) panel.style.display = m === mode ? '' : 'none';
-  });
-  _updateSubmitLabel();
-}
-
-function _updateSubmitLabel() {
-  const lbl  = document.getElementById('ncSubmitLabel');
-  const hint = document.getElementById('ncSubmitHint');
-  if (_scheduleMode === 'unica') {
-    lbl.textContent  = 'Crear cita';
-    hint.textContent = '';
-  } else if (_scheduleMode === 'multiple') {
-    const n = _multiDates.length;
-    lbl.textContent  = n > 0 ? `Crear ${n} cita${n>1?'s':''}` : 'Crear citas';
-    hint.textContent = n > 0 ? `Se crearán ${n} cita${n>1?'s':''}` : 'Agrega fechas arriba';
-  } else {
-    const n = parseInt(document.getElementById('recCantidad')?.value) || 0;
-    lbl.textContent  = n > 0 ? `Crear ${n} cita${n>1?'s':''}` : 'Crear citas';
-    hint.textContent = n > 0 ? `Se crearán ${n} citas recurrentes` : '';
+function switchScheduleMode(...args) {
+  const module = window.PanelScheduleOperations;
+  if (!module || typeof module.switchScheduleMode !== 'function') {
+    throw new Error('El módulo Operación de agenda no está disponible: switchScheduleMode');
   }
+  return module.switchScheduleMode(...args);
 }
 
-function isMidnightTime(time) {
-  return /^00:[0-5]\d$/.test(String(time || '').trim());
-}
-
-function timeHumanLabel(time) {
-  const t = String(time || '').trim();
-  if (!t) return '';
-  if (t === '12:00') return '12:00 del mediodía';
-  if (isMidnightTime(t)) return `${t} de medianoche`;
-  const [hh, mm] = t.split(':').map(Number);
-  if (Number.isNaN(hh) || Number.isNaN(mm)) return t;
-  if (hh < 12) return `${t} de la mañana`;
-  if (hh === 12) return `${t} del mediodía`;
-  return `${t} de la tarde`;
-}
-
-function updateTimeHelp(inputId, helpId) {
-  const input = document.getElementById(inputId);
-  const help  = document.getElementById(helpId);
-  if (!input || !help) return true;
-  const time = input.value;
-  help.classList.remove('ok','warn');
-  if (!time) {
-    help.innerHTML = 'Tip: 12 del mediodía es <strong>12:00</strong>. La franja <strong>00:00–00:59</strong> es medianoche y no se guardará.';
-    return true;
+function _updateSubmitLabel(...args) {
+  const module = window.PanelScheduleOperations;
+  if (!module || typeof module._updateSubmitLabel !== 'function') {
+    throw new Error('El módulo Operación de agenda no está disponible: _updateSubmitLabel');
   }
-  if (isMidnightTime(time)) {
-    help.classList.add('warn');
-    help.innerHTML = '⚠️ <strong>Esta hora es medianoche.</strong> Si quieres 12 del mediodía, cambia la hora a <strong>12:00</strong>.';
-    return false;
+  return module._updateSubmitLabel(...args);
+}
+
+function isMidnightTime(...args) {
+  const module = window.PanelScheduleOperations;
+  if (!module || typeof module.isMidnightTime !== 'function') {
+    throw new Error('El módulo Operación de agenda no está disponible: isMidnightTime');
   }
-  help.classList.add('ok');
-  help.innerHTML = `Hora seleccionada: <strong>${timeHumanLabel(time)}</strong>.`;
-  return true;
+  return module.isMidnightTime(...args);
+}
+
+function timeHumanLabel(...args) {
+  const module = window.PanelScheduleOperations;
+  if (!module || typeof module.timeHumanLabel !== 'function') {
+    throw new Error('El módulo Operación de agenda no está disponible: timeHumanLabel');
+  }
+  return module.timeHumanLabel(...args);
+}
+
+function updateTimeHelp(...args) {
+  const module = window.PanelScheduleOperations;
+  if (!module || typeof module.updateTimeHelp !== 'function') {
+    throw new Error('El módulo Operación de agenda no está disponible: updateTimeHelp');
+  }
+  return module.updateTimeHelp(...args);
 }
 
 function validateNoMidnight(...args) {
@@ -7824,119 +7798,67 @@ function validateNoMidnight(...args) {
   return module.validateNoMidnight(...args);
 }
 
-function adminScheduleRanges(date) {
-  if (!date) return [];
-  const [y, m, d] = date.split('-').map(Number);
-  const day = new Date(y, m - 1, d).getDay();
-  return {
-    0: [],
-    1: [['08:00','16:30']],
-    2: [['08:00','17:00']],
-    3: [['08:00','17:00']],
-    4: [['08:00','20:00']],
-    5: [['08:00','20:00']],
-    6: [['07:00','09:30'], ['14:00','18:00']]
-  }[day] || [];
-}
-
-function adminTimeToMinutes(time) {
-  const [h, m] = String(time || '').split(':').map(Number);
-  if (Number.isNaN(h) || Number.isNaN(m)) return null;
-  return h * 60 + m;
-}
-
-function validateBusinessSchedule(date, time, service, modality, contexto='guardar la cita') {
-  if (!validateNoMidnight(time, contexto)) return false;
-  const start = adminTimeToMinutes(time);
-  if (start === null) return true;
-  const duration = _getServiceDurationJS(service) + (modality === 'Domicilio' ? 30 : 0);
-  const end = start + duration;
-  const fits = adminScheduleRanges(date).some(([from, to]) => {
-    return start >= adminTimeToMinutes(from) && end <= adminTimeToMinutes(to);
-  });
-  if (fits) return true;
-  toast('Horario fuera de la jornada habitual. Se guardará como cita manual especial.', 'warn');
-  return true;
-}
-function _addMultiDate() {
-  const date = document.getElementById('multiDate').value;
-  const time = document.getElementById('multiTime').value;
-  if (!date) { toast('Selecciona una fecha', 'err'); return; }
-  if (!time) { toast('Selecciona una hora', 'err'); return; }
-  if (!validateNoMidnight(time, 'agendar')) { updateTimeHelp('multiTime','multiTimeHelp'); return; }
-  if (_multiDates.find(d => d.date === date && d.time === time)) {
-    toast('Esa fecha y hora ya está en la lista', 'warn'); return;
+function adminScheduleRanges(...args) {
+  const module = window.PanelScheduleOperations;
+  if (!module || typeof module.adminScheduleRanges !== 'function') {
+    throw new Error('El módulo Operación de agenda no está disponible: adminScheduleRanges');
   }
-  _multiDates.push({ date, time });
-  _multiDates.sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
-  _renderMultiChips();
-  _updateSubmitLabel();
+  return module.adminScheduleRanges(...args);
 }
 
-function _removeMultiDate(idx) {
-  _multiDates.splice(idx, 1);
-  _renderMultiChips();
-  _updateSubmitLabel();
-}
-
-function _renderMultiChips() {
-  const DIAS = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
-  const wrap  = document.getElementById('multiDateChips');
-  const count = document.getElementById('multiDateCount');
-  if (!wrap) return;
-  wrap.innerHTML = _multiDates.map((d, i) => {
-    const wd   = DIAS[new Date(d.date + 'T12:00:00').getDay()];
-    const [y,m,day] = d.date.split('-');
-    return `<span class="multi-date-chip">
-      ${wd} ${day}/${m}/${y} ${d.time}
-      <button type="button" onclick="_removeMultiDate(${i})" title="Quitar">×</button>
-    </span>`;
-  }).join('');
-  count.textContent = _multiDates.length > 0
-    ? `${_multiDates.length} fecha${_multiDates.length > 1 ? 's' : ''} seleccionada${_multiDates.length > 1 ? 's' : ''}`
-    : '';
-}
-
-function _calcRecDates() {
-  const start  = document.getElementById('recFechaInicio')?.value;
-  const time   = document.getElementById('recHora')?.value;
-  const days   = parseInt(document.getElementById('recFrecuencia')?.value) || 7;
-  const qty    = Math.min(parseInt(document.getElementById('recCantidad')?.value) || 4, 52);
-  if (isMidnightTime(time)) return [];
-  if (!start || !time || qty < 1) return [];
-  const dates = [];
-  const cur   = new Date(start + 'T12:00:00');
-  for (let i = 0; i < qty; i++) {
-    dates.push({ date: cur.toLocalDateStr(), time });
-    cur.setDate(cur.getDate() + days);
+function adminTimeToMinutes(...args) {
+  const module = window.PanelScheduleOperations;
+  if (!module || typeof module.adminTimeToMinutes !== 'function') {
+    throw new Error('El módulo Operación de agenda no está disponible: adminTimeToMinutes');
   }
-  return dates;
+  return module.adminTimeToMinutes(...args);
 }
 
-function _updateRecPreview() {
-  _updateSubmitLabel();
-  const dates  = _calcRecDates();
-  const wrap   = document.getElementById('recPreview');
-  if (!wrap) return;
-  if (!dates.length) { wrap.innerHTML = ''; return; }
+function validateBusinessSchedule(...args) {
+  const module = window.PanelScheduleOperations;
+  if (!module || typeof module.validateBusinessSchedule !== 'function') {
+    throw new Error('El módulo Operación de agenda no está disponible: validateBusinessSchedule');
+  }
+  return module.validateBusinessSchedule(...args);
+}
+function _addMultiDate(...args) {
+  const module = window.PanelScheduleOperations;
+  if (!module || typeof module._addMultiDate !== 'function') {
+    throw new Error('El módulo Operación de agenda no está disponible: _addMultiDate');
+  }
+  return module._addMultiDate(...args);
+}
 
-  const DIAS = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
-  const MESES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
-  wrap.innerHTML = `
-    <div style="font-size:.72rem;color:var(--muted);font-family:var(--font-m);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">
-      Vista previa — ${dates.length} sesiones
-    </div>
-    <div style="display:flex;flex-direction:column;gap:4px;max-height:160px;overflow-y:auto">
-      ${dates.map((d, i) => {
-        const dt  = new Date(d.date + 'T12:00:00');
-        const dia = DIAS[dt.getDay()];
-        const mes = MESES[dt.getMonth()];
-        return `<div class="rec-preview-item">
-          <span>${i === 0 ? '▶ ' : ''}${dia} ${dt.getDate()} ${mes} ${dt.getFullYear()}</span>
-          <span style="font-family:var(--font-m);color:var(--muted)">${d.time}${i===0?' (inicio)':''}</span>
-        </div>`;
-      }).join('')}
-    </div>`;
+function _removeMultiDate(...args) {
+  const module = window.PanelScheduleOperations;
+  if (!module || typeof module._removeMultiDate !== 'function') {
+    throw new Error('El módulo Operación de agenda no está disponible: _removeMultiDate');
+  }
+  return module._removeMultiDate(...args);
+}
+
+function _renderMultiChips(...args) {
+  const module = window.PanelScheduleOperations;
+  if (!module || typeof module._renderMultiChips !== 'function') {
+    throw new Error('El módulo Operación de agenda no está disponible: _renderMultiChips');
+  }
+  return module._renderMultiChips(...args);
+}
+
+function _calcRecDates(...args) {
+  const module = window.PanelScheduleOperations;
+  if (!module || typeof module._calcRecDates !== 'function') {
+    throw new Error('El módulo Operación de agenda no está disponible: _calcRecDates');
+  }
+  return module._calcRecDates(...args);
+}
+
+function _updateRecPreview(...args) {
+  const module = window.PanelScheduleOperations;
+  if (!module || typeof module._updateRecPreview !== 'function') {
+    throw new Error('El módulo Operación de agenda no está disponible: _updateRecPreview');
+  }
+  return module._updateRecPreview(...args);
 }
 
 async function submitAdminBookingMulti(...args) {
@@ -8890,52 +8812,28 @@ function seguimientoWA(tel, nombre, servicio, notaAdmin) {
 }
 
 // ── BLOQUEAR ──
-function renderBloqueos() {
-  const bl = document.getElementById('blockList');
-  if (!allData.bloqueos.length) {
-    bl.innerHTML = '<div class="empty"><p>No hay bloqueos activos</p></div>';
-    return;
+function renderBloqueos(...args) {
+  const module = window.PanelScheduleOperations;
+  if (!module || typeof module.renderBloqueos !== 'function') {
+    throw new Error('El módulo Operación de agenda no está disponible: renderBloqueos');
   }
-  bl.innerHTML = allData.bloqueos.map((b) => `
-    <div class="block-item">
-      <div class="block-info">
-        <div class="block-date">${fmtDate(b.fecha)} · ${b.inicio} — ${b.fin}</div>
-        <div class="block-reason">${esc(b.motivo||'Sin motivo')}</div>
-      </div>
-      <button class="btn btn-err btn-sm" onclick="doUnblock('${b.bid||''}','${b.fecha}','${b.inicio}')">Eliminar</button>
-    </div>`).join('');
+  return module.renderBloqueos(...args);
 }
 
-async function doBlock() {
-  const date  = document.getElementById('blDate').value;
-  const start = document.getElementById('blStart').value;
-  const end   = document.getElementById('blEnd').value;
-  const reason= document.getElementById('blReason').value;
-  if (!date||!start||!end) { toast('Completa fecha, hora inicio y fin','err'); return; }
-  if (start >= end) { toast('La hora de fin debe ser mayor al inicio','err'); return; }
-  try {
-    const r = await fetch(`${APPS_SCRIPT_URL}?action=block&token=${encodeURIComponent(TOKEN)}&date=${date}&startTime=${start}&endTime=${end}&reason=${encodeURIComponent(reason||'Bloqueado')}`);
-    const d = await r.json();
-    if (d.ok) {
-      allData.bloqueos.push({bid: d.bid||'', fecha:date, inicio:start, fin:end, motivo:reason||'Bloqueado'});
-      toast('Horario bloqueado correctamente');
-      renderBloqueos();
-      document.getElementById('blDate').value = '';
-      document.getElementById('blReason').value = '';
-    } else toast('Error al bloquear', 'err');
-  } catch(e) { toast('Error de conexión','err'); }
+async function doBlock(...args) {
+  const module = window.PanelScheduleOperations;
+  if (!module || typeof module.doBlock !== 'function') {
+    throw new Error('El módulo Operación de agenda no está disponible: doBlock');
+  }
+  return await module.doBlock(...args);
 }
 
-async function doUnblock(bid, date, startTime) {
-  try {
-    const r = await fetch(`${APPS_SCRIPT_URL}?action=unblock&token=${encodeURIComponent(TOKEN)}&bid=${encodeURIComponent(bid)}&date=${date}&startTime=${startTime}`);
-    const d = await r.json();
-    if (d.ok) {
-      allData.bloqueos = allData.bloqueos.filter(b => bid ? b.bid !== bid : !(b.fecha===date && b.inicio===startTime));
-      toast('Bloqueo eliminado');
-      renderBloqueos();
-    } else toast('Error al eliminar: ' + (d.error||''), 'err');
-  } catch(e) { toast('Error de conexión','err'); }
+async function doUnblock(...args) {
+  const module = window.PanelScheduleOperations;
+  if (!module || typeof module.doUnblock !== 'function') {
+    throw new Error('El módulo Operación de agenda no está disponible: doUnblock');
+  }
+  return await module.doUnblock(...args);
 }
 
 // ── NUEVA CITA (ADMIN) ──
@@ -9215,22 +9113,12 @@ function fmtPeso(n) {
   return '$' + Math.round(n).toLocaleString('es-CO');
 }
 
-function onConvenioChange() {
-  const gym   = document.getElementById('ncConvenio').value;
-  const panel = document.getElementById('ncConvenioPanel');
-  const resumen = document.getElementById('ncConvenioResumen');
-  if (!gym) {
-    panel.style.display   = 'none';
-    resumen.style.display = 'none';
-    return;
+function onConvenioChange(...args) {
+  const module = window.PanelEventsAgreements;
+  if (!module || typeof module.onConvenioChange !== 'function') {
+    throw new Error('El módulo Eventos y convenios no está disponible: onConvenioChange');
   }
-  panel.style.display = 'block';
-  const cfg = convenios[gym] || { descTipo:'pct', descValor:0, comTipo:'pct', comValor:0 };
-  document.getElementById('ncConvDescValor').value = cfg.descValor || '';
-  document.getElementById('ncConvDescTipo').value  = cfg.descTipo  || 'pct';
-  document.getElementById('ncConvComValor').value  = cfg.comValor  || '';
-  document.getElementById('ncConvComTipo').value   = cfg.comTipo   || 'pct';
-  calcConvenio();
+  return module.onConvenioChange(...args);
 }
 
 function calcConvenio(...args) {
@@ -9242,64 +9130,12 @@ function calcConvenio(...args) {
 }
 
 // ── REPORTE CONVENIOS (Finanzas) ──
-function renderConveniosReport() {
-  const filtroMes = document.getElementById('convenioMesFiltro').value; // 'YYYY-MM' o vacío
-  const el = document.getElementById('conveniosReportResult');
-  if (!el) return;
-
-  const citas = (allData.citas || []).filter(c => {
-    if (!c.gimnasio) return false;
-    if (filtroMes && !normDate(c.fecha).startsWith(filtroMes)) return false;
-    return true;
-  });
-
-  if (!citas.length) {
-    el.innerHTML = '<p style="font-size:.85rem;color:var(--muted);text-align:center;padding:20px 0">No hay citas con convenio' + (filtroMes ? ' en este mes' : '') + '.</p>';
-    return;
+function renderConveniosReport(...args) {
+  const module = window.PanelEventsAgreements;
+  if (!module || typeof module.renderConveniosReport !== 'function') {
+    throw new Error('El módulo Eventos y convenios no está disponible: renderConveniosReport');
   }
-
-  const porGym = {};
-  citas.forEach(c => {
-    const g = c.gimnasio;
-    if (!porGym[g]) porGym[g] = { citas:0, facturado:0, comisiones:0 };
-    porGym[g].citas++;
-    porGym[g].facturado   += parsePrecioNum(c.ingresoReal || c.priceP || '0') || 0;
-    porGym[g].comisiones  += parsePrecioNum(c.comisionGym || '0') || 0;
-  });
-
-  let html = '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:.84rem">' +
-    '<thead><tr style="border-bottom:2px solid var(--border)">' +
-    '<th style="text-align:left;padding:8px 10px;color:var(--muted);font-weight:600">Gimnasio</th>' +
-    '<th style="text-align:right;padding:8px 10px;color:var(--muted);font-weight:600">Citas</th>' +
-    '<th style="text-align:right;padding:8px 10px;color:var(--muted);font-weight:600">Facturado</th>' +
-    '<th style="text-align:right;padding:8px 10px;color:var(--muted);font-weight:600">Comisión a pagar</th>' +
-    '<th style="text-align:right;padding:8px 10px;color:var(--muted);font-weight:600">Ingreso neto</th>' +
-    '</tr></thead><tbody>';
-
-  let totCitas = 0, totFact = 0, totCom = 0;
-  Object.entries(porGym).forEach(([gym, d]) => {
-    const neto = d.facturado - d.comisiones;
-    totCitas += d.citas; totFact += d.facturado; totCom += d.comisiones;
-    html += `<tr style="border-bottom:1px solid var(--border)">
-      <td style="padding:9px 10px;font-weight:600">${gym}</td>
-      <td style="padding:9px 10px;text-align:right">${d.citas}</td>
-      <td style="padding:9px 10px;text-align:right">${fmtPeso(d.facturado)}</td>
-      <td style="padding:9px 10px;text-align:right;color:#d97706;font-weight:600">${fmtPeso(d.comisiones)}</td>
-      <td style="padding:9px 10px;text-align:right;color:var(--primary);font-weight:600">${fmtPeso(neto)}</td>
-    </tr>`;
-  });
-
-  const netoTotal = totFact - totCom;
-  html += `<tr style="border-top:2px solid var(--border);font-weight:700">
-    <td style="padding:9px 10px">TOTAL</td>
-    <td style="padding:9px 10px;text-align:right">${totCitas}</td>
-    <td style="padding:9px 10px;text-align:right">${fmtPeso(totFact)}</td>
-    <td style="padding:9px 10px;text-align:right;color:#d97706">${fmtPeso(totCom)}</td>
-    <td style="padding:9px 10px;text-align:right;color:var(--primary)">${fmtPeso(netoTotal)}</td>
-  </tr>`;
-
-  html += '</tbody></table></div>';
-  el.innerHTML = html;
+  return module.renderConveniosReport(...args);
 }
 
 const _precios = {
@@ -9342,208 +9178,105 @@ function autoFillPrice(...args) {
 // ══════════════════════════════════════
 // EVENTOS (Google Sheets via Apps Script)
 // ══════════════════════════════════════
-function switchNuevaMode(mode) {
-  const isEvento = mode === 'evento';
-  document.getElementById('formCita').style.display   = isEvento ? 'none' : 'block';
-  document.getElementById('formEvento').style.display = isEvento ? 'block' : 'none';
-  document.getElementById('toggleCita').classList.toggle('active', !isEvento);
-  document.getElementById('toggleEvento').classList.toggle('active', isEvento);
+function switchNuevaMode(...args) {
+  const module = window.PanelEventsAgreements;
+  if (!module || typeof module.switchNuevaMode !== 'function') {
+    throw new Error('El módulo Eventos y convenios no está disponible: switchNuevaMode');
+  }
+  return module.switchNuevaMode(...args);
 }
 
-function calcDuracion() {
-  const hi = document.getElementById('evHoraInicio').value;
-  const hf = document.getElementById('evHoraFin').value;
-  const lbl = document.getElementById('evDuracionLabel');
-  if (!hi || !hf) { lbl.style.display='none'; return; }
-  const [hh,mm] = hi.split(':').map(Number);
-  const [hh2,mm2] = hf.split(':').map(Number);
-  const mins = (hh2*60+mm2) - (hh*60+mm);
-  if (mins <= 0) { lbl.style.display='none'; return; }
-  const h = Math.floor(mins/60), m = mins%60;
-  lbl.textContent = '⏱ ' + (h ? h + 'h ' : '') + (m ? m + 'min' : '');
-  lbl.style.display = 'block';
+function calcDuracion(...args) {
+  const module = window.PanelEventsAgreements;
+  if (!module || typeof module.calcDuracion !== 'function') {
+    throw new Error('El módulo Eventos y convenios no está disponible: calcDuracion');
+  }
+  return module.calcDuracion(...args);
 }
 
-function getDuracionStr(hi, hf) {
-  const [hh,mm]   = hi.split(':').map(Number);
-  const [hh2,mm2] = hf.split(':').map(Number);
-  const mins = (hh2*60+mm2) - (hh*60+mm);
-  if (mins <= 0) return '';
-  const h = Math.floor(mins/60), m = mins%60;
-  return (h ? h+'h ' : '') + (m ? m+'min' : '');
+function getDuracionStr(...args) {
+  const module = window.PanelEventsAgreements;
+  if (!module || typeof module.getDuracionStr !== 'function') {
+    throw new Error('El módulo Eventos y convenios no está disponible: getDuracionStr');
+  }
+  return module.getDuracionStr(...args);
 }
 
-async function submitEvento() {
-  const titulo = document.getElementById('evTitulo').value.trim();
-  const fecha  = document.getElementById('evFecha').value;
-  const hi     = document.getElementById('evHoraInicio').value;
-  const hf     = document.getElementById('evHoraFin').value;
-  if (!titulo || !fecha || !hi || !hf) { toast('Completa los campos obligatorios (*)', 'err'); return; }
-
-  const btn = document.querySelector('#formEvento .btn-teal');
-  btn.textContent = 'Guardando...'; btn.disabled = true;
-
-  const data = {
-    titulo,
-    tipo:       document.getElementById('evTipo').value,
-    fecha,
-    horaInicio: hi,
-    horaFin:    hf,
-    duracion:   getDuracionStr(hi, hf),
-    cobro:      document.getElementById('evCobro').value.trim() || 'Sin cobro',
-    notas:      document.getElementById('evNotas').value.trim()
-  };
-
-  try {
-    const r = await fetch(`${APPS_SCRIPT_URL}?action=crearEvento&token=${encodeURIComponent(TOKEN)}&data=${encodeURIComponent(JSON.stringify(data))}`);
-    const d = await r.json();
-    if (!d.ok) { toast('Error: ' + (d.error||''), 'err'); return; }
-    toast('Evento creado ✓');
-    clearEvento();
-    await reload();
-    // Limpiar filtros para que el evento sea visible (eventos se ocultan si hay filtros activos)
-    document.getElementById('fSearch').value = '';
-    document.getElementById('fDesde').value  = '';
-    document.getElementById('fHasta').value  = '';
-    document.getElementById('fStatus').selectedIndex  = 0;
-    document.getElementById('fMod').selectedIndex     = 0;
-    document.getElementById('fService').selectedIndex = 0;
-    sessionStorage.removeItem('agendaFilters');
-    showView('agenda');
-  } catch(e) { toast('Error de conexión', 'err'); }
-  finally { btn.textContent = 'Crear evento'; btn.disabled = false; }
+async function submitEvento(...args) {
+  const module = window.PanelEventsAgreements;
+  if (!module || typeof module.submitEvento !== 'function') {
+    throw new Error('El módulo Eventos y convenios no está disponible: submitEvento');
+  }
+  return await module.submitEvento(...args);
 }
 
-function clearEvento() {
-  ['evTitulo','evFecha','evHoraInicio','evHoraFin','evCobro','evNotas'].forEach(id => {
-    const el = document.getElementById(id); if(el) el.value='';
-  });
-  document.getElementById('evTipo').selectedIndex = 0;
-  document.getElementById('evDuracionLabel').style.display = 'none';
+function clearEvento(...args) {
+  const module = window.PanelEventsAgreements;
+  if (!module || typeof module.clearEvento !== 'function') {
+    throw new Error('El módulo Eventos y convenios no está disponible: clearEvento');
+  }
+  return module.clearEvento(...args);
 }
 
-async function eliminarEvento(id) {
-  if (!confirm('¿Eliminar este evento?')) return;
-  try {
-    const r = await fetch(`${APPS_SCRIPT_URL}?action=eliminarEvento&token=${encodeURIComponent(TOKEN)}&id=${encodeURIComponent(id)}`);
-    const d = await r.json();
-    if (!d.ok) { toast('Error al eliminar', 'err'); return; }
-    toast('Evento eliminado');
-    await reload();
-    renderAgenda();
-  } catch(e) { toast('Error de conexión', 'err'); }
+async function eliminarEvento(...args) {
+  const module = window.PanelEventsAgreements;
+  if (!module || typeof module.eliminarEvento !== 'function') {
+    throw new Error('El módulo Eventos y convenios no está disponible: eliminarEvento');
+  }
+  return await module.eliminarEvento(...args);
 }
 
 // ── EDITAR EVENTO (modal) ──
-let _eeeId = null; // ID del evento en edición
+ // ID del evento en edición
 
 // Normaliza cualquier string de hora a "HH:MM" (formato que acepta input[type=time])
-function normHHMM(t) {
-  if (!t) return '';
-  const m = String(t).match(/(\d{1,2}):(\d{2})/);
-  if (!m) return '';
-  return m[1].padStart(2,'0') + ':' + m[2];
+function normHHMM(...args) {
+  const module = window.PanelEventsAgreements;
+  if (!module || typeof module.normHHMM !== 'function') {
+    throw new Error('El módulo Eventos y convenios no está disponible: normHHMM');
+  }
+  return module.normHHMM(...args);
 }
 
 // Cierra el modal de edición (abre con style.display, no con clase .open)
-function cerrarModalEditarEvento() {
-  document.getElementById('modalEditarEvento').style.display = 'none';
+function cerrarModalEditarEvento(...args) {
+  const module = window.PanelEventsAgreements;
+  if (!module || typeof module.cerrarModalEditarEvento !== 'function') {
+    throw new Error('El módulo Eventos y convenios no está disponible: cerrarModalEditarEvento');
+  }
+  return module.cerrarModalEditarEvento(...args);
 }
 
-function abrirEditarEvento(id) {
-  const ev = (allData.eventos || []).find(e => e.id === id);
-  if (!ev) { toast('Evento no encontrado', 'err'); return; }
-  _eeeId = id;
-  document.getElementById('eeeTitulo').value = ev.titulo || '';
-  document.getElementById('eeeFecha').value  = normDate(ev.fecha) || '';
-  // Normalizar cobro: guardar siempre como número limpio para consistencia visual
-  const cobroNum = parsePrecio(ev.cobro);
-  document.getElementById('eeeCobro').value  = cobroNum > 0 ? cobroNum.toLocaleString('es-CO') : '';
-  document.getElementById('eeeNotas').value  = ev.notas || '';
-  // Tipo
-  const sel = document.getElementById('eeeTipo');
-  const opt = [...sel.options].find(o => o.value === ev.tipo);
-  sel.value = opt ? ev.tipo : 'Evento externo';
-  // Mostrar modal primero; luego en doble rAF asignar las horas.
-  // Chrome en Windows 12h necesita que el input sea visible Y haya completado
-  // al menos 2 ciclos de render antes de aceptar el valor programático.
-  document.getElementById('modalEditarEvento').style.display = 'flex';
-  requestAnimationFrame(() => requestAnimationFrame(() => {
-    document.getElementById('eeeHoraInicio').value = normHHMM(ev.horaInicio);
-    document.getElementById('eeeHoraFin').value    = normHHMM(ev.horaFin);
-    eeeCalcDuracion();
-  }));
+function abrirEditarEvento(...args) {
+  const module = window.PanelEventsAgreements;
+  if (!module || typeof module.abrirEditarEvento !== 'function') {
+    throw new Error('El módulo Eventos y convenios no está disponible: abrirEditarEvento');
+  }
+  return module.abrirEditarEvento(...args);
 }
 
-function eeeCalcDuracion() {
-  const hi = document.getElementById('eeeHoraInicio').value;
-  const hf = document.getElementById('eeeHoraFin').value;
-  const lbl = document.getElementById('eeeDuracionLabel');
-  if (!hi || !hf) { lbl.style.display='none'; return; }
-  const [hh,mm]   = hi.split(':').map(Number);
-  const [hh2,mm2] = hf.split(':').map(Number);
-  const mins = (hh2*60+mm2)-(hh*60+mm);
-  if (mins <= 0) { lbl.style.display='none'; return; }
-  const h = Math.floor(mins/60), m = mins%60;
-  lbl.textContent = '⏱ ' + (h ? h+'h ' : '') + (m ? m+'min' : '');
-  lbl.style.display = 'block';
+function eeeCalcDuracion(...args) {
+  const module = window.PanelEventsAgreements;
+  if (!module || typeof module.eeeCalcDuracion !== 'function') {
+    throw new Error('El módulo Eventos y convenios no está disponible: eeeCalcDuracion');
+  }
+  return module.eeeCalcDuracion(...args);
 }
 
-async function eeeGuardar() {
-  const titulo = document.getElementById('eeeTitulo').value.trim();
-  const fecha  = document.getElementById('eeeFecha').value;
-  const hi     = document.getElementById('eeeHoraInicio').value;
-  const hf     = document.getElementById('eeeHoraFin').value;
-  if (!titulo || !fecha || !hi || !hf) { toast('Completa título, fecha y horas', 'err'); return; }
-
-  const btn = document.getElementById('eeeGuardarBtn');
-  btn.textContent = 'Guardando...'; btn.disabled = true;
-
-  const [hh,mm]   = hi.split(':').map(Number);
-  const [hh2,mm2] = hf.split(':').map(Number);
-  const mins = (hh2*60+mm2)-(hh*60+mm);
-  const dur  = mins > 0 ? (Math.floor(mins/60) ? Math.floor(mins/60)+'h ' : '') + (mins%60 ? mins%60+'min' : '') : '';
-
-  const data = {
-    titulo,
-    tipo:       document.getElementById('eeeTipo').value,
-    fecha,
-    horaInicio: hi,
-    horaFin:    hf,
-    duracion:   dur,
-    cobro:      document.getElementById('eeeCobro').value.trim() || 'Sin cobro',
-    notas:      document.getElementById('eeeNotas').value.trim()
-  };
-
-  try {
-    // Eliminar viejo → crear nuevo con los datos actualizados
-    const rDel = await fetch(`${APPS_SCRIPT_URL}?action=eliminarEvento&token=${encodeURIComponent(TOKEN)}&id=${encodeURIComponent(_eeeId)}`);
-    const dDel = await rDel.json();
-    if (!dDel.ok) { toast('Error al actualizar (eliminar): ' + (dDel.error||''), 'err'); return; }
-
-    const rCre = await fetch(`${APPS_SCRIPT_URL}?action=crearEvento&token=${encodeURIComponent(TOKEN)}&data=${encodeURIComponent(JSON.stringify(data))}`);
-    const dCre = await rCre.json();
-    if (!dCre.ok) { toast('Error al actualizar (crear): ' + (dCre.error||''), 'err'); return; }
-
-    toast('Evento actualizado ✓');
-    cerrarModalEditarEvento();
-    await reload();
-    renderAgenda();
-  } catch(e) { toast('Error de conexión', 'err'); }
-  finally { btn.textContent = 'Guardar cambios'; btn.disabled = false; }
+async function eeeGuardar(...args) {
+  const module = window.PanelEventsAgreements;
+  if (!module || typeof module.eeeGuardar !== 'function') {
+    throw new Error('El módulo Eventos y convenios no está disponible: eeeGuardar');
+  }
+  return await module.eeeGuardar(...args);
 }
 
-async function eeeEliminar() {
-  if (!confirm('¿Eliminar este evento?')) return;
-  try {
-    const r = await fetch(`${APPS_SCRIPT_URL}?action=eliminarEvento&token=${encodeURIComponent(TOKEN)}&id=${encodeURIComponent(_eeeId)}`);
-    const d = await r.json();
-    if (!d.ok) { toast('Error al eliminar', 'err'); return; }
-    toast('Evento eliminado');
-    cerrarModalEditarEvento();
-    await reload();
-    renderAgenda();
-  } catch(e) { toast('Error de conexión', 'err'); }
+async function eeeEliminar(...args) {
+  const module = window.PanelEventsAgreements;
+  if (!module || typeof module.eeeEliminar !== 'function') {
+    throw new Error('El módulo Eventos y convenios no está disponible: eeeEliminar');
+  }
+  return await module.eeeEliminar(...args);
 }
 
 async function submitAdminBooking(...args) {
@@ -13652,6 +13385,9 @@ document.addEventListener('DOMContentLoaded', () => {
 <script src="js/modules/message-library.js"></script>
 <script src="js/modules/voice-assistant.js"></script>
 <script src="js/modules/reminders.js"></script>
+<script src="js/modules/waitlist.js"></script>
+<script src="js/modules/schedule-operations.js"></script>
+<script src="js/modules/events-agreements.js"></script>
 </body>
 </html>
 
