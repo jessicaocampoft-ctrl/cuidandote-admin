@@ -98,7 +98,7 @@ assert(!moduleSource.includes('fetch('), 'El módulo no debe introducir fetch.')
 assert(!moduleSource.includes('APPS_SCRIPT_URL'), 'El módulo no debe depender directamente de Apps Script.');
 assert(!moduleSource.includes('action='), 'El módulo no debe introducir acciones de servidor.');
 
-for (const token of ['MODO DÍA','MODO SEMANA','MODO MES','Análisis financiero semanal','Análisis financiero mensual']) {
+for (const token of ['MODO DÍA','MODO SEMANA','MODO MES','Análisis de la semana','Análisis financiero —']) {
   assert(moduleSource.includes(token), `Falta el bloque funcional: ${token}.`);
 }
 
