@@ -1,0 +1,40 @@
+name: Fase 12 — Ajustar entorno QA KPI
+
+on:
+  push:
+    branches:
+      - modularizacion-panel-fase12-indicadores-kpi-2026-08-05
+    paths:
+      - MODULARIZACION_FASE12_AJUSTAR_ENTORNO.md
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  ajustar-entorno:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar rama aislada
+        uses: actions/checkout@v4
+        with:
+          ref: modularizacion-panel-fase12-indicadores-kpi-2026-08-05
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Ajustar solo entorno QA
+        run: |
+          node tools/ajustar-entorno-kpi-fase12.mjs
+          node --check tools/validar-kpi-fase12.mjs
+          git diff --exit-code -- js/modules/kpi.js index.html
+
+      - name: Guardar ajuste QA
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add tools/validar-kpi-fase12.mjs
+          git commit -m "Completar entorno de fechas para pruebas KPI"
+          git push origin HEAD:modularizacion-panel-fase12-indicadores-kpi-2026-08-05

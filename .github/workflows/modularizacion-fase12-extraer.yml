@@ -1,0 +1,107 @@
+name: Fase 12 — Extraer Indicadores y KPI
+
+on:
+  push:
+    branches:
+      - modularizacion-panel-fase12-indicadores-kpi-2026-08-05
+    paths:
+      - MODULARIZACION_FASE12_EXTRAER.md
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: modularizacion-panel-fase12-kpi-extraer
+  cancel-in-progress: false
+
+jobs:
+  extraer-kpi:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar rama aislada
+        uses: actions/checkout@v4
+        with:
+          ref: modularizacion-panel-fase12-indicadores-kpi-2026-08-05
+          fetch-depth: 0
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Confirmar aislamiento y base
+        run: |
+          test "$(git branch --show-current)" = "modularizacion-panel-fase12-indicadores-kpi-2026-08-05"
+          git fetch origin modularizacion-panel-fase11-finanzas-2026-08-05
+          git fetch origin main
+
+      - name: Extraer núcleo KPI
+        run: node tools/modularizar-kpi-fase12.mjs index.html
+
+      - name: Revisar sintaxis y carga
+        run: |
+          node --check js/modules/kpi.js
+          grep -q '<script src="js/modules/kpi.js"></script>' index.html
+          test "$(grep -c 'script src="js/modules/kpi.js"' index.html)" = "1"
+          grep -q 'global.PanelKPI = Object.freeze' js/modules/kpi.js
+          grep -q 'function renderKPITablero(...args)' index.html
+          grep -q 'function renderKPIGuia(...args)' index.html
+          grep -q 'async function loadKPIHistoryFromServer(...args)' index.html
+
+      - name: Confirmar alcance exacto
+        run: |
+          test "$(grep -Ec '^(async )?function ' js/modules/kpi.js)" = "25"
+          grep -q '^const KPI_CONFIG_DEFAULTS' js/modules/kpi.js
+          grep -q '^const KPI_INTERACTIVE' js/modules/kpi.js
+          grep -q '^let _activeKPIExplorer' js/modules/kpi.js
+          grep -q '^let _kpiServerHistory' js/modules/kpi.js
+          grep -q '^let _kpiViewMonth' js/modules/kpi.js
+          ! grep -q 'function renderMetricas(' js/modules/kpi.js
+          ! grep -q 'function renderPresupuestoMetas(' js/modules/kpi.js
+          ! grep -q 'function loadEncuestaStats(' js/modules/kpi.js
+          ! grep -q 'function getLeadsMes(' js/modules/kpi.js
+          ! grep -q 'function renderPagos(' js/modules/kpi.js
+          ! grep -q 'function renderComisiones(' js/modules/kpi.js
+
+      - name: Confirmar fuentes compartidas preservadas
+        run: |
+          for name in _cfg0 CATEGORIAS_MARKETING META_CAC_MAX META_CANCELACION_PCT META_ENCUESTAS META_NPS META_RETENCION_PCT META_SESIONES_SEMANA META_VENTAS_MES META_VENTAS_SEMANA VENTANA_NUEVO_DIAS VENTANA_RETENCION allData APPS_SCRIPT_URL TOKEN esRegistroServ esSesionFull esSesionIndiv; do
+            grep -Eq "(const|let|var)[[:space:]]+$name\\b" index.html
+            ! grep -Eq "(const|let|var)[[:space:]]+$name\\b" js/modules/kpi.js
+          done
+
+      - name: Confirmar no regresión de fases anteriores
+        run: |
+          git diff --exit-code origin/modularizacion-panel-fase11-finanzas-2026-08-05 -- js/core
+          git diff --exit-code origin/modularizacion-panel-fase11-finanzas-2026-08-05 -- js/modules ':!js/modules/kpi.js'
+          for f in agenda appointment-create appointment-edit database finance packages passport payments referrals team; do
+            test -f "js/modules/$f.js"
+          done
+
+      - name: Documentar extracción
+        run: |
+          cat > MODULARIZACION_FASE12_EXTRACCION_RESULTADO.md <<'EOF'
+          # Extracción aislada — Fase 12 Indicadores y KPI
+
+          - `js/modules/kpi.js` creado.
+          - 25 funciones de indicadores, tablero, guía y explorador trasladadas.
+          - 5 declaraciones privadas del módulo encapsuladas.
+          - `index.html` conserva adaptadores con los mismos nombres públicos.
+          - Las metas, ventanas y valores compartidos permanecen en `index.html` para conservar compatibilidad con Presupuesto, Comisiones y reportes.
+          - `renderMetricas`, encuestas, leads, presupuesto, pagos y comisiones permanecen fuera.
+          - Los módulos de las Fases 1 a 11 no cambiaron.
+          - No se modificó `main`, Apps Script ni el panel publicado.
+          EOF
+
+      - name: Guardar extracción aislada
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html js/modules/kpi.js MODULARIZACION_FASE12_EXTRACCION_RESULTADO.md
+          if git diff --cached --quiet; then
+            echo "La extracción ya estaba actualizada."
+          else
+            git commit -m "Separar núcleo de Indicadores y KPI"
+            git push origin HEAD:modularizacion-panel-fase12-indicadores-kpi-2026-08-05
+          fi
