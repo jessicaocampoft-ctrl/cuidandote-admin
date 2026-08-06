@@ -3,8 +3,10 @@
 Delimitar el núcleo KPI antes de extraerlo.
 
 - Incluir tablero, guía, configuración, valores manuales, favoritos, explorador y desgloses de indicadores.
-- Mantener fuera `renderMetricas`, encuestas, presupuesto, metas financieras, leads, pagos y comisiones.
+- Encapsular únicamente el estado exclusivo del KPI.
+- Mantener en `index.html` los valores compartidos con Metas, Presupuesto, Comisiones y reportes.
+- Mantener fuera `renderMetricas`, encuestas, leads, pagos y comisiones.
 - Conservar fuera `allData`, `APPS_SCRIPT_URL`, `TOKEN` y los clasificadores compartidos de servicios.
 - No modificar código funcional, `main`, Apps Script ni el panel publicado.
 
-Reejecución: inventario corregido para mantener una sola fuente de verdad de las variables compartidas.
+Reejecución final: cinco declaraciones privadas y todas las fuentes compartidas preservadas.
