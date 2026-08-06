@@ -1,0 +1,94 @@
+name: Fase 15 — Métricas inteligentes
+
+on:
+  push:
+    branches:
+      - modularizacion-panel-fase15-metricas-inteligentes-2026-08-06
+    paths:
+      - MODULARIZACION_FASE15_METRICAS.md
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: modularizacion-panel-fase15-metricas-inteligentes
+  cancel-in-progress: false
+
+jobs:
+  modularizar-metricas:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar rama aislada
+        uses: actions/checkout@v4
+        with:
+          ref: modularizacion-panel-fase15-metricas-inteligentes-2026-08-06
+          fetch-depth: 0
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Confirmar aislamiento y base
+        run: |
+          test "$(git branch --show-current)" = "modularizacion-panel-fase15-metricas-inteligentes-2026-08-06"
+          git fetch origin modularizacion-panel-fase14-reporte-mensual-2026-08-06
+          git fetch origin main
+          git show origin/modularizacion-panel-fase14-reporte-mensual-2026-08-06:index.html > /tmp/fase14-index.html
+          git merge-base --is-ancestor origin/modularizacion-panel-fase14-reporte-mensual-2026-08-06 HEAD
+
+      - name: Separar Métricas inteligentes
+        run: node tools/modularizar-metricas-inteligentes-fase15.mjs index.html
+
+      - name: Validar sintaxis y paridad
+        run: |
+          node --check js/modules/smart-metrics.js
+          node --check tools/validar-metricas-inteligentes-fase15.mjs
+          node tools/validar-metricas-inteligentes-fase15.mjs /tmp/fase14-index.html index.html js/modules/smart-metrics.js
+
+      - name: Confirmar aislamiento funcional
+        run: |
+          git diff --exit-code origin/modularizacion-panel-fase14-reporte-mensual-2026-08-06 -- js/core
+          git diff --exit-code origin/modularizacion-panel-fase14-reporte-mensual-2026-08-06 -- js/modules ':!js/modules/smart-metrics.js'
+          ! grep -q 'fetch(' js/modules/smart-metrics.js
+          ! grep -q 'APPS_SCRIPT_URL' js/modules/smart-metrics.js
+          ! grep -q 'action=' js/modules/smart-metrics.js
+          grep -q 'global.PanelSmartMetrics = Object.freeze' js/modules/smart-metrics.js
+          grep -q '<script src="js/modules/smart-metrics.js"></script>' index.html
+          test "$(grep -o 'script src="js/modules/smart-metrics.js"' index.html | wc -l)" -eq 1
+
+      - name: Confirmar módulos anteriores
+        run: |
+          for f in agenda appointment-create appointment-edit budget database finance kpi monthly-report packages passport payments referrals team; do
+            test -f "js/modules/$f.js"
+          done
+
+      - name: Generar informe final
+        run: |
+          cat > MODULARIZACION_FASE15_RESULTADO.md <<'EOF'
+          # Resultado de modularización — Fase 15 Métricas inteligentes
+
+          - `js/modules/smart-metrics.js` creado.
+          - `renderMetricas` separada de `index.html` sin modificar su implementación interna.
+          - `index.html` conserva un adaptador con el mismo nombre público.
+          - Se preservaron horarios demandados, métodos de pago, pacientes nuevos/recurrentes y los demás análisis visuales del bloque.
+          - Se verificó la paridad exacta frente a la Fase 14.
+          - Se verificó la API pública congelada `PanelSmartMetrics`.
+          - El módulo se carga una sola vez.
+          - No se introdujeron llamadas nuevas al servidor ni dependencias directas de Apps Script.
+          - Los módulos de las Fases 1 a 14 permanecen sin cambios.
+          - No se modificó `main`, Apps Script ni el panel publicado.
+          EOF
+
+      - name: Guardar resultado solo en la rama aislada
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html js/modules/smart-metrics.js MODULARIZACION_FASE15_RESULTADO.md
+          if git diff --cached --quiet; then
+            echo "La Fase 15 ya estaba aplicada."
+          else
+            git commit -m "Separar y validar Métricas inteligentes"
+            git push origin HEAD:modularizacion-panel-fase15-metricas-inteligentes-2026-08-06
+          fi
