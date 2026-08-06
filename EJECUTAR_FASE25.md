@@ -1,1 +1,1 @@
-Reintentar la separación final de utilidades compartidas y la regresión completa del panel el 2026-08-06 a las 12:28 Colombia, después de confirmar GitHub Actions y Pages operativos.
+Ejecutar la validación definitiva de la Fase 25 en Ubuntu estándar con el validador corregido y limpieza de temporales, el 2026-08-06.
