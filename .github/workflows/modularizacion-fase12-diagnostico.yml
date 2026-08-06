@@ -1,0 +1,56 @@
+name: Fase 12 — Diagnóstico Indicadores y KPI
+
+on:
+  push:
+    branches:
+      - modularizacion-panel-fase12-indicadores-kpi-2026-08-05
+    paths:
+      - MODULARIZACION_FASE12_DIAGNOSTICO.md
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: modularizacion-panel-fase12-diagnostico
+  cancel-in-progress: false
+
+jobs:
+  diagnostico-kpi:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar rama aislada
+        uses: actions/checkout@v4
+        with:
+          ref: modularizacion-panel-fase12-indicadores-kpi-2026-08-05
+          fetch-depth: 0
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Confirmar aislamiento
+        run: |
+          test "$(git branch --show-current)" = "modularizacion-panel-fase12-indicadores-kpi-2026-08-05"
+          git fetch origin modularizacion-panel-fase11-finanzas-2026-08-05
+          git fetch origin main
+
+      - name: Generar diagnóstico
+        run: node tools/diagnostico-kpi-fase12.mjs index.html MODULARIZACION_FASE12_DIAGNOSTICO_RESULTADO.md
+
+      - name: Confirmar que no cambió código funcional
+        run: |
+          git diff --exit-code origin/modularizacion-panel-fase11-finanzas-2026-08-05 -- index.html js/core js/modules
+
+      - name: Guardar únicamente el informe
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add MODULARIZACION_FASE12_DIAGNOSTICO_RESULTADO.md
+          if git diff --cached --quiet; then
+            echo "El diagnóstico ya estaba actualizado."
+          else
+            git commit -m "Diagnosticar alcance de Indicadores y KPI"
+            git push origin HEAD:modularizacion-panel-fase12-indicadores-kpi-2026-08-05
+          fi
