@@ -123,7 +123,7 @@ let toastCalls=[];
 let shownViews=[];
 let fetchedUrl='';
 const context={
-  console,Date,Math,JSON,Object,Array,String,Number,Boolean,RegExp,parseInt,parseFloat,isNaN,NumberFormat:Intl.NumberFormat,
+  console,Date:class BrowserDate extends Date { toLocalDateStr(){ return `${this.getFullYear()}-${String(this.getMonth()+1).padStart(2,'0')}-${String(this.getDate()).padStart(2,'0')}`; } },Math,JSON,Object,Array,String,Number,Boolean,RegExp,parseInt,parseFloat,isNaN,NumberFormat:Intl.NumberFormat,
   Intl,setTimeout:(fn)=>{fn();return 1;},clearTimeout(){},confirm:()=>true,
   document:documentMock,localStorage,sessionStorage,
   allData:{citas:[],eventos:[],pacientes:[]},
