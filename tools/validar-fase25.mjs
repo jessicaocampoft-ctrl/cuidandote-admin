@@ -154,9 +154,9 @@ assert(S.kvGet('prueba') === '123' && local.get('prueba') === '123', 'kvSet/kvGe
 await S._flushKV();
 assert(requests.some(r => {
   try {
-    const body = JSON.parse(r.options.body || '{}');
-    const data = JSON.parse(body.data || '{}');
-    return body.action === 'setAdminKV' && data.prueba === '123';
+    const parsed = new URL(r.url);
+    const data = JSON.parse(parsed.searchParams.get('data') || '{}');
+    return parsed.searchParams.get('action') === 'setAdminKV' && data.prueba === '123';
   } catch { return false; }
 }), '_flushKV no envía el lote existente.');
 S.kvRemove('prueba');
