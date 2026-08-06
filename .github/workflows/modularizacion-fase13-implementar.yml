@@ -84,7 +84,16 @@ jobs:
           git add index.html js/modules/budget.js MODULARIZACION_FASE13_RESULTADO.md
           if git diff --cached --quiet; then
             echo "La Fase 13 ya estaba aplicada."
-          else
-            git commit -m "Separar y validar Metas y Presupuesto"
-            git push origin HEAD:modularizacion-panel-fase13-metas-presupuesto-2026-08-06
+            exit 0
           fi
+          git commit -m "Separar y validar Metas y Presupuesto"
+          for intento in 1 2 3; do
+            git fetch origin modularizacion-panel-fase13-metas-presupuesto-2026-08-06
+            git rebase origin/modularizacion-panel-fase13-metas-presupuesto-2026-08-06
+            if git push origin HEAD:modularizacion-panel-fase13-metas-presupuesto-2026-08-06; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "No se pudo guardar el resultado después de tres intentos seguros."
+          exit 1
