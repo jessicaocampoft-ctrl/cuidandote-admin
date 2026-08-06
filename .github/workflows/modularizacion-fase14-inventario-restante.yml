@@ -39,17 +39,20 @@ jobs:
       - name: Generar inventario
         run: |
           node --check tools/inventario-restante-fase14.mjs
+          node --check tools/resumir-inventario-fase14.mjs
           node tools/inventario-restante-fase14.mjs index.html MODULARIZACION_FASE14_INVENTARIO_RESULTADO.md
+          node tools/resumir-inventario-fase14.mjs MODULARIZACION_FASE14_INVENTARIO_RESULTADO.md MODULARIZACION_FASE14_PLAN_COMPACTO.md
           test -s MODULARIZACION_FASE14_INVENTARIO_RESULTADO.md
+          test -s MODULARIZACION_FASE14_PLAN_COMPACTO.md
 
       - name: Guardar inventario en la rama aislada
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add MODULARIZACION_FASE14_INVENTARIO_RESULTADO.md
+          git add MODULARIZACION_FASE14_INVENTARIO_RESULTADO.md MODULARIZACION_FASE14_PLAN_COMPACTO.md
           if git diff --cached --quiet; then
             echo "El inventario ya estaba actualizado."
           else
-            git commit -m "Registrar inventario restante después de Fase 13"
+            git commit -m "Registrar plan compacto después de Fase 13"
             git push origin HEAD:modularizacion-panel-fase14-inventario-restante-2026-08-06
           fi
