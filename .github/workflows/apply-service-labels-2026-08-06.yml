@@ -1,0 +1,166 @@
+name: Cambiar etiquetas visibles de servicios
+
+on:
+  push:
+    branches:
+      - contenido-habilitacion-admin-2026-08-06
+
+permissions:
+  contents: write
+
+jobs:
+  actualizar-etiquetas:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar rama aislada
+        uses: actions/checkout@v4
+        with:
+          ref: contenido-habilitacion-admin-2026-08-06
+          fetch-depth: 0
+
+      - name: Cambiar solo el texto visible de las opciones
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          import difflib
+
+          path = Path('index.html')
+          raw = path.read_bytes()
+          had_bom = raw.startswith(b'\xef\xbb\xbf')
+          before = raw.decode('utf-8-sig')
+          text = before
+
+          labels = {
+              'Valoración Funcional': 'Valoración fisioterapéutica inicial',
+              'Readaptación Funcional': 'Rehabilitación y readaptación funcional',
+          }
+
+          option_re = re.compile(r'<option\b(?P<attrs>[^>]*)>(?P<label>[^<]*)</option>', re.IGNORECASE)
+          changed = {key: 0 for key in labels}
+
+          def replace_option(match):
+              attrs = match.group('attrs')
+              label = match.group('label')
+              old = label.strip()
+              if old not in labels:
+                  return match.group(0)
+
+              value_match = re.search(r'\bvalue\s*=\s*(["\'])(.*?)\1', attrs, re.IGNORECASE)
+              if value_match:
+                  value = value_match.group(2)
+                  if value != old:
+                      raise SystemExit(f'Opción ambigua: etiqueta {old!r} con valor {value!r}')
+                  new_attrs = attrs
+              else:
+                  new_attrs = attrs + f' value="{old}"'
+
+              leading = label[:len(label) - len(label.lstrip())]
+              trailing = label[len(label.rstrip()):]
+              changed[old] += 1
+              return f'<option{new_attrs}>{leading}{labels[old]}{trailing}</option>'
+
+          text = option_re.sub(replace_option, text)
+
+          for old, count in changed.items():
+              if count < 1:
+                  raise SystemExit(f'No se encontró ninguna opción visible para {old}')
+
+          # Verificar que únicamente se cambiaron líneas que contienen opciones HTML.
+          before_lines = before.splitlines()
+          after_lines = text.splitlines()
+          diff = list(difflib.unified_diff(before_lines, after_lines, lineterm=''))
+          content_changes = [line for line in diff if line.startswith(('+', '-')) and not line.startswith(('+++', '---'))]
+          if not content_changes:
+              raise SystemExit('No se produjeron cambios')
+          bad_lines = [line for line in content_changes if '<option' not in line.lower()]
+          if bad_lines:
+              raise SystemExit('Se detectaron cambios fuera de opciones HTML: ' + repr(bad_lines[:5]))
+
+          # Valores y estructuras internas protegidas.
+          required = [
+              "'Valoración Funcional':",
+              "'Readaptación Funcional':",
+              "[/valoracion/,                                  'Valoración Funcional'",
+              "[/readaptacion/,                                'Readaptación Funcional'",
+              'Combo Diagnóstico Pro',
+              'Paquete Readaptación Inicio',
+              'Paquete Readaptación Avance',
+              'Paquete Readaptación Total',
+              'const _precios =',
+              'const costosReales =',
+          ]
+          for needle in required:
+              if needle not in text:
+                  raise SystemExit(f'Se alteró o desapareció una estructura protegida: {needle}')
+
+          forbidden = [
+              'value="Valoración fisioterapéutica inicial"',
+              'value="Rehabilitación y readaptación funcional"',
+              "value='Valoración fisioterapéutica inicial'",
+              "value='Rehabilitación y readaptación funcional'",
+              '<<<<<<<',
+              '>>>>>>>',
+          ]
+          for needle in forbidden:
+              if needle in text:
+                  raise SystemExit(f'Valor interno no permitido o conflicto detectado: {needle}')
+
+          # Cada etiqueta nueva debe existir dentro de una opción con el valor antiguo.
+          expected_pairs = [
+              ('Valoración Funcional', 'Valoración fisioterapéutica inicial'),
+              ('Readaptación Funcional', 'Rehabilitación y readaptación funcional'),
+          ]
+          for old, new in expected_pairs:
+              pattern = re.compile(
+                  r'<option\b[^>]*\bvalue\s*=\s*(["\'])' + re.escape(old) + r'\1[^>]*>\s*' + re.escape(new) + r'\s*</option>',
+                  re.IGNORECASE,
+              )
+              if not pattern.search(text):
+                  raise SystemExit(f'No quedó la pareja segura de valor y etiqueta para {old}')
+
+          encoded = text.encode('utf-8')
+          if had_bom:
+              encoded = b'\xef\xbb\xbf' + encoded
+          path.write_bytes(encoded)
+
+          print('Opciones actualizadas:', changed)
+          print('Líneas modificadas:', len(content_changes))
+          PY
+
+      - name: Validar formato y alcance
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from html.parser import HTMLParser
+
+          raw = Path('index.html').read_bytes()
+          text = raw.decode('utf-8-sig')
+
+          class Parser(HTMLParser):
+              pass
+          Parser().feed(text)
+
+          if b'\r\n' not in raw:
+              raise SystemExit('Se perdió el formato CRLF original')
+          if 'Valoración fisioterapéutica inicial' not in text:
+              raise SystemExit('Falta la nueva etiqueta de valoración')
+          if 'Rehabilitación y readaptación funcional' not in text:
+              raise SystemExit('Falta la nueva etiqueta de rehabilitación')
+          if 'Combo Diagnóstico Pro' not in text or 'Paquete Readaptación Total' not in text:
+              raise SystemExit('Se alteraron planes o paquetes')
+          print('HTML, formato y planes verificados.')
+          PY
+          git diff --stat
+
+      - name: Guardar solo index.html en la rama aislada
+        shell: bash
+        run: |
+          rm -f .github/workflows/apply-service-labels-2026-08-06.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html .github/workflows/apply-service-labels-2026-08-06.yml
+          git commit -m "feat: actualizar etiquetas visibles de valoración y rehabilitación"
+          git push origin HEAD:contenido-habilitacion-admin-2026-08-06
