@@ -11,12 +11,12 @@ permissions:
   contents: write
 
 concurrency:
-  group: fase25-utilidades-integracion-final-v4
+  group: fase25-utilidades-integracion-final-v5
   cancel-in-progress: false
 
 jobs:
   integrar-y-validar:
-    runs-on: macos-latest
+    runs-on: ubuntu-24.04-arm
     steps:
       - name: Descargar rama aislada
         uses: actions/checkout@v4
