@@ -1,0 +1,105 @@
+name: Fase 19 — WhatsApp y mensajes
+
+on:
+  push:
+    branches:
+      - modularizacion-panel-fase19-whatsapp-mensajes-2026-08-06
+    paths:
+      - MODULARIZACION_FASE19_WHATSAPP_MENSAJES.md
+      - tools/modularizar-whatsapp-mensajes-fase19.mjs
+      - tools/validar-whatsapp-mensajes-fase19.mjs
+      - .github/workflows/modularizacion-fase19-whatsapp-mensajes.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: fase19-whatsapp-mensajes
+  cancel-in-progress: false
+
+jobs:
+  modularizar-whatsapp-mensajes:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar rama aislada
+        uses: actions/checkout@v4
+        with:
+          ref: modularizacion-panel-fase19-whatsapp-mensajes-2026-08-06
+          fetch-depth: 0
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Confirmar aislamiento y bases
+        shell: bash
+        run: |
+          test "$(git branch --show-current)" = "modularizacion-panel-fase19-whatsapp-mensajes-2026-08-06"
+          git fetch origin modularizacion-panel-fase18-tareas-automatizaciones-2026-08-06
+          git fetch origin modularizacion-panel-fase17-seguimiento-recuperacion-2026-08-06
+          git fetch origin main
+          git merge-base --is-ancestor origin/modularizacion-panel-fase18-tareas-automatizaciones-2026-08-06 HEAD
+          git show origin/modularizacion-panel-fase18-tareas-automatizaciones-2026-08-06:index.html > /tmp/fase18-index.html
+          git show origin/modularizacion-panel-fase17-seguimiento-recuperacion-2026-08-06:index.html > /tmp/fase17-index.html
+
+      - name: Separar WhatsApp y mensajes
+        run: node tools/modularizar-whatsapp-mensajes-fase19.mjs index.html
+
+      - name: Validar sintaxis, paridad y biblioteca
+        shell: bash
+        run: |
+          node --check tools/modularizar-whatsapp-mensajes-fase19.mjs
+          node --check tools/validar-whatsapp-mensajes-fase19.mjs
+          node --check js/modules/whatsapp-tools.js
+          node --check js/modules/message-library.js
+          node tools/validar-whatsapp-mensajes-fase19.mjs /tmp/fase18-index.html index.html js/modules/whatsapp-tools.js js/modules/message-library.js
+
+      - name: Confirmar módulos anteriores
+        shell: bash
+        run: |
+          find js -type f -name '*.js' -print0 | xargs -0 -n1 node --check
+          node tools/validar-tareas-automatizaciones-fase18.mjs /tmp/fase17-index.html index.html js/modules/operations-automation.js
+
+      - name: Confirmar aislamiento funcional
+        shell: bash
+        run: |
+          git diff --exit-code origin/modularizacion-panel-fase18-tareas-automatizaciones-2026-08-06 -- google-apps-script.js
+          git merge-base --is-ancestor origin/modularizacion-panel-fase18-tareas-automatizaciones-2026-08-06 HEAD
+          bad="$(git diff --name-only origin/modularizacion-panel-fase18-tareas-automatizaciones-2026-08-06 | grep -Ev '^(index\.html|js/modules/whatsapp-tools\.js|js/modules/message-library\.js|tools/modularizar-whatsapp-mensajes-fase19\.mjs|tools/validar-whatsapp-mensajes-fase19\.mjs|MODULARIZACION_FASE19_WHATSAPP_MENSAJES\.md|MODULARIZACION_FASE19_RESULTADO\.md|\.github/workflows/modularizacion-fase19-whatsapp-mensajes\.yml)$' || true)"
+          if [ -n "$bad" ]; then
+            echo "Archivos fuera del alcance:"
+            echo "$bad"
+            exit 1
+          fi
+
+      - name: Generar informe final
+        shell: bash
+        run: |
+          cat > MODULARIZACION_FASE19_RESULTADO.md <<'EOF'
+          # Resultado Fase 19 — WhatsApp y mensajes preparados
+
+          - Módulo `js/modules/whatsapp-tools.js` creado.
+          - Módulo `js/modules/message-library.js` creado.
+          - 30 funciones de WhatsApp y copia de gestión trasladadas.
+          - 17 funciones de mensajes predeterminados y guiones trasladadas.
+          - `_MSG_CATS`, `_msgCatActiva` y `_MSG_DEFAULTS` encapsuladas.
+          - Nombres públicos y comportamiento conservados mediante adaptadores.
+          - Sin llamadas ni acciones nuevas hacia Apps Script.
+          - Módulos de las Fases 1 a 18 conservados.
+          - `main`, Apps Script y producción no modificados.
+          EOF
+
+      - name: Guardar resultado solo en la rama aislada
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html js/modules/whatsapp-tools.js js/modules/message-library.js MODULARIZACION_FASE19_RESULTADO.md
+          if git diff --cached --quiet; then
+            echo "No hay cambios funcionales nuevos para guardar."
+            exit 0
+          fi
+          git commit -m "Separar y validar WhatsApp y mensajes"
+          git pull --rebase origin modularizacion-panel-fase19-whatsapp-mensajes-2026-08-06
+          git push origin HEAD:modularizacion-panel-fase19-whatsapp-mensajes-2026-08-06
