@@ -4,6 +4,16 @@ import vm from 'node:vm';
 const indexPath = process.argv[2] || 'index.html';
 let source = fs.readFileSync(indexPath, 'utf8');
 
+const alreadyApplied =
+  source.includes('<script src="js/modules/shared-utils.js"></script>') &&
+  source.includes('<script src="js/modules/shared-storage.js"></script>') &&
+  fs.existsSync('js/modules/shared-utils.js') &&
+  fs.existsSync('js/modules/shared-storage.js');
+if (alreadyApplied) {
+  console.log('Fase 25 ya aplicada; no se repiten cambios.');
+  process.exit(0);
+}
+
 const utilityFunctions = [
   'esc',
   'today',
