@@ -1,0 +1,95 @@
+name: Fase 12 — Validar Indicadores y KPI
+
+on:
+  push:
+    branches:
+      - modularizacion-panel-fase12-indicadores-kpi-2026-08-05
+    paths:
+      - MODULARIZACION_FASE12_VALIDAR.md
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: modularizacion-panel-fase12-kpi-validar
+  cancel-in-progress: false
+
+jobs:
+  validar-kpi:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar rama aislada
+        uses: actions/checkout@v4
+        with:
+          ref: modularizacion-panel-fase12-indicadores-kpi-2026-08-05
+          fetch-depth: 0
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Confirmar aislamiento
+        run: |
+          test "$(git branch --show-current)" = "modularizacion-panel-fase12-indicadores-kpi-2026-08-05"
+          git fetch origin modularizacion-panel-fase11-finanzas-2026-08-05
+          git fetch origin main
+          git show origin/modularizacion-panel-fase11-finanzas-2026-08-05:index.html > /tmp/index-fase11.html
+
+      - name: Validar sintaxis
+        run: |
+          node --check js/modules/kpi.js
+          node --check tools/validar-kpi-fase12.mjs
+
+      - name: Ejecutar pruebas funcionales
+        run: node tools/validar-kpi-fase12.mjs index.html js/modules/kpi.js /tmp/index-fase11.html
+
+      - name: Confirmar consulta de servidor preservada
+        run: |
+          test "$(grep -c 'fetch(' js/modules/kpi.js)" = "1"
+          grep -q 'action=getKPIHistory' js/modules/kpi.js
+          ! grep -q 'action=save' js/modules/kpi.js
+
+      - name: Confirmar no regresión de fases anteriores
+        run: |
+          git diff --exit-code origin/modularizacion-panel-fase11-finanzas-2026-08-05 -- js/core
+          git diff --exit-code origin/modularizacion-panel-fase11-finanzas-2026-08-05 -- js/modules ':!js/modules/kpi.js'
+          for f in agenda appointment-create appointment-edit database finance packages passport payments referrals team; do
+            test -f "js/modules/$f.js"
+          done
+
+      - name: Documentar resultado
+        run: |
+          cat > MODULARIZACION_FASE12_RESULTADO.md <<'EOF'
+          # Resultado de modularización — Fase 12 Indicadores y KPI
+
+          - `js/modules/kpi.js` creado.
+          - 25 funciones del tablero, guía, configuración, valores manuales, favoritos, explorador y desgloses separadas de `index.html`.
+          - 5 declaraciones privadas del módulo encapsuladas.
+          - Las metas y variables compartidas permanecen en `index.html` para conservar compatibilidad con Presupuesto, Comisiones y reportes.
+          - Se verificó la paridad exacta de los 25 cuerpos de función y las 5 declaraciones trasladadas frente a la Fase 11.
+          - Configuración por defecto, mezcla, recuperación ante JSON inválido y migraciones históricas validadas.
+          - Valores KPI manuales y persistencia validados.
+          - Favoritos, estado visual y almacenamiento validados.
+          - Cálculo de base de datos actualizada, datos faltantes y enriquecimiento desde pacientes validados.
+          - Historial KPI, fotografía mensual, conversión, mix, cancelación, retención, NPS y encuestas validados.
+          - Renderizado del tablero y de la guía comprobado con datos QA en memoria.
+          - Explorador, comparación, apertura, cierre y notas de gestión validados.
+          - Se conservó únicamente la consulta existente `getKPIHistory`; no se introdujeron acciones nuevas al servidor.
+          - `renderMetricas`, encuestas, leads, presupuesto, pagos y comisiones permanecen fuera.
+          - Las Fases 1 a 11 permanecen sin cambios.
+          - No se modificó `main`, Apps Script ni el panel publicado.
+          EOF
+
+      - name: Guardar resultado validado
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add MODULARIZACION_FASE12_RESULTADO.md
+          if git diff --cached --quiet; then
+            echo "El resultado ya estaba actualizado."
+          else
+            git commit -m "Validar módulo de Indicadores y KPI"
+            git push origin HEAD:modularizacion-panel-fase12-indicadores-kpi-2026-08-05
+          fi
