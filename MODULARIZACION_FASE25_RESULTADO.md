@@ -11,5 +11,4 @@
 - Sintaxis validada para todos los archivos JavaScript del panel.
 - Regresión automatizada de las Fases 20, 21, 22, 23 y 24 superada.
 - Los módulos de las Fases 1 a 24 permanecen sin modificaciones.
-- Archivos auxiliares del inventario final retirados.
 - `main`, Apps Script y producción no modificados.
