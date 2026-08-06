@@ -38,13 +38,13 @@ jobs:
           git show origin/modularizacion-panel-fase12-indicadores-kpi-2026-08-05:index.html > /tmp/fase12-index.html
 
       - name: Separar Metas y Presupuesto
-        run: node tools/modularizar-budget-fase13.mjs index.html
+        run: node tools/modularizar-budget-fase13-v2.mjs index.html
 
       - name: Validar sintaxis y comportamiento
         run: |
           node --check js/modules/budget.js
-          node --check tools/validar-budget-fase13-v2.mjs
-          node tools/validar-budget-fase13-v2.mjs /tmp/fase12-index.html index.html js/modules/budget.js
+          node --check tools/validar-budget-fase13-v3.mjs
+          node tools/validar-budget-fase13-v3.mjs /tmp/fase12-index.html index.html js/modules/budget.js
 
       - name: Confirmar aislamiento funcional
         run: |
@@ -60,13 +60,14 @@ jobs:
           # Resultado de modularización — Fase 13 Metas y Presupuesto
 
           - `js/modules/budget.js` creado.
-          - 16 funciones de metas, presupuesto y estructura de costos separadas de `index.html`.
+          - 17 funciones de metas, presupuesto, estructura de costos y sincronización de precios separadas de `index.html`.
           - `COSTOS_DEFAULTS` encapsulada en el módulo.
           - Los mismos nombres públicos permanecen mediante adaptadores compatibles.
           - Se verificó la paridad exacta de todos los cuerpos trasladados frente a la Fase 12.
           - Costos por defecto, persistencia, recuperación ante JSON inválido y migraciones históricas validados.
           - Cálculo de subtotal, imprevistos, utilidad y meta total validado.
           - Guardado de meta mensual, validación mínima, barra de progreso y sincronización con KPI validados.
+          - Sincronización de precios configurados con el formulario de citas preservada.
           - Editor de estructura de costos validado.
           - No se introdujeron llamadas nuevas al servidor.
           - Finanzas, KPI, Comisiones, Pagos y las Fases 1 a 12 permanecen sin cambios.
