@@ -1,1 +1,1 @@
-Ejecutar el inventario de funciones, dependencias, almacenamiento e IDs de Metas y Presupuesto en la rama aislada.
+Reejecutar el inventario corregido de Metas y Presupuesto usando declaraciones reales al inicio de línea.
