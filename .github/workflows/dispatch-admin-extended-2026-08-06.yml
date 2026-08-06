@@ -1,0 +1,80 @@
+name: Iniciar publicación extendida del administrador
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/dispatch-admin-extended-2026-08-06.yml
+
+permissions:
+  contents: read
+  actions: write
+  pages: write
+
+jobs:
+  iniciar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Cancelar despliegues automáticos que compiten
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          cancel_known() {
+            local deployment="$1"
+            curl --silent --show-error \
+              --output /tmp/cancel-known.txt \
+              --write-out '%{http_code}' \
+              --request POST \
+              --header "Accept: application/vnd.github+json" \
+              --header "Authorization: Bearer ${GH_TOKEN}" \
+              --header "X-GitHub-Api-Version: 2022-11-28" \
+              "https://api.github.com/repos/${GITHUB_REPOSITORY}/pages/deployments/${deployment}/cancel" || true
+          }
+
+          for deployment in \
+            431bc4850b42e7f7dfa4568c43dc40bf6f6782a4 \
+            cccaacdd5cac1ef7f29ffd79910b41f42ffe5474 \
+            c3bfdf102b526cd27690b48273f7c3e0e46d9594 \
+            b95823cd1b97adae1d8fa9ae43311d96278aaf71
+          do
+            code=$(cancel_known "${deployment}")
+            echo "Cancelación conocida ${deployment}: HTTP ${code}"
+          done
+
+          echo "Esperando el despliegue automático de este commit para cancelarlo..."
+          cancelled=0
+          for attempt in $(seq 1 36)
+          do
+            code=$(cancel_known "${GITHUB_SHA}")
+            echo "Intento ${attempt}: HTTP ${code}"
+            if [ "${code}" = "204" ] || [ "${code}" = "200" ] || [ "${code}" = "202" ]; then
+              cancelled=1
+              break
+            fi
+            sleep 5
+          done
+
+          if [ "${cancelled}" != "1" ]; then
+            echo "No apareció un despliegue automático competidor; se continúa."
+          fi
+
+      - name: Iniciar workflow de publicación extendida
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          code=$(curl --silent --show-error \
+            --output /tmp/dispatch-response.txt \
+            --write-out '%{http_code}' \
+            --request POST \
+            --header "Accept: application/vnd.github+json" \
+            --header "Authorization: Bearer ${GH_TOKEN}" \
+            --header "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/workflows/manual-pages-admin.yml/dispatches" \
+            --data '{"ref":"pages-admin-extended-2026-08-06"}')
+          cat /tmp/dispatch-response.txt || true
+          echo "Dispatch: HTTP ${code}"
+          test "${code}" = "204"
