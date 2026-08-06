@@ -6837,112 +6837,28 @@ async function _runUrlRepairIfRequested() {
 }
 
 // ── PERFIL DEL ADMIN ──
-function updateProfileCard() {
-  const now = new Date();
-  const wd  = now.getDay();
-  const todayDay = now.getDate();
-  const m = now.getMonth() + 1, y = now.getFullYear();
-
-  // Semana actual (lun–dom)
-  const startW = new Date(now); startW.setDate(now.getDate() - wd + (wd === 0 ? -6 : 1)); startW.setHours(0,0,0,0);
-  const endW   = new Date(startW); endW.setDate(startW.getDate() + 6); endW.setHours(23,59,59,999);
-
-  // Semana anterior (7 días antes)
-  const startPW = new Date(startW); startPW.setDate(startW.getDate() - 7);
-  const endPW   = new Date(startPW); endPW.setDate(startPW.getDate() + 6); endPW.setHours(23,59,59,999);
-
-  // Mes anterior
-  const prevMDate = new Date(y, now.getMonth() - 1, 1);
-  const pm = prevMDate.getMonth() + 1, py = prevMDate.getFullYear();
-
-  const citas = citasReales();
-
-  const semana = citas.filter(c => {
-    if (!c.hora) return false;
-    const [cy,cm,cd] = normDate(c.fecha).split('-');
-    const d = new Date(+cy, +cm-1, +cd);
-    return d >= startW && d <= endW;
-  }).length;
-
-  const semanaPrev = citas.filter(c => {
-    const [cy,cm,cd] = normDate(c.fecha).split('-');
-    const d = new Date(+cy, +cm-1, +cd);
-    return d >= startPW && d <= endPW;
-  }).length;
-
-  const mes = citas.filter(c => {
-    const [cy,cm] = normDate(c.fecha).split('-');
-    return +cm === m && +cy === y;
-  }).length;
-
-  // Mes anterior prorateado: solo hasta el mismo día del mes para comparación justa
-  const mesPrev = citas.filter(c => {
-    const [cy,cm,cd] = normDate(c.fecha).split('-');
-    return +cm === pm && +cy === py && +cd <= todayDay;
-  }).length;
-
-  function setDelta(el, curr, prev) {
-    if (!el) return;
-    const diff = curr - prev;
-    el.className = 'sb-stat-delta ' + (diff > 0 ? 'up' : diff < 0 ? 'down' : 'eq');
-    el.textContent = diff > 0 ? `↑${diff} vs ant.` : diff < 0 ? `↓${Math.abs(diff)} vs ant.` : '= vs ant.';
+function updateProfileCard(...args) {
+  const module = window.PanelAdminProfileUX;
+  if (!module || typeof module.updateProfileCard !== 'function') {
+    throw new Error('El módulo PanelAdminProfileUX no está disponible: updateProfileCard');
   }
-
-  const sbW = document.getElementById('sbStSemana');
-  const sbM = document.getElementById('sbStMes');
-
-  if (sbW) sbW.textContent = semana;
-  if (sbM) sbM.textContent = mes;
-  setDelta(document.getElementById('sbDeltaSemana'), semana, semanaPrev);
-  setDelta(document.getElementById('sbDeltaMes'), mes, mesPrev);
-
-  // Tiempo de sesión activa
-  if (_loginTime) {
-    const mins = Math.round((Date.now() - _loginTime) / 60000);
-    const h = Math.floor(mins / 60), rm = mins % 60;
-    const label = h > 0 ? `${h}h ${rm}min` : `${mins}min`;
-    const el = document.getElementById('sbSessionInfo');
-    if (el) el.innerHTML = `<span class="sb-session-dot"></span> ${label}`;
-  }
+  return module.updateProfileCard(...args);
 }
 
-function openCambiarPassword() {
-  ['pwActual','pwNueva','pwConfirmar'].forEach(id => { document.getElementById(id).value = ''; });
-  const errEl = document.getElementById('pwChangeErr');
-  errEl.style.display = 'none';
-  document.getElementById('modalCambiarPassword').classList.add('open');
+function openCambiarPassword(...args) {
+  const module = window.PanelAdminProfileUX;
+  if (!module || typeof module.openCambiarPassword !== 'function') {
+    throw new Error('El módulo PanelAdminProfileUX no está disponible: openCambiarPassword');
+  }
+  return module.openCambiarPassword(...args);
 }
 
-async function cambiarPassword() {
-  const actual    = document.getElementById('pwActual').value.trim();
-  const nueva     = document.getElementById('pwNueva').value.trim();
-  const confirmar = document.getElementById('pwConfirmar').value.trim();
-  const errEl     = document.getElementById('pwChangeErr');
-  const btn       = document.getElementById('pwChangeBtn');
-
-  errEl.style.display = 'none';
-  if (!actual || !nueva || !confirmar) { errEl.textContent = 'Completa todos los campos.'; errEl.style.display = 'block'; return; }
-  if (nueva.length < 8) { errEl.textContent = 'La nueva contraseña debe tener al menos 8 caracteres.'; errEl.style.display = 'block'; return; }
-  if (nueva !== confirmar) { errEl.textContent = 'Las contraseñas nuevas no coinciden.'; errEl.style.display = 'block'; return; }
-
-  btn.textContent = 'Guardando...'; btn.disabled = true;
-  try {
-    const r = await fetch(APPS_SCRIPT_URL, {
-      method: 'POST',
-      body: JSON.stringify({action: 'changePassword', token: TOKEN, currentPassword: actual, newPassword: nueva})
-    }).then(x => x.json());
-    if (r.ok) {
-      closeModal('modalCambiarPassword');
-      toast('Contraseña actualizada correctamente', 'ok');
-    } else {
-      errEl.textContent = r.error || 'Error al cambiar la contraseña.';
-      errEl.style.display = 'block';
-    }
-  } catch(e) {
-    errEl.textContent = 'Error de conexión. Intenta de nuevo.';
-    errEl.style.display = 'block';
+async function cambiarPassword(...args) {
+  const module = window.PanelAdminProfileUX;
+  if (!module || typeof module.cambiarPassword !== 'function') {
+    throw new Error('El módulo PanelAdminProfileUX no está disponible: cambiarPassword');
   }
-  btn.textContent = 'Guardar'; btn.disabled = false;
+  return await module.cambiarPassword(...args);
 }
 
 // ── EVAL EXPRESS ──
@@ -6953,87 +6869,12 @@ function openEvalExpress() {
 }
 
 // ── SIDEBAR / NAV ──
-function initAdminUX2026() {
-  const sidebar = document.getElementById('sidebar');
-  if (!sidebar || sidebar.dataset.uxReady) return;
-  sidebar.dataset.uxReady = '1';
-
-  // Destinos cotidianos visibles; Google Calendar queda como primera opción del menú.
-  const principales = new Set(['sb-calendario','sb-dashboard','sb-tareas','sb-agenda','sb-nueva','sb-pacientes','sb-finanzas']);
-  sidebar.querySelectorAll(':scope > .sb-link').forEach(link => {
-    if (!principales.has(link.id) && link.id !== 'darkModeBtn' && !link.classList.contains('sb-signout')) {
-      link.classList.add('sb-secondary');
-    }
-  });
-
-  const finanzas = document.getElementById('sb-finanzas');
-  if (finanzas && !document.getElementById('sbToolsToggle')) {
-    const toggle = document.createElement('button');
-    toggle.id = 'sbToolsToggle';
-    toggle.type = 'button';
-    toggle.className = 'sb-tools-toggle';
-    toggle.setAttribute('aria-expanded','false');
-    toggle.setAttribute('aria-controls','sidebar');
-    toggle.innerHTML = '<span>Más herramientas</span><svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>';
-    toggle.addEventListener('click', () => {
-      const abierto = sidebar.classList.toggle('tools-open');
-      toggle.setAttribute('aria-expanded', String(abierto));
-      toggle.querySelector('span').textContent = abierto ? 'Ocultar herramientas' : 'Más herramientas';
-    });
-    finanzas.insertAdjacentElement('afterend', toggle);
+function initAdminUX2026(...args) {
+  const module = window.PanelAdminProfileUX;
+  if (!module || typeof module.initAdminUX2026 !== 'function') {
+    throw new Error('El módulo PanelAdminProfileUX no está disponible: initAdminUX2026');
   }
-
-  // Contenido secundario del dashboard bajo demanda.
-  const dashboard = document.getElementById('vDashboard');
-  const weekCard = document.getElementById('weekGrid')?.closest('.card');
-  const notesCard = document.querySelector('#vDashboard .notas-card');
-  const leadsGrid = document.getElementById('leadsHoyDash')?.closest('.stats-grid');
-  if (dashboard && weekCard && !document.getElementById('dashboardMore')) {
-    const btn = document.createElement('button');
-    btn.id = 'dashboardMore';
-    btn.type = 'button';
-    btn.className = 'dashboard-more-toggle';
-    btn.setAttribute('aria-expanded','false');
-    btn.setAttribute('aria-controls','dashboardSecondary');
-    btn.innerHTML = 'Ver análisis y notas <svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>';
-    const more = document.createElement('div');
-    more.id = 'dashboardSecondary';
-    more.className = 'dashboard-secondary';
-    const label = document.createElement('div');
-    label.className = 'dashboard-section-label';
-    label.textContent = 'Análisis complementario';
-    more.append(label, weekCard);
-    if (notesCard) more.append(notesCard);
-    if (leadsGrid) more.append(leadsGrid);
-    dashboard.append(btn, more);
-    btn.addEventListener('click', () => {
-      const abierto = more.classList.toggle('open');
-      btn.setAttribute('aria-expanded', String(abierto));
-      btn.firstChild.textContent = abierto ? 'Ocultar análisis y notas ' : 'Ver análisis y notas ';
-    });
-  }
-
-  initFunctionalModules2026();
-
-  // Accesibilidad incremental para controles existentes.
-  document.querySelectorAll('svg').forEach(svg => svg.setAttribute('aria-hidden','true'));
-  document.querySelectorAll('.modal,.disp-box,.pago-modal-box').forEach(modal => {
-    modal.setAttribute('role','dialog');
-    modal.setAttribute('aria-modal','true');
-  });
-  document.querySelectorAll('button').forEach(btn => {
-    const text = btn.textContent.replace(/\s+/g,' ').trim();
-    if (!text && btn.title) btn.setAttribute('aria-label', btn.title);
-  });
-  document.getElementById('menuBtn')?.setAttribute('aria-label','Abrir menú principal');
-  document.getElementById('mobileBottomNav')?.setAttribute('aria-label','Navegación principal móvil');
-  document.querySelectorAll('.stat-card.clickable,[onclick].stat-card').forEach(card => {
-    card.tabIndex = 0;
-    card.setAttribute('role','button');
-    card.addEventListener('keydown', e => {
-      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); card.click(); }
-    });
-  });
+  return module.initAdminUX2026(...args);
 }
 
 function initFunctionalModules2026() {
@@ -9924,13 +9765,12 @@ function closeModal(id) { document.getElementById(id).classList.remove('open'); 
 document.querySelectorAll('.modal-bg').forEach(m => m.addEventListener('click', e => { if(e.target===m) m.classList.remove('open'); }));
 
 // ── DARK MODE ──
-function toggleDarkMode() {
-  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-  const next = isDark ? '' : 'dark';
-  document.documentElement.setAttribute('data-theme', next);
-  localStorage.setItem('adminDarkMode', next);
-  const txt = document.getElementById('darkModeTxt');
-  if (txt) txt.textContent = next === 'dark' ? 'Modo claro' : 'Modo oscuro';
+function toggleDarkMode(...args) {
+  const module = window.PanelAdminProfileUX;
+  if (!module || typeof module.toggleDarkMode !== 'function') {
+    throw new Error('El módulo PanelAdminProfileUX no está disponible: toggleDarkMode');
+  }
+  return module.toggleDarkMode(...args);
 }
 // Sincronizar texto del botón al cargar
 window.addEventListener('DOMContentLoaded', () => {
@@ -10975,175 +10815,76 @@ function scrollToKPICard(...args) {
 }
 
 // ══ MANUAL DE EMERGENCIA — funciones ══
-function renderEmergencia() {
-  const d = window._emKPIData;
-  if (!d) return;
-
-  const now  = new Date();
-  const hora = now.toLocaleTimeString('es-CO', {hour:'2-digit', minute:'2-digit'});
-
-  function kpiSt(val, meta, altoEsMejor) {
-    if (isNaN(val) || !meta || meta <= 0) return -1;
-    const ok   = altoEsMejor ? val >= meta   : val <= meta;
-    const warn = altoEsMejor ? val >= meta * 0.8 : val <= meta * 1.25;
-    return ok ? 0 : warn ? 1 : 2;
+function renderEmergencia(...args) {
+  const module = window.PanelEmergencyManual;
+  if (!module || typeof module.renderEmergencia !== 'function') {
+    throw new Error('El módulo PanelEmergencyManual no está disponible: renderEmergencia');
   }
+  return module.renderEmergencia(...args);
+}
 
-  const st = {
-    sesiones:   kpiSt(d.sessEval,   d.sessMeta,             true),
-    mixfull:    d.totalMix > 0 ? kpiSt(d.fullPct, 30,       false) : -1,
-    cancel:     kpiSt(d.tasaCancel, d.cancelMeta,            false),
-    leads:      kpiSt(d.leadsShow,  40,                      true),
-    conv:       d.tasaConv !== null ? kpiSt(d.tasaConv, 25,  true) : -1,
-    ventas_sem: kpiSt(d.ventasSem,  d.ventasSemMeta * 0.84,  true),
-    ventas_mes: kpiSt(d.ventasMes,  d.ventasMesMeta * 0.80,  true),
-    nps:        kpiSt(d.nps,        d.npsMeta,               true),
-    enc:        kpiSt(d.encuestas,  d.encMeta,               true),
-    bd:         kpiSt(d.bd,         90,                      true),
-  };
-
-  const dotCls = s => s === 2 ? 'rojo' : s === 1 ? 'amarillo' : s === 0 ? 'verde' : 'gris';
-
-  for (const [kpi, status] of Object.entries(st)) {
-    const dot  = document.getElementById('emDot_' + kpi);
-    if (dot)  dot.className = 'em-dot ' + dotCls(status);
-    const card = document.getElementById('emCard_' + kpi);
-    if (card) {
-      if (status === 2) card.classList.add('alerta');
-      else              card.classList.remove('alerta');
-    }
+function toggleEmDim(...args) {
+  const module = window.PanelEmergencyManual;
+  if (!module || typeof module.toggleEmDim !== 'function') {
+    throw new Error('El módulo PanelEmergencyManual no está disponible: toggleEmDim');
   }
+  return module.toggleEmDim(...args);
+}
 
-  const dims = { 1:['sesiones','mixfull','cancel'], 2:['leads','conv'], 3:['ventas_sem','ventas_mes'], 4:['nps','enc','bd'] };
-  let totalRojos = 0;
-
-  for (const [dim, kpis] of Object.entries(dims)) {
-    const rojos     = kpis.filter(k => st[k] === 2).length;
-    const amarillos = kpis.filter(k => st[k] === 1).length;
-    totalRojos += rojos;
-
-    const badge = document.getElementById('emDB_' + dim);
-    if (badge) {
-      if (rojos > 0) {
-        badge.textContent = rojos + ' alerta' + (rojos > 1 ? 's' : '');
-        badge.className = 'em-dim-badge has-red';
-        const dimEl  = document.getElementById('emDim_' + dim);
-        const bodyEl = document.getElementById('emDB_body_' + dim);
-        if (dimEl && bodyEl && !dimEl.classList.contains('open')) {
-          dimEl.classList.add('open');
-          bodyEl.style.display = 'block';
-        }
-      } else if (kpis.some(k => st[k] === 0)) {
-        badge.textContent = '✓ OK';
-        badge.className = 'em-dim-badge all-ok';
-      } else {
-        badge.textContent = '—';
-        badge.className = 'em-dim-badge neutral';
-      }
-    }
+function toggleEmCard(...args) {
+  const module = window.PanelEmergencyManual;
+  if (!module || typeof module.toggleEmCard !== 'function') {
+    throw new Error('El módulo PanelEmergencyManual no está disponible: toggleEmCard');
   }
+  return module.toggleEmCard(...args);
+}
 
-  const rojoC    = Object.values(st).filter(s => s === 2).length;
-  const amarilloC = Object.values(st).filter(s => s === 1).length;
-  const verdeC   = Object.values(st).filter(s => s === 0).length;
-
-  const bar = document.getElementById('emStatusBar');
-  if (bar) {
-    bar.innerHTML =
-      (rojoC    > 0 ? `<span class="em-pill rojo">🔴 ${rojoC} en rojo</span>` : '') +
-      (amarilloC > 0 ? `<span class="em-pill amarillo">🟡 ${amarilloC} en alerta</span>` : '') +
-      (verdeC   > 0 ? `<span class="em-pill verde">🟢 ${verdeC} en meta</span>` : '') +
-      (rojoC === 0 && amarilloC === 0 && verdeC === 0 ? '<span class="em-pill gris">Sin datos suficientes</span>' : '') +
-      `<span class="em-status-ts">Actualizado ${hora}</span>`;
+function handleEmStep(...args) {
+  const module = window.PanelEmergencyManual;
+  if (!module || typeof module.handleEmStep !== 'function') {
+    throw new Error('El módulo PanelEmergencyManual no está disponible: handleEmStep');
   }
-
-  const crisis = document.getElementById('emCrisisBanner');
-  if (crisis) crisis.style.display = totalRojos >= 3 ? 'block' : 'none';
-
-  loadAllEmSteps();
+  return module.handleEmStep(...args);
 }
 
-function toggleEmDim(n) {
-  const dimEl  = document.getElementById('emDim_' + n);
-  const bodyEl = document.getElementById('emDB_body_' + n);
-  if (!dimEl || !bodyEl) return;
-  const open = dimEl.classList.toggle('open');
-  bodyEl.style.display = open ? 'block' : 'none';
-}
-
-function toggleEmCard(id) {
-  const card = document.getElementById('emCard_' + id);
-  const body = document.getElementById('emBody_' + id);
-  if (!card || !body) return;
-  const open = card.classList.toggle('open');
-  body.style.display = open ? 'block' : 'none';
-  if (!open) card.classList.remove('alerta');
-}
-
-function handleEmStep(event, kpi, idx) {
-  event.preventDefault();
-  const ck = document.getElementById('emCk_' + kpi + '_' + idx);
-  if (!ck) return;
-  ck.checked = !ck.checked;
-  _persistEmStep(kpi, idx, ck.checked);
-}
-
-function _persistEmStep(kpi, idx, checked) {
-  const key = 'em_steps_' + kpi;
-  let state = [];
-  try { state = JSON.parse(kvGet(key) || '[]'); } catch(e) {}
-  state[idx] = checked;
-  kvSet(key, JSON.stringify(state));
-  _updateEmProgress(kpi);
-}
-
-function _updateEmProgress(kpi) {
-  const checks = [];
-  for (let i = 0; i < 6; i++) {
-    const ck = document.getElementById('emCk_' + kpi + '_' + i);
-    if (!ck) break;
-    checks.push(ck.checked);
-    const row = document.getElementById('emS_' + kpi + '_' + i);
-    if (row) row.classList.toggle('done', ck.checked);
+function _persistEmStep(...args) {
+  const module = window.PanelEmergencyManual;
+  if (!module || typeof module._persistEmStep !== 'function') {
+    throw new Error('El módulo PanelEmergencyManual no está disponible: _persistEmStep');
   }
-  const total = checks.length, done = checks.filter(Boolean).length;
-  const fill = document.getElementById('emPF_' + kpi);
-  if (fill) fill.style.width = (total > 0 ? Math.round(done / total * 100) : 0) + '%';
-  const meta = document.getElementById('emPM_' + kpi);
-  if (meta) meta.textContent = done + ' de ' + total + ' pasos completados';
-  const btn  = document.getElementById('emDB_' + kpi);
-  if (btn)  btn.classList.toggle('done-ok', done === total && total > 0);
+  return module._persistEmStep(...args);
 }
 
-function loadAllEmSteps() {
-  ['sesiones','mixfull','cancel','leads','conv','ventas_sem','ventas_mes','nps','enc','bd','retencion'].forEach(kpi => {
-    let state = [];
-    try { state = JSON.parse(kvGet('em_steps_' + kpi) || '[]'); } catch(e) {}
-    state.forEach((checked, idx) => {
-      const ck = document.getElementById('emCk_' + kpi + '_' + idx);
-      if (ck) ck.checked = !!checked;
-    });
-    _updateEmProgress(kpi);
-  });
-}
-
-function markEmDone(kpi, total) {
-  const state = Array(total).fill(true);
-  kvSet('em_steps_' + kpi, JSON.stringify(state));
-  for (let i = 0; i < total; i++) {
-    const ck = document.getElementById('emCk_' + kpi + '_' + i);
-    if (ck) ck.checked = true;
+function _updateEmProgress(...args) {
+  const module = window.PanelEmergencyManual;
+  if (!module || typeof module._updateEmProgress !== 'function') {
+    throw new Error('El módulo PanelEmergencyManual no está disponible: _updateEmProgress');
   }
-  _updateEmProgress(kpi);
+  return module._updateEmProgress(...args);
 }
 
-function resetEmSteps(kpi, total) {
-  kvRemove('em_steps_' + kpi);
-  for (let i = 0; i < total; i++) {
-    const ck = document.getElementById('emCk_' + kpi + '_' + i);
-    if (ck) ck.checked = false;
+function loadAllEmSteps(...args) {
+  const module = window.PanelEmergencyManual;
+  if (!module || typeof module.loadAllEmSteps !== 'function') {
+    throw new Error('El módulo PanelEmergencyManual no está disponible: loadAllEmSteps');
   }
-  _updateEmProgress(kpi);
+  return module.loadAllEmSteps(...args);
+}
+
+function markEmDone(...args) {
+  const module = window.PanelEmergencyManual;
+  if (!module || typeof module.markEmDone !== 'function') {
+    throw new Error('El módulo PanelEmergencyManual no está disponible: markEmDone');
+  }
+  return module.markEmDone(...args);
+}
+
+function resetEmSteps(...args) {
+  const module = window.PanelEmergencyManual;
+  if (!module || typeof module.resetEmSteps !== 'function') {
+    throw new Error('El módulo PanelEmergencyManual no está disponible: resetEmSteps');
+  }
+  return module.resetEmSteps(...args);
 }
 
 function renderKPIGuia(...args) {
@@ -11163,124 +10904,71 @@ function _renderCancelBreakdown(...args) {
 }
 
 // ── ENCUESTA STATS — conectado a Google Forms via GAS ──
-function getEncuestaStats() {
-  try { return JSON.parse(kvGet('encuestaStats') || '{}'); } catch { return {}; }
+function getEncuestaStats(...args) {
+  const module = window.PanelSurveyMeasurement;
+  if (!module || typeof module.getEncuestaStats !== 'function') {
+    throw new Error('El módulo PanelSurveyMeasurement no está disponible: getEncuestaStats');
+  }
+  return module.getEncuestaStats(...args);
 }
 
-async function loadEncuestaStats() {
-  const btn  = document.getElementById('btnCargarEncuesta');
-  const btn2 = document.getElementById('btnCargarEncuestaGuia');
-  [btn, btn2].forEach(b => { if (b) { b.disabled = true; b.textContent = '⏳ Cargando...'; } });
-  try {
-    const r = await fetch(`${APPS_SCRIPT_URL}?action=getEncuestaStats&token=${encodeURIComponent(TOKEN)}`);
-    const d = await r.json();
-    if (d.ok) {
-      const now = new Date();
-      const m = now.getMonth()+1, y = now.getFullYear();
-      const citasMes = citasReales().filter(c => {
-        const [cy,cm] = normDate(c.fecha).split('-');
-        return +cm===m && +cy===y;
-      }).length;
-      const encPct  = citasMes > 0 ? Math.round((d.totalMes / citasMes) * 100) : 0;
-      const npsVal  = (d.nps !== null && d.nps !== undefined) ? d.nps : null;
-      const stats   = {
-        nps: npsVal, encuestas: encPct,
-        totalRespuestas: d.totalMes, citasMes,
-        promotores: d.promotores, pasivos: d.pasivos, detractores: d.detractores,
-        fetchedAt: Date.now()
-      };
-      kvSet('encuestaStats', JSON.stringify(stats));
-      // Actualizar inputs ocultos y guardar
-      const sv = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
-      sv('kpiNPS', npsVal !== null ? npsVal : ''); sv('kpiEncuestas', encPct);
-      guardarKPIManual();
-      _renderEncuestaStatsUI(stats);
-      renderKPITablero();
-      renderKPIGuia();
-      toast(`✅ NPS: ${npsVal !== null ? npsVal : '—'} · Encuestas: ${encPct}% · ${d.totalMes} respuestas este mes`, 'ok');
-    } else {
-      toast('Error al leer el formulario: ' + (d.error || 'verifica el GAS'), 'err');
-    }
-  } catch(e) { toast('Error de conexión al cargar encuestas', 'err'); }
-  [btn, btn2].forEach(b => { if (b) { b.disabled = false; b.textContent = b.id === 'btnCargarEncuestaGuia' ? '🔄 Cargar encuestas' : '🔄 Cargar desde formulario'; } });
+async function loadEncuestaStats(...args) {
+  const module = window.PanelSurveyMeasurement;
+  if (!module || typeof module.loadEncuestaStats !== 'function') {
+    throw new Error('El módulo PanelSurveyMeasurement no está disponible: loadEncuestaStats');
+  }
+  return await module.loadEncuestaStats(...args);
 }
 
-function _renderEncuestaStatsUI(stats) {
-  if (!stats || (stats.nps === undefined && stats.encuestas === undefined)) return;
-  const npsOk     = stats.nps !== null && stats.nps !== undefined;
-  const colorNPS  = npsOk ? (stats.nps >= META_NPS ? 'var(--ok)' : stats.nps >= 70 ? '#f59e0b' : '#ef4444') : 'var(--muted)';
-  const colorEnc  = stats.encuestas >= META_ENCUESTAS ? 'var(--ok)' : '#f59e0b';
-  const npsEl     = document.getElementById('kpiNPSAutoTag');
-  const encEl     = document.getElementById('kpiEncuestasAutoTag');
-  if (npsEl) npsEl.innerHTML = npsOk
-    ? `<span style="font-size:1rem;font-weight:700;color:${colorNPS}">${stats.nps}</span>`+
-      ` <span style="color:var(--muted);font-size:.75rem">· ${stats.promotores}P / ${stats.pasivos}Pa / ${stats.detractores}D</span>`
-    : `<span style="font-size:.88rem;color:var(--muted)">Sin respuestas este mes · ${stats.totalRespuestas || 0} resp.</span>`;
-  if (encEl) encEl.innerHTML =
-    `<span style="font-size:1rem;font-weight:700;color:${colorEnc}">${stats.encuestas}%</span>`+
-    ` <span style="color:var(--muted);font-size:.75rem">· ${stats.totalRespuestas} resp. / ${stats.citasMes} citas</span>`;
+function _renderEncuestaStatsUI(...args) {
+  const module = window.PanelSurveyMeasurement;
+  if (!module || typeof module._renderEncuestaStatsUI !== 'function') {
+    throw new Error('El módulo PanelSurveyMeasurement no está disponible: _renderEncuestaStatsUI');
+  }
+  return module._renderEncuestaStatsUI(...args);
 }
 
 // ── RUTINA DE MEDICIÓN — checklist tachable con reinicio diario ──
-const RUTINA_IDS = ['d3','d6','d7','d8','d9','d10','s1','s2','s3','s4','s5','s6','s7','m1','m3','m4','m5','m6'];
+// RUTINA_IDS encapsulado en js/modules/survey-measurement.js.
 
-function _rutinaKey() {
-  const d = new Date();
-  return `rutina_${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+function _rutinaKey(...args) {
+  const module = window.PanelSurveyMeasurement;
+  if (!module || typeof module._rutinaKey !== 'function') {
+    throw new Error('El módulo PanelSurveyMeasurement no está disponible: _rutinaKey');
+  }
+  return module._rutinaKey(...args);
 }
 
-function loadRutinaChecks() {
-  const today = _rutinaKey();
-  let checked = [];
-  try { checked = JSON.parse(kvGet(today) || '[]'); } catch {}
-  RUTINA_IDS.forEach(id => {
-    const cb  = document.getElementById('rck_' + id);
-    const lbl = cb ? cb.closest('.gk-check-item') : null;
-    if (!cb || !lbl) return;
-    const done = checked.includes(id);
-    cb.checked = done;
-    lbl.classList.toggle('done', done);
-  });
+function loadRutinaChecks(...args) {
+  const module = window.PanelSurveyMeasurement;
+  if (!module || typeof module.loadRutinaChecks !== 'function') {
+    throw new Error('El módulo PanelSurveyMeasurement no está disponible: loadRutinaChecks');
+  }
+  return module.loadRutinaChecks(...args);
 }
 
-function toggleRutinaCheck(id) {
-  const cb  = document.getElementById('rck_' + id);
-  const lbl = cb ? cb.closest('.gk-check-item') : null;
-  if (!cb || !lbl) return;
-  // Usamos un pequeño delay para leer el valor actualizado
-  setTimeout(() => {
-    const done = cb.checked;
-    lbl.classList.toggle('done', done);
-    const today = _rutinaKey();
-    let checked = [];
-    try { checked = JSON.parse(kvGet(today) || '[]'); } catch {}
-    if (done && !checked.includes(id))  checked.push(id);
-    if (!done) checked = checked.filter(x => x !== id);
-    kvSet(today, JSON.stringify(checked));
-  }, 0);
+function toggleRutinaCheck(...args) {
+  const module = window.PanelSurveyMeasurement;
+  if (!module || typeof module.toggleRutinaCheck !== 'function') {
+    throw new Error('El módulo PanelSurveyMeasurement no está disponible: toggleRutinaCheck');
+  }
+  return module.toggleRutinaCheck(...args);
 }
 
-function resetRutina() {
-  kvRemove(_rutinaKey());
-  loadRutinaChecks();
-  toast('Checklist reiniciado', 'ok');
+function resetRutina(...args) {
+  const module = window.PanelSurveyMeasurement;
+  if (!module || typeof module.resetRutina !== 'function') {
+    throw new Error('El módulo PanelSurveyMeasurement no está disponible: resetRutina');
+  }
+  return module.resetRutina(...args);
 }
 
-function resetRutinaGrupo(prefix) {
-  const today = _rutinaKey();
-  let checked = [];
-  try { checked = JSON.parse(kvGet(today) || '[]'); } catch {}
-  checked = checked.filter(id => !id.startsWith(prefix));
-  kvSet(today, JSON.stringify(checked));
-  RUTINA_IDS.filter(id => id.startsWith(prefix)).forEach(id => {
-    const cb  = document.getElementById('rck_' + id);
-    const lbl = cb ? cb.closest('.gk-check-item') : null;
-    if (!cb || !lbl) return;
-    cb.checked = false;
-    lbl.classList.remove('done');
-  });
-  const nombre = prefix === 'd' ? 'Diario' : prefix === 's' ? 'Semanal' : 'Mensual';
-  toast('Checklist ' + nombre + ' reiniciado', 'ok');
+function resetRutinaGrupo(...args) {
+  const module = window.PanelSurveyMeasurement;
+  if (!module || typeof module.resetRutinaGrupo !== 'function') {
+    throw new Error('El módulo PanelSurveyMeasurement no está disponible: resetRutinaGrupo');
+  }
+  return module.resetRutinaGrupo(...args);
 }
 
 function _renderBDBreakdown(...args) {
@@ -12928,6 +12616,9 @@ document.addEventListener('DOMContentLoaded', () => {
 <script src="js/modules/commissions.js"></script>
 <script src="js/modules/patient-search.js"></script>
 <script src="js/modules/patient-records.js"></script>
+<script src="js/modules/admin-profile-accessibility.js"></script>
+<script src="js/modules/emergency-manual.js"></script>
+<script src="js/modules/survey-measurement.js"></script>
 </body>
 </html>
 
