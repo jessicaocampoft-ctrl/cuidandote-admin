@@ -135,7 +135,7 @@ const storageContext = {
   clearTimeout:id=>scheduled.delete(id),
   fetch:async (url,options={})=>{
     requests.push({url,options});
-    if (url.includes('action=getAdminKV')) return {json:async()=>({ok:true,kv:{remoto:'valor'}})};
+    if (url.includes('action=getAdminKV')) return {json:async()=>({ok:true,data:{remoto:'valor'}})};
     return {json:async()=>({ok:true})};
   },
   addEventListener:(name,fn)=>listeners.set(name,fn),
@@ -152,7 +152,13 @@ assert(S.kvGet('remoto') === 'valor' && local.get('remoto') === 'valor', 'loadAd
 S.kvSet('prueba','123');
 assert(S.kvGet('prueba') === '123' && local.get('prueba') === '123', 'kvSet/kvGet perdió comportamiento.');
 await S._flushKV();
-assert(requests.some(r=>r.url.includes('action=setAdminKV') && r.url.includes('prueba')), '_flushKV no envía el lote existente.');
+assert(requests.some(r => {
+  try {
+    const body = JSON.parse(r.options.body || '{}');
+    const data = JSON.parse(body.data || '{}');
+    return body.action === 'setAdminKV' && data.prueba === '123';
+  } catch { return false; }
+}), '_flushKV no envía el lote existente.');
 S.kvRemove('prueba');
 assert(S.kvGet('prueba') === null && !local.has('prueba'), 'kvRemove perdió comportamiento.');
 assert(typeof listeners.get('beforeunload') === 'function', 'No se conservó la descarga al cerrar el navegador.');
