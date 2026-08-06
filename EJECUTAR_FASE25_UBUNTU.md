@@ -1,1 +1,1 @@
-Ejecutar la Fase 25 mediante el flujo directo Ubuntu con el validador de paridad corregido en bee1c849, el 2026-08-06.
+Reejecutar la Fase 25 mediante Ubuntu con el validador corregido y todas las ramas remotas de regresión disponibles, el 2026-08-06.
