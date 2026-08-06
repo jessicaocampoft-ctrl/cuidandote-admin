@@ -86,15 +86,31 @@ for(const match of html.matchAll(/(?:^|\n)(const|let|var)\s+([A-Za-z_$][\w$]*)\s
 const globalByName=new Map();
 for(const decl of globalDeclarations) for(const name of decl.names) globalByName.set(name,decl);
 
+const sharedGlobalNames = new Set([
+  'allData','APPS_SCRIPT_URL','TOKEN','esRegistroServ','esSesionFull','esSesionIndiv'
+]);
+const externalGlobalNames = unique([...sharedGlobalNames].filter(name =>
+  new RegExp(`\\b${name.replace(/[$]/g,'\\$&')}\\b`).test(selectedSource)
+));
+
 const referencedGlobals=new Set();
 const queue=[];
-for(const name of globalByName.keys()) if(new RegExp(`\\b${name.replace(/[$]/g,'\\$&')}\\b`).test(selectedSource)){referencedGlobals.add(name);queue.push(name);}
+for(const name of globalByName.keys()) {
+  if (sharedGlobalNames.has(name)) continue;
+  if(new RegExp(`\\b${name.replace(/[$]/g,'\\$&')}\\b`).test(selectedSource)){
+    referencedGlobals.add(name);
+    queue.push(name);
+  }
+}
 while(queue.length){
   const name=queue.shift();
   const decl=globalByName.get(name); if(!decl) continue;
   for(const candidate of globalByName.keys()){
-    if(referencedGlobals.has(candidate)) continue;
-    if(new RegExp(`\\b${candidate.replace(/[$]/g,'\\$&')}\\b`).test(decl.text)){referencedGlobals.add(candidate);queue.push(candidate);}
+    if(sharedGlobalNames.has(candidate)||referencedGlobals.has(candidate)) continue;
+    if(new RegExp(`\\b${candidate.replace(/[$]/g,'\\$&')}\\b`).test(decl.text)){
+      referencedGlobals.add(candidate);
+      queue.push(candidate);
+    }
   }
 }
 const selectedDeclarations=unique([...new Set([...referencedGlobals].map(n=>globalByName.get(n)?.text).filter(Boolean))]);
@@ -111,20 +127,26 @@ const forbiddenFunctions=[
 const crossed=functionNames.filter(n=>forbiddenFunctions.includes(n));
 if(crossed.length) throw new Error(`Alcance inseguro: ${crossed.join(', ')}`);
 if(functionNames.length!==25) throw new Error(`Se esperaban 25 funciones y hay ${functionNames.length}.`);
+if(selectedGlobalNames.length!==17) throw new Error(`Se esperaban 17 globales propios y se detectaron ${selectedGlobalNames.length}: ${selectedGlobalNames.join(', ')}`);
+if(selectedDeclarations.length!==17) throw new Error(`Se esperaban 17 declaraciones propias y se detectaron ${selectedDeclarations.length}.`);
 if(!selectedGlobalNames.includes('KPI_CONFIG_DEFAULTS')||!selectedGlobalNames.includes('KPI_INTERACTIVE')) throw new Error('Faltan constantes KPI esenciales.');
+if(selectedGlobalNames.some(name=>sharedGlobalNames.has(name))) throw new Error('Una variable compartida intentó entrar al módulo KPI.');
 
 const lines=[
   '# Inventario de modularización — Fase 12 Indicadores y KPI','',
   `- Funciones propias seleccionadas: **${functionNames.length}**.`,
   `- Declaraciones globales seleccionadas: **${selectedDeclarations.length}**.`,
   `- Nombres globales encapsulados: **${selectedGlobalNames.length}**.`,
+  `- Variables globales compartidas conservadas fuera: **${externalGlobalNames.length}**.`,
   `- Dependencias funcionales externas conservadas: **${externalFunctions.length}**.`,
   '- `renderMetricas`, encuestas, presupuesto, metas financieras, leads, pagos y comisiones permanecen fuera.','',
   '## Funciones propias',...functionNames.map(n=>`- \`${n}\`${selectedBlocks.find(x=>x.name===n)?.async?' — async':''}`),
   '', '## Estado y constantes propias',...selectedGlobalNames.map(n=>`- \`${n}\``),
+  '', '## Variables compartidas conservadas fuera',...externalGlobalNames.map(n=>`- \`${n}\``),
   '', '## Declaraciones completas',...selectedDeclarations.map(d=>`- \`${d.replace(/\s+/g,' ').slice(0,180)}${d.length>180?'…':''}\``),
   '', '## Dependencias externas conservadas',...externalFunctions.map(n=>`- \`${n}\``),
   '', '## Límites confirmados',
+  '- `allData`, `APPS_SCRIPT_URL`, `TOKEN` y los clasificadores de servicios conservan una sola fuente de verdad.',
   '- `getCancelMotivos` y `marcarErrorMio` siguen perteneciendo a edición de citas.',
   '- `getEncuestaStats` y `loadEncuestaStats` siguen perteneciendo a encuestas.',
   '- `getLeadsMes` sigue perteneciendo a gestión comercial.',
@@ -133,4 +155,4 @@ const lines=[
   '- No se modifica `main`, Apps Script ni el panel publicado.',''
 ];
 fs.writeFileSync(out,lines.join('\n'),'utf8');
-console.log(`Inventario Fase 12: ${functionNames.length} funciones, ${selectedGlobalNames.length} globales, ${externalFunctions.length} dependencias.`);
+console.log(`Inventario Fase 12: ${functionNames.length} funciones, ${selectedGlobalNames.length} globales propios, ${externalGlobalNames.length} globales compartidos y ${externalFunctions.length} dependencias.`);
