@@ -1,1 +1,1 @@
-Publicación limpia del administrador solicitada el 2026-08-06 después de cancelar todas las ejecuciones y despliegues superpuestos. Este archivo no modifica el contenido ni el funcionamiento del administrador.
+Publicación del administrador solicitada nuevamente el 2026-08-06 a las 11:06 (Colombia) después de cambiar GitHub Pages a GitHub Actions. Este archivo no modifica el contenido ni el funcionamiento del administrador.
