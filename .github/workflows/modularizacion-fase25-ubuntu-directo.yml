@@ -9,10 +9,9 @@ on:
 
 permissions:
   contents: write
-  actions: write
 
 concurrency:
-  group: fase25-utilidades-integracion-final-directo-v1
+  group: fase25-utilidades-integracion-final-directo-v2
   cancel-in-progress: false
 
 jobs:
@@ -28,30 +27,14 @@ jobs:
         run: |
           set -euo pipefail
 
-          echo "Cancelando el reintento ARM anterior si continúa en cola..."
-          curl --silent --show-error --fail-with-body \
-            --request POST \
-            --header "Accept: application/vnd.github+json" \
-            --header "Authorization: Bearer ${GH_TOKEN}" \
-            --header "X-GitHub-Api-Version: 2022-11-28" \
-            "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/runs/31120784978/cancel" || true
-
-          echo "Clonando únicamente la rama aislada..."
           git clone --single-branch --branch "${BRANCH}" \
             "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" repo
           cd repo
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-          echo "Verificando Node y base exacta..."
           node --version
-          git fetch origin modularizacion-panel-fase24-emergencia-encuestas-perfil-accesibilidad-2026-08-06
-          git fetch origin modularizacion-panel-fase23-pacientes-historial-busqueda-2026-08-06
-          git fetch origin modularizacion-panel-fase22-comisiones-2026-08-06
-          git fetch origin modularizacion-panel-fase21-operacion-agenda-2026-08-06
-          git fetch origin modularizacion-panel-fase20-voz-recordatorios-calendario-2026-08-06
-          git fetch origin modularizacion-panel-fase19-whatsapp-mensajes-2026-08-06
-          git fetch origin main
+
+          git fetch origin '+refs/heads/*:refs/remotes/origin/*'
           git merge-base --is-ancestor origin/modularizacion-panel-fase24-emergencia-encuestas-perfil-accesibilidad-2026-08-06 HEAD
           test "$(git rev-parse origin/modularizacion-panel-fase24-emergencia-encuestas-perfil-accesibilidad-2026-08-06)" = "f6c0eb6e11e1daefa7269d8c889a7e29461aa32e"
 
@@ -62,23 +45,19 @@ jobs:
           git show origin/modularizacion-panel-fase20-voz-recordatorios-calendario-2026-08-06:index.html > /tmp/fase20-index.html
           git show origin/modularizacion-panel-fase19-whatsapp-mensajes-2026-08-06:index.html > /tmp/fase19-index.html
 
-          echo "Retirando archivos temporales antes de generar el resultado..."
           rm -f .github/workflows/modularizacion-fase25-ubuntu-directo.yml
           rm -f EJECUTAR_FASE25_UBUNTU.md
           rm -f tools/inventariar-fase25.mjs INVENTARIAR_FASE25.md INVENTARIO_FASE25.md
           rm -f .github/workflows/inventario-fase25.yml
 
-          echo "Separando utilidades compartidas..."
           node tools/modularizar-fase25.mjs index.html
 
-          echo "Validando Fase 25..."
           node --check tools/modularizar-fase25.mjs
           node --check tools/validar-fase25.mjs
           node --check js/modules/shared-utils.js
           node --check js/modules/shared-storage.js
           node tools/validar-fase25.mjs /tmp/fase24-index.html index.html js/modules/shared-utils.js js/modules/shared-storage.js
 
-          echo "Ejecutando regresión acumulada Fases 20 a 24..."
           find js -type f -name '*.js' -print0 | xargs -0 -n1 node --check
           node tools/validar-fase24.mjs /tmp/fase23-index.html index.html js/modules/admin-profile-accessibility.js js/modules/emergency-manual.js js/modules/survey-measurement.js
           node tools/validar-pacientes-fase23.mjs /tmp/fase22-index.html index.html js/modules/patient-search.js js/modules/patient-records.js
@@ -86,7 +65,6 @@ jobs:
           node tools/validar-operacion-agenda-fase21.mjs /tmp/fase20-index.html index.html js/modules/waitlist.js js/modules/schedule-operations.js js/modules/events-agreements.js
           node tools/validar-voz-recordatorios-fase20.mjs /tmp/fase19-index.html index.html js/modules/voice-assistant.js js/modules/reminders.js
 
-          echo "Confirmando integridad de módulos anteriores y Apps Script..."
           git diff --exit-code origin/modularizacion-panel-fase24-emergencia-encuestas-perfil-accesibilidad-2026-08-06 -- js/modules ':(exclude)js/modules/shared-utils.js' ':(exclude)js/modules/shared-storage.js'
           git diff --exit-code origin/modularizacion-panel-fase24-emergencia-encuestas-perfil-accesibilidad-2026-08-06 -- google-apps-script.js
 
