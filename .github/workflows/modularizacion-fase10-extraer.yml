@@ -1,0 +1,74 @@
+name: Fase 10 — Extraer Paquetes para validación
+
+on:
+  push:
+    branches:
+      - modularizacion-panel-fase10-paquetes-2026-08-05
+    paths:
+      - MODULARIZACION_FASE10_EXTRAER.md
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: modularizacion-panel-fase10-paquetes-extraer
+  cancel-in-progress: false
+
+jobs:
+  extraer-paquetes:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar rama aislada
+        uses: actions/checkout@v4
+        with:
+          ref: modularizacion-panel-fase10-paquetes-2026-08-05
+          fetch-depth: 0
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Confirmar aislamiento
+        run: |
+          test "$(git branch --show-current)" = "modularizacion-panel-fase10-paquetes-2026-08-05"
+          git fetch origin modularizacion-panel-fase9-referidos-bonos-2026-08-05
+          git fetch origin main
+
+      - name: Extraer módulo
+        run: node tools/modularizar-paquetes-fase10.mjs index.html
+
+      - name: Validación estructural inicial
+        run: |
+          node --check js/modules/packages.js
+          grep -q 'global.PanelPackages = Object.freeze' js/modules/packages.js
+          grep -q '<script src="js/modules/packages.js"></script>' index.html
+          test "$(grep -o 'script src="js/modules/packages.js"' index.html | wc -l)" -eq 1
+          test "$(grep -c 'function renderPaquetes(...args)' index.html)" -eq 1
+          test "$(grep -c 'function usarSesion(...args)' index.html)" -eq 1
+
+      - name: Confirmar módulos anteriores intactos
+        run: |
+          git diff --exit-code origin/modularizacion-panel-fase9-referidos-bonos-2026-08-05 -- \
+            js/core/config.js js/core/api.js js/core/navigation.js js/core/session.js \
+            js/modules/payments.js js/modules/passport.js js/modules/agenda.js \
+            js/modules/appointment-create.js js/modules/appointment-edit.js \
+            js/modules/team.js js/modules/database.js js/modules/referrals.js
+
+      - name: Guardar extracción solo en la rama
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html js/modules/packages.js
+          if git diff --cached --quiet; then
+            echo "La extracción ya estaba aplicada."
+          else
+            git commit -m "Extraer Paquetes para pruebas"
+            git push origin HEAD:modularizacion-panel-fase10-paquetes-2026-08-05
+          fi
+
+      - name: Resumen
+        run: |
+          echo "PAQUETES EXTRAÍDO SOLO EN RAMA AISLADA"
+          echo "Pendiente de pruebas funcionales antes de crear borrador."

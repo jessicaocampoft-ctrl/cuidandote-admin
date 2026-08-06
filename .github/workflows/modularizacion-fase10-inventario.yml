@@ -1,0 +1,68 @@
+name: Fase 10 — Inventario Paquetes
+
+on:
+  push:
+    branches:
+      - modularizacion-panel-fase10-paquetes-2026-08-05
+    paths:
+      - MODULARIZACION_FASE10_INVENTARIO.md
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: modularizacion-panel-fase10-paquetes-inventario
+  cancel-in-progress: false
+
+jobs:
+  inventario-paquetes:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar rama aislada
+        uses: actions/checkout@v4
+        with:
+          ref: modularizacion-panel-fase10-paquetes-2026-08-05
+          fetch-depth: 0
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Confirmar aislamiento
+        run: |
+          test "$(git branch --show-current)" = "modularizacion-panel-fase10-paquetes-2026-08-05"
+          git fetch origin modularizacion-panel-fase9-referidos-bonos-2026-08-05
+          git fetch origin main
+
+      - name: Generar inventario
+        run: node tools/inventario-paquetes-fase10.mjs index.html MODULARIZACION_FASE10_INVENTARIO_RESULTADO.md
+
+      - name: Validar inventario
+        run: |
+          test -s MODULARIZACION_FASE10_INVENTARIO_RESULTADO.md
+          grep -q 'Fase 10 Paquetes' MODULARIZACION_FASE10_INVENTARIO_RESULTADO.md
+          grep -q '`renderPaquetes`' MODULARIZACION_FASE10_INVENTARIO_RESULTADO.md
+          grep -q 'Agenda, Pagos, Finanzas, Pasaporte, Base de datos y Equipo clínico permanecen fuera' MODULARIZACION_FASE10_INVENTARIO_RESULTADO.md
+
+      - name: Confirmar que no cambió código funcional
+        run: |
+          git diff --exit-code origin/modularizacion-panel-fase9-referidos-bonos-2026-08-05 -- index.html js/core js/modules
+
+      - name: Guardar únicamente el informe
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add MODULARIZACION_FASE10_INVENTARIO_RESULTADO.md
+          if git diff --cached --quiet; then
+            echo "El inventario ya estaba actualizado."
+          else
+            git commit -m "Inventariar módulo Paquetes"
+            git push origin HEAD:modularizacion-panel-fase10-paquetes-2026-08-05
+          fi
+
+      - name: Resumen
+        run: |
+          echo "INVENTARIO FASE 10 COMPLETADO"
+          echo "No se modificó main ni el panel publicado."
