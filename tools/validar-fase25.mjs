@@ -135,7 +135,7 @@ const storageContext = {
   clearTimeout:id=>scheduled.delete(id),
   fetch:async (url,options={})=>{
     requests.push({url,options});
-    if (url.includes('action=getAdminKV')) return {json:async()=>({ok:true,data:{remoto:'valor'}})};
+    if (url.includes('action=getAdminKV')) return {json:async()=>({ok:true,kv:{remoto:'valor'}})};
     return {json:async()=>({ok:true})};
   },
   addEventListener:(name,fn)=>listeners.set(name,fn),
