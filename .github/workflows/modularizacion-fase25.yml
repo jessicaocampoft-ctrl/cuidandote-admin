@@ -12,11 +12,11 @@ permissions:
 
 concurrency:
   group: fase25-utilidades-integracion-final-v5
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   integrar-y-validar:
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-latest
     steps:
       - name: Descargar rama aislada
         uses: actions/checkout@v4
@@ -49,12 +49,14 @@ jobs:
           git show origin/modularizacion-panel-fase20-voz-recordatorios-calendario-2026-08-06:index.html > /tmp/fase20-index.html
           git show origin/modularizacion-panel-fase19-whatsapp-mensajes-2026-08-06:index.html > /tmp/fase19-index.html
 
-      - name: Retirar archivos auxiliares del inventario
+      - name: Retirar archivos auxiliares
         shell: bash
         run: |
           rm -f tools/inventariar-fase25.mjs
           rm -f INVENTARIAR_FASE25.md INVENTARIO_FASE25.md
           rm -f .github/workflows/inventario-fase25.yml
+          rm -f .github/workflows/modularizacion-fase25-ubuntu-directo.yml
+          rm -f EJECUTAR_FASE25_UBUNTU.md
 
       - name: Separar utilidades y almacenamiento compartido
         run: node tools/modularizar-fase25.mjs index.html
