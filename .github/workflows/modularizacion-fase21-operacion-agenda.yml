@@ -1,0 +1,124 @@
+name: Fase 21 — Operación de agenda
+
+on:
+  push:
+    branches:
+      - modularizacion-panel-fase21-operacion-agenda-2026-08-06
+    paths:
+      - MODULARIZACION_FASE21_OPERACION_AGENDA.md
+
+permissions:
+  contents: write
+
+concurrency:
+  group: fase21-operacion-agenda
+  cancel-in-progress: false
+
+jobs:
+  modularizar-operacion-agenda:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar rama aislada
+        uses: actions/checkout@v4
+        with:
+          ref: modularizacion-panel-fase21-operacion-agenda-2026-08-06
+          fetch-depth: 0
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Confirmar aislamiento y bases
+        shell: bash
+        run: |
+          test "$(git branch --show-current)" = "modularizacion-panel-fase21-operacion-agenda-2026-08-06"
+          git fetch origin modularizacion-panel-fase20-voz-recordatorios-calendario-2026-08-06
+          git fetch origin modularizacion-panel-fase19-whatsapp-mensajes-2026-08-06
+          git fetch origin modularizacion-panel-fase18-tareas-automatizaciones-2026-08-06
+          git fetch origin main
+          git merge-base --is-ancestor origin/modularizacion-panel-fase20-voz-recordatorios-calendario-2026-08-06 HEAD
+          git show origin/modularizacion-panel-fase20-voz-recordatorios-calendario-2026-08-06:index.html > /tmp/fase20-index.html
+          git show origin/modularizacion-panel-fase19-whatsapp-mensajes-2026-08-06:index.html > /tmp/fase19-index.html
+          git show origin/modularizacion-panel-fase18-tareas-automatizaciones-2026-08-06:index.html > /tmp/fase18-index.html
+
+      - name: Limpiar rama temporal accidental
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          code="$(curl -sS -o /tmp/delete-tmp-noop.json -w '%{http_code}' -X DELETE \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/${{ github.repository }}/git/refs/heads/tmp-noop")"
+          if [ "$code" != "204" ] && [ "$code" != "404" ] && [ "$code" != "422" ]; then
+            cat /tmp/delete-tmp-noop.json
+            exit 1
+          fi
+          echo "Resultado limpieza tmp-noop: HTTP $code"
+
+      - name: Separar operación de agenda
+        run: node tools/modularizar-operacion-agenda-fase21.mjs index.html
+
+      - name: Validar sintaxis, paridad y comportamiento
+        shell: bash
+        run: |
+          node --check tools/modularizar-operacion-agenda-fase21.mjs
+          node --check tools/validar-operacion-agenda-fase21.mjs
+          node --check js/modules/waitlist.js
+          node --check js/modules/schedule-operations.js
+          node --check js/modules/events-agreements.js
+          node tools/validar-operacion-agenda-fase21.mjs /tmp/fase20-index.html index.html js/modules/waitlist.js js/modules/schedule-operations.js js/modules/events-agreements.js
+
+      - name: Confirmar módulos anteriores
+        shell: bash
+        run: |
+          find js -type f -name '*.js' -print0 | xargs -0 -n1 node --check
+          node tools/validar-voz-recordatorios-fase20.mjs /tmp/fase19-index.html index.html js/modules/voice-assistant.js js/modules/reminders.js
+          node tools/validar-whatsapp-mensajes-fase19.mjs /tmp/fase18-index.html index.html js/modules/whatsapp-tools.js js/modules/message-library.js
+
+      - name: Confirmar aislamiento funcional
+        shell: bash
+        run: |
+          git diff --exit-code origin/modularizacion-panel-fase20-voz-recordatorios-calendario-2026-08-06 -- google-apps-script.js
+          git merge-base --is-ancestor origin/modularizacion-panel-fase20-voz-recordatorios-calendario-2026-08-06 HEAD
+          bad="$(git diff --name-only origin/modularizacion-panel-fase20-voz-recordatorios-calendario-2026-08-06 | grep -Ev '^(index\.html|js/modules/waitlist\.js|js/modules/schedule-operations\.js|js/modules/events-agreements\.js|tools/modularizar-operacion-agenda-fase21\.mjs|tools/validar-operacion-agenda-fase21\.mjs|MODULARIZACION_FASE21_OPERACION_AGENDA\.md|MODULARIZACION_FASE21_RESULTADO\.md|\.github/workflows/modularizacion-fase21-operacion-agenda\.yml)$' || true)"
+          if [ -n "$bad" ]; then
+            echo "Archivos fuera del alcance:"
+            echo "$bad"
+            exit 1
+          fi
+
+      - name: Generar informe final
+        shell: bash
+        run: |
+          cat > MODULARIZACION_FASE21_RESULTADO.md <<'EOF'
+          # Resultado Fase 21 — Operación de agenda
+
+          - Módulo `js/modules/waitlist.js` creado.
+          - Módulo `js/modules/schedule-operations.js` creado.
+          - Módulo `js/modules/events-agreements.js` creado.
+          - 6 funciones de lista de espera trasladadas.
+          - 17 funciones de bloqueos y agendamiento múltiple/recurrente trasladadas.
+          - 14 funciones de eventos y convenios trasladadas.
+          - `_waitLoaded` y `_eeeId` encapsulados.
+          - Estado compartido de creación múltiple y configuración de convenios conservado para compatibilidad.
+          - Acciones existentes de espera, bloqueos y eventos conservadas sin agregar acciones nuevas.
+          - Módulos de las Fases 1 a 20 conservados.
+          - `main`, Apps Script y producción no modificados.
+          EOF
+
+      - name: Guardar resultado solo en la rama aislada
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html js/modules/waitlist.js js/modules/schedule-operations.js js/modules/events-agreements.js MODULARIZACION_FASE21_RESULTADO.md
+          if git diff --cached --quiet; then
+            echo "No hay cambios funcionales nuevos para guardar."
+            exit 0
+          fi
+          git commit -m "Separar y validar operación de agenda"
+          git pull --rebase origin modularizacion-panel-fase21-operacion-agenda-2026-08-06
+          git push origin HEAD:modularizacion-panel-fase21-operacion-agenda-2026-08-06
