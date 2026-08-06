@@ -2,3 +2,4 @@ Separar y validar Ingresos y análisis financiero detallado sobre la Fase 15, si
 
 Ejecución automática solicitada: 2026-08-06.
 Reejecución con extractor corregido: 2026-08-06.
+Validación funcional ajustada: 2026-08-06.
