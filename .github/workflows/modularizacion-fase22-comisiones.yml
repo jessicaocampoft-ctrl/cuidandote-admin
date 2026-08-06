@@ -1,0 +1,107 @@
+name: Fase 22 — Comisiones
+
+on:
+  push:
+    branches:
+      - modularizacion-panel-fase22-comisiones-2026-08-06
+    paths:
+      - EJECUTAR_FASE22_COMISIONES.md
+
+permissions:
+  contents: write
+
+concurrency:
+  group: fase22-comisiones
+  cancel-in-progress: false
+
+jobs:
+  modularizar-comisiones:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar rama aislada
+        uses: actions/checkout@v4
+        with:
+          ref: modularizacion-panel-fase22-comisiones-2026-08-06
+          fetch-depth: 0
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Confirmar aislamiento y bases
+        shell: bash
+        run: |
+          test "$(git branch --show-current)" = "modularizacion-panel-fase22-comisiones-2026-08-06"
+          git fetch origin modularizacion-panel-fase21-operacion-agenda-2026-08-06
+          git fetch origin modularizacion-panel-fase20-voz-recordatorios-calendario-2026-08-06
+          git fetch origin modularizacion-panel-fase19-whatsapp-mensajes-2026-08-06
+          git fetch origin modularizacion-panel-fase18-tareas-automatizaciones-2026-08-06
+          git fetch origin main
+          git merge-base --is-ancestor origin/modularizacion-panel-fase21-operacion-agenda-2026-08-06 HEAD
+          git show origin/modularizacion-panel-fase21-operacion-agenda-2026-08-06:index.html > /tmp/fase21-index.html
+          git show origin/modularizacion-panel-fase20-voz-recordatorios-calendario-2026-08-06:index.html > /tmp/fase20-index.html
+          git show origin/modularizacion-panel-fase19-whatsapp-mensajes-2026-08-06:index.html > /tmp/fase19-index.html
+          git show origin/modularizacion-panel-fase18-tareas-automatizaciones-2026-08-06:index.html > /tmp/fase18-index.html
+
+      - name: Separar comisiones
+        run: node tools/modularizar-comisiones-fase22.mjs index.html
+
+      - name: Validar sintaxis, paridad y cálculos
+        shell: bash
+        run: |
+          node --check tools/modularizar-comisiones-fase22.mjs
+          node --check tools/validar-comisiones-fase22.mjs
+          node --check js/modules/commissions.js
+          node tools/validar-comisiones-fase22.mjs /tmp/fase21-index.html index.html js/modules/commissions.js
+
+      - name: Confirmar módulos anteriores
+        shell: bash
+        run: |
+          find js -type f -name '*.js' -print0 | xargs -0 -n1 node --check
+          node tools/validar-operacion-agenda-fase21.mjs /tmp/fase20-index.html index.html js/modules/waitlist.js js/modules/schedule-operations.js js/modules/events-agreements.js
+          node tools/validar-voz-recordatorios-fase20.mjs /tmp/fase19-index.html index.html js/modules/voice-assistant.js js/modules/reminders.js
+          node tools/validar-whatsapp-mensajes-fase19.mjs /tmp/fase18-index.html index.html js/modules/whatsapp-tools.js js/modules/message-library.js
+
+      - name: Confirmar aislamiento funcional
+        shell: bash
+        run: |
+          git diff --exit-code origin/modularizacion-panel-fase21-operacion-agenda-2026-08-06 -- google-apps-script.js
+          git merge-base --is-ancestor origin/modularizacion-panel-fase21-operacion-agenda-2026-08-06 HEAD
+          bad="$(git diff --name-only origin/modularizacion-panel-fase21-operacion-agenda-2026-08-06 | grep -Ev '^(index\.html|js/modules/commissions\.js|tools/modularizar-comisiones-fase22\.mjs|tools/validar-comisiones-fase22\.mjs|MODULARIZACION_FASE22_COMISIONES\.md|MODULARIZACION_FASE22_RESULTADO\.md|EJECUTAR_FASE22_COMISIONES\.md|\.github/workflows/modularizacion-fase22-comisiones\.yml)$' || true)"
+          if [ -n "$bad" ]; then
+            echo "Archivos fuera del alcance:"
+            echo "$bad"
+            exit 1
+          fi
+
+      - name: Generar informe final
+        shell: bash
+        run: |
+          cat > MODULARIZACION_FASE22_RESULTADO.md <<'EOF'
+          # Resultado Fase 22 — Comisiones
+
+          - Módulo `js/modules/commissions.js` creado.
+          - 18 funciones del bloque de comisiones trasladadas.
+          - Configuración, selector mensual, metas semanales, reactivaciones, reventas, ventas cruzadas y pagos conservados.
+          - API pública `PanelCommissions` congelada.
+          - Comisiones del equipo y recuperación conservadas en sus módulos actuales.
+          - Sin llamadas nuevas ni dependencia directa de Apps Script.
+          - Paridad exacta, valores predeterminados, JSON dañado y cálculos principales validados.
+          - Módulos de las Fases 1 a 21 conservados.
+          - `main`, Apps Script y producción no modificados.
+          EOF
+
+      - name: Guardar resultado solo en la rama aislada
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html js/modules/commissions.js MODULARIZACION_FASE22_RESULTADO.md
+          if git diff --cached --quiet; then
+            echo "No hay cambios funcionales nuevos para guardar."
+            exit 0
+          fi
+          git commit -m "Separar y validar Comisiones"
+          git pull --rebase origin modularizacion-panel-fase22-comisiones-2026-08-06
+          git push origin HEAD:modularizacion-panel-fase22-comisiones-2026-08-06
