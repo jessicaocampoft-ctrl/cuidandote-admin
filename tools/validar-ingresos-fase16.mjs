@@ -22,12 +22,38 @@ const names = [
 
 function assert(condition, message) { if (!condition) throw new Error(message); }
 
+function findBodyBrace(text, start) {
+  const openParen = text.indexOf('(', start);
+  if (openParen < 0) return -1;
+  let depth = 0, quote = '', escaped = false, lineComment = false, blockComment = false;
+  for (let i = openParen; i < text.length; i++) {
+    const ch = text[i], next = text[i + 1];
+    if (lineComment) { if (ch === '\n') lineComment = false; continue; }
+    if (blockComment) { if (ch === '*' && next === '/') { blockComment = false; i++; } continue; }
+    if (quote) {
+      if (escaped) { escaped = false; continue; }
+      if (ch === '\\') { escaped = true; continue; }
+      if (ch === quote) quote = '';
+      continue;
+    }
+    if (ch === '/' && next === '/') { lineComment = true; i++; continue; }
+    if (ch === '/' && next === '*') { blockComment = true; i++; continue; }
+    if (ch === '"' || ch === "'" || ch === '`') { quote = ch; continue; }
+    if (ch === '(') depth++;
+    if (ch === ')') {
+      depth--;
+      if (depth === 0) return text.indexOf('{', i + 1);
+    }
+  }
+  return -1;
+}
+
 function extractNamedFunction(source, name) {
   const safe = name.replace(/[$]/g, '\\$&');
   const matches = [...source.matchAll(new RegExp(`(?:^|\\n)((?:async\\s+)?function\\s+${safe}\\s*\\()`, 'g'))];
   assert(matches.length === 1, `${name}: se esperaba una declaración y se encontraron ${matches.length}.`);
   const start = matches[0].index + (matches[0][0].startsWith('\n') ? 1 : 0);
-  const brace = source.indexOf('{', start);
+  const brace = findBodyBrace(source, start);
   assert(brace >= 0, `${name}: no se encontró el cuerpo.`);
   let depth = 0, quote = '', escaped = false, lineComment = false, blockComment = false;
   for (let i = brace; i < source.length; i++) {
