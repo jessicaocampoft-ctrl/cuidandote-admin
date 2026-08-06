@@ -1,0 +1,125 @@
+name: Fase 25 — Ejecución directa Ubuntu
+
+on:
+  push:
+    branches:
+      - modularizacion-panel-fase25-utilidades-integracion-final-2026-08-06
+    paths:
+      - EJECUTAR_FASE25_UBUNTU.md
+
+permissions:
+  contents: write
+
+concurrency:
+  group: fase25-utilidades-integracion-directo-v3
+  cancel-in-progress: false
+
+jobs:
+  integrar-y-validar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Descargar rama aislada
+        uses: actions/checkout@v4
+        with:
+          ref: modularizacion-panel-fase25-utilidades-integracion-final-2026-08-06
+          fetch-depth: 0
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Confirmar aislamiento y bases exactas
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git branch --show-current)" = "modularizacion-panel-fase25-utilidades-integracion-final-2026-08-06"
+          git fetch origin '+refs/heads/*:refs/remotes/origin/*'
+          test "$(git rev-parse origin/modularizacion-panel-fase24-emergencia-encuestas-perfil-accesibilidad-2026-08-06)" = "f6c0eb6e11e1daefa7269d8c889a7e29461aa32e"
+          git merge-base --is-ancestor origin/modularizacion-panel-fase24-emergencia-encuestas-perfil-accesibilidad-2026-08-06 HEAD
+          git show origin/modularizacion-panel-fase24-emergencia-encuestas-perfil-accesibilidad-2026-08-06:index.html > /tmp/fase24-index.html
+          git show origin/modularizacion-panel-fase23-pacientes-historial-busqueda-2026-08-06:index.html > /tmp/fase23-index.html
+          git show origin/modularizacion-panel-fase22-comisiones-2026-08-06:index.html > /tmp/fase22-index.html
+          git show origin/modularizacion-panel-fase21-operacion-agenda-2026-08-06:index.html > /tmp/fase21-index.html
+          git show origin/modularizacion-panel-fase20-voz-recordatorios-calendario-2026-08-06:index.html > /tmp/fase20-index.html
+          git show origin/modularizacion-panel-fase19-whatsapp-mensajes-2026-08-06:index.html > /tmp/fase19-index.html
+
+      - name: Retirar archivos temporales
+        shell: bash
+        run: |
+          rm -f .github/workflows/modularizacion-fase25-ubuntu-directo.yml
+          rm -f EJECUTAR_FASE25_UBUNTU.md
+          rm -f tools/inventariar-fase25.mjs INVENTARIAR_FASE25.md INVENTARIO_FASE25.md
+          rm -f .github/workflows/inventario-fase25.yml
+          rm -f .github/workflows/modularizacion-fase25-rescate-final.yml
+          rm -f EJECUTAR_FASE25_RESCATE.md
+
+      - name: Separar utilidades y almacenamiento compartido
+        run: node tools/modularizar-fase25.mjs index.html
+
+      - name: Validar Fase 25
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check tools/modularizar-fase25.mjs
+          node --check tools/validar-fase25.mjs
+          node --check js/modules/shared-utils.js
+          node --check js/modules/shared-storage.js
+          node tools/validar-fase25.mjs /tmp/fase24-index.html index.html js/modules/shared-utils.js js/modules/shared-storage.js
+
+      - name: Ejecutar regresión acumulada Fases 20 a 24
+        shell: bash
+        run: |
+          set -euo pipefail
+          find js -type f -name '*.js' -print0 | xargs -0 -n1 node --check
+          node tools/validar-fase24.mjs /tmp/fase23-index.html index.html js/modules/admin-profile-accessibility.js js/modules/emergency-manual.js js/modules/survey-measurement.js
+          node tools/validar-pacientes-fase23.mjs /tmp/fase22-index.html index.html js/modules/patient-search.js js/modules/patient-records.js
+          node tools/validar-comisiones-fase22.mjs /tmp/fase21-index.html index.html js/modules/commissions.js
+          node tools/validar-operacion-agenda-fase21.mjs /tmp/fase20-index.html index.html js/modules/waitlist.js js/modules/schedule-operations.js js/modules/events-agreements.js
+          node tools/validar-voz-recordatorios-fase20.mjs /tmp/fase19-index.html index.html js/modules/voice-assistant.js js/modules/reminders.js
+
+      - name: Confirmar integridad y alcance
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --exit-code origin/modularizacion-panel-fase24-emergencia-encuestas-perfil-accesibilidad-2026-08-06 -- js/modules ':(exclude)js/modules/shared-utils.js' ':(exclude)js/modules/shared-storage.js'
+          git diff --exit-code origin/modularizacion-panel-fase24-emergencia-encuestas-perfil-accesibilidad-2026-08-06 -- google-apps-script.js
+          bad="$(git diff --name-only origin/modularizacion-panel-fase24-emergencia-encuestas-perfil-accesibilidad-2026-08-06 | grep -Ev '^(index\.html|js/modules/shared-utils\.js|js/modules/shared-storage\.js|tools/modularizar-fase25\.mjs|tools/validar-fase25\.mjs|EJECUTAR_FASE25\.md|MODULARIZACION_FASE25_UTILIDADES_INTEGRACION_FINAL\.md|MODULARIZACION_FASE25_RESULTADO\.md|\.github/workflows/modularizacion-fase25\.yml)$' || true)"
+          if [ -n "$bad" ]; then
+            echo "Archivos fuera del alcance final:"
+            echo "$bad"
+            exit 1
+          fi
+
+      - name: Generar informe final
+        shell: bash
+        run: |
+          cat > MODULARIZACION_FASE25_RESULTADO.md <<'EOF'
+          # Resultado Fase 25 — Utilidades compartidas e integración final
+
+          - Módulo `js/modules/shared-utils.js` creado.
+          - Módulo `js/modules/shared-storage.js` creado.
+          - 12 utilidades generales trasladadas con paridad exacta.
+          - 5 funciones de almacenamiento KV trasladadas.
+          - `_gasKV`, `_kvDirty` y `_kvFlushTimer` encapsulados.
+          - Acciones existentes `getAdminKV` y `setAdminKV` conservadas sin acciones nuevas.
+          - Utilidades compartidas cargadas antes de todos los módulos de dominio.
+          - APIs públicas congeladas y adaptadores compatibles conservados.
+          - Sintaxis validada para todos los archivos JavaScript del panel.
+          - Regresión automatizada de las Fases 20, 21, 22, 23 y 24 superada.
+          - Los módulos de las Fases 1 a 24 permanecen sin modificaciones.
+          - Archivos auxiliares temporales retirados.
+          - `main`, Apps Script y producción no modificados.
+          EOF
+
+      - name: Guardar resultado solo en la rama aislada
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Separar utilidades y completar integración final"
+          git pull --rebase origin modularizacion-panel-fase25-utilidades-integracion-final-2026-08-06
+          git push origin HEAD:modularizacion-panel-fase25-utilidades-integracion-final-2026-08-06
