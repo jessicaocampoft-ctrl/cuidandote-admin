@@ -1,6 +1,6 @@
 # Fase 11 — Inventario seguro de Finanzas
 
-Reejecutar el inventario automático con el alcance depurado del núcleo financiero.
+Validar nuevamente el alcance depurado del núcleo financiero después de reconocer la declaración conjunta de los umbrales de costos.
 
 Reglas:
 
