@@ -74,7 +74,8 @@ for(const name of sharedGlobals){
 assert.equal((currentHtml.match(/script src="js\/modules\/kpi\.js"/g)||[]).length,1,'kpi.js debe cargarse una sola vez.');
 assert.equal((moduleSource.match(/\bfetch\s*\(/g)||[]).length,1,'Solo debe conservarse la consulta histórica existente.');
 assert.match(moduleSource,/action=getKPIHistory/,'La consulta histórica esperada no está presente.');
-assert.doesNotMatch(moduleSource,/action=(?!getKPIHistory)/,'No deben aparecer acciones nuevas al servidor.');
+const serverActions=[...moduleSource.matchAll(/[?&]action=([A-Za-z0-9_-]+)/g)].map(m=>m[1]);
+assert.deepEqual(serverActions,['getKPIHistory'],'Solo debe conservarse la acción histórica existente.');
 
 // 2. Entorno funcional QA en memoria.
 class StorageMock{
@@ -178,11 +179,11 @@ assert.equal(JSON.parse(kv.get('kpiConfig')).meta_ventas_mes,10265000);
 
 // 4. Valores manuales.
 kv.clear();
-assert.deepEqual(api.getKPIManual(),{});
+assert.equal(JSON.stringify(api.getKPIManual()),'{}');
 api.saveKPIManual({leads:9,nps:91});
-assert.deepEqual(api.getKPIManual(),{leads:9,nps:91});
+assert.equal(JSON.stringify(api.getKPIManual()),JSON.stringify({leads:9,nps:91}));
 kv.set('kpi_manual','x');
-assert.deepEqual(api.getKPIManual(),{});
+assert.equal(JSON.stringify(api.getKPIManual()),'{}');
 
 // 5. Favoritos.
 const favButton=makeElement();
