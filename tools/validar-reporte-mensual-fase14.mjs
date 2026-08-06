@@ -69,11 +69,11 @@ vm.runInContext(moduleSource, context, { filename:modulePath });
 const api = context.PanelMonthlyReport;
 assert(api && Object.isFrozen(api), 'PanelMonthlyReport no está disponible o no está congelado.');
 for (const name of names) assert(typeof api[name] === 'function', `Falta ${name} en la API pública.`);
-const title = api._secTitle('Resumen');
+const title = api._secTitle('📊', 'Resumen');
 const row = api._rFila('Ventas', '$1.000');
-const cell = api._semCell('Semana 1', '$250');
+const cell = api._semCell(90, 100, true);
 assert(typeof title === 'string' && title.includes('Resumen'), '_secTitle no conserva salida útil.');
 assert(typeof row === 'string' && row.includes('Ventas') && row.includes('$1.000'), '_rFila no conserva salida útil.');
-assert(typeof cell === 'string' && cell.includes('Semana 1') && cell.includes('$250'), '_semCell no conserva salida útil.');
+assert(cell && cell.dot === '🟡' && cell.txt === 'Cerca', '_semCell no conserva la clasificación esperada.');
 
 console.log('FASE 14 VALIDADA: reporte mensual separado con paridad exacta, API compatible y sin nuevas llamadas al servidor.');
