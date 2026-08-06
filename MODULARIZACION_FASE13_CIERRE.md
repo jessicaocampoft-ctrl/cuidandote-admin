@@ -1,1 +1,1 @@
-Ejecutar la modularización de 18 funciones y validar la sincronización compartida de precios con el formulario de citas.
+Reejecutar la modularización de 18 funciones con las pruebas corregidas de sincronización compartida de precios.
