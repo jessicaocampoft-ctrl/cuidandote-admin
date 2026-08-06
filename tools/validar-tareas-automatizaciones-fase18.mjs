@@ -78,7 +78,7 @@ assert(!moduleSource.includes('action='), 'No deben aparecer acciones nuevas de 
 
 for (const token of [
   'Tienes ${total} tarea',
-  'citas pasadas',
+  'aún sin marcar como Atendida',
   '3+ días sin registrar pago',
   'Alerta: semana floja',
   'Posponer 1 día',
