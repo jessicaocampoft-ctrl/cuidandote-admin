@@ -1,0 +1,106 @@
+name: Fase 20 — Voz, recordatorios y calendario
+
+on:
+  push:
+    branches:
+      - modularizacion-panel-fase20-voz-recordatorios-calendario-2026-08-06
+    paths:
+      - MODULARIZACION_FASE20_VOZ_RECORDATORIOS_CALENDARIO.md
+      - tools/modularizar-voz-recordatorios-fase20.mjs
+      - tools/validar-voz-recordatorios-fase20.mjs
+      - .github/workflows/modularizacion-fase20-voz-recordatorios-calendario.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: fase20-voz-recordatorios-calendario
+  cancel-in-progress: false
+
+jobs:
+  modularizar-voz-recordatorios:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar rama aislada
+        uses: actions/checkout@v4
+        with:
+          ref: modularizacion-panel-fase20-voz-recordatorios-calendario-2026-08-06
+          fetch-depth: 0
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Confirmar aislamiento y bases
+        shell: bash
+        run: |
+          test "$(git branch --show-current)" = "modularizacion-panel-fase20-voz-recordatorios-calendario-2026-08-06"
+          git fetch origin modularizacion-panel-fase19-whatsapp-mensajes-2026-08-06
+          git fetch origin modularizacion-panel-fase18-tareas-automatizaciones-2026-08-06
+          git fetch origin main
+          git merge-base --is-ancestor origin/modularizacion-panel-fase19-whatsapp-mensajes-2026-08-06 HEAD
+          git show origin/modularizacion-panel-fase19-whatsapp-mensajes-2026-08-06:index.html > /tmp/fase19-index.html
+          git show origin/modularizacion-panel-fase18-tareas-automatizaciones-2026-08-06:index.html > /tmp/fase18-index.html
+
+      - name: Separar Voz y recordatorios
+        run: node tools/modularizar-voz-recordatorios-fase20.mjs index.html
+
+      - name: Validar sintaxis, paridad y calendario
+        shell: bash
+        run: |
+          node --check tools/modularizar-voz-recordatorios-fase20.mjs
+          node --check tools/validar-voz-recordatorios-fase20.mjs
+          node --check js/modules/voice-assistant.js
+          node --check js/modules/reminders.js
+          node tools/validar-voz-recordatorios-fase20.mjs /tmp/fase19-index.html index.html js/modules/voice-assistant.js js/modules/reminders.js
+
+      - name: Confirmar módulos anteriores
+        shell: bash
+        run: |
+          find js -type f -name '*.js' -print0 | xargs -0 -n1 node --check
+          node tools/validar-whatsapp-mensajes-fase19.mjs /tmp/fase18-index.html index.html js/modules/whatsapp-tools.js js/modules/message-library.js
+
+      - name: Confirmar aislamiento funcional
+        shell: bash
+        run: |
+          git diff --exit-code origin/modularizacion-panel-fase19-whatsapp-mensajes-2026-08-06 -- google-apps-script.js
+          git merge-base --is-ancestor origin/modularizacion-panel-fase19-whatsapp-mensajes-2026-08-06 HEAD
+          bad="$(git diff --name-only origin/modularizacion-panel-fase19-whatsapp-mensajes-2026-08-06 | grep -Ev '^(index\.html|js/modules/voice-assistant\.js|js/modules/reminders\.js|tools/modularizar-voz-recordatorios-fase20\.mjs|tools/validar-voz-recordatorios-fase20\.mjs|MODULARIZACION_FASE20_VOZ_RECORDATORIOS_CALENDARIO\.md|MODULARIZACION_FASE20_RESULTADO\.md|\.github/workflows/modularizacion-fase20-voz-recordatorios-calendario\.yml)$' || true)"
+          if [ -n "$bad" ]; then
+            echo "Archivos fuera del alcance:"
+            echo "$bad"
+            exit 1
+          fi
+
+      - name: Generar informe final
+        shell: bash
+        run: |
+          cat > MODULARIZACION_FASE20_RESULTADO.md <<'EOF'
+          # Resultado Fase 20 — Voz, recordatorios y calendario
+
+          - Módulo `js/modules/voice-assistant.js` creado.
+          - Módulo `js/modules/reminders.js` creado.
+          - 10 funciones del asistente de voz trasladadas.
+          - 5 funciones de recordatorios trasladadas.
+          - Estado del micrófono, constantes de voz y `_remData` encapsulados.
+          - Acciones existentes `getReminders` y `sendReminders` conservadas sin agregar acciones nuevas.
+          - Calendario, semana visible y caché de Google Calendar conservados en `PanelAgenda`.
+          - Paridad exacta, sintaxis, normalización de voz y regresión del calendario validadas.
+          - Módulos de las Fases 1 a 19 conservados.
+          - `main`, Apps Script y producción no modificados.
+          EOF
+
+      - name: Guardar resultado solo en la rama aislada
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html js/modules/voice-assistant.js js/modules/reminders.js MODULARIZACION_FASE20_RESULTADO.md
+          if git diff --cached --quiet; then
+            echo "No hay cambios funcionales nuevos para guardar."
+            exit 0
+          fi
+          git commit -m "Separar y validar Voz y recordatorios"
+          git pull --rebase origin modularizacion-panel-fase20-voz-recordatorios-calendario-2026-08-06
+          git push origin HEAD:modularizacion-panel-fase20-voz-recordatorios-calendario-2026-08-06

@@ -10022,273 +10022,91 @@ function openNuevaCitaFromCal(...args) {
 // ══════════════════════════════════════════════════════════════
 // ── VOZ ──
 // ══════════════════════════════════════════════════════════════
-let _voiceActive  = false;
-let _voiceRec     = null;
-let _voiceGotResult = false;
 
-function _getSR() { return window.SpeechRecognition || window.webkitSpeechRecognition || null; }
 
-function _voiceBtn()      { return document.getElementById('voiceBtn'); }
-function _voiceStatusEl() { return document.getElementById('voiceStatus'); }
 
-const VOICE_ICON = '🎙️ Dictar cita por voz';
-const VOICE_STOP = '⏹ Detener escucha';
+
+function _getSR(...args) {
+  const module = window.PanelVoiceAssistant;
+  if (!module || typeof module._getSR !== 'function') {
+    throw new Error('El módulo Asistente de voz no está disponible: _getSR');
+  }
+  return module._getSR(...args);
+}
+
+function _voiceBtn(...args) {
+  const module = window.PanelVoiceAssistant;
+  if (!module || typeof module._voiceBtn !== 'function') {
+    throw new Error('El módulo Asistente de voz no está disponible: _voiceBtn');
+  }
+  return module._voiceBtn(...args);
+}
+function _voiceStatusEl(...args) {
+  const module = window.PanelVoiceAssistant;
+  if (!module || typeof module._voiceStatusEl !== 'function') {
+    throw new Error('El módulo Asistente de voz no está disponible: _voiceStatusEl');
+  }
+  return module._voiceStatusEl(...args);
+}
+
+
+
 
 // ── Panel de voz (dictado por teclado iOS) ──
-function toggleVoicePanel() {
-  const panel = document.getElementById('voicePanel');
-  const isOpen = panel.style.display !== 'none';
-  panel.style.display = isOpen ? 'none' : 'block';
-  if (!isOpen) {
-    document.getElementById('voiceText').value = '';
-    setTimeout(() => document.getElementById('voiceText').focus(), 100);
+function toggleVoicePanel(...args) {
+  const module = window.PanelVoiceAssistant;
+  if (!module || typeof module.toggleVoicePanel !== 'function') {
+    throw new Error('El módulo Asistente de voz no está disponible: toggleVoicePanel');
   }
+  return module.toggleVoicePanel(...args);
 }
 
-function procesarVozTexto() {
-  const txt = (document.getElementById('voiceText').value || '').trim();
-  if (!txt) { toast('Escribe o dicta algo primero', 'err'); return; }
-  _parseVoice(txt);
-  document.getElementById('voicePanel').style.display = 'none';
-  document.getElementById('voiceText').value = '';
+function procesarVozTexto(...args) {
+  const module = window.PanelVoiceAssistant;
+  if (!module || typeof module.procesarVozTexto !== 'function') {
+    throw new Error('El módulo Asistente de voz no está disponible: procesarVozTexto');
+  }
+  return module.procesarVozTexto(...args);
 }
 
-function toggleVoice() {
-  const SR = _getSR();
-  if (!SR) {
-    alert('Tu iPhone necesita iOS 14.5 o superior y Safari para usar dictado.\n\nSi ya tienes iOS 14.5+, asegúrate de estar en Safari (no Chrome ni otro navegador).');
-    return;
+function toggleVoice(...args) {
+  const module = window.PanelVoiceAssistant;
+  if (!module || typeof module.toggleVoice !== 'function') {
+    throw new Error('El módulo Asistente de voz no está disponible: toggleVoice');
   }
-  if (_voiceActive) { _stopVoice(false); return; }
-  _startVoice(SR);
+  return module.toggleVoice(...args);
 }
 
-function _startVoice(SR) {
-  try {
-    _voiceRec = new SR();
-  } catch(e) {
-    alert('No se pudo iniciar el micrófono: ' + e.message);
-    return;
+function _startVoice(...args) {
+  const module = window.PanelVoiceAssistant;
+  if (!module || typeof module._startVoice !== 'function') {
+    throw new Error('El módulo Asistente de voz no está disponible: _startVoice');
   }
-
-  // Configuración optimizada para iOS Safari
-  _voiceRec.lang            = 'es-ES'; // 'es-CO' no está soportado en todos los iOS
-  _voiceRec.continuous      = false;   // iOS no soporta continuous=true de forma confiable
-  _voiceRec.interimResults  = false;
-  _voiceRec.maxAlternatives = 1;
-
-  _voiceActive    = true;
-  _voiceGotResult = false;
-
-  const btn = _voiceBtn();
-  btn.classList.add('listening');
-  btn.textContent = VOICE_STOP;
-  _voiceStatusEl().style.display = 'flex';
-  document.getElementById('voiceTranscript').textContent = '';
-  document.getElementById('voiceHelp').style.display = 'none';
-
-  _voiceRec.onresult = e => {
-    _voiceGotResult = true;
-    const transcript = Array.from(e.results)
-      .map(r => r[0].transcript).join(' ');
-    document.getElementById('voiceTranscript').textContent = '"' + transcript + '"';
-    _parseVoice(transcript);
-  };
-
-  _voiceRec.onerror = e => {
-    if (e.error === 'not-allowed') {
-      alert('Permiso de micrófono denegado.\n\nVe a Ajustes > Safari > Micrófono y actívalo para este sitio.');
-    } else if (e.error === 'no-speech') {
-      toast('No escuché nada. Toca el botón y habla claramente.', 'err');
-    } else {
-      toast('Error: ' + e.error, 'err');
-    }
-    _stopVoice(false);
-  };
-
-  _voiceRec.onend = () => {
-    if (!_voiceGotResult) {
-      // iOS para automáticamente — re-iniciar si no hubo resultado
-      // (solo si el usuario no presionó "Detener")
-      if (_voiceActive) {
-        toast('Escuchando... habla ahora', 'ok');
-        try { _voiceRec.start(); return; } catch(e) {}
-      }
-    }
-    _stopVoice(false);
-  };
-
-  try {
-    _voiceRec.start();
-    toast('🎙 Escuchando... habla la cita', 'ok');
-  } catch(e) {
-    alert('No se pudo activar el micrófono: ' + e.message + '\n\nAsegúrate de permitir el acceso al micrófono cuando Safari lo solicite.');
-    _stopVoice(false);
-  }
+  return module._startVoice(...args);
 }
 
-function _stopVoice(showMsg = true) {
-  _voiceActive = false;
-  if (_voiceRec) {
-    _voiceRec.onend = null; // evitar loop
-    try { _voiceRec.stop(); } catch(e) {}
-    _voiceRec = null;
+function _stopVoice(...args) {
+  const module = window.PanelVoiceAssistant;
+  if (!module || typeof module._stopVoice !== 'function') {
+    throw new Error('El módulo Asistente de voz no está disponible: _stopVoice');
   }
-  const btn = _voiceBtn();
-  if (btn) {
-    btn.classList.remove('listening');
-    btn.textContent = VOICE_ICON;
-  }
-  setTimeout(() => {
-    const s = _voiceStatusEl();
-    if (s) s.style.display = 'none';
-  }, 3000);
+  return module._stopVoice(...args);
 }
 
-function _norm(s) {
-  return String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+function _norm(...args) {
+  const module = window.PanelVoiceAssistant;
+  if (!module || typeof module._norm !== 'function') {
+    throw new Error('El módulo Asistente de voz no está disponible: _norm');
+  }
+  return module._norm(...args);
 }
 
-function _parseVoice(text) {
-  const t = _norm(text);
-  let filled = [];
-
-  // ── FECHA ──
-  let fecha = '';
-  if      (/\bhoy\b/.test(t))    fecha = today();
-  else if (/\bmanana\b/.test(t)) { const d=new Date(); d.setDate(d.getDate()+1); fecha=toDateStr(d); }
-  else {
-    const DIAS = ['domingo','lunes','martes','miercoles','jueves','viernes','sabado'];
-    for (let i=0;i<DIAS.length;i++) {
-      if (t.includes(DIAS[i])) {
-        const d=new Date();
-        const diff=(i-d.getDay()+7)%7||7;
-        d.setDate(d.getDate()+diff);
-        fecha=toDateStr(d);
-        break;
-      }
-    }
-    const dm = t.match(/(\d{1,2})\s+de\s+(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)/);
-    if (dm) {
-      const MESES=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
-      fecha = new Date().getFullYear()+'-'+pad(MESES.indexOf(dm[2])+1)+'-'+pad(parseInt(dm[1]));
-    }
+function _parseVoice(...args) {
+  const module = window.PanelVoiceAssistant;
+  if (!module || typeof module._parseVoice !== 'function') {
+    throw new Error('El módulo Asistente de voz no está disponible: _parseVoice');
   }
-  if (fecha) { document.getElementById('ncDate').value = fecha; filled.push('fecha'); }
-
-  // ── HORA ──
-  const tm = t.match(/(?:a\s+las?\s+)?(\d{1,2})(?:[:\s](\d{2}))?\s*(am|pm)/);
-  const tm2 = !tm && t.match(/a\s+las?\s+(\d{1,2})(?:[:\s](\d{2}))?/);
-  const match = tm || tm2;
-  if (match) {
-    let h = parseInt(match[1]);
-    const min = match[2] ? parseInt(match[2]) : 0;
-    const ampm = match[3];
-    if      (ampm==='pm' && h<12) h+=12;
-    else if (ampm==='am' && h===12) h=0;
-    else if (!ampm && h>=1 && h<=6) h+=12; // 1-6 sin indicador → PM
-    document.getElementById('ncTime').value = pad(h)+':'+pad(min);
-    filled.push('hora');
-  }
-
-  // ── SERVICIO ──
-  const SMAP = [
-    [/descarga.*(cuello|espalda)|cuello.*espalda/, 'Descarga Muscular — Cuello y Espalda', false],
-    [/descarga.*pierna|pierna.*descarga/,           'Descarga Muscular — Piernas',          false],
-    [/descarga.*complet|completa/,                  'Descarga Muscular Completa',            false],
-    [/valoracion/,                                  'Valoración Funcional',                 false],
-    [/readaptacion/,                                'Readaptación Funcional',               false],
-    [/espalda\s+sin\s+dolor/,                       'Plan Espalda Sin Dolor',               true ],
-    [/alivio\s+profundo/,                           'Plan Alivio Profundo',                 true ],
-    [/alivio.*casa|plan.*casa/,                     'Plan Alivio en Casa',                  true ],
-    [/duo\s*mensual|plan\s*duo/,                    'Plan Dúo Mensual',                     true ],
-    [/\bplan\s+recarga\b|\brecarga\b/,              'Plan Recarga',                         true ],
-    [/\bplan\s+avanza\b|\bavanza\b/,                'Plan Avanza',                          true ],
-    [/\belite\b/,                                   'Plan Elite',                           true ],
-    [/\bplan\s+inicio\b|\binicio\b/,                'Plan Inicio',                          true ],
-    [/\bplan\s+avance\b|\bavance\b/,                'Plan Avance',                          true ],
-    [/\btransforma\b/,                              'Plan Transforma',                      true ],
-  ];
-  for (const [re, serv, isPlan] of SMAP) {
-    if (re.test(t)) {
-      const main = document.getElementById('ncServiceMain');
-      const plan = document.getElementById('ncServicePlan');
-      if (!isPlan) {
-        main.value = serv;
-        plan.style.display = 'none';
-        document.getElementById('ncService').value = serv;
-      } else {
-        main.value = '__planes__';
-        plan.style.display = 'block';
-        plan.value = serv;
-        document.getElementById('ncService').value = serv;
-      }
-      autoFillPrice();
-      filled.push('servicio');
-      break;
-    }
-  }
-
-  // ── MODALIDAD ──
-  if (/domicilio|a\s+domicilio|en\s+casa/.test(t)) {
-    document.getElementById('ncMod').value = 'Domicilio';
-    toggleNcAddress();
-    filled.push('modalidad');
-  } else if (/presencial/.test(t)) {
-    document.getElementById('ncMod').value = 'Presencial';
-    toggleNcAddress();
-    filled.push('modalidad');
-  }
-
-  // ── PACIENTE — buscar "para [nombre]" ──
-  const STOP_WORDS = new Set([
-    'el','la','los','las','un','una','de','del','al','a','en','y','o',
-    'que','se','con','por','como','hoy','manana','lunes','martes',
-    'miercoles','jueves','viernes','sabado','domingo','para','las','los',
-    'esta','este','ese','esa','su','sus','mi','mis','le','les','me','nos',
-    'mas','pero','si','no','ya','hay','fue','ser','son','era'
-  ]);
-  // Palabras que terminan el nombre (señales de fin)
-  const NAME_STOPPERS = /\b(el|la|los|las|hoy|manana|lunes|martes|miercoles|jueves|viernes|sabado|domingo|presencial|domicilio|descarga|valoracion|readaptacion|plan|para|a\s+las?)\b/i;
-
-  const nm = text.match(/\bpara\s+([A-ZÁÉÍÓÚÑa-záéíóúñ]+(?:\s+[A-ZÁÉÍÓÚÑa-záéíóúñ]+){0,4})/i);
-  if (nm) {
-    // Recortar el nombre en el primer stop-stopper
-    let rawFull = nm[1].trim();
-    const stopMatch = rawFull.match(NAME_STOPPERS);
-    if (stopMatch) rawFull = rawFull.slice(0, stopMatch.index).trim();
-
-    // Filtrar stop words del interior del nombre
-    const nameWords = rawFull.split(/\s+/).filter(w => !STOP_WORDS.has(_norm(w)) && w.length > 1);
-    const rawName   = nameWords.join(' ');
-    if (!rawName) { /* no se capturó nombre válido */ }
-    else {
-      const normName = _norm(rawName);
-      // Buscar en histórico: coincidencia por nombre completo o al menos nombre+apellido
-      const known = allData.citas.find(c => {
-        const cn = _norm(c.nombre);
-        const parts = normName.split(' ');
-        // Coincide si el nombre normalizado contiene al menos las primeras dos palabras dictadas
-        return cn === normName
-          || cn.includes(normName)
-          || (parts.length >= 2 && cn.includes(parts[0]) && cn.includes(parts[1]))
-          || (parts.length === 1 && cn.startsWith(parts[0]));
-      });
-      if (known) {
-        document.getElementById('ncName').value  = known.nombre;
-        document.getElementById('ncPhone').value = known.telefono || '';
-        document.getElementById('ncEmail').value = known.email    || '';
-        if (known.direccion) document.getElementById('ncAddress').value = known.direccion;
-        filled.push('paciente (encontrado)');
-      } else {
-        document.getElementById('ncName').value = rawName.replace(/\b\w/g, l => l.toUpperCase());
-        filled.push('nombre');
-      }
-    }
-  }
-
-  if (filled.length) toast('Voz: ' + filled.join(', ') + ' ✓');
-  else { toast('No entendí la cita. Intenta de nuevo.', 'err'); document.getElementById('voiceHelp').style.display='block'; }
+  return module._parseVoice(...args);
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -10318,78 +10136,22 @@ function waRecordatorio(...args) {
   return module.waRecordatorio(...args);
 }
 
-let _remData = null;
 
-async function cargarRecordatorios() {
-  const cont = document.getElementById('recContent');
-  cont.innerHTML = '<div class="loading-wrap"><div class="spinner"></div> Consultando base de datos...</div>';
-  try {
-    const r = await fetch(`${APPS_SCRIPT_URL}?action=getReminders&token=${encodeURIComponent(TOKEN)}`);
-    const d = await r.json();
-    if (!d.ok) { cont.innerHTML = '<div class="empty"><p>Error al cargar: ' + (d.error||'') + '</p></div>'; return; }
-    _remData = d;
-    renderRecordatorios(d);
-    // Actualizar badge en sidebar
-    const total = d.semana4.length + d.semana5.length;
-    const badge = document.getElementById('badgeRecordatorios');
-    if (badge) { badge.textContent = total; badge.style.display = total > 0 ? 'inline' : 'none'; }
-  } catch(e) {
-    cont.innerHTML = '<div class="empty"><p>Error de conexión</p></div>';
+
+async function cargarRecordatorios(...args) {
+  const module = window.PanelReminders;
+  if (!module || typeof module.cargarRecordatorios !== 'function') {
+    throw new Error('El módulo Recordatorios no está disponible: cargarRecordatorios');
   }
+  return await module.cargarRecordatorios(...args);
 }
 
-function renderRecordatorios(d) {
-  const cont = document.getElementById('recContent');
-  const total = d.semana4.length + d.semana5.length;
-
-  if (total === 0) {
-    cont.innerHTML = `<div class="empty" style="padding:60px 20px">
-      <p style="font-size:1.1rem">\u2705 Todos los pacientes están al día</p>
-      <p style="margin-top:8px;font-size:.85rem">No hay pacientes con más de 4 semanas sin sesión.</p>
-    </div>`;
-    return;
+function renderRecordatorios(...args) {
+  const module = window.PanelReminders;
+  if (!module || typeof module.renderRecordatorios !== 'function') {
+    throw new Error('El módulo Recordatorios no está disponible: renderRecordatorios');
   }
-
-  const sinEmail4  = d.semana4.filter(p => !p.email || p.email.indexOf('@') < 0).length;
-  const sinEmail5  = d.semana5.filter(p => !p.email || p.email.indexOf('@') < 0).length;
-  const conEmail   = total - sinEmail4 - sinEmail5;
-
-  cont.innerHTML = `
-    <!-- Resumen rápido -->
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:28px">
-      <div class="stat-card"><div class="stat-label">Total a recordar</div><div class="stat-val">${total}</div><div class="stat-desc">pacientes</div></div>
-      <div class="stat-card"><div class="stat-label">Pueden recibir email</div><div class="stat-val" style="color:var(--ok)">${conEmail}</div><div class="stat-desc">tienen email registrado</div></div>
-      <div class="stat-card"><div class="stat-label">Solo WhatsApp</div><div class="stat-val" style="color:var(--warn)">${sinEmail4+sinEmail5}</div><div class="stat-desc">no tienen email</div></div>
-    </div>
-
-    <!-- Semana 4 -->
-    ${d.semana4.length ? `
-    <div class="card" style="margin-bottom:20px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-        <div>
-          <div class="card-title" style="margin-bottom:2px;color:var(--warn)">⏰ Semana 4 — Momento ideal</div>
-          <div style="font-size:.82rem;color:var(--muted)">${d.semana4.length} paciente(s) · entre 28 y 34 días desde su última sesión</div>
-        </div>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:10px">
-        ${d.semana4.map(p => recCard(p, 4)).join('')}
-      </div>
-    </div>` : ''}
-
-    <!-- Semana 5+ -->
-    ${d.semana5.length ? `
-    <div class="card">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-        <div>
-          <div class="card-title" style="margin-bottom:2px;color:var(--err)">🔴 Semana 5+ — Reagendamiento urgente</div>
-          <div style="font-size:.82rem;color:var(--muted)">${d.semana5.length} paciente(s) · más de 35 días sin sesión</div>
-        </div>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:10px">
-        ${d.semana5.map(p => recCard(p, 5)).join('')}
-      </div>
-    </div>` : ''}
-  `;
+  return module.renderRecordatorios(...args);
 }
 
 function recCard(...args) {
@@ -10414,30 +10176,20 @@ function recEmailEnviado(...args) {
   }
   return module.recEmailEnviado(...args);
 }
-function marcarRecordatorioEnviado(nombre, semanas) {
-  kvSet('rec_wa_'+semanas+'_'+nombre, '1');
-  // Re-render para mostrar checkmark
-  if (_remData) renderRecordatorios(_remData);
+function marcarRecordatorioEnviado(...args) {
+  const module = window.PanelReminders;
+  if (!module || typeof module.marcarRecordatorioEnviado !== 'function') {
+    throw new Error('El módulo Recordatorios no está disponible: marcarRecordatorioEnviado');
+  }
+  return module.marcarRecordatorioEnviado(...args);
 }
 
-async function enviarEmailsRecordatorio() {
-  const btn = document.getElementById('btnSendEmails');
-  btn.textContent = 'Enviando...'; btn.disabled = true;
-  try {
-    const r = await fetch(`${APPS_SCRIPT_URL}?action=sendReminders&token=${encodeURIComponent(TOKEN)}`);
-    const d = await r.json();
-    if (d.ok) {
-      toast(`\u2705 ${d.sent} email(s) enviados · ${d.skipped} sin email (envía WhatsApp manualmente)`);
-      // Marcar emails enviados localmente
-      if (_remData) {
-        [...(_remData.semana4||[]), ...(_remData.semana5||[])].forEach(p => {
-          if (p.email && p.email.indexOf('@') >= 0) kvSet('rec_email_'+p.nombre, '1');
-        });
-        renderRecordatorios(_remData);
-      }
-    } else toast('Error: ' + (d.error||''), 'err');
-  } catch(e) { toast('Error de conexión', 'err'); }
-  btn.textContent = 'Enviar emails a todos'; btn.disabled = false;
+async function enviarEmailsRecordatorio(...args) {
+  const module = window.PanelReminders;
+  if (!module || typeof module.enviarEmailsRecordatorio !== 'function') {
+    throw new Error('El módulo Recordatorios no está disponible: enviarEmailsRecordatorio');
+  }
+  return await module.enviarEmailsRecordatorio(...args);
 }
 
 function agendarDesdePacienteRec(...args) {
@@ -10662,17 +10414,12 @@ document.addEventListener('keydown', e => {
 });
 
 // ── ENVIAR EMAIL A UN SOLO PACIENTE (recordatorio) ──
-async function enviarEmailUno(encNombre, semanas) {
-  const nombre = decodeURIComponent(encNombre);
-  try {
-    const r = await fetch(`${APPS_SCRIPT_URL}?action=sendReminders&token=${encodeURIComponent(TOKEN)}`);
-    const d = await r.json();
-    if (d.ok) {
-      kvSet('rec_email_'+nombre, '1');
-      toast('Email de recordatorio enviado a ' + nombre.split(' ')[0]);
-      if (_remData) renderRecordatorios(_remData);
-    } else toast('Error al enviar email', 'err');
-  } catch(e) { toast('Error de conexión', 'err'); }
+async function enviarEmailUno(...args) {
+  const module = window.PanelReminders;
+  if (!module || typeof module.enviarEmailUno !== 'function') {
+    throw new Error('El módulo Recordatorios no está disponible: enviarEmailUno');
+  }
+  return await module.enviarEmailUno(...args);
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -13903,6 +13650,8 @@ document.addEventListener('DOMContentLoaded', () => {
 <script src="js/modules/operations-automation.js"></script>
 <script src="js/modules/whatsapp-tools.js"></script>
 <script src="js/modules/message-library.js"></script>
+<script src="js/modules/voice-assistant.js"></script>
+<script src="js/modules/reminders.js"></script>
 </body>
 </html>
 
