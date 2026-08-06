@@ -12,7 +12,7 @@ const names = [
   'getCostosEstructura','saveCostosEstructura','calcTotalCostos',
   'renderPresupuestoMetas','pmRecalc','pmGuardarCostos','pmGuardarKPIs',
   'getMeta','actualizarMetaBarra','previewMeta','guardarMeta','guardarMetaFin','previewMetaFin','reloadMetas',
-  '_syncPreciosToAutoFill','_toggleEditCostos','_leerCamposCostos','_recalcCostos','_guardarCostos'
+  '_toggleEditCostos','_leerCamposCostos','_recalcCostos','_guardarCostos'
 ];
 const sharedGlobals = [
   'META_SESIONES_SEMANA','META_VENTAS_MES','META_VENTAS_SEMANA','META_NPS',
@@ -90,6 +90,10 @@ for (const file of fs.readdirSync(path.join('js','modules')).filter(x => x.endsW
 
 const moduleSource = `/* Cuidándote Fisioterapia — Metas, presupuesto y estructura de costos. */\n(function (global) {\n  'use strict';\n\n${defaultsBlock}\n\n${blocks.map(x => x.text).join('\n\n')}\n\n  global.PanelBudget = Object.freeze({\n${names.map(name => `    ${name}`).join(',\n')}\n  });\n})(window);\n`;
 
+if (moduleSource.includes('function _syncPreciosToAutoFill(')) {
+  throw new Error('_syncPreciosToAutoFill es una dependencia compartida y no debe entrar a budget.js.');
+}
+
 for (const item of blocks) {
   const adapter = `${item.async ? 'async ' : ''}function ${item.name}(...args) {\n  const module = window.PanelBudget;\n  if (!module || typeof module.${item.name} !== 'function') {\n    throw new Error('El módulo Metas y Presupuesto no está disponible: ${item.name}');\n  }\n  return ${item.async ? 'await ' : ''}module.${item.name}(...args);\n}`;
   const count = html.split(item.text).length - 1;
@@ -97,6 +101,10 @@ for (const item of blocks) {
   html = html.replace(item.text, adapter);
 }
 html = html.replace(defaultsBlock, '// COSTOS_DEFAULTS encapsulado en js/modules/budget.js.');
+
+if (!html.includes('function _syncPreciosToAutoFill(')) {
+  throw new Error('_syncPreciosToAutoFill debe permanecer en index.html como dependencia compartida.');
+}
 
 if (!html.includes(scriptTag)) {
   const anchor = '<script src="js/modules/kpi.js"></script>';
@@ -111,7 +119,8 @@ for (const name of sharedGlobals) {
 }
 for (const forbidden of [
   'renderFinanzas','renderEstructuraFinanciera','renderKPITablero','renderKPIGuia','renderMetricas',
-  'renderComisiones','renderPagos','renderAgenda','renderIngresosDetalle','renderConveniosReport'
+  'renderComisiones','renderPagos','renderAgenda','renderIngresosDetalle','renderConveniosReport',
+  '_syncPreciosToAutoFill'
 ]) {
   if (moduleSource.includes(`function ${forbidden}(`) || moduleSource.includes(`async function ${forbidden}(`)) {
     throw new Error(`${forbidden} no pertenece a budget.js.`);
