@@ -1,0 +1,105 @@
+name: Fase 13 — Validación final Metas y Presupuesto
+
+on:
+  push:
+    branches:
+      - modularizacion-panel-fase13-metas-presupuesto-2026-08-06
+    paths:
+      - MODULARIZACION_FASE13_FINAL.md
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: modularizacion-panel-fase13-final
+  cancel-in-progress: false
+
+jobs:
+  validar-fase13-final:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar rama aislada
+        uses: actions/checkout@v4
+        with:
+          ref: modularizacion-panel-fase13-metas-presupuesto-2026-08-06
+          fetch-depth: 0
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Confirmar aislamiento y base
+        run: |
+          test "$(git branch --show-current)" = "modularizacion-panel-fase13-metas-presupuesto-2026-08-06"
+          git fetch origin modularizacion-panel-fase12-indicadores-kpi-2026-08-05
+          git fetch origin main
+          git show origin/modularizacion-panel-fase12-indicadores-kpi-2026-08-05:index.html > /tmp/fase12-index.html
+
+      - name: Separar Metas y Presupuesto
+        run: node tools/modularizar-budget-fase13.mjs index.html
+
+      - name: Validar sintaxis
+        run: |
+          node --check js/modules/budget.js
+          node --check tools/validar-budget-fase13-final.mjs
+          node --check tools/validar-budget-fase13-operaciones.mjs
+
+      - name: Validar paridad y compatibilidad
+        run: node tools/validar-budget-fase13-final.mjs /tmp/fase12-index.html index.html js/modules/budget.js
+
+      - name: Validar operaciones del formulario
+        run: node tools/validar-budget-fase13-operaciones.mjs js/modules/budget.js
+
+      - name: Confirmar aislamiento funcional
+        run: |
+          git diff --exit-code origin/modularizacion-panel-fase12-indicadores-kpi-2026-08-05 -- js/core
+          git diff --exit-code origin/modularizacion-panel-fase12-indicadores-kpi-2026-08-05 -- js/modules ':!js/modules/budget.js'
+          ! grep -q 'fetch(' js/modules/budget.js
+          ! grep -q 'APPS_SCRIPT_URL' js/modules/budget.js
+          ! grep -q 'action=' js/modules/budget.js
+          grep -q 'global.PanelBudget = Object.freeze' js/modules/budget.js
+          grep -q '<script src="js/modules/budget.js"></script>' index.html
+          test "$(grep -o 'script src="js/modules/budget.js"' index.html | wc -l)" -eq 1
+
+      - name: Confirmar módulos anteriores
+        run: |
+          for f in agenda appointment-create appointment-edit database finance kpi packages passport payments referrals team; do
+            test -f "js/modules/$f.js"
+          done
+
+      - name: Generar informe final
+        run: |
+          cat > MODULARIZACION_FASE13_RESULTADO.md <<'EOF'
+          # Resultado de modularización — Fase 13 Metas y Presupuesto
+
+          - `js/modules/budget.js` creado.
+          - 19 funciones de metas, presupuesto, estructura de costos, metas operativas, precios y sincronización separadas de `index.html`.
+          - `COSTOS_DEFAULTS` encapsulada después de comprobar que no tenía consumidores externos.
+          - Los mismos nombres públicos permanecen mediante adaptadores compatibles.
+          - Las variables `META_*` permanecen en `index.html` porque también son consumidas por KPI, reportes y Comisiones.
+          - Se verificó la paridad exacta de los 19 cuerpos trasladados frente a la Fase 12.
+          - Costos por defecto, persistencia, recuperación ante JSON inválido y migraciones históricas validados.
+          - Cálculo de subtotal, imprevistos, utilidad y meta total validado.
+          - Guardado y previsualización de meta mensual desde Inicio y Finanzas validados.
+          - Editor de costos, recálculo y actualización del reporte mensual validados.
+          - Renderizado completo de Presupuesto y Metas validado.
+          - Guardado de costos, metas operativas, marketing y precios de servicios validado.
+          - La sincronización de precios con el autocompletado del formulario de citas fue comprobada con datos QA en memoria.
+          - No se introdujeron llamadas nuevas al servidor.
+          - Finanzas, KPI, Comisiones, Pagos, Agenda y las Fases 1 a 12 permanecen sin cambios.
+          - No se modificó `main`, Apps Script ni el panel publicado.
+          EOF
+
+      - name: Guardar resultado solo en la rama aislada
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html js/modules/budget.js MODULARIZACION_FASE13_RESULTADO.md
+          if git diff --cached --quiet; then
+            echo "La Fase 13 ya estaba aplicada."
+          else
+            git commit -m "Separar y validar Metas y Presupuesto"
+            git push origin HEAD:modularizacion-panel-fase13-metas-presupuesto-2026-08-06
+          fi
