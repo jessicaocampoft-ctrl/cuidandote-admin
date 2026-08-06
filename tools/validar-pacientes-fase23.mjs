@@ -93,7 +93,7 @@ assert(JSON.stringify(baseActions) === JSON.stringify(moduleActions), 'Las accio
 for (const token of ['allData.citas', 'allData.pacientes', 'pacDropdown', 'telefono', 'email']) {
   assert(searchSource.includes(token), `Falta comportamiento de búsqueda: ${token}.`);
 }
-for (const token of ['adminChangeLog', '150', 'modalHistorial', 'historialBody', 'Blob', 'updatePatient', 'deletePatient']) {
+for (const token of ['adminChangeLog', '150', 'modalHistorial', 'modalHistorialContent', 'Blob', 'editPatient', 'deletePatient']) {
   assert(recordsSource.includes(token), `Falta comportamiento de pacientes/historial: ${token}.`);
 }
 
