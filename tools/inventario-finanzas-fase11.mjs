@@ -54,13 +54,16 @@ function extractFunction(name) {
 }
 
 function extractConstant(name) {
-  const escaped = name.replace(/[$]/g, '\\$&');
+  const declarationName = ['COSTO_PE','COSTO_META'].includes(name) ? 'COSTO_BASE' : name;
+  const escaped = declarationName.replace(/[$]/g, '\\$&');
   const match = new RegExp(`const\\s+${escaped}\\b`).exec(html);
-  if (!match) throw new Error(`No se encontró la constante ${name}.`);
+  if (!match) throw new Error(`No se encontró la declaración que contiene ${name}.`);
   const start = match.index;
   const end = html.indexOf(';', start);
   if (end < 0) throw new Error(`No se encontró el cierre de ${name}.`);
-  return html.slice(start, end + 1).trim();
+  const declaration = html.slice(start, end + 1).trim();
+  if (!new RegExp(`\\b${name}\\b`).test(declaration)) throw new Error(`${name} no está en la declaración esperada.`);
+  return declaration;
 }
 
 const functionBlocks = new Map(functions.map(name => [name, extractFunction(name)]));
@@ -69,7 +72,7 @@ for (const name of forbidden) {
   if (functions.includes(name)) throw new Error(`Se incluyó una función prohibida: ${name}.`);
 }
 
-const source = [...constantBlocks.values(), ...functionBlocks.values()].join('\n\n');
+const source = [...new Set(constantBlocks.values()), ...functionBlocks.values()].join('\n\n');
 const declarations = new Set([...html.matchAll(/(?:^|\n)(?:async\s+)?function\s+([A-Za-z_$][\w$]*)\s*\(/g)].map(m=>m[1]));
 const outsideCalls = unique([...source.matchAll(/\b([A-Za-z_$][\w$]*)\s*\(/g)].map(m=>m[1]))
   .filter(name => declarations.has(name) && !functions.includes(name));
