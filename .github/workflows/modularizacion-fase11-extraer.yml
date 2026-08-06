@@ -1,0 +1,88 @@
+name: Fase 11 — Extraer Finanzas para validación
+
+on:
+  push:
+    branches:
+      - modularizacion-panel-fase11-finanzas-2026-08-05
+    paths:
+      - MODULARIZACION_FASE11_EXTRAER.md
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: modularizacion-panel-fase11-finanzas-extraer
+  cancel-in-progress: false
+
+jobs:
+  extraer-finanzas:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar rama aislada
+        uses: actions/checkout@v4
+        with:
+          ref: modularizacion-panel-fase11-finanzas-2026-08-05
+          fetch-depth: 0
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Confirmar aislamiento y base
+        run: |
+          test "$(git branch --show-current)" = "modularizacion-panel-fase11-finanzas-2026-08-05"
+          git fetch origin modularizacion-panel-fase10-paquetes-2026-08-05
+          git fetch origin main
+
+      - name: Extraer núcleo financiero
+        run: node tools/modularizar-finance-fase11.mjs index.html
+
+      - name: Revisar sintaxis y carga
+        run: |
+          node --check js/modules/finance.js
+          grep -q '<script src="js/modules/finance.js"></script>' index.html
+          test "$(grep -c 'script src="js/modules/finance.js"' index.html)" = "1"
+          grep -q 'global.PanelFinance = Object.freeze' js/modules/finance.js
+          grep -q 'function renderFinanzas(...args)' index.html
+          grep -q 'function guardarEgreso(...args)' index.html
+          grep -q 'function renderEstructuraFinanciera(...args)' index.html
+
+      - name: Confirmar alcance exacto
+        run: |
+          test "$(grep -c '^function ' js/modules/finance.js)" = "11"
+          ! grep -q 'function renderKPITablero(' js/modules/finance.js
+          ! grep -q 'function renderMetricas(' js/modules/finance.js
+          ! grep -q 'function guardarMetaFin(' js/modules/finance.js
+          ! grep -q 'function renderPresupuestoMetas(' js/modules/finance.js
+          ! grep -q 'function saveManualPayment(' js/modules/finance.js
+          ! grep -q 'function renderPagos(' js/modules/finance.js
+          git diff --exit-code origin/modularizacion-panel-fase10-paquetes-2026-08-05 -- js/core
+          git diff --exit-code origin/modularizacion-panel-fase10-paquetes-2026-08-05 -- js/modules ':!js/modules/finance.js'
+
+      - name: Documentar extracción
+        run: |
+          cat > MODULARIZACION_FASE11_EXTRACCION_RESULTADO.md <<'EOF'
+          # Extracción aislada — Fase 11 Finanzas
+
+          - `js/modules/finance.js` creado.
+          - 11 funciones del núcleo financiero trasladadas.
+          - 5 constantes conceptuales de egresos y umbrales trasladadas en 3 declaraciones.
+          - `index.html` conserva adaptadores con los mismos nombres.
+          - KPI, metas, presupuesto, gestión comercial, convenios, exportaciones y pagos permanecen fuera.
+          - Los módulos de las Fases 1 a 10 no cambiaron.
+          - No se modificó `main`, Apps Script ni el panel publicado.
+          EOF
+
+      - name: Guardar extracción aislada
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html js/modules/finance.js MODULARIZACION_FASE11_EXTRACCION_RESULTADO.md
+          if git diff --cached --quiet; then
+            echo "La extracción ya estaba actualizada."
+          else
+            git commit -m "Separar núcleo financiero para validación"
+            git push origin HEAD:modularizacion-panel-fase11-finanzas-2026-08-05
+          fi
