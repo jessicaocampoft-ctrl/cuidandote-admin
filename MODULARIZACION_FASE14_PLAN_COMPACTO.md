@@ -1,0 +1,69 @@
+# Plan compacto después de la Fase 13
+
+- Secciones sustanciales: **62**.
+- Líneas aproximadas dentro de esas secciones: **6813**.
+
+## Secciones
+
+- Sin sección identificada — 69 funciones, 1321 líneas.
+- REPORTE FIN DE MES — 6 funciones, 700 líneas.
+- MÉTRICAS INTELIGENTES — 1 funciones, 427 líneas.
+- Mes completo en que cae esta semana — 1 funciones, 298 líneas.
+- BRIEF PARA CLAUDE — 1 funciones, 263 líneas.
+- (solo si el usuario no presionó "Detener") — 3 funciones, 161 líneas.
+- Normalizar canal para citas antiguas que no lo tienen — 9 funciones, 142 líneas.
+- DASHBOARD — 1 funciones, 142 líneas.
+- MANUAL DE EMERGENCIA — funciones — 6 funciones, 134 líneas.
+- TAREAS DEL DÍA — 10 funciones, 120 líneas.
+- SISTEMA DE AGENDAMIENTO MÚLTIPLE — 10 funciones, 110 líneas.
+- Human-readable display date from any date value — 9 funciones, 109 líneas.
+- Alerta semana floja — 1 funciones, 106 líneas.
+- COPIAR Y COMPARTIR INFORMACIÓN DE GESTIÓN — 4 funciones, 104 líneas.
+- Log de acciones — 7 funciones, 103 líneas.
+- RECUPERACIÓN DE PACIENTES — 6 funciones, 103 líneas.
+- LEADS - Sistema de conteo de prospectos — 11 funciones, 101 líneas.
+- MÓDULO DE COMISIONES — 6 funciones, 99 líneas.
+- En modo mes el input de fecha solo necesita año-mes; mostramos un mes-picker alternativo — 4 funciones, 96 líneas.
+- Panel de voz (dictado por teclado iOS) — 4 funciones, 88 líneas.
+- Accesibilidad incremental para controles existentes. — 1 funciones, 83 líneas.
+- SIDEBAR / NAV — 1 funciones, 82 líneas.
+- Fecha de hoy por defecto — 4 funciones, 79 líneas.
+- GUIONES WA — 6 funciones, 76 líneas.
+- PACIENTES — 1 funciones, 73 líneas.
+- CENTRO DE ACCIONES — 4 funciones, 72 líneas.
+- CENTRO DE AUTOMATIZACIONES — 10 funciones, 71 líneas.
+- REPORTE CONVENIOS (Finanzas) — 2 funciones, 70 líneas.
+- PERFIL DEL ADMIN — 1 funciones, 68 líneas.
+- EVENTOS (Google Sheets via Apps Script) — 4 funciones, 68 líneas.
+- HELPERS — 12 funciones, 66 líneas.
+- Readaptación: separar reagendados — 1 funciones, 62 líneas.
+- NOTAS RÁPIDAS — 4 funciones, 61 líneas.
+- Actualizar badge en sidebar — 2 funciones, 58 líneas.
+- al menos 2 ciclos de render antes de aceptar el valor programático. — 2 funciones, 56 líneas.
+- Lo anterior queda como historial, pero no alimenta tareas, cobros vencidos ni alertas pendientes. — 2 funciones, 54 líneas.
+- PAGO POR CITA — 7 funciones, 53 líneas.
+- HISTORIAL DE CAMBIOS — 4 funciones, 52 líneas.
+- Mensajes WA — personalizados según tipo de descarga y nota de relación — 1 funciones, 49 líneas.
+- LISTA DE ESPERA (sincronizada con Google Sheets; fallback local) — 6 funciones, 48 líneas.
+- Estado del toggle de desplazamiento (true = se cobra) — 4 funciones, 48 líneas.
+- BUSCADOR PACIENTE — 2 funciones, 47 líneas.
+- BLOQUEAR — 3 funciones, 45 líneas.
+- Espejo del getServiceDuration del GAS para calcular en el frontend — 4 funciones, 45 líneas.
+- Ocultar selector de planes y resetear — 4 funciones, 44 líneas.
+- EDITAR / BORRAR PACIENTE — 3 funciones, 44 líneas.
+- tabla con filtros — 1 funciones, 43 líneas.
+- Limpiar formulario — 4 funciones, 42 líneas.
+- Carga pacientes inactivos 3+ meses desde GAS — 3 funciones, 42 líneas.
+- Badge sidebar — 1 funciones, 41 líneas.
+- KV SYNC — datos persistentes sincronizados en todos los dispositivos via GAS — 5 funciones, 40 líneas.
+- Fallback: agenda — 3 funciones, 40 líneas.
+- ENCUESTA STATS — conectado a Google Forms via GAS — 2 funciones, 40 líneas.
+- Usamos un pequeño delay para leer el valor actualizado — 3 funciones, 40 líneas.
+- Detectar nota de relación: si notaAdmin contiene [PARA: ...] — 4 funciones, 34 líneas.
+- RUTINA DE MEDICIÓN — checklist tachable con reinicio diario — 3 funciones, 33 líneas.
+- PAQUETES Y MEMBRESÍAS — 3 funciones, 27 líneas.
+- CONVENIO HANDLERS — 3 funciones, 24 líneas.
+- MENSAJES PREDETERMINADOS — 4 funciones, 22 líneas.
+- Helpers KV sync seguimiento — 4 funciones, 21 líneas.
+- helpers de estado por paciente (persisten en localStorage) — 4 funciones, 13 líneas.
+- CALENDARIO — 4 funciones, 10 líneas.
