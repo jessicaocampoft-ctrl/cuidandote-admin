@@ -1,0 +1,91 @@
+name: Fase 11 — Validar Finanzas
+
+on:
+  push:
+    branches:
+      - modularizacion-panel-fase11-finanzas-2026-08-05
+    paths:
+      - MODULARIZACION_FASE11_VALIDAR.md
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: modularizacion-panel-fase11-finanzas-validar
+  cancel-in-progress: false
+
+jobs:
+  validar-finanzas:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar rama aislada
+        uses: actions/checkout@v4
+        with:
+          ref: modularizacion-panel-fase11-finanzas-2026-08-05
+          fetch-depth: 0
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Confirmar aislamiento
+        run: |
+          test "$(git branch --show-current)" = "modularizacion-panel-fase11-finanzas-2026-08-05"
+          git fetch origin modularizacion-panel-fase10-paquetes-2026-08-05
+          git fetch origin main
+
+      - name: Validar sintaxis
+        run: |
+          node --check js/modules/finance.js
+          node --check tools/validar-finance-fase11.mjs
+
+      - name: Ejecutar pruebas funcionales
+        run: node tools/validar-finance-fase11.mjs index.html js/modules/finance.js
+
+      - name: Confirmar que no aparecieron llamadas nuevas al servidor
+        run: |
+          ! grep -q 'fetch(' js/modules/finance.js
+          ! grep -q 'APPS_SCRIPT_URL' js/modules/finance.js
+          ! grep -q 'action=' js/modules/finance.js
+
+      - name: Confirmar no regresión de fases anteriores
+        run: |
+          test -f js/modules/finance.js
+          git diff --exit-code origin/modularizacion-panel-fase10-paquetes-2026-08-05 -- js/core
+          git diff --exit-code origin/modularizacion-panel-fase10-paquetes-2026-08-05 -- js/modules ':!js/modules/finance.js'
+
+      - name: Documentar resultado
+        run: |
+          cat > MODULARIZACION_FASE11_RESULTADO.md <<'EOF'
+          # Resultado de modularización — Fase 11 Finanzas
+
+          - `js/modules/finance.js` creado.
+          - 11 funciones del núcleo financiero separadas de `index.html`.
+          - 5 constantes conceptuales de categorías, referencias y umbrales financieros encapsuladas en el módulo.
+          - Los nombres usados por la vista permanecen mediante adaptadores compatibles.
+          - Persistencia y recuperación de egresos validadas, incluyendo JSON inválido.
+          - Validaciones de fecha y monto de egresos comprobadas.
+          - Categorías y conceptos de egreso validados.
+          - Filtro mensual, resumen y eliminación confirmada o cancelada validados.
+          - Cálculos de ingresos por citas, eventos y paquetes validados, excluyendo valores futuros del mes actual.
+          - Gráfico financiero, servicios rentables, resumen mensual, meta y estructura financiera validados.
+          - La integración existente con métricas, KPI y alerta semanal se conservó sin trasladar esos módulos.
+          - No se introdujeron llamadas nuevas al servidor.
+          - KPI, metas, presupuesto, gestión comercial, convenios, exportaciones y pagos permanecen fuera.
+          - Las Fases 1 a 10 permanecen sin cambios.
+          - No se modificó `main`, Apps Script ni el panel publicado.
+          EOF
+
+      - name: Guardar resultado validado
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add MODULARIZACION_FASE11_RESULTADO.md
+          if git diff --cached --quiet; then
+            echo "El resultado ya estaba actualizado."
+          else
+            git commit -m "Validar módulo Finanzas"
+            git push origin HEAD:modularizacion-panel-fase11-finanzas-2026-08-05
+          fi

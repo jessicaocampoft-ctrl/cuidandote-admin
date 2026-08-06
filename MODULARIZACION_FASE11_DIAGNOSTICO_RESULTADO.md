@@ -1,0 +1,592 @@
+# Diagnóstico de dependencias — Fase 11 Finanzas
+
+- Manejadores de la vista: **21**.
+- Cierre transitivo inicial: **110** funciones.
+- Candidatas por nombre financiero o manejador: **32**.
+
+## Manejadores de vFinanzas
+- `abrirCopiarListaGestion`
+- `abrirMensajeWAGestion`
+- `actualizarConceptosEgreso`
+- `copiarInfoPersonaGestion`
+- `copyGestionTexto`
+- `deshacerUltimoLead`
+- `exportarCSV`
+- `guardarEgreso`
+- `guardarKPIManual`
+- `guardarMetaFin`
+- `limpiarDuplicadosGAS`
+- `loadEncuestaStats`
+- `previewMetaFin`
+- `registrarLead`
+- `renderCitasResumen`
+- `renderConveniosReport`
+- `renderEgresosList`
+- `resetLeadsHoy`
+- `setModoIngresos`
+- `showView`
+- `toggleHelpBanner`
+
+## Llamadas directas desde renderFinanzas
+- `_checkAlertaSemanFloja`
+- `_getPkAsignados`
+- `calcCobradoMes`
+- `calcIngresoPaquetesMes`
+- `citasReales`
+- `getMeta`
+- `normDate`
+- `parsePrecio`
+- `renderEgresosList`
+- `renderEstructuraFinanciera`
+- `renderFinanzas`
+- `renderKPITablero`
+- `renderMetricas`
+- `resRow`
+- `today`
+
+## Candidatas financieras sugeridas
+- `_analisisMes`
+- `_copyGestionMesKey`
+- `_copyGestionPeriodo`
+- `abrirCopiarListaGestion`
+- `abrirMensajeWAGestion`
+- `actualizarConceptosEgreso`
+- `calcCobradoMes`
+- `calcIngresoPaquetesMes`
+- `copiarInfoPersonaGestion`
+- `copyGestionTexto`
+- `deshacerUltimoLead`
+- `eliminarEgreso`
+- `exportarCSV`
+- `getEgresos`
+- `getLeadsMes`
+- `guardarEgreso`
+- `guardarKPIManual`
+- `guardarMetaFin`
+- `limpiarDuplicadosGAS`
+- `loadEncuestaStats`
+- `previewMetaFin`
+- `registrarLead`
+- `renderCitasResumen`
+- `renderConveniosReport`
+- `renderEgresosList`
+- `renderFinanzas`
+- `renderIngresosDetalle`
+- `resetLeadsHoy`
+- `saveEgresos`
+- `setModoIngresos`
+- `showView`
+- `toggleHelpBanner`
+
+## Cierre transitivo completo
+- `_analisisMes`
+- `_analisisSemana`
+- `_checkAlertaSemanFloja`
+- `_checkAutoAtendida`
+- `_checkCobrosPendientes`
+- `_copyGestionAcciones`
+- `_copyGestionAsesorText`
+- `_copyGestionCandidatosPaquete`
+- `_copyGestionData`
+- `_copyGestionDiagnostico`
+- `_copyGestionMesKey`
+- `_copyGestionOcupacion`
+- `_copyGestionPeriodo`
+- `_copyGestionReactivar`
+- `_copyGestionTexto`
+- `_copyOk`
+- `_copyPlainText`
+- `_formatKPIValue`
+- `_getPkAsignados`
+- `_ingFmt`
+- `_ingFmtLabel`
+- `_kpiCardGuia`
+- `_kpiSnapshot`
+- `_normStr`
+- `_openWAGestionPrepared`
+- `_renderAnalisis`
+- `_renderBDBreakdown`
+- `_renderCancelBreakdown`
+- `_renderEncuestaStatsUI`
+- `_showCopyFallback`
+- `_showWhatsAppCopyModal`
+- `_syncPreciosToAutoFill`
+- `_updateEmProgress`
+- `abrirCopiarListaGestion`
+- `abrirMensajeWAGestion`
+- `actualizarConceptosEgreso`
+- `actualizarContadorLeads`
+- `actualizarMetaBarra`
+- `addLead`
+- `applyKPIFavorites`
+- `applyKPIRefSpans`
+- `calcBDActualizada`
+- `calcCobradoMes`
+- `calcIngresoPaquetesMes`
+- `calcTotalCostos`
+- `changeKPIMonth`
+- `citasReales`
+- `closeKPIExplorer`
+- `copiarInfoPersonaGestion`
+- `copyGestionTexto`
+- `deleteLastLead`
+- `deshacerUltimoLead`
+- `detectarDuplicados`
+- `eliminarEgreso`
+- `esCancelExcluida`
+- `exportarCSV`
+- `fmtPeso`
+- `getCancelMotivos`
+- `getCostosEstructura`
+- `getEgresos`
+- `getEncuestaStats`
+- `getKPIConfig`
+- `getKPIManual`
+- `getLeads`
+- `getLeadsHoy`
+- `getLeadsMes`
+- `getLeadsSemana`
+- `getMeta`
+- `guardarEgreso`
+- `guardarKPIConfig`
+- `guardarKPIManual`
+- `guardarMetaFin`
+- `isMidnightTime`
+- `limpiarDuplicadosGAS`
+- `loadAllEmSteps`
+- `loadEncuestaStats`
+- `marcarErrorMio`
+- `normDate`
+- `openKPIExplorer`
+- `openPago`
+- `pad`
+- `parsePrecioNum`
+- `pmGuardarCostos`
+- `pmGuardarKPIs`
+- `pmRecalc`
+- `previewMetaFin`
+- `registrarLead`
+- `reloadMetas`
+- `renderCitasResumen`
+- `renderConveniosReport`
+- `renderEgresosList`
+- `renderEmergencia`
+- `renderEstructuraFinanciera`
+- `renderFinanzas`
+- `renderIngresosDetalle`
+- `renderKPIGuia`
+- `renderKPITablero`
+- `renderMetricas`
+- `renderPresupuestoMetas`
+- `resetLeadsHoy`
+- `resRow`
+- `saveCostosEstructura`
+- `saveEgresos`
+- `saveKPIManual`
+- `saveLeads`
+- `scrollToKPICard`
+- `setModoIngresos`
+- `toDateStr`
+- `toggleHelpBanner`
+- `toggleKPIFavorite`
+
+## Relaciones detectadas
+- `abrirCopiarListaGestion` → `_copyGestionData`
+- `abrirCopiarListaGestion` → `_copyPlainText`
+- `abrirCopiarListaGestion` → `abrirCopiarListaGestion`
+- `abrirCopiarListaGestion` → `fmtPeso`
+- `abrirCopiarListaGestion` → `normDate`
+- `abrirCopiarListaGestion` → `parsePrecio`
+- `abrirMensajeWAGestion` → `_copyGestionData`
+- `abrirMensajeWAGestion` → `_showWhatsAppCopyModal`
+- `abrirMensajeWAGestion` → `abrirMensajeWAGestion`
+- `actualizarConceptosEgreso` → `actualizarConceptosEgreso`
+- `copiarInfoPersonaGestion` → `_copyPlainText`
+- `copiarInfoPersonaGestion` → `copiarInfoPersonaGestion`
+- `copiarInfoPersonaGestion` → `normDate`
+- `copiarInfoPersonaGestion` → `toast`
+- `copyGestionTexto` → `_copyGestionTexto`
+- `copyGestionTexto` → `copyGestionTexto`
+- `deshacerUltimoLead` → `actualizarContadorLeads`
+- `deshacerUltimoLead` → `deleteLastLead`
+- `deshacerUltimoLead` → `deshacerUltimoLead`
+- `exportarCSV` → `citasReales`
+- `exportarCSV` → `exportarCSV`
+- `exportarCSV` → `normDate`
+- `exportarCSV` → `pad`
+- `exportarCSV` → `toast`
+- `guardarEgreso` → `getEgresos`
+- `guardarEgreso` → `guardarEgreso`
+- `guardarEgreso` → `renderEgresosList`
+- `guardarEgreso` → `renderEstructuraFinanciera`
+- `guardarEgreso` → `saveEgresos`
+- `guardarEgreso` → `toast`
+- `guardarKPIManual` → `guardarKPIManual`
+- `guardarKPIManual` → `renderKPITablero`
+- `guardarKPIManual` → `saveKPIManual`
+- `guardarKPIManual` → `toast`
+- `guardarMetaFin` → `actualizarMetaBarra`
+- `guardarMetaFin` → `applyKPIRefSpans`
+- `guardarMetaFin` → `calcCobradoMes`
+- `guardarMetaFin` → `getKPIConfig`
+- `guardarMetaFin` → `guardarMetaFin`
+- `guardarMetaFin` → `kvSet`
+- `guardarMetaFin` → `reloadMetas`
+- `guardarMetaFin` → `renderFinanzas`
+- `guardarMetaFin` → `renderPresupuestoMetas`
+- `guardarMetaFin` → `toast`
+- `limpiarDuplicadosGAS` → `detectarDuplicados`
+- `limpiarDuplicadosGAS` → `initDashboard`
+- `limpiarDuplicadosGAS` → `limpiarDuplicadosGAS`
+- `limpiarDuplicadosGAS` → `renderFinanzas`
+- `limpiarDuplicadosGAS` → `toast`
+- `loadEncuestaStats` → `_renderEncuestaStatsUI`
+- `loadEncuestaStats` → `citasReales`
+- `loadEncuestaStats` → `guardarKPIManual`
+- `loadEncuestaStats` → `kvSet`
+- `loadEncuestaStats` → `loadEncuestaStats`
+- `loadEncuestaStats` → `normDate`
+- `loadEncuestaStats` → `renderKPIGuia`
+- `loadEncuestaStats` → `renderKPITablero`
+- `loadEncuestaStats` → `toast`
+- `previewMetaFin` → `calcCobradoMes`
+- `previewMetaFin` → `previewMetaFin`
+- `registrarLead` → `actualizarContadorLeads`
+- `registrarLead` → `addLead`
+- `registrarLead` → `registrarLead`
+- `renderCitasResumen` → `citasReales`
+- `renderCitasResumen` → `normDate`
+- `renderCitasResumen` → `renderCitasResumen`
+- `renderCitasResumen` → `today`
+- `renderConveniosReport` → `fmtPeso`
+- `renderConveniosReport` → `normDate`
+- `renderConveniosReport` → `parsePrecioNum`
+- `renderConveniosReport` → `renderConveniosReport`
+- `renderEgresosList` → `eliminarEgreso`
+- `renderEgresosList` → `fmtPeso`
+- `renderEgresosList` → `getEgresos`
+- `renderEgresosList` → `renderEgresosList`
+- `renderFinanzas` → `_checkAlertaSemanFloja`
+- `renderFinanzas` → `_getPkAsignados`
+- `renderFinanzas` → `calcCobradoMes`
+- `renderFinanzas` → `calcIngresoPaquetesMes`
+- `renderFinanzas` → `citasReales`
+- `renderFinanzas` → `getMeta`
+- `renderFinanzas` → `normDate`
+- `renderFinanzas` → `parsePrecio`
+- `renderFinanzas` → `renderEgresosList`
+- `renderFinanzas` → `renderEstructuraFinanciera`
+- `renderFinanzas` → `renderFinanzas`
+- `renderFinanzas` → `renderKPITablero`
+- `renderFinanzas` → `renderMetricas`
+- `renderFinanzas` → `resRow`
+- `renderFinanzas` → `today`
+- `resetLeadsHoy` → `actualizarContadorLeads`
+- `resetLeadsHoy` → `getLeads`
+- `resetLeadsHoy` → `resetLeadsHoy`
+- `resetLeadsHoy` → `saveLeads`
+- `resetLeadsHoy` → `toast`
+- `setModoIngresos` → `renderCitasResumen`
+- `setModoIngresos` → `renderIngresosDetalle`
+- `setModoIngresos` → `setModoIngresos`
+- `toggleHelpBanner` → `toggleHelpBanner`
+- `_copyGestionData` → `_copyGestionCandidatosPaquete`
+- `_copyGestionData` → `_copyGestionData`
+- `_copyGestionData` → `_copyGestionMesKey`
+- `_copyGestionData` → `_copyGestionOcupacion`
+- `_copyGestionData` → `_copyGestionPeriodo`
+- `_copyGestionData` → `_copyGestionReactivar`
+- `_copyGestionData` → `calcCobradoMes`
+- `_copyGestionData` → `getEgresos`
+- `_copyGestionData` → `getKPIConfig`
+- `_copyGestionData` → `getKPIManual`
+- `_copyGestionData` → `getLeadsMes`
+- `_copyGestionData` → `normDate`
+- `_copyGestionData` → `parsePrecio`
+- `_copyPlainText` → `_copyOk`
+- `_copyPlainText` → `_copyPlainText`
+- `_copyPlainText` → `_showCopyFallback`
+- `fmtPeso` → `fmtPeso`
+- `normDate` → `normDate`
+- `normDate` → `toDateStr`
+- `_showWhatsAppCopyModal` → `_copyPlainText`
+- `_showWhatsAppCopyModal` → `_openWAGestionPrepared`
+- `_showWhatsAppCopyModal` → `_showWhatsAppCopyModal`
+- `_copyGestionTexto` → `_copyGestionAcciones`
+- `_copyGestionTexto` → `_copyGestionAsesorText`
+- `_copyGestionTexto` → `_copyGestionData`
+- `_copyGestionTexto` → `_copyGestionDiagnostico`
+- `_copyGestionTexto` → `_copyGestionTexto`
+- `_copyGestionTexto` → `_copyPlainText`
+- `_copyGestionTexto` → `fmtPeso`
+- `actualizarContadorLeads` → `actualizarContadorLeads`
+- `actualizarContadorLeads` → `getLeadsHoy`
+- `actualizarContadorLeads` → `getLeadsMes`
+- `actualizarContadorLeads` → `getLeadsSemana`
+- `deleteLastLead` → `deleteLastLead`
+- `deleteLastLead` → `getLeads`
+- `deleteLastLead` → `saveLeads`
+- `citasReales` → `citasReales`
+- `citasReales` → `isMidnightTime`
+- `citasReales` → `normDate`
+- `pad` → `pad`
+- `getEgresos` → `getEgresos`
+- `getEgresos` → `kvGet`
+- `renderEstructuraFinanciera` → `calcCobradoMes`
+- `renderEstructuraFinanciera` → `fmtPeso`
+- `renderEstructuraFinanciera` → `getEgresos`
+- `renderEstructuraFinanciera` → `renderEstructuraFinanciera`
+- `saveEgresos` → `kvSet`
+- `saveEgresos` → `saveEgresos`
+- `renderKPITablero` → `calcBDActualizada`
+- `renderKPITablero` → `calcCobradoMes`
+- `renderKPITablero` → `citasReales`
+- `renderKPITablero` → `esCancelExcluida`
+- `renderKPITablero` → `fmtPeso`
+- `renderKPITablero` → `getCancelMotivos`
+- `renderKPITablero` → `getEgresos`
+- `renderKPITablero` → `getEncuestaStats`
+- `renderKPITablero` → `getKPIManual`
+- `renderKPITablero` → `getLeadsMes`
+- `renderKPITablero` → `normDate`
+- `renderKPITablero` → `parsePrecio`
+- `renderKPITablero` → `renderKPITablero`
+- `saveKPIManual` → `kvSet`
+- `saveKPIManual` → `saveKPIManual`
+- `actualizarMetaBarra` → `actualizarMetaBarra`
+- `actualizarMetaBarra` → `getMeta`
+- `applyKPIRefSpans` → `applyKPIRefSpans`
+- `applyKPIRefSpans` → `getKPIConfig`
+- `calcCobradoMes` → `calcCobradoMes`
+- `calcCobradoMes` → `calcIngresoPaquetesMes`
+- `calcCobradoMes` → `citasReales`
+- `calcCobradoMes` → `normDate`
+- `calcCobradoMes` → `parsePrecio`
+- `calcCobradoMes` → `today`
+- `getKPIConfig` → `getKPIConfig`
+- `getKPIConfig` → `kvGet`
+- `getKPIConfig` → `kvSet`
+- `reloadMetas` → `_syncPreciosToAutoFill`
+- `reloadMetas` → `getKPIConfig`
+- `reloadMetas` → `reloadMetas`
+- `renderPresupuestoMetas` → `calcTotalCostos`
+- `renderPresupuestoMetas` → `getCostosEstructura`
+- `renderPresupuestoMetas` → `getKPIConfig`
+- `renderPresupuestoMetas` → `pmGuardarCostos`
+- `renderPresupuestoMetas` → `pmGuardarKPIs`
+- `renderPresupuestoMetas` → `pmRecalc`
+- `renderPresupuestoMetas` → `renderPresupuestoMetas`
+- `detectarDuplicados` → `detectarDuplicados`
+- `detectarDuplicados` → `normDate`
+- `_renderEncuestaStatsUI` → `_renderEncuestaStatsUI`
+- `renderKPIGuia` → `_kpiCardGuia`
+- `renderKPIGuia` → `_renderBDBreakdown`
+- `renderKPIGuia` → `_renderCancelBreakdown`
+- `renderKPIGuia` → `applyKPIFavorites`
+- `renderKPIGuia` → `applyKPIRefSpans`
+- `renderKPIGuia` → `calcBDActualizada`
+- `renderKPIGuia` → `calcCobradoMes`
+- `renderKPIGuia` → `changeKPIMonth`
+- `renderKPIGuia` → `citasReales`
+- `renderKPIGuia` → `esCancelExcluida`
+- `renderKPIGuia` → `fmtPeso`
+- `renderKPIGuia` → `getCancelMotivos`
+- `renderKPIGuia` → `getEncuestaStats`
+- `renderKPIGuia` → `getKPIConfig`
+- `renderKPIGuia` → `getKPIManual`
+- `renderKPIGuia` → `getLeadsMes`
+- `renderKPIGuia` → `guardarKPIConfig`
+- `renderKPIGuia` → `loadEncuestaStats`
+- `renderKPIGuia` → `normDate`
+- `renderKPIGuia` → `parsePrecio`
+- `renderKPIGuia` → `renderEmergencia`
+- `renderKPIGuia` → `renderKPIGuia`
+- `renderKPIGuia` → `showView`
+- `addLead` → `addLead`
+- `addLead` → `getLeads`
+- `addLead` → `saveLeads`
+- `parsePrecioNum` → `parsePrecioNum`
+- `eliminarEgreso` → `eliminarEgreso`
+- `eliminarEgreso` → `getEgresos`
+- `eliminarEgreso` → `renderEgresosList`
+- `eliminarEgreso` → `renderEstructuraFinanciera`
+- `eliminarEgreso` → `saveEgresos`
+- `_checkAlertaSemanFloja` → `_checkAlertaSemanFloja`
+- `_checkAlertaSemanFloja` → `_ingFmt`
+- `_checkAlertaSemanFloja` → `normDate`
+- `_checkAlertaSemanFloja` → `parsePrecio`
+- `_checkAlertaSemanFloja` → `showView`
+- `_checkAlertaSemanFloja` → `today`
+- `_getPkAsignados` → `_getPkAsignados`
+- `calcIngresoPaquetesMes` → `_getPkAsignados`
+- `calcIngresoPaquetesMes` → `calcIngresoPaquetesMes`
+- `calcIngresoPaquetesMes` → `parsePrecio`
+- `getMeta` → `getKPIConfig`
+- `getMeta` → `getMeta`
+- `getMeta` → `kvGet`
+- `getMeta` → `kvSet`
+- `renderMetricas` → `_checkAutoAtendida`
+- `renderMetricas` → `_checkCobrosPendientes`
+- `renderMetricas` → `calcCobradoMes`
+- `renderMetricas` → `citasReales`
+- `renderMetricas` → `getMeta`
+- `renderMetricas` → `kvGet`
+- `renderMetricas` → `normDate`
+- `renderMetricas` → `parsePrecio`
+- `renderMetricas` → `renderCitasResumen`
+- `renderMetricas` → `renderConveniosReport`
+- `renderMetricas` → `renderMetricas`
+- `renderMetricas` → `setModoIngresos`
+- `renderMetricas` → `today`
+- `resRow` → `resRow`
+- `getLeads` → `getLeads`
+- `getLeads` → `kvGet`
+- `saveLeads` → `kvSet`
+- `saveLeads` → `saveLeads`
+- `renderIngresosDetalle` → `_analisisMes`
+- `renderIngresosDetalle` → `_analisisSemana`
+- `renderIngresosDetalle` → `_ingFmt`
+- `renderIngresosDetalle` → `_ingFmtLabel`
+- `renderIngresosDetalle` → `citasReales`
+- `renderIngresosDetalle` → `getMeta`
+- `renderIngresosDetalle` → `normDate`
+- `renderIngresosDetalle` → `parsePrecio`
+- `renderIngresosDetalle` → `renderIngresosDetalle`
+- `renderIngresosDetalle` → `today`
+- `_copyGestionCandidatosPaquete` → `_copyGestionCandidatosPaquete`
+- `_copyGestionCandidatosPaquete` → `normDate`
+- `_copyGestionMesKey` → `_copyGestionMesKey`
+- `_copyGestionOcupacion` → `_copyGestionOcupacion`
+- `_copyGestionPeriodo` → `_copyGestionPeriodo`
+- `_copyGestionReactivar` → `_copyGestionReactivar`
+- `_copyGestionReactivar` → `normDate`
+- `getKPIManual` → `getKPIManual`
+- `getKPIManual` → `kvGet`
+- `getLeadsMes` → `getLeads`
+- `getLeadsMes` → `getLeadsMes`
+- `_copyOk` → `_copyOk`
+- `_copyOk` → `toast`
+- `_showCopyFallback` → `_copyOk`
+- `_showCopyFallback` → `_showCopyFallback`
+- `toDateStr` → `pad`
+- `toDateStr` → `toDateStr`
+- `_openWAGestionPrepared` → `_openWAGestionPrepared`
+- `_copyGestionAcciones` → `_copyGestionAcciones`
+- `_copyGestionAsesorText` → `_copyGestionAsesorText`
+- `_copyGestionAsesorText` → `fmtPeso`
+- `_copyGestionDiagnostico` → `_copyGestionDiagnostico`
+- `_copyGestionDiagnostico` → `fmtPeso`
+- `getLeadsHoy` → `getLeads`
+- `getLeadsHoy` → `getLeadsHoy`
+- `getLeadsSemana` → `getLeads`
+- `getLeadsSemana` → `getLeadsSemana`
+- `isMidnightTime` → `isMidnightTime`
+- `calcBDActualizada` → `calcBDActualizada`
+- `calcBDActualizada` → `normDate`
+- `esCancelExcluida` → `esCancelExcluida`
+- `getCancelMotivos` → `getCancelMotivos`
+- `getEncuestaStats` → `getEncuestaStats`
+- `getEncuestaStats` → `kvGet`
+- `_syncPreciosToAutoFill` → `_syncPreciosToAutoFill`
+- `calcTotalCostos` → `calcTotalCostos`
+- `getCostosEstructura` → `getCostosEstructura`
+- `getCostosEstructura` → `kvGet`
+- `pmGuardarCostos` → `applyKPIRefSpans`
+- `pmGuardarCostos` → `calcTotalCostos`
+- `pmGuardarCostos` → `getKPIConfig`
+- `pmGuardarCostos` → `kvSet`
+- `pmGuardarCostos` → `pmGuardarCostos`
+- `pmGuardarCostos` → `reloadMetas`
+- `pmGuardarCostos` → `renderPresupuestoMetas`
+- `pmGuardarCostos` → `saveCostosEstructura`
+- `pmGuardarCostos` → `toast`
+- `pmGuardarKPIs` → `_syncPreciosToAutoFill`
+- `pmGuardarKPIs` → `actualizarMetaBarra`
+- `pmGuardarKPIs` → `applyKPIRefSpans`
+- `pmGuardarKPIs` → `calcCobradoMes`
+- `pmGuardarKPIs` → `getKPIConfig`
+- `pmGuardarKPIs` → `kvSet`
+- `pmGuardarKPIs` → `pmGuardarKPIs`
+- `pmGuardarKPIs` → `reloadMetas`
+- `pmGuardarKPIs` → `renderPresupuestoMetas`
+- `pmGuardarKPIs` → `toast`
+- `pmRecalc` → `calcTotalCostos`
+- `pmRecalc` → `pmRecalc`
+- `_kpiCardGuia` → `_kpiCardGuia`
+- `_kpiCardGuia` → `openKPIExplorer`
+- `_kpiCardGuia` → `toggleKPIFavorite`
+- `_renderBDBreakdown` → `_renderBDBreakdown`
+- `_renderBDBreakdown` → `calcBDActualizada`
+- `_renderCancelBreakdown` → `_renderCancelBreakdown`
+- `_renderCancelBreakdown` → `esCancelExcluida`
+- `_renderCancelBreakdown` → `getCancelMotivos`
+- `_renderCancelBreakdown` → `marcarErrorMio`
+- `_renderCancelBreakdown` → `normDate`
+- `applyKPIFavorites` → `applyKPIFavorites`
+- `changeKPIMonth` → `changeKPIMonth`
+- `changeKPIMonth` → `renderKPIGuia`
+- `guardarKPIConfig` → `applyKPIRefSpans`
+- `guardarKPIConfig` → `getKPIConfig`
+- `guardarKPIConfig` → `guardarKPIConfig`
+- `guardarKPIConfig` → `kvSet`
+- `guardarKPIConfig` → `reloadMetas`
+- `guardarKPIConfig` → `renderKPIGuia`
+- `guardarKPIConfig` → `renderKPITablero`
+- `guardarKPIConfig` → `toast`
+- `renderEmergencia` → `loadAllEmSteps`
+- `renderEmergencia` → `renderEmergencia`
+- `_ingFmt` → `_ingFmt`
+- `_checkAutoAtendida` → `_checkAutoAtendida`
+- `_checkAutoAtendida` → `normDate`
+- `_checkCobrosPendientes` → `_checkCobrosPendientes`
+- `_checkCobrosPendientes` → `citasReales`
+- `_checkCobrosPendientes` → `fmtDate`
+- `_checkCobrosPendientes` → `kvGet`
+- `_checkCobrosPendientes` → `normDate`
+- `_checkCobrosPendientes` → `openPago`
+- `_checkCobrosPendientes` → `parsePrecio`
+- `_checkCobrosPendientes` → `today`
+- `_analisisMes` → `_analisisMes`
+- `_analisisMes` → `_ingFmtLabel`
+- `_analisisMes` → `_renderAnalisis`
+- `_analisisSemana` → `_analisisSemana`
+- `_analisisSemana` → `_renderAnalisis`
+- `_analisisSemana` → `normDate`
+- `_analisisSemana` → `parsePrecio`
+- `_analisisSemana` → `today`
+- `_ingFmtLabel` → `_ingFmtLabel`
+- `saveCostosEstructura` → `kvSet`
+- `saveCostosEstructura` → `saveCostosEstructura`
+- `openKPIExplorer` → `_formatKPIValue`
+- `openKPIExplorer` → `_kpiSnapshot`
+- `openKPIExplorer` → `closeKPIExplorer`
+- `openKPIExplorer` → `openKPIExplorer`
+- `openKPIExplorer` → `scrollToKPICard`
+- `openKPIExplorer` → `showView`
+- `toggleKPIFavorite` → `applyKPIFavorites`
+- `toggleKPIFavorite` → `toggleKPIFavorite`
+- `marcarErrorMio` → `marcarErrorMio`
+- `loadAllEmSteps` → `_updateEmProgress`
+- `loadAllEmSteps` → `kvGet`
+- `loadAllEmSteps` → `loadAllEmSteps`
+- `openPago` → `openPago`
+- `_renderAnalisis` → `_renderAnalisis`
+- `_formatKPIValue` → `_formatKPIValue`
+- `_formatKPIValue` → `fmtPeso`
+- `_kpiSnapshot` → `_kpiSnapshot`
+- `_kpiSnapshot` → `_normStr`
+- `_kpiSnapshot` → `calcBDActualizada`
+- `_kpiSnapshot` → `calcCobradoMes`
+- `_kpiSnapshot` → `citasReales`
+- `_kpiSnapshot` → `esCancelExcluida`
+- `_kpiSnapshot` → `getCancelMotivos`
+- `_kpiSnapshot` → `getLeadsMes`
+- `_kpiSnapshot` → `normDate`
+- `closeKPIExplorer` → `closeKPIExplorer`
+- `scrollToKPICard` → `_renderBDBreakdown`
+- `scrollToKPICard` → `_renderCancelBreakdown`
+- `scrollToKPICard` → `scrollToKPICard`
+- `_updateEmProgress` → `_updateEmProgress`
+- `_normStr` → `_normStr`
+
+- Este archivo es solo diagnóstico. No autoriza extracción ni modifica código funcional.
