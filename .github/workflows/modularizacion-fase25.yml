@@ -1,4 +1,5 @@
 name: Fase 25 — Utilidades e integración final
+# Validación definitiva en Ubuntu estándar
 
 on:
   push:
