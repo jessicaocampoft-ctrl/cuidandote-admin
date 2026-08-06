@@ -11,6 +11,17 @@ const functionNames = [
   'renderKPIGuia','renderKPITablero','saveKPIManual','saveKPINote','scrollToKPICard','toggleKPICard',
   'toggleKPIFavorite','_renderBDBreakdown','_renderCancelBreakdown'
 ];
+const privateGlobalNames = [
+  '_activeKPIExplorer','_kpiServerHistory','_kpiViewMonth','KPI_CONFIG_DEFAULTS','KPI_INTERACTIVE'
+];
+const sharedKpiGlobalNames = [
+  '_cfg0','CATEGORIAS_MARKETING','META_CAC_MAX','META_CANCELACION_PCT','META_ENCUESTAS','META_NPS',
+  'META_RETENCION_PCT','META_SESIONES_SEMANA','META_VENTAS_MES','META_VENTAS_SEMANA',
+  'VENTANA_NUEVO_DIAS','VENTANA_RETENCION'
+];
+const sharedPlatformGlobalNames = [
+  'allData','APPS_SCRIPT_URL','TOKEN','esRegistroServ','esSesionFull','esSesionIndiv'
+];
 
 function extractFunctionRange(source, name) {
   const escaped = name.replace(/[$]/g,'\\$&');
@@ -38,32 +49,20 @@ const selectedSource = selectedBlocks.map(x=>x.text).join('\n\n');
 function insideFunction(index) {
   return allFunctionRanges.some(r=>index>=r.start && index<r.end);
 }
-
 function declarationEnd(source,start) {
   let braces=0, brackets=0, parens=0, quote=null, escaped=false;
   for(let i=start;i<source.length;i++){
     const ch=source[i];
-    if(quote){
-      if(escaped) escaped=false;
-      else if(ch==='\\') escaped=true;
-      else if(ch===quote) quote=null;
-      continue;
-    }
+    if(quote){if(escaped)escaped=false;else if(ch==='\\')escaped=true;else if(ch===quote)quote=null;continue;}
     if(ch==='"'||ch==="'"||ch==='`'){quote=ch;continue;}
-    if(ch==='{') braces++;
-    else if(ch==='}') braces--;
-    else if(ch==='[') brackets++;
-    else if(ch===']') brackets--;
-    else if(ch==='(') parens++;
-    else if(ch===')') parens--;
-    else if(ch===';'&&braces===0&&brackets===0&&parens===0) return i+1;
+    if(ch==='{')braces++;else if(ch==='}')braces--;else if(ch==='[')brackets++;else if(ch===']')brackets--;else if(ch==='(')parens++;else if(ch===')')parens--;
+    else if(ch===';'&&braces===0&&brackets===0&&parens===0)return i+1;
   }
   throw new Error('Declaración global sin punto y coma.');
 }
-
 function declaredNames(declaration) {
   const body=declaration.replace(/^(?:const|let|var)\s+/,'').replace(/;\s*$/,'');
-  const parts=[]; let start=0, braces=0, brackets=0, parens=0, quote=null, escaped=false;
+  const parts=[];let start=0,braces=0,brackets=0,parens=0,quote=null,escaped=false;
   for(let i=0;i<body.length;i++){
     const ch=body[i];
     if(quote){if(escaped)escaped=false;else if(ch==='\\')escaped=true;else if(ch===quote)quote=null;continue;}
@@ -78,44 +77,24 @@ function declaredNames(declaration) {
 const globalDeclarations=[];
 for(const match of html.matchAll(/(?:^|\n)(const|let|var)\s+([A-Za-z_$][\w$]*)\s*=/g)){
   const start=match.index+(match[0].startsWith('\n')?1:0);
-  if(insideFunction(start)) continue;
+  if(insideFunction(start))continue;
   const end=declarationEnd(html,start);
   const text=html.slice(start,end).trim();
   globalDeclarations.push({start,end,text,names:declaredNames(text)});
 }
 const globalByName=new Map();
-for(const decl of globalDeclarations) for(const name of decl.names) globalByName.set(name,decl);
+for(const decl of globalDeclarations)for(const name of decl.names)globalByName.set(name,decl);
 
-const sharedGlobalNames = new Set([
-  'allData','APPS_SCRIPT_URL','TOKEN','esRegistroServ','esSesionFull','esSesionIndiv'
-]);
-const externalGlobalNames = unique([...sharedGlobalNames].filter(name =>
-  new RegExp(`\\b${name.replace(/[$]/g,'\\$&')}\\b`).test(selectedSource)
-));
+const privateDeclarations=privateGlobalNames.map(name=>{
+  const decl=globalByName.get(name);
+  if(!decl)throw new Error(`No se encontró la declaración privada ${name}.`);
+  return decl;
+});
+const uniquePrivateDeclarations=[...new Map(privateDeclarations.map(d=>[d.text,d])).values()].sort((a,b)=>a.start-b.start);
 
-const referencedGlobals=new Set();
-const queue=[];
-for(const name of globalByName.keys()) {
-  if (sharedGlobalNames.has(name)) continue;
-  if(new RegExp(`\\b${name.replace(/[$]/g,'\\$&')}\\b`).test(selectedSource)){
-    referencedGlobals.add(name);
-    queue.push(name);
-  }
+for(const name of [...sharedKpiGlobalNames,...sharedPlatformGlobalNames]){
+  if(!globalByName.has(name))throw new Error(`No se encontró la variable compartida ${name}.`);
 }
-while(queue.length){
-  const name=queue.shift();
-  const decl=globalByName.get(name); if(!decl) continue;
-  for(const candidate of globalByName.keys()){
-    if(sharedGlobalNames.has(candidate)||referencedGlobals.has(candidate)) continue;
-    if(new RegExp(`\\b${candidate.replace(/[$]/g,'\\$&')}\\b`).test(decl.text)){
-      referencedGlobals.add(candidate);
-      queue.push(candidate);
-    }
-  }
-}
-const selectedDeclarations=unique([...new Set([...referencedGlobals].map(n=>globalByName.get(n)?.text).filter(Boolean))]);
-const selectedGlobalNames=unique([...referencedGlobals]);
-
 const calledFunctions=unique([...selectedSource.matchAll(/\b([A-Za-z_$][\w$]*)\s*\(/g)].map(m=>m[1]));
 const externalFunctions=calledFunctions.filter(name=>allFunctionNames.includes(name)&&!functionNames.includes(name));
 const forbiddenFunctions=[
@@ -125,34 +104,30 @@ const forbiddenFunctions=[
   'saveManualPayment','renderPagos','renderComisiones'
 ];
 const crossed=functionNames.filter(n=>forbiddenFunctions.includes(n));
-if(crossed.length) throw new Error(`Alcance inseguro: ${crossed.join(', ')}`);
-if(functionNames.length!==25) throw new Error(`Se esperaban 25 funciones y hay ${functionNames.length}.`);
-if(selectedGlobalNames.length!==17) throw new Error(`Se esperaban 17 globales propios y se detectaron ${selectedGlobalNames.length}: ${selectedGlobalNames.join(', ')}`);
-if(selectedDeclarations.length!==17) throw new Error(`Se esperaban 17 declaraciones propias y se detectaron ${selectedDeclarations.length}.`);
-if(!selectedGlobalNames.includes('KPI_CONFIG_DEFAULTS')||!selectedGlobalNames.includes('KPI_INTERACTIVE')) throw new Error('Faltan constantes KPI esenciales.');
-if(selectedGlobalNames.some(name=>sharedGlobalNames.has(name))) throw new Error('Una variable compartida intentó entrar al módulo KPI.');
+if(crossed.length)throw new Error(`Alcance inseguro: ${crossed.join(', ')}`);
+if(functionNames.length!==25)throw new Error(`Se esperaban 25 funciones y hay ${functionNames.length}.`);
+if(privateGlobalNames.length!==5||uniquePrivateDeclarations.length!==5)throw new Error('El estado privado KPI no quedó delimitado en cinco declaraciones.');
 
 const lines=[
   '# Inventario de modularización — Fase 12 Indicadores y KPI','',
   `- Funciones propias seleccionadas: **${functionNames.length}**.`,
-  `- Declaraciones globales seleccionadas: **${selectedDeclarations.length}**.`,
-  `- Nombres globales encapsulados: **${selectedGlobalNames.length}**.`,
-  `- Variables globales compartidas conservadas fuera: **${externalGlobalNames.length}**.`,
+  `- Declaraciones privadas seleccionadas: **${uniquePrivateDeclarations.length}**.`,
+  `- Variables KPI compartidas conservadas en index: **${sharedKpiGlobalNames.length}**.`,
+  `- Variables de plataforma conservadas fuera: **${sharedPlatformGlobalNames.length}**.`,
   `- Dependencias funcionales externas conservadas: **${externalFunctions.length}**.`,
   '- `renderMetricas`, encuestas, presupuesto, metas financieras, leads, pagos y comisiones permanecen fuera.','',
   '## Funciones propias',...functionNames.map(n=>`- \`${n}\`${selectedBlocks.find(x=>x.name===n)?.async?' — async':''}`),
-  '', '## Estado y constantes propias',...selectedGlobalNames.map(n=>`- \`${n}\``),
-  '', '## Variables compartidas conservadas fuera',...externalGlobalNames.map(n=>`- \`${n}\``),
-  '', '## Declaraciones completas',...selectedDeclarations.map(d=>`- \`${d.replace(/\s+/g,' ').slice(0,180)}${d.length>180?'…':''}\``),
+  '', '## Estado privado que sí se encapsula',...privateGlobalNames.map(n=>`- \`${n}\``),
+  '', '## Estado KPI compartido que permanece en index',...sharedKpiGlobalNames.map(n=>`- \`${n}\``),
+  '', '## Variables de plataforma conservadas fuera',...sharedPlatformGlobalNames.map(n=>`- \`${n}\``),
   '', '## Dependencias externas conservadas',...externalFunctions.map(n=>`- \`${n}\``),
   '', '## Límites confirmados',
-  '- `allData`, `APPS_SCRIPT_URL`, `TOKEN` y los clasificadores de servicios conservan una sola fuente de verdad.',
+  '- Los valores META_* continúan disponibles para Metas, Presupuesto, Comisiones y reportes.',
   '- `getCancelMotivos` y `marcarErrorMio` siguen perteneciendo a edición de citas.',
   '- `getEncuestaStats` y `loadEncuestaStats` siguen perteneciendo a encuestas.',
   '- `getLeadsMes` sigue perteneciendo a gestión comercial.',
   '- `calcCobradoMes` y `getEgresos` siguen perteneciendo a Finanzas.',
-  '- `reloadMetas` sigue siendo una dependencia externa de configuración.',
   '- No se modifica `main`, Apps Script ni el panel publicado.',''
 ];
 fs.writeFileSync(out,lines.join('\n'),'utf8');
-console.log(`Inventario Fase 12: ${functionNames.length} funciones, ${selectedGlobalNames.length} globales propios, ${externalGlobalNames.length} globales compartidos y ${externalFunctions.length} dependencias.`);
+console.log(`Inventario Fase 12: ${functionNames.length} funciones, ${privateGlobalNames.length} globales privados y ${sharedKpiGlobalNames.length+sharedPlatformGlobalNames.length} compartidos.`);
