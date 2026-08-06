@@ -1,0 +1,55 @@
+name: Fase 14 — Inventario restante
+
+on:
+  push:
+    branches:
+      - modularizacion-panel-fase14-inventario-restante-2026-08-06
+    paths:
+      - MODULARIZACION_FASE14_INVENTARIO.md
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: modularizacion-panel-fase14-inventario-restante
+  cancel-in-progress: false
+
+jobs:
+  inventario:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar rama aislada
+        uses: actions/checkout@v4
+        with:
+          ref: modularizacion-panel-fase14-inventario-restante-2026-08-06
+          fetch-depth: 0
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Confirmar base de Fase 13
+        run: |
+          test "$(git branch --show-current)" = "modularizacion-panel-fase14-inventario-restante-2026-08-06"
+          git fetch origin modularizacion-panel-fase13-metas-presupuesto-2026-08-06
+          git merge-base --is-ancestor origin/modularizacion-panel-fase13-metas-presupuesto-2026-08-06 HEAD
+
+      - name: Generar inventario
+        run: |
+          node --check tools/inventario-restante-fase14.mjs
+          node tools/inventario-restante-fase14.mjs index.html MODULARIZACION_FASE14_INVENTARIO_RESULTADO.md
+          test -s MODULARIZACION_FASE14_INVENTARIO_RESULTADO.md
+
+      - name: Guardar inventario en la rama aislada
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add MODULARIZACION_FASE14_INVENTARIO_RESULTADO.md
+          if git diff --cached --quiet; then
+            echo "El inventario ya estaba actualizado."
+          else
+            git commit -m "Registrar inventario restante después de Fase 13"
+            git push origin HEAD:modularizacion-panel-fase14-inventario-restante-2026-08-06
+          fi
