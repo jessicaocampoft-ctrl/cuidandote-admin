@@ -12,7 +12,7 @@ const names = [
   'getCostosEstructura','saveCostosEstructura','calcTotalCostos',
   'renderPresupuestoMetas','pmRecalc','pmGuardarCostos','pmGuardarKPIs',
   'getMeta','actualizarMetaBarra','previewMeta','guardarMeta','guardarMetaFin','previewMetaFin','reloadMetas',
-  '_toggleEditCostos','_leerCamposCostos','_recalcCostos','_guardarCostos'
+  '_syncPreciosToAutoFill','_toggleEditCostos','_leerCamposCostos','_recalcCostos','_guardarCostos'
 ];
 const sharedGlobals = [
   'META_SESIONES_SEMANA','META_VENTAS_MES','META_VENTAS_SEMANA','META_NPS',
