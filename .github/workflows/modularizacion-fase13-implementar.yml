@@ -43,8 +43,8 @@ jobs:
       - name: Validar sintaxis y comportamiento
         run: |
           node --check js/modules/budget.js
-          node --check tools/validar-budget-fase13.mjs
-          node tools/validar-budget-fase13.mjs /tmp/fase12-index.html index.html js/modules/budget.js
+          node --check tools/validar-budget-fase13-final.mjs
+          node tools/validar-budget-fase13-final.mjs /tmp/fase12-index.html index.html js/modules/budget.js
 
       - name: Confirmar aislamiento funcional
         run: |
@@ -53,8 +53,8 @@ jobs:
           ! grep -q 'fetch(' js/modules/budget.js
           ! grep -q 'APPS_SCRIPT_URL' js/modules/budget.js
           ! grep -q 'action=' js/modules/budget.js
-          grep -q 'function _syncPreciosToAutoFill' index.html
-          ! grep -q 'function _syncPreciosToAutoFill' js/modules/budget.js
+          grep -q 'function _syncPreciosToAutoFill' js/modules/budget.js
+          grep -q 'function _syncPreciosToAutoFill(...args)' index.html
 
       - name: Generar informe final
         run: |
@@ -62,15 +62,15 @@ jobs:
           # Resultado de modularización — Fase 13 Metas y Presupuesto
 
           - `js/modules/budget.js` creado.
-          - 18 funciones de metas, presupuesto y estructura de costos separadas de `index.html`.
+          - 19 funciones de metas, presupuesto, estructura de costos y sincronización de precios separadas de `index.html`.
           - `COSTOS_DEFAULTS` encapsulada en el módulo.
           - Los mismos nombres públicos permanecen mediante adaptadores compatibles.
           - Se verificó la paridad exacta de todos los cuerpos trasladados frente a la Fase 12.
           - Costos por defecto, persistencia, recuperación ante JSON inválido y migraciones históricas validados.
           - Cálculo de subtotal, imprevistos, utilidad y meta total validado.
           - Guardado de meta mensual, validación mínima, barras de progreso y sincronización con KPI validados.
+          - Sincronización de precios configurados con el formulario de citas preservada.
           - Editor de estructura de costos y formulario completo de Presupuesto y Metas validados.
-          - `_syncPreciosToAutoFill` permanece fuera como dependencia compartida del formulario de citas.
           - No se introdujeron llamadas nuevas al servidor.
           - Finanzas, KPI, Comisiones, Pagos y las Fases 1 a 12 permanecen sin cambios.
           - No se modificó `main`, Apps Script ni el panel publicado.
