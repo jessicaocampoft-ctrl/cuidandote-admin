@@ -52,11 +52,9 @@ jobs:
 
       - name: Confirmar no regresión de fases anteriores
         run: |
+          test -f js/modules/finance.js
           git diff --exit-code origin/modularizacion-panel-fase10-paquetes-2026-08-05 -- js/core
           git diff --exit-code origin/modularizacion-panel-fase10-paquetes-2026-08-05 -- js/modules ':!js/modules/finance.js'
-          for f in api session payments passport agenda booking appointment-editor team database referrals packages; do
-            test -f "js/modules/$f.js"
-          done
 
       - name: Documentar resultado
         run: |
