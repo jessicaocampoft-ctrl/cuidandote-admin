@@ -1,1 +1,1 @@
-Generar el inventario de funciones y secciones que todavía permanecen dentro de index.html después de la Fase 13.
+Generar nuevamente el inventario y el plan compacto de las funciones que permanecen dentro de index.html después de la Fase 13.
