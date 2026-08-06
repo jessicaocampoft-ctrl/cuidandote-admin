@@ -6145,63 +6145,46 @@ Acción: enviar mensaje de reenganche a los 14 pacientes que solo vinieron una v
 // ══════════════════════════════════════════════════════════════
 const APPS_SCRIPT_URL = window.PanelConfig.APPS_SCRIPT_URL;
 
-// ── KV SYNC — datos persistentes sincronizados en todos los dispositivos via GAS ──
-let _gasKV = {};
-let _kvDirty = {};
-let _kvFlushTimer = null;
-
-async function loadAdminKV() {
-  try {
-    const r = await fetch(`${APPS_SCRIPT_URL}?action=getAdminKV&token=${encodeURIComponent(TOKEN)}`).then(x => x.json());
-    if (r.ok && r.kv) {
-      _gasKV = r.kv;
-      Object.entries(r.kv).forEach(([k, v]) => localStorage.setItem(k, v));
-    }
-  } catch(e) {}
-}
-
-function kvGet(key) {
-  const v = _gasKV[key];
-  return (v !== undefined && v !== null) ? v : localStorage.getItem(key);
-}
-
-function kvSet(key, value) {
-  const s = String(value);
-  _gasKV[key] = s;
-  localStorage.setItem(key, s);
-  _kvDirty[key] = s;
-  clearTimeout(_kvFlushTimer);
-  _kvFlushTimer = setTimeout(_flushKV, 2000);
-}
-
-function kvRemove(key) {
-  delete _gasKV[key];
-  localStorage.removeItem(key);
-  _kvDirty[key] = '__DELETE__';
-  clearTimeout(_kvFlushTimer);
-  _kvFlushTimer = setTimeout(_flushKV, 2000);
-}
-
-async function _flushKV() {
-  _kvFlushTimer = null;
-  if (!Object.keys(_kvDirty).length) return;
-  const batch = { ..._kvDirty };
-  _kvDirty = {};
-  try {
-    await fetch(`${APPS_SCRIPT_URL}?action=setAdminKV&token=${encodeURIComponent(TOKEN)}&data=${encodeURIComponent(JSON.stringify(batch))}`);
-  } catch(e) {
-    Object.assign(_kvDirty, batch);
-    _kvFlushTimer = setTimeout(_flushKV, 5000);
+// ── KV SYNC modularizado ──
+async function loadAdminKV(...args) {
+  const module = window.PanelStorage;
+  if (!module || typeof module.loadAdminKV !== 'function') {
+    throw new Error('El módulo PanelStorage no está disponible: loadAdminKV');
   }
+  return await module.loadAdminKV(...args);
 }
 
-// Garantiza que leads y checklist pendientes se guarden aunque el navegador cierre
-window.addEventListener('beforeunload', () => {
-  if (!Object.keys(_kvDirty).length) return;
-  const batch = { ..._kvDirty };
-  _kvDirty = {};
-  fetch(`${APPS_SCRIPT_URL}?action=setAdminKV&token=${encodeURIComponent(TOKEN)}&data=${encodeURIComponent(JSON.stringify(batch))}`, { keepalive: true });
-});
+function kvGet(...args) {
+  const module = window.PanelStorage;
+  if (!module || typeof module.kvGet !== 'function') {
+    throw new Error('El módulo PanelStorage no está disponible: kvGet');
+  }
+  return module.kvGet(...args);
+}
+
+function kvSet(...args) {
+  const module = window.PanelStorage;
+  if (!module || typeof module.kvSet !== 'function') {
+    throw new Error('El módulo PanelStorage no está disponible: kvSet');
+  }
+  return module.kvSet(...args);
+}
+
+function kvRemove(...args) {
+  const module = window.PanelStorage;
+  if (!module || typeof module.kvRemove !== 'function') {
+    throw new Error('El módulo PanelStorage no está disponible: kvRemove');
+  }
+  return module.kvRemove(...args);
+}
+
+async function _flushKV(...args) {
+  const module = window.PanelStorage;
+  if (!module || typeof module._flushKV !== 'function') {
+    throw new Error('El módulo PanelStorage no está disponible: _flushKV');
+  }
+  return await module._flushKV(...args);
+}
 
 let TOKEN  = sessionStorage.getItem('adminToken') || '';
 let currentAdminUser = JSON.parse(sessionStorage.getItem('adminUser') || 'null');
@@ -6216,11 +6199,12 @@ let professionalMode = 'hoy';
 
 
 // Escapa HTML para prevenir XSS en innerHTML
-function esc(s) {
-  return String(s == null ? '' : s)
-    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;').replace(/"/g,'&quot;')
-    .replace(/'/g,'&#39;');
+function esc(...args) {
+  const module = window.PanelUtils;
+  if (!module || typeof module.esc !== 'function') {
+    throw new Error('El módulo PanelUtils no está disponible: esc');
+  }
+  return module.esc(...args);
 }
 
 const APPOINTMENT_STATUSES = [
@@ -7345,16 +7329,27 @@ function _showTableSkeleton(tbodyId, cols = 5, rows = 6) {
 }
 
 // ── HELPERS ──
-function today() {
-  const d = new Date();
-  return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate());
+function today(...args) {
+  const module = window.PanelUtils;
+  if (!module || typeof module.today !== 'function') {
+    throw new Error('El módulo PanelUtils no está disponible: today');
+  }
+  return module.today(...args);
 }
-function pad(n) { return n < 10 ? '0'+n : ''+n; }
+function pad(...args) {
+  const module = window.PanelUtils;
+  if (!module || typeof module.pad !== 'function') {
+    throw new Error('El módulo PanelUtils no está disponible: pad');
+  }
+  return module.pad(...args);
+}
 
-function parsePrecio(p) {
-  if (!p) return 0;
-  const n = parseInt(String(p).replace(/[^0-9]/g,''), 10);
-  return isNaN(n) ? 0 : n;
+function parsePrecio(...args) {
+  const module = window.PanelUtils;
+  if (!module || typeof module.parsePrecio !== 'function') {
+    throw new Error('El módulo PanelUtils no está disponible: parsePrecio');
+  }
+  return module.parsePrecio(...args);
 }
 function formatPrecio(n) {
   return '$' + n.toLocaleString('es-CO').replace(/,/g, '.');
@@ -7760,24 +7755,30 @@ function filtrarDia(...args) {
 }
 
 // Returns "YYYY-MM-DD" from a Date object (always local time, never UTC)
-function toDateStr(d) {
-  return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate());
+function toDateStr(...args) {
+  const module = window.PanelUtils;
+  if (!module || typeof module.toDateStr !== 'function') {
+    throw new Error('El módulo PanelUtils no está disponible: toDateStr');
+  }
+  return module.toDateStr(...args);
 }
 // Polyfill: mismo resultado como método de instancia para poder reemplazar .toLocalDateStr()
 Date.prototype.toLocalDateStr = function() { return toDateStr(this); };
 // Normalizes any date value (Date object, ISO string, plain "YYYY-MM-DD") → "YYYY-MM-DD"
-function normDate(s) {
-  if (!s) return '';
-  if (s instanceof Date) return toDateStr(s);
-  return String(s).split('T')[0].trim();
+function normDate(...args) {
+  const module = window.PanelUtils;
+  if (!module || typeof module.normDate !== 'function') {
+    throw new Error('El módulo PanelUtils no está disponible: normDate');
+  }
+  return module.normDate(...args);
 }
 // Human-readable display date from any date value
-function fmtDate(s) {
-  if (!s) return '—';
-  const nd = normDate(s);
-  const [y,m,d] = nd.split('-');
-  if (!y || !m || !d || isNaN(+y)) return nd || '—';
-  return new Date(+y, +m-1, +d).toLocaleDateString('es-CO',{weekday:'short',day:'numeric',month:'short'});
+function fmtDate(...args) {
+  const module = window.PanelUtils;
+  if (!module || typeof module.fmtDate !== 'function') {
+    throw new Error('El módulo PanelUtils no está disponible: fmtDate');
+  }
+  return module.fmtDate(...args);
 }
 
 function chipState(st) {
@@ -7886,12 +7887,12 @@ function waBtn(tel, nombre, fecha, hora, serv, label, precio, modalidad) {
 
 
 
-function toast(msg, type='ok') {
-  const t = document.createElement('div');
-  t.className = 'toast-msg ' + type;
-  t.textContent = msg;
-  document.getElementById('toast').appendChild(t);
-  setTimeout(() => t.remove(), 3500);
+function toast(...args) {
+  const module = window.PanelUtils;
+  if (!module || typeof module.toast !== 'function') {
+    throw new Error('El módulo PanelUtils no está disponible: toast');
+  }
+  return module.toast(...args);
 }
 
 async function reload() {
@@ -8933,13 +8934,20 @@ function sesionBadge(nombre, servicio) {
 }
 
 // ── CONVENIO HANDLERS ──
-function parsePrecioNum(str) {
-  if (!str) return 0;
-  return parseInt(str.replace(/[^0-9]/g, '')) || 0;
+function parsePrecioNum(...args) {
+  const module = window.PanelUtils;
+  if (!module || typeof module.parsePrecioNum !== 'function') {
+    throw new Error('El módulo PanelUtils no está disponible: parsePrecioNum');
+  }
+  return module.parsePrecioNum(...args);
 }
 
-function fmtPeso(n) {
-  return '$' + Math.round(n).toLocaleString('es-CO');
+function fmtPeso(...args) {
+  const module = window.PanelUtils;
+  if (!module || typeof module.fmtPeso !== 'function') {
+    throw new Error('El módulo PanelUtils no está disponible: fmtPeso');
+  }
+  return module.fmtPeso(...args);
 }
 
 function onConvenioChange(...args) {
@@ -9760,8 +9768,20 @@ function exportarSeguimientoCSV(...args) {
 }
 
 // ── MODALS ──
-function openModal(id) { document.getElementById(id).classList.add('open'); }
-function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function openModal(...args) {
+  const module = window.PanelUtils;
+  if (!module || typeof module.openModal !== 'function') {
+    throw new Error('El módulo PanelUtils no está disponible: openModal');
+  }
+  return module.openModal(...args);
+}
+function closeModal(...args) {
+  const module = window.PanelUtils;
+  if (!module || typeof module.closeModal !== 'function') {
+    throw new Error('El módulo PanelUtils no está disponible: closeModal');
+  }
+  return module.closeModal(...args);
+}
 document.querySelectorAll('.modal-bg').forEach(m => m.addEventListener('click', e => { if(e.target===m) m.classList.remove('open'); }));
 
 // ── DARK MODE ──
@@ -12588,7 +12608,9 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 <script src="admin-copy-tools.js"></script>
-  <script src="js/modules/payments.js"></script>
+  <script src="js/modules/shared-utils.js"></script>
+<script src="js/modules/shared-storage.js"></script>
+<script src="js/modules/payments.js"></script>
   <script src="js/modules/passport.js"></script>
   <script src="js/modules/agenda.js"></script>
   <script src="js/modules/appointment-create.js"></script>
