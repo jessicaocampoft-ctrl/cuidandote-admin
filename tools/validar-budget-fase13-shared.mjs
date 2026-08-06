@@ -10,12 +10,12 @@ source = source.replace(
 
 source = source.replace(
   "const originalDefaults = extractObjectConstant(base, 'COSTOS_DEFAULTS');",
-  "const originalSync = extractNamedFunction(base, '_syncPreciosToAutoFill');\nassert(current.includes(originalSync), '_syncPreciosToAutoFill debe conservarse exactamente en index.html.');\nassert(!moduleSource.includes(originalSync), '_syncPreciosToAutoFill no debe duplicarse en budget.js.');\n\nconst originalDefaults = extractObjectConstant(base, 'COSTOS_DEFAULTS');"
+  () => "const originalSync = extractNamedFunction(base, '_syncPreciosToAutoFill');\nassert(current.includes(originalSync), '_syncPreciosToAutoFill debe conservarse exactamente en index.html.');\nassert(!moduleSource.includes(originalSync), '_syncPreciosToAutoFill no debe duplicarse en budget.js.');\n\nconst originalDefaults = extractObjectConstant(base, 'COSTOS_DEFAULTS');"
 );
 
 source = source.replace(
   "  renderFinanzas(){ auxiliaryRenders++; },",
-  "  _syncPreciosToAutoFill(cfg){\n    context._preciosOverride = {\n      'Descarga Muscular — Cuello y Espalda': { Presencial: '$'+Number(cfg.sv_cuello_p||75000).toLocaleString('es-CO') },\n      'Descarga Muscular Completa': { Presencial: '$'+Number(cfg.sv_completa_p||110000).toLocaleString('es-CO') }\n    };\n  },\n  renderFinanzas(){ auxiliaryRenders++; },"
+  () => "  _syncPreciosToAutoFill(cfg){\n    context._preciosOverride = {\n      'Descarga Muscular — Cuello y Espalda': { Presencial: '$'+Number(cfg.sv_cuello_p||75000).toLocaleString('es-CO') },\n      'Descarga Muscular Completa': { Presencial: '$'+Number(cfg.sv_completa_p||110000).toLocaleString('es-CO') }\n    };\n  },\n  renderFinanzas(){ auxiliaryRenders++; },"
 );
 
 source = source.replace(
