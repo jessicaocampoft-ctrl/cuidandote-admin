@@ -1,1 +1,1 @@
-Ejecutar la separación y validación unificada de Metas y Presupuesto con 18 funciones propias y sincronización de precios compartida.
+Reejecutar la separación y validación de Metas y Presupuesto con la expectativa corregida del editor de costos.
