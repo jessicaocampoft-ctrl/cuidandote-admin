@@ -1,1 +1,1 @@
-Reejecutar la modularización de 18 funciones con las pruebas corregidas de sincronización compartida de precios.
+Reejecutar el cierre final de la Fase 13 con la expectativa dinámica corregida del editor de costos.
