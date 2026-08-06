@@ -1,10 +1,10 @@
-# Fase 11 — Inventario de Finanzas
+# Fase 11 — Inventario seguro de Finanzas
 
-Ejecutar el inventario automático del módulo Finanzas sobre la rama aislada.
+Reejecutar el inventario automático con el alcance depurado del núcleo financiero.
 
 Reglas:
 
-- identificar únicamente las funciones de la vista `vFinanzas`;
-- mantener fuera Pagos, Comisiones, Presupuesto, Metas e Indicadores;
+- incluir únicamente ingresos consolidados, egresos y estructura financiera;
+- mantener fuera Pagos, Comisiones, Presupuesto, Metas, Indicadores, leads, encuestas y exportaciones;
 - no modificar código funcional durante el inventario;
 - no modificar `main`, Apps Script ni el panel publicado.
