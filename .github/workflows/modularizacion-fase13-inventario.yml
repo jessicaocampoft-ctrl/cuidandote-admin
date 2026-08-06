@@ -1,0 +1,52 @@
+name: Fase 13 — Inventario Metas y Presupuesto
+
+on:
+  push:
+    branches:
+      - modularizacion-panel-fase13-metas-presupuesto-2026-08-06
+    paths:
+      - MODULARIZACION_FASE13_INVENTARIO.md
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  inventario-metas-presupuesto:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar rama aislada
+        uses: actions/checkout@v4
+        with:
+          ref: modularizacion-panel-fase13-metas-presupuesto-2026-08-06
+          fetch-depth: 0
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Confirmar aislamiento
+        run: |
+          test "$(git branch --show-current)" = "modularizacion-panel-fase13-metas-presupuesto-2026-08-06"
+          git fetch origin modularizacion-panel-fase12-indicadores-kpi-2026-08-05
+          git fetch origin main
+
+      - name: Generar inventario
+        run: node tools/inventario-metas-presupuesto-fase13.mjs index.html MODULARIZACION_FASE13_INVENTARIO_RESULTADO.md
+
+      - name: Confirmar que no cambió código funcional
+        run: |
+          git diff --exit-code origin/modularizacion-panel-fase12-indicadores-kpi-2026-08-05 -- index.html js/core js/modules
+
+      - name: Guardar solo el informe
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add MODULARIZACION_FASE13_INVENTARIO_RESULTADO.md
+          if git diff --cached --quiet; then
+            echo "Inventario sin cambios."
+          else
+            git commit -m "Inventariar Metas y Presupuesto"
+            git push origin HEAD:modularizacion-panel-fase13-metas-presupuesto-2026-08-06
+          fi

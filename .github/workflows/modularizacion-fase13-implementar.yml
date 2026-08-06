@@ -1,0 +1,99 @@
+name: Fase 13 — Modularizar Metas y Presupuesto
+
+on:
+  push:
+    branches:
+      - modularizacion-panel-fase13-metas-presupuesto-2026-08-06
+    paths:
+      - MODULARIZACION_FASE13_INVENTARIO.md
+      - MODULARIZACION_FASE13_IMPLEMENTAR.md
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: modularizacion-panel-fase13-metas-presupuesto
+  cancel-in-progress: false
+
+jobs:
+  modularizar-presupuesto:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar rama aislada
+        uses: actions/checkout@v4
+        with:
+          ref: modularizacion-panel-fase13-metas-presupuesto-2026-08-06
+          fetch-depth: 0
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Confirmar aislamiento y base
+        run: |
+          test "$(git branch --show-current)" = "modularizacion-panel-fase13-metas-presupuesto-2026-08-06"
+          git fetch origin modularizacion-panel-fase12-indicadores-kpi-2026-08-05
+          git fetch origin main
+          git show origin/modularizacion-panel-fase12-indicadores-kpi-2026-08-05:index.html > /tmp/fase12-index.html
+
+      - name: Separar Metas y Presupuesto
+        run: node tools/modularizar-budget-fase13.mjs index.html
+
+      - name: Validar sintaxis y comportamiento
+        run: |
+          node --check js/modules/budget.js
+          node --check tools/validar-budget-fase13-ajustado.mjs
+          node tools/validar-budget-fase13-ajustado.mjs /tmp/fase12-index.html index.html js/modules/budget.js
+
+      - name: Confirmar aislamiento funcional
+        run: |
+          git diff --exit-code origin/modularizacion-panel-fase12-indicadores-kpi-2026-08-05 -- js/core
+          git diff --exit-code origin/modularizacion-panel-fase12-indicadores-kpi-2026-08-05 -- js/modules ':!js/modules/budget.js'
+          ! grep -q 'fetch(' js/modules/budget.js
+          ! grep -q 'APPS_SCRIPT_URL' js/modules/budget.js
+          ! grep -q 'action=' js/modules/budget.js
+          grep -q 'function _syncPreciosToAutoFill' index.html
+          ! grep -q 'function _syncPreciosToAutoFill' js/modules/budget.js
+
+      - name: Generar informe final
+        run: |
+          cat > MODULARIZACION_FASE13_RESULTADO.md <<'EOF'
+          # Resultado de modularización — Fase 13 Metas y Presupuesto
+
+          - `js/modules/budget.js` creado.
+          - 18 funciones de metas, presupuesto y estructura de costos separadas de `index.html`.
+          - `COSTOS_DEFAULTS` encapsulada en el módulo.
+          - Los mismos nombres públicos permanecen mediante adaptadores compatibles.
+          - Se verificó la paridad exacta de todos los cuerpos trasladados frente a la Fase 12.
+          - Costos por defecto, persistencia, recuperación ante JSON inválido y migraciones históricas validados.
+          - Cálculo de subtotal, imprevistos, utilidad y meta total validado.
+          - Guardado de meta mensual, validación mínima, barras de progreso y sincronización con KPI validados.
+          - Editor de estructura de costos y formulario completo de Presupuesto y Metas validados.
+          - La sincronización de precios permanece como dependencia compartida del formulario de citas y fue comprobada.
+          - No se introdujeron llamadas nuevas al servidor.
+          - Finanzas, KPI, Comisiones, Pagos y las Fases 1 a 12 permanecen sin cambios.
+          - No se modificó `main`, Apps Script ni el panel publicado.
+          EOF
+
+      - name: Guardar resultado solo en la rama aislada
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html js/modules/budget.js MODULARIZACION_FASE13_RESULTADO.md
+          if git diff --cached --quiet; then
+            echo "La Fase 13 ya estaba aplicada."
+            exit 0
+          fi
+          git commit -m "Separar y validar Metas y Presupuesto"
+          for intento in 1 2 3; do
+            git fetch origin modularizacion-panel-fase13-metas-presupuesto-2026-08-06
+            git rebase origin/modularizacion-panel-fase13-metas-presupuesto-2026-08-06
+            if git push origin HEAD:modularizacion-panel-fase13-metas-presupuesto-2026-08-06; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "No se pudo guardar el resultado después de tres intentos seguros."
+          exit 1
