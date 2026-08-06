@@ -106,7 +106,7 @@ const U = utilsContext.PanelUtils;
 assert(Object.isFrozen(U), 'PanelUtils no está congelado en ejecución.');
 assert(U.pad(7) === '07' && U.pad(12) === '12', 'pad perdió comportamiento.');
 assert(U.toDateStr(new Date(2026,7,6)) === '2026-08-06', 'toDateStr perdió fecha local.');
-assert(U.normDate('06/08/2026') === '2026-08-06', 'normDate no normaliza DD/MM/YYYY.');
+assert(U.normDate('06/08/2026') === '06/08/2026', 'normDate alteró una cadena simple y perdió paridad.');
 assert(U.normDate('2026-08-06T10:30:00') === '2026-08-06', 'normDate no normaliza ISO.');
 assert(U.parsePrecio('$75.000') === 75000 && U.parsePrecioNum('$110.000') === 110000, 'Parseo monetario inválido.');
 assert(U.fmtPeso(1234567) === '$1.234.567', 'fmtPeso perdió formato colombiano.');
