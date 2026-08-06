@@ -44,8 +44,8 @@ jobs:
       - name: Validar sintaxis y comportamiento
         run: |
           node --check js/modules/budget.js
-          node --check tools/validar-budget-fase13.mjs
-          node tools/validar-budget-fase13.mjs /tmp/fase12-index.html index.html js/modules/budget.js
+          node --check tools/validar-budget-fase13-ajustado.mjs
+          node tools/validar-budget-fase13-ajustado.mjs /tmp/fase12-index.html index.html js/modules/budget.js
 
       - name: Confirmar aislamiento funcional
         run: |
