@@ -1,0 +1,131 @@
+name: Fase 24 — Emergencia, encuestas, perfil y accesibilidad
+
+on:
+  push:
+    branches:
+      - modularizacion-panel-fase24-emergencia-encuestas-perfil-accesibilidad-2026-08-06
+    paths:
+      - MODULARIZACION_FASE24_EMERGENCIA_ENCUESTAS_PERFIL_ACCESIBILIDAD.md
+      - .github/workflows/modularizacion-fase24.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: fase24-emergencia-encuestas-perfil-accesibilidad
+  cancel-in-progress: false
+
+jobs:
+  modularizar-fase24:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar rama aislada
+        uses: actions/checkout@v4
+        with:
+          ref: modularizacion-panel-fase24-emergencia-encuestas-perfil-accesibilidad-2026-08-06
+          fetch-depth: 0
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Confirmar aislamiento y bases
+        shell: bash
+        run: |
+          test "$(git branch --show-current)" = "modularizacion-panel-fase24-emergencia-encuestas-perfil-accesibilidad-2026-08-06"
+          git fetch origin modularizacion-panel-fase23-pacientes-historial-busqueda-2026-08-06
+          git fetch origin modularizacion-panel-fase22-comisiones-2026-08-06
+          git fetch origin modularizacion-panel-fase21-operacion-agenda-2026-08-06
+          git fetch origin modularizacion-panel-fase20-voz-recordatorios-calendario-2026-08-06
+          git fetch origin main
+          git merge-base --is-ancestor origin/modularizacion-panel-fase23-pacientes-historial-busqueda-2026-08-06 HEAD
+          test "$(git rev-parse origin/modularizacion-panel-fase23-pacientes-historial-busqueda-2026-08-06)" = "1633d39cb64ee1f6d84385d9b310e18597f0bbce"
+          git show origin/modularizacion-panel-fase23-pacientes-historial-busqueda-2026-08-06:index.html > /tmp/fase23-index.html
+          git show origin/modularizacion-panel-fase22-comisiones-2026-08-06:index.html > /tmp/fase22-index.html
+          git show origin/modularizacion-panel-fase21-operacion-agenda-2026-08-06:index.html > /tmp/fase21-index.html
+          git show origin/modularizacion-panel-fase20-voz-recordatorios-calendario-2026-08-06:index.html > /tmp/fase20-index.html
+
+      - name: Limpiar rama temporal accidental
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          code="$(curl -sS -o /tmp/delete-noop.json -w '%{http_code}' -X DELETE \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/${{ github.repository }}/git/refs/heads/noop")"
+          if [ "$code" != "204" ] && [ "$code" != "404" ] && [ "$code" != "422" ]; then
+            cat /tmp/delete-noop.json
+            exit 1
+          fi
+          echo "Resultado limpieza noop: HTTP $code"
+
+      - name: Separar módulos de la Fase 24
+        run: node tools/modularizar-fase24.mjs index.html
+
+      - name: Validar sintaxis, paridad y comportamiento
+        shell: bash
+        run: |
+          node --check tools/modularizar-fase24.mjs
+          node --check tools/validar-fase24.mjs
+          node --check js/modules/admin-profile-accessibility.js
+          node --check js/modules/emergency-manual.js
+          node --check js/modules/survey-measurement.js
+          node tools/validar-fase24.mjs /tmp/fase23-index.html index.html js/modules/admin-profile-accessibility.js js/modules/emergency-manual.js js/modules/survey-measurement.js
+
+      - name: Confirmar módulos anteriores
+        shell: bash
+        run: |
+          find js -type f -name '*.js' -print0 | xargs -0 -n1 node --check
+          node tools/validar-pacientes-fase23.mjs /tmp/fase22-index.html index.html js/modules/patient-search.js js/modules/patient-records.js
+          node tools/validar-comisiones-fase22.mjs /tmp/fase21-index.html index.html js/modules/commissions.js
+          node tools/validar-operacion-agenda-fase21.mjs /tmp/fase20-index.html index.html js/modules/waitlist.js js/modules/schedule-operations.js js/modules/events-agreements.js
+
+      - name: Confirmar aislamiento funcional
+        shell: bash
+        run: |
+          git diff --exit-code origin/modularizacion-panel-fase23-pacientes-historial-busqueda-2026-08-06 -- google-apps-script.js
+          git merge-base --is-ancestor origin/modularizacion-panel-fase23-pacientes-historial-busqueda-2026-08-06 HEAD
+          bad="$(git diff --name-only origin/modularizacion-panel-fase23-pacientes-historial-busqueda-2026-08-06 | grep -Ev '^(index\.html|js/modules/admin-profile-accessibility\.js|js/modules/emergency-manual\.js|js/modules/survey-measurement\.js|tools/modularizar-fase24\.mjs|tools/validar-fase24\.mjs|MODULARIZACION_FASE24_EMERGENCIA_ENCUESTAS_PERFIL_ACCESIBILIDAD\.md|MODULARIZACION_FASE24_RESULTADO\.md|\.github/workflows/modularizacion-fase24\.yml)$' || true)"
+          if [ -n "$bad" ]; then
+            echo "Archivos fuera del alcance:"
+            echo "$bad"
+            exit 1
+          fi
+
+      - name: Generar informe final
+        shell: bash
+        run: |
+          cat > MODULARIZACION_FASE24_RESULTADO.md <<'EOF'
+          # Resultado Fase 24 — Emergencia, encuestas, medición, perfil y accesibilidad
+
+          - Módulo `js/modules/admin-profile-accessibility.js` creado.
+          - Módulo `js/modules/emergency-manual.js` creado.
+          - Módulo `js/modules/survey-measurement.js` creado.
+          - 5 funciones de perfil y accesibilidad trasladadas.
+          - 9 funciones del manual de emergencia trasladadas.
+          - 3 funciones de estadísticas de encuestas trasladadas.
+          - 5 funciones de rutina de medición trasladadas.
+          - `RUTINA_IDS` encapsulada.
+          - Navegación, roles, pacientes, KPI y utilidades compartidas conservados.
+          - Acciones existentes `changePassword` y `getEncuestaStats` conservadas sin acciones nuevas.
+          - Rama temporal accidental `noop` eliminada.
+          - Módulos de las Fases 1 a 23 conservados.
+          - `main`, Apps Script y producción no modificados.
+          EOF
+
+      - name: Guardar resultado solo en la rama aislada
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html js/modules/admin-profile-accessibility.js js/modules/emergency-manual.js js/modules/survey-measurement.js MODULARIZACION_FASE24_RESULTADO.md
+          if git diff --cached --quiet; then
+            echo "No hay cambios funcionales nuevos para guardar."
+            exit 0
+          fi
+          git commit -m "Separar y validar Emergencia, encuestas, perfil y accesibilidad"
+          git pull --rebase origin modularizacion-panel-fase24-emergencia-encuestas-perfil-accesibilidad-2026-08-06
+          git push origin HEAD:modularizacion-panel-fase24-emergencia-encuestas-perfil-accesibilidad-2026-08-06
