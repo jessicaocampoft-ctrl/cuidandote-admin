@@ -113,6 +113,31 @@ function _initDailyControlModule() {
   document.head.appendChild(script);
 }
 
+function _simplifyMobileNav() {
+  const nav = document.getElementById('mobileBottomNav');
+  if (!nav || nav.dataset.simplified === '1') return;
+  nav.dataset.simplified = '1';
+
+  ['mobBtn-calendario','mobBtn-finanzas'].forEach(id => {
+    const btn = document.getElementById(id);
+    if (btn) btn.hidden = true;
+  });
+
+  if (!document.getElementById('mobBtn-pagos')) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'mob-nav-btn';
+    btn.id = 'mobBtn-pagos';
+    btn.title = 'Pagos';
+    btn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/><path d="M6 15h4"/></svg>Pagos';
+    btn.addEventListener('click', () => showView('pagos'));
+    const pacientes = document.getElementById('mobBtn-pacientes');
+    const items = nav.querySelector('.mob-nav-items');
+    if (pacientes) pacientes.insertAdjacentElement('afterend', btn);
+    else if (items) items.appendChild(btn);
+  }
+}
+
 function initAdminUX2026() {
   const sidebar = document.getElementById('sidebar');
   if (!sidebar || sidebar.dataset.uxReady) return;
@@ -180,6 +205,7 @@ function initAdminUX2026() {
     document.getElementById(id)?.classList.add('sb-secondary');
   });
   _initDailyControlModule();
+  _simplifyMobileNav();
 
   document.querySelectorAll('svg').forEach(svg => svg.setAttribute('aria-hidden','true'));
   document.querySelectorAll('.modal,.disp-box,.pago-modal-box').forEach(modal => {
