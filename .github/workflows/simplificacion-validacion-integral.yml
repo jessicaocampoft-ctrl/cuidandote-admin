@@ -1,0 +1,30 @@
+name: Simplificación — validación integral
+
+on:
+  push:
+    branches:
+      - simplificacion-panel-fase11-validacion-integral-2026-08-07
+  pull_request:
+    branches:
+      - simplificacion-panel-fase10-cerrar-centro-acciones-2026-08-07
+
+permissions:
+  contents: read
+
+jobs:
+  validar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout completo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Validar simplificación 1–10
+        run: node tools/validar-simplificacion-integral.mjs
