@@ -7,18 +7,12 @@ function updateProfileCard() {
   const todayDay = now.getDate();
   const m = now.getMonth() + 1, y = now.getFullYear();
 
-  // Semana actual (lun–dom)
   const startW = new Date(now); startW.setDate(now.getDate() - wd + (wd === 0 ? -6 : 1)); startW.setHours(0,0,0,0);
   const endW   = new Date(startW); endW.setDate(startW.getDate() + 6); endW.setHours(23,59,59,999);
-
-  // Semana anterior (7 días antes)
   const startPW = new Date(startW); startPW.setDate(startW.getDate() - 7);
   const endPW   = new Date(startPW); endPW.setDate(startPW.getDate() + 6); endPW.setHours(23,59,59,999);
-
-  // Mes anterior
   const prevMDate = new Date(y, now.getMonth() - 1, 1);
   const pm = prevMDate.getMonth() + 1, py = prevMDate.getFullYear();
-
   const citas = citasReales();
 
   const semana = citas.filter(c => {
@@ -27,19 +21,15 @@ function updateProfileCard() {
     const d = new Date(+cy, +cm-1, +cd);
     return d >= startW && d <= endW;
   }).length;
-
   const semanaPrev = citas.filter(c => {
     const [cy,cm,cd] = normDate(c.fecha).split('-');
     const d = new Date(+cy, +cm-1, +cd);
     return d >= startPW && d <= endPW;
   }).length;
-
   const mes = citas.filter(c => {
     const [cy,cm] = normDate(c.fecha).split('-');
     return +cm === m && +cy === y;
   }).length;
-
-  // Mes anterior prorateado: solo hasta el mismo día del mes para comparación justa
   const mesPrev = citas.filter(c => {
     const [cy,cm,cd] = normDate(c.fecha).split('-');
     return +cm === pm && +cy === py && +cd <= todayDay;
@@ -54,13 +44,11 @@ function updateProfileCard() {
 
   const sbW = document.getElementById('sbStSemana');
   const sbM = document.getElementById('sbStMes');
-
   if (sbW) sbW.textContent = semana;
   if (sbM) sbM.textContent = mes;
   setDelta(document.getElementById('sbDeltaSemana'), semana, semanaPrev);
   setDelta(document.getElementById('sbDeltaMes'), mes, mesPrev);
 
-  // Tiempo de sesión activa
   if (_loginTime) {
     const mins = Math.round((Date.now() - _loginTime) / 60000);
     const h = Math.floor(mins / 60), rm = mins % 60;
@@ -109,12 +97,27 @@ async function cambiarPassword() {
   btn.textContent = 'Guardar'; btn.disabled = false;
 }
 
+function _initDailyControlModule() {
+  const start = () => {
+    const mod = global.PanelDailyControl;
+    if (mod && typeof mod.initDailyControl === 'function') mod.initDailyControl();
+  };
+  if (global.PanelDailyControl) { start(); return; }
+  const existing = document.querySelector('script[data-panel-daily-control]');
+  if (existing) { existing.addEventListener('load', start, { once:true }); return; }
+  const script = document.createElement('script');
+  script.src = 'js/modules/daily-control.js';
+  script.dataset.panelDailyControl = '1';
+  script.addEventListener('load', start, { once:true });
+  script.addEventListener('error', () => console.warn('No se pudo cargar Control Diario'), { once:true });
+  document.head.appendChild(script);
+}
+
 function initAdminUX2026() {
   const sidebar = document.getElementById('sidebar');
   if (!sidebar || sidebar.dataset.uxReady) return;
   sidebar.dataset.uxReady = '1';
 
-  // Navegación principal: solo trabajo cotidiano. El resto permanece disponible en Gestión.
   const principales = new Set(['sb-dashboard','sb-agenda','sb-pacientes','sb-pagos','sb-seguimiento','sb-pasaporte']);
   sidebar.querySelectorAll(':scope > .sb-link').forEach(link => {
     if (!principales.has(link.id) && link.id !== 'darkModeBtn' && !link.classList.contains('sb-signout')) {
@@ -139,11 +142,15 @@ function initAdminUX2026() {
     pasaporte.insertAdjacentElement('afterend', toggle);
   }
 
-  // Contenido secundario del dashboard bajo demanda.
   const dashboard = document.getElementById('vDashboard');
   const weekCard = document.getElementById('weekGrid')?.closest('.card');
   const notesCard = document.querySelector('#vDashboard .notas-card');
   const leadsGrid = document.getElementById('leadsHoyDash')?.closest('.stats-grid');
+  const financeGrid = document.getElementById('stCobrado')?.closest('.stats-grid');
+  const receivablesGrid = document.getElementById('stPorCobrar')?.closest('.stats-grid');
+  const metaCard = document.getElementById('metaCard');
+  const smartBriefing = document.getElementById('smartBriefing');
+  const slowWeekAlert = document.getElementById('alertaSemanFlojaDash');
   if (dashboard && weekCard && !document.getElementById('dashboardMore')) {
     const btn = document.createElement('button');
     btn.id = 'dashboardMore';
@@ -151,32 +158,29 @@ function initAdminUX2026() {
     btn.className = 'dashboard-more-toggle';
     btn.setAttribute('aria-expanded','false');
     btn.setAttribute('aria-controls','dashboardSecondary');
-    btn.innerHTML = 'Ver análisis y notas <svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>';
+    btn.innerHTML = 'Ver análisis y gestión <svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>';
     const more = document.createElement('div');
     more.id = 'dashboardSecondary';
     more.className = 'dashboard-secondary';
     const label = document.createElement('div');
     label.className = 'dashboard-section-label';
-    label.textContent = 'Análisis complementario';
-    more.append(label, weekCard);
-    if (notesCard) more.append(notesCard);
-    if (leadsGrid) more.append(leadsGrid);
+    label.textContent = 'Análisis y gestión complementaria';
+    more.append(label);
+    [slowWeekAlert, smartBriefing, financeGrid, receivablesGrid, metaCard, weekCard, notesCard, leadsGrid].forEach(el => { if (el) more.append(el); });
     dashboard.append(btn, more);
     btn.addEventListener('click', () => {
       const abierto = more.classList.toggle('open');
       btn.setAttribute('aria-expanded', String(abierto));
-      btn.firstChild.textContent = abierto ? 'Ocultar análisis y notas ' : 'Ver análisis y notas ';
+      btn.firstChild.textContent = abierto ? 'Ocultar análisis y gestión ' : 'Ver análisis y gestión ';
     });
   }
 
   initFunctionalModules2026();
-
-  // Los módulos funcionales agregados en tiempo de ejecución también pertenecen a Gestión.
   ['sb-acciones','sb-espera','sb-automatizaciones'].forEach(id => {
     document.getElementById(id)?.classList.add('sb-secondary');
   });
+  _initDailyControlModule();
 
-  // Accesibilidad incremental para controles existentes.
   document.querySelectorAll('svg').forEach(svg => svg.setAttribute('aria-hidden','true'));
   document.querySelectorAll('.modal,.disp-box,.pago-modal-box').forEach(modal => {
     modal.setAttribute('role','dialog');
@@ -207,10 +211,10 @@ function toggleDarkMode() {
 }
 
 global.PanelAdminProfileUX = Object.freeze({
-    updateProfileCard,
-    openCambiarPassword,
-    cambiarPassword,
-    initAdminUX2026,
-    toggleDarkMode
-  });
+  updateProfileCard,
+  openCambiarPassword,
+  cambiarPassword,
+  initAdminUX2026,
+  toggleDarkMode
+});
 })(typeof window !== 'undefined' ? window : globalThis);
