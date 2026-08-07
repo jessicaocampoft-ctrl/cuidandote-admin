@@ -161,10 +161,27 @@
     };
   }
 
+  function _initCommunicationsHubModule() {
+    const start = () => {
+      const mod = global.PanelCommunicationsHub;
+      if (mod && typeof mod.initCommunicationsHub === 'function') mod.initCommunicationsHub();
+    };
+    if (global.PanelCommunicationsHub) { start(); return; }
+    const existing = document.querySelector('script[data-panel-communications-hub]');
+    if (existing) { existing.addEventListener('load', start, { once:true }); return; }
+    const script = document.createElement('script');
+    script.src = 'js/modules/communications-hub.js';
+    script.dataset.panelCommunicationsHub = '1';
+    script.addEventListener('load', start, { once:true });
+    script.addEventListener('error', () => console.warn('No se pudo cargar Mensajes unificado'), { once:true });
+    document.head.appendChild(script);
+  }
+
   function initCommissionsHub() {
-    if (!_buildHub()) return false;
-    _wrapLegacyNavigation();
-    return true;
+    const ready = _buildHub();
+    if (ready) _wrapLegacyNavigation();
+    _initCommunicationsHubModule();
+    return ready;
   }
 
   global.PanelCommissionsHub = Object.freeze({
