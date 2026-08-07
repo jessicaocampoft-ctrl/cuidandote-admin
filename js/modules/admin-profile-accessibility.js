@@ -113,6 +113,22 @@ function _initDailyControlModule() {
   document.head.appendChild(script);
 }
 
+function _initPatientHubModule() {
+  const start = () => {
+    const mod = global.PanelPatientHub;
+    if (mod && typeof mod.initPatientHub === 'function') mod.initPatientHub();
+  };
+  if (global.PanelPatientHub) { start(); return; }
+  const existing = document.querySelector('script[data-panel-patient-hub]');
+  if (existing) { existing.addEventListener('load', start, { once:true }); return; }
+  const script = document.createElement('script');
+  script.src = 'js/modules/patient-hub.js';
+  script.dataset.panelPatientHub = '1';
+  script.addEventListener('load', start, { once:true });
+  script.addEventListener('error', () => console.warn('No se pudo cargar Pacientes unificado'), { once:true });
+  document.head.appendChild(script);
+}
+
 function _simplifyMobileNav() {
   const nav = document.getElementById('mobileBottomNav');
   if (!nav || nav.dataset.simplified === '1') return;
@@ -206,6 +222,7 @@ function initAdminUX2026() {
   });
   _initDailyControlModule();
   _simplifyMobileNav();
+  _initPatientHubModule();
 
   document.querySelectorAll('svg').forEach(svg => svg.setAttribute('aria-hidden','true'));
   document.querySelectorAll('.modal,.disp-box,.pago-modal-box').forEach(modal => {
