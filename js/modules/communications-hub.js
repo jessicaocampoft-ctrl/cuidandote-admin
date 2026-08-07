@@ -164,10 +164,27 @@
     };
   }
 
+  function _initFinanceHubModule() {
+    const start = () => {
+      const mod = global.PanelFinanceHub;
+      if (mod && typeof mod.initFinanceHub === 'function') mod.initFinanceHub();
+    };
+    if (global.PanelFinanceHub) { start(); return; }
+    const existing = document.querySelector('script[data-panel-finance-hub]');
+    if (existing) { existing.addEventListener('load', start, { once:true }); return; }
+    const script = document.createElement('script');
+    script.src = 'js/modules/finance-hub.js';
+    script.dataset.panelFinanceHub = '1';
+    script.addEventListener('load', start, { once:true });
+    script.addEventListener('error', () => console.warn('No se pudo cargar Gestión financiera unificada'), { once:true });
+    document.head.appendChild(script);
+  }
+
   function initCommunicationsHub() {
-    if (!_buildHub()) return false;
-    _wrapLegacyNavigation();
-    return true;
+    const ready = _buildHub();
+    if (ready) _wrapLegacyNavigation();
+    _initFinanceHubModule();
+    return ready;
   }
 
   global.PanelCommunicationsHub = Object.freeze({
