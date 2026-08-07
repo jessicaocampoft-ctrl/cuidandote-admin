@@ -204,10 +204,27 @@
     };
   }
 
+  function _initDailyControlCompletionModule() {
+    const start = () => {
+      const mod = global.PanelDailyControlCompletion;
+      if (mod && typeof mod.initDailyControlCompletion === 'function') mod.initDailyControlCompletion();
+    };
+    if (global.PanelDailyControlCompletion) { start(); return; }
+    const existing = document.querySelector('script[data-panel-daily-completion]');
+    if (existing) { existing.addEventListener('load', start, { once:true }); return; }
+    const script = document.createElement('script');
+    script.src = 'js/modules/daily-control-completion.js';
+    script.dataset.panelDailyCompletion = '1';
+    script.addEventListener('load', start, { once:true });
+    script.addEventListener('error', () => console.warn('No se pudo completar Control Diario'), { once:true });
+    document.head.appendChild(script);
+  }
+
   function initFinanceHub() {
-    if (!_buildHub()) return false;
-    _wrapLegacyNavigation();
-    return true;
+    const ready = _buildHub();
+    if (ready) _wrapLegacyNavigation();
+    _initDailyControlCompletionModule();
+    return ready;
   }
 
   global.PanelFinanceHub = Object.freeze({
