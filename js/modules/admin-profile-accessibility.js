@@ -114,29 +114,29 @@ function initAdminUX2026() {
   if (!sidebar || sidebar.dataset.uxReady) return;
   sidebar.dataset.uxReady = '1';
 
-  // Destinos cotidianos visibles; Google Calendar queda como primera opción del menú.
-  const principales = new Set(['sb-calendario','sb-dashboard','sb-tareas','sb-agenda','sb-nueva','sb-pacientes','sb-finanzas']);
+  // Navegación principal: solo trabajo cotidiano. El resto permanece disponible en Gestión.
+  const principales = new Set(['sb-dashboard','sb-agenda','sb-pacientes','sb-pagos','sb-seguimiento','sb-pasaporte']);
   sidebar.querySelectorAll(':scope > .sb-link').forEach(link => {
     if (!principales.has(link.id) && link.id !== 'darkModeBtn' && !link.classList.contains('sb-signout')) {
       link.classList.add('sb-secondary');
     }
   });
 
-  const finanzas = document.getElementById('sb-finanzas');
-  if (finanzas && !document.getElementById('sbToolsToggle')) {
+  const pasaporte = document.getElementById('sb-pasaporte');
+  if (pasaporte && !document.getElementById('sbToolsToggle')) {
     const toggle = document.createElement('button');
     toggle.id = 'sbToolsToggle';
     toggle.type = 'button';
     toggle.className = 'sb-tools-toggle';
     toggle.setAttribute('aria-expanded','false');
     toggle.setAttribute('aria-controls','sidebar');
-    toggle.innerHTML = '<span>Más herramientas</span><svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>';
+    toggle.innerHTML = '<span>Gestión</span><svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>';
     toggle.addEventListener('click', () => {
       const abierto = sidebar.classList.toggle('tools-open');
       toggle.setAttribute('aria-expanded', String(abierto));
-      toggle.querySelector('span').textContent = abierto ? 'Ocultar herramientas' : 'Más herramientas';
+      toggle.querySelector('span').textContent = abierto ? 'Ocultar gestión' : 'Gestión';
     });
-    finanzas.insertAdjacentElement('afterend', toggle);
+    pasaporte.insertAdjacentElement('afterend', toggle);
   }
 
   // Contenido secundario del dashboard bajo demanda.
@@ -170,6 +170,11 @@ function initAdminUX2026() {
   }
 
   initFunctionalModules2026();
+
+  // Los módulos funcionales agregados en tiempo de ejecución también pertenecen a Gestión.
+  ['sb-acciones','sb-espera','sb-automatizaciones'].forEach(id => {
+    document.getElementById(id)?.classList.add('sb-secondary');
+  });
 
   // Accesibilidad incremental para controles existentes.
   document.querySelectorAll('svg').forEach(svg => svg.setAttribute('aria-hidden','true'));
