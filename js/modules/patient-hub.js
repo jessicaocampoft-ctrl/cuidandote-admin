@@ -160,10 +160,27 @@
     };
   }
 
+  function _initFollowUpHubModule() {
+    const start = () => {
+      const mod = global.PanelFollowUpHub;
+      if (mod && typeof mod.initFollowUpHub === 'function') mod.initFollowUpHub();
+    };
+    if (global.PanelFollowUpHub) { start(); return; }
+    const existing = document.querySelector('script[data-panel-follow-up-hub]');
+    if (existing) { existing.addEventListener('load', start, { once:true }); return; }
+    const script = document.createElement('script');
+    script.src = 'js/modules/follow-up-hub.js';
+    script.dataset.panelFollowUpHub = '1';
+    script.addEventListener('load', start, { once:true });
+    script.addEventListener('error', () => console.warn('No se pudo cargar Seguimiento unificado'), { once:true });
+    document.head.appendChild(script);
+  }
+
   function initPatientHub() {
-    if (!_buildHub()) return false;
-    _wrapLegacyNavigation();
-    return true;
+    const ready = _buildHub();
+    if (ready) _wrapLegacyNavigation();
+    _initFollowUpHubModule();
+    return ready;
   }
 
   global.PanelPatientHub = Object.freeze({
