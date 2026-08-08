@@ -11,7 +11,7 @@ if tag not in t:
 
 required = [
     "const APPS_SCRIPT_URL",
-    "action:'adminLogin'",
+    "action: 'adminLogin'",
     "TOKEN = d.sessionToken",
     "passportSaveProgress",
     "saveManualPayment",
