@@ -154,6 +154,22 @@ function _simplifyMobileNav() {
   }
 }
 
+function _initSidebarManagementModule() {
+  const start = () => {
+    const mod = global.PanelSidebarManagement;
+    if (mod && typeof mod.initSidebarManagement === 'function') mod.initSidebarManagement();
+  };
+  if (global.PanelSidebarManagement) { start(); return; }
+  const existing = document.querySelector('script[data-panel-sidebar-management]');
+  if (existing) { existing.addEventListener('load', start, { once:true }); return; }
+  const script = document.createElement('script');
+  script.src = 'js/modules/sidebar-management.js';
+  script.dataset.panelSidebarManagement = '1';
+  script.addEventListener('load', start, { once:true });
+  script.addEventListener('error', () => console.warn('No se pudo cargar la navegación organizada'), { once:true });
+  document.head.appendChild(script);
+}
+
 function initAdminUX2026() {
   const sidebar = document.getElementById('sidebar');
   if (!sidebar || sidebar.dataset.uxReady) return;
@@ -220,6 +236,7 @@ function initAdminUX2026() {
   ['sb-acciones','sb-espera','sb-automatizaciones'].forEach(id => {
     document.getElementById(id)?.classList.add('sb-secondary');
   });
+  _initSidebarManagementModule();
   _initDailyControlModule();
   _simplifyMobileNav();
   _initPatientHubModule();
