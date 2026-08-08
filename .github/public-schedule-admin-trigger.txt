@@ -1,0 +1,1 @@
+Validar e integrar módulo de Horarios públicos en rama aislada.
