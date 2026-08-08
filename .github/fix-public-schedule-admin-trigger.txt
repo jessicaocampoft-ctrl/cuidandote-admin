@@ -1,1 +1,1 @@
-Corregir la posición del script Horarios públicos al cierre real del administrador.
+Reejecutar corrección final del script Horarios públicos al cierre real del administrador.
