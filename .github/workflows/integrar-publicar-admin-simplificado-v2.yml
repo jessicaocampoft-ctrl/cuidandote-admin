@@ -1,0 +1,202 @@
+name: Integrar y publicar administrador simplificado v2
+
+on:
+  push:
+    branches:
+      - integracion-admin-simplificado-2026-08-07
+    paths:
+      - EJECUTAR_INTEGRACION_ADMIN_SIMPLIFICADO_V2.md
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: integracion-admin-simplificado-v2
+  cancel-in-progress: false
+
+jobs:
+  integrar-validar-despachar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar rama de integración
+        uses: actions/checkout@v4
+        with:
+          ref: integracion-admin-simplificado-2026-08-07
+          fetch-depth: 0
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Obtener referencias seguras
+        run: |
+          set -euo pipefail
+          git fetch origin main simplificacion-panel-fase11-validacion-integral-2026-08-07 pages-admin-extended-2026-08-06
+          test "$(git branch --show-current)" = "integracion-admin-simplificado-2026-08-07"
+          git rev-parse origin/pages-admin-extended-2026-08-06 > /tmp/pages_before_sha
+
+      - name: Incorporar piezas publicadas que faltan en la base modular
+        run: |
+          set -euo pipefail
+          git show origin/main:public-schedule-admin.js > public-schedule-admin.js
+          git show origin/main:.github/workflows/manual-pages-admin.yml > .github/workflows/manual-pages-admin.yml
+          cmp public-schedule-admin.js <(git show origin/main:public-schedule-admin.js)
+
+      - name: Integrar correcciones funcionales recientes
+        run: node tools/integrar-main-reciente-simplificacion.mjs
+
+      - name: Validar sintaxis JavaScript
+        run: |
+          set -euo pipefail
+          node --check public-schedule-admin.js
+          find js -type f -name '*.js' -print0 | while IFS= read -r -d '' file; do node --check "$file"; done
+
+      - name: Validar contratos actuales y simplificación
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs = require('fs');
+          const session = fs.readFileSync('js/core/session.js','utf8');
+          const booking = fs.readFileSync('js/modules/appointment-create.js','utf8');
+          const html = fs.readFileSync('index.html','utf8');
+          const schedule = fs.readFileSync('public-schedule-admin.js','utf8');
+          function ok(v,m){ if(!v) throw new Error(m); }
+
+          const loginStart = session.indexOf("action: 'adminLogin'");
+          ok(loginStart >= 0, 'No se encontró adminLogin modularizado.');
+          const loginWindow = session.slice(Math.max(0, loginStart - 220), loginStart + 240);
+          ok(loginWindow.includes('120000'), 'adminLogin no conserva los 120 segundos publicados.');
+
+          ok(booking.includes("action=ping&token="), 'Falta validación de sesión antes de crear citas.');
+          ok(booking.includes('erroresDetalle'), 'Falta detalle de errores de agendamiento.');
+          ok(booking.includes('No se creó la cita: '), 'Falta mensaje real cuando el servidor rechaza la cita.');
+
+          ok(html.includes('<option value="Valoración Funcional">Valoración fisioterapéutica inicial</option>'), 'Falta etiqueta visible de valoración.');
+          ok(html.includes('<option value="Readaptación Funcional">Rehabilitación y readaptación funcional</option>'), 'Falta etiqueta visible de readaptación.');
+          ok(html.includes('public-schedule-admin.js?v=20260807-1'), 'No se carga horarios públicos al final del admin.');
+          ok(schedule.includes('publicScheduleConfig'), 'Módulo de horarios públicos incompleto.');
+          ok(schedule.includes('function saveConfig()'), 'Falta guardado de horarios públicos.');
+
+          const required = [
+            'js/modules/daily-control.js',
+            'js/modules/daily-control-completion.js',
+            'js/modules/patient-hub.js',
+            'js/modules/follow-up-hub.js',
+            'js/modules/commissions-hub.js',
+            'js/modules/communications-hub.js',
+            'js/modules/finance-hub.js'
+          ];
+          required.forEach(path => ok(fs.existsSync(path), 'Falta módulo de simplificación: ' + path));
+          ok(html.includes('js/modules/admin-profile-accessibility.js'), 'Falta arranque de la experiencia simplificada.');
+          console.log('Contratos actuales y simplificación presentes.');
+          NODE
+
+      - name: Confirmar alcance funcional exacto
+        run: |
+          set -euo pipefail
+          base=origin/simplificacion-panel-fase11-validacion-integral-2026-08-07
+          changed=$(git diff --name-only "$base" -- index.html 'js/**/*.js' public-schedule-admin.js google-apps-script.js | sort)
+          printf '%s\n' "$changed"
+          expected=$(printf '%s\n' \
+            index.html \
+            js/core/session.js \
+            js/modules/appointment-create.js \
+            public-schedule-admin.js | sort)
+          test "$changed" = "$expected"
+          git diff --exit-code "$base" -- google-apps-script.js
+          cmp public-schedule-admin.js <(git show origin/main:public-schedule-admin.js)
+
+      - name: Guardar integración validada
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html js/core/session.js js/modules/appointment-create.js public-schedule-admin.js .github/workflows/manual-pages-admin.yml
+          if git diff --cached --quiet; then
+            echo "La integración funcional ya estaba aplicada."
+          else
+            git commit -m "Integrar admin simplificado con correcciones vigentes de producción"
+            git push origin HEAD:integracion-admin-simplificado-2026-08-07
+          fi
+
+      - name: Preparar rama autorizada de publicación
+        run: |
+          set -euo pipefail
+          before=$(cat /tmp/pages_before_sha)
+          git push origin HEAD:pages-admin-extended-2026-08-06 --force-with-lease=refs/heads/pages-admin-extended-2026-08-06:${before}
+          echo "Rama autorizada actualizada desde integración validada."
+
+      - name: Disparar workflow oficial de publicación
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          dispatched_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          echo "$dispatched_at" > /tmp/dispatched_at
+          code=$(curl --silent --show-error \
+            --output /tmp/dispatch-response.txt \
+            --write-out '%{http_code}' \
+            --request POST \
+            --header "Accept: application/vnd.github+json" \
+            --header "Authorization: Bearer ${GH_TOKEN}" \
+            --header "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/workflows/manual-pages-admin.yml/dispatches" \
+            --data '{"ref":"pages-admin-extended-2026-08-06"}')
+          cat /tmp/dispatch-response.txt || true
+          echo "Dispatch HTTP ${code}"
+          test "$code" = "204"
+
+      - name: Esperar resultado de publicación
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          run_id=""
+          for attempt in $(seq 1 24); do
+            json=$(curl --silent --show-error \
+              --header "Accept: application/vnd.github+json" \
+              --header "Authorization: Bearer ${GH_TOKEN}" \
+              --header "X-GitHub-Api-Version: 2022-11-28" \
+              "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/workflows/manual-pages-admin.yml/runs?branch=pages-admin-extended-2026-08-06&event=workflow_dispatch&per_page=5")
+            run_id=$(printf '%s' "$json" | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{const j=JSON.parse(s);const r=(j.workflow_runs||[])[0];process.stdout.write(r?String(r.id):'')})")
+            if [ -n "$run_id" ]; then break; fi
+            sleep 5
+          done
+          test -n "$run_id"
+          echo "$run_id" > /tmp/publish_run_id
+
+          for attempt in $(seq 1 120); do
+            json=$(curl --silent --show-error \
+              --header "Accept: application/vnd.github+json" \
+              --header "Authorization: Bearer ${GH_TOKEN}" \
+              --header "X-GitHub-Api-Version: 2022-11-28" \
+              "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}")
+            status=$(printf '%s' "$json" | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{const j=JSON.parse(s);process.stdout.write(j.status||'')})")
+            conclusion=$(printf '%s' "$json" | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{const j=JSON.parse(s);process.stdout.write(j.conclusion||'')})")
+            echo "Publicación ${run_id}: ${status} ${conclusion}"
+            if [ "$status" = "completed" ]; then
+              test "$conclusion" = "success"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "La publicación no terminó dentro del tiempo esperado."
+          exit 1
+
+      - name: Smoke test del administrador publicado
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 18); do
+            body=$(curl -fsSL --max-time 20 "https://admin.cuidandotefisioterapia.com/" || true)
+            if printf '%s' "$body" | grep -q 'js/core/session.js' && \
+               printf '%s' "$body" | grep -q 'public-schedule-admin.js' && \
+               printf '%s' "$body" | grep -q 'js/modules/admin-profile-accessibility.js'; then
+              echo "Administrador publicado con runtime modular, simplificación y horarios públicos."
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "El dominio no devolvió todavía la versión esperada."
+          exit 1
