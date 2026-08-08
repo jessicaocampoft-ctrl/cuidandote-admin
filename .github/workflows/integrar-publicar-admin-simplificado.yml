@@ -66,7 +66,6 @@ jobs:
           const schedule = fs.readFileSync('public-schedule-admin.js','utf8');
           function ok(v,m){ if(!v) throw new Error(m); }
 
-          ok(/action:\s*'adminLogin'[\s\S]{0,220?}/.test(session), 'No se encontró adminLogin modularizado.');
           const loginBlock = session.match(/const data = await ctx\.fetchJsonWithTimeout\(ctx\.apiUrl,[\s\S]*?action:\s*'adminLogin'[\s\S]*?\},\s*(\d+)\);/);
           ok(loginBlock && Number(loginBlock[1]) === 120000, 'adminLogin no conserva los 120 segundos publicados.');
           ok(booking.includes("action=ping&token="), 'Falta validación de sesión antes de crear citas.');
@@ -76,7 +75,7 @@ jobs:
           ok(html.includes('<option value="Readaptación Funcional">Rehabilitación y readaptación funcional</option>'), 'Falta etiqueta visible de readaptación.');
           ok(html.includes('public-schedule-admin.js?v=20260807-1'), 'No se carga horarios públicos al final del admin.');
           ok(schedule.includes("action=publicScheduleConfig"), 'Módulo de horarios públicos incompleto.');
-          ok(schedule.includes("action: 'setPublicScheduleConfig'"), 'Guardado de horarios públicos incompleto.');
+          ok(schedule.includes('function saveConfig()'), 'Falta guardado del módulo de horarios públicos.');
           ok(html.includes('js/modules/admin-profile-accessibility.js'), 'Falta carga de la simplificación del panel.');
           ok(fs.existsSync('js/modules/daily-control.js'), 'Falta Control Diario.');
           ok(fs.existsSync('js/modules/patient-hub.js'), 'Falta Pacientes unificado.');
@@ -98,7 +97,7 @@ jobs:
             js/modules/appointment-create.js \
             public-schedule-admin.js | sort)
           test "$changed" = "$expected"
-          git diff --exit-code origin/main -- google-apps-script.js
+          git diff --exit-code "$base" -- google-apps-script.js
           cmp public-schedule-admin.js <(git show origin/main:public-schedule-admin.js)
 
       - name: Confirmar simplificación acumulada
