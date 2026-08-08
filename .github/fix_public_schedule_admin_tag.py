@@ -15,8 +15,9 @@ t = t[:body_pos] + '  ' + tag + '\n' + t[body_pos:]
 
 if t.count(tag) != 1:
     raise SystemExit('El módulo debe cargarse exactamente una vez')
-if t.rfind(tag) < t.rfind('</script>'):
-    raise SystemExit('El módulo no quedó después del último script inline')
+after_tag = t[t.rfind(tag) + len(tag):].strip()
+if not after_tag.startswith('</body>'):
+    raise SystemExit('El módulo no quedó inmediatamente antes del cierre real </body>')
 if t.rfind(tag) < len(t) - 500:
     raise SystemExit('El módulo no quedó al final real del documento')
 if 'Reporte automático de indicadores de gestión' not in t or 'w.document.close();' not in t:
