@@ -31,16 +31,33 @@ jobs:
         run: |
           set -euo pipefail
           node --check public-schedule-admin.js
-          grep -q 'public-schedule-admin.js' index.html
-          grep -q "action: 'adminLogin'" index.html
-          grep -q 'TOKEN = d.sessionToken' index.html
-          grep -q 'passportSaveProgress' index.html
-          grep -q 'saveManualPayment' index.html
-          grep -q 'function showView(v)' index.html
-          grep -q "savePublicScheduleConfig" public-schedule-admin.js
-          grep -q "publicScheduleConfig" public-schedule-admin.js
-          grep -q "Sede Campestre Recovery" public-schedule-admin.js
-          grep -q "Valoración Funcional" public-schedule-admin.js
+          python - <<'PY'
+          from pathlib import Path
+          html = Path('index.html').read_text(encoding='utf-8-sig')
+          module = Path('public-schedule-admin.js').read_text(encoding='utf-8')
+          html_required = [
+              'public-schedule-admin.js',
+              "action: 'adminLogin'",
+              'TOKEN = d.sessionToken',
+              'passportSaveProgress',
+              'saveManualPayment',
+              'function showView(v)',
+              'id="sb-bloquear"'
+          ]
+          module_required = [
+              'savePublicScheduleConfig',
+              'publicScheduleConfig',
+              'Sede Campestre Recovery',
+              'Valoración Funcional',
+              'Readaptación Funcional',
+              "SERVICES = {",
+              "recovery: ["
+          ]
+          missing = [x for x in html_required if x not in html] + [x for x in module_required if x not in module]
+          if missing:
+              raise SystemExit('Faltan validaciones: ' + ' | '.join(missing))
+          print('Integraciones críticas y restricciones de sede verificadas.')
+          PY
 
       - name: Verificar backend desplegado usado por admin
         run: |
