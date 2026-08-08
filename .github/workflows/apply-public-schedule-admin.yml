@@ -47,11 +47,12 @@ jobs:
           module_required = [
               'savePublicScheduleConfig',
               'publicScheduleConfig',
-              'Sede Campestre Recovery',
+              'Campestre Recovery',
               'Valoración Funcional',
               'Readaptación Funcional',
               "SERVICES = {",
-              "recovery: ["
+              "recovery: [",
+              'Protección de sede'
           ]
           missing = [x for x in html_required if x not in html] + [x for x in module_required if x not in module]
           if missing:
