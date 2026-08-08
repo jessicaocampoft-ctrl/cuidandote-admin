@@ -1,0 +1,183 @@
+name: Integrar y publicar administrador simplificado
+
+on:
+  push:
+    branches:
+      - integracion-admin-simplificado-2026-08-07
+    paths:
+      - EJECUTAR_INTEGRACION_ADMIN_SIMPLIFICADO.md
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: integracion-admin-simplificado-produccion
+  cancel-in-progress: false
+
+jobs:
+  integrar-validar-publicar:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Descargar rama de integración
+        uses: actions/checkout@v4
+        with:
+          ref: integracion-admin-simplificado-2026-08-07
+          fetch-depth: 0
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Obtener referencias seguras
+        run: |
+          set -euo pipefail
+          git fetch origin main simplificacion-panel-fase11-validacion-integral-2026-08-07
+          test "$(git branch --show-current)" = "integracion-admin-simplificado-2026-08-07"
+
+      - name: Incorporar horarios públicos publicados
+        run: |
+          set -euo pipefail
+          git show origin/main:public-schedule-admin.js > public-schedule-admin.js
+          cmp public-schedule-admin.js <(git show origin/main:public-schedule-admin.js)
+
+      - name: Integrar correcciones recientes de main
+        run: node tools/integrar-main-reciente-simplificacion.mjs
+
+      - name: Validar sintaxis JavaScript
+        run: |
+          set -euo pipefail
+          node --check public-schedule-admin.js
+          find js -type f -name '*.js' -print0 | while IFS= read -r -d '' file; do node --check "$file"; done
+
+      - name: Validar contratos funcionales preservados
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs = require('fs');
+          const session = fs.readFileSync('js/core/session.js','utf8');
+          const booking = fs.readFileSync('js/modules/appointment-create.js','utf8');
+          const html = fs.readFileSync('index.html','utf8');
+          const schedule = fs.readFileSync('public-schedule-admin.js','utf8');
+          function ok(v,m){ if(!v) throw new Error(m); }
+
+          ok(/action:\s*'adminLogin'[\s\S]{0,220?}/.test(session), 'No se encontró adminLogin modularizado.');
+          const loginBlock = session.match(/const data = await ctx\.fetchJsonWithTimeout\(ctx\.apiUrl,[\s\S]*?action:\s*'adminLogin'[\s\S]*?\},\s*(\d+)\);/);
+          ok(loginBlock && Number(loginBlock[1]) === 120000, 'adminLogin no conserva los 120 segundos publicados.');
+          ok(booking.includes("action=ping&token="), 'Falta validación de sesión antes de crear citas.');
+          ok(booking.includes('erroresDetalle'), 'Falta detalle de errores de agendamiento.');
+          ok(booking.includes('No se creó la cita: '), 'Falta mensaje real de rechazo del servidor.');
+          ok(html.includes('<option value="Valoración Funcional">Valoración fisioterapéutica inicial</option>'), 'Falta etiqueta visible de valoración.');
+          ok(html.includes('<option value="Readaptación Funcional">Rehabilitación y readaptación funcional</option>'), 'Falta etiqueta visible de readaptación.');
+          ok(html.includes('public-schedule-admin.js?v=20260807-1'), 'No se carga horarios públicos al final del admin.');
+          ok(schedule.includes("action=publicScheduleConfig"), 'Módulo de horarios públicos incompleto.');
+          ok(schedule.includes("action: 'setPublicScheduleConfig'"), 'Guardado de horarios públicos incompleto.');
+          ok(html.includes('js/modules/admin-profile-accessibility.js'), 'Falta carga de la simplificación del panel.');
+          ok(fs.existsSync('js/modules/daily-control.js'), 'Falta Control Diario.');
+          ok(fs.existsSync('js/modules/patient-hub.js'), 'Falta Pacientes unificado.');
+          ok(fs.existsSync('js/modules/follow-up-hub.js'), 'Falta Seguimiento unificado.');
+          ok(fs.existsSync('js/modules/communications-hub.js'), 'Falta Mensajes unificado.');
+          ok(fs.existsSync('js/modules/finance-hub.js'), 'Falta Gestión financiera unificada.');
+          console.log('Contratos funcionales preservados.');
+          NODE
+
+      - name: Confirmar alcance de integración
+        run: |
+          set -euo pipefail
+          base=origin/simplificacion-panel-fase11-validacion-integral-2026-08-07
+          changed=$(git diff --name-only "$base" -- index.html 'js/**/*.js' public-schedule-admin.js google-apps-script.js | sort)
+          printf '%s\n' "$changed"
+          expected=$(printf '%s\n' \
+            index.html \
+            js/core/session.js \
+            js/modules/appointment-create.js \
+            public-schedule-admin.js | sort)
+          test "$changed" = "$expected"
+          git diff --exit-code origin/main -- google-apps-script.js
+          cmp public-schedule-admin.js <(git show origin/main:public-schedule-admin.js)
+
+      - name: Confirmar simplificación acumulada
+        run: |
+          set -euo pipefail
+          test -f js/modules/daily-control.js
+          test -f js/modules/daily-control-completion.js
+          test -f js/modules/patient-hub.js
+          test -f js/modules/follow-up-hub.js
+          test -f js/modules/commissions-hub.js
+          test -f js/modules/communications-hub.js
+          test -f js/modules/finance-hub.js
+          grep -q "PanelDailyControl" js/modules/daily-control.js
+          grep -q "PanelPatientHub" js/modules/patient-hub.js
+          grep -q "PanelFollowUpHub" js/modules/follow-up-hub.js
+          grep -q "PanelFinanceHub" js/modules/finance-hub.js
+
+      - name: Guardar integración validada
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html js/core/session.js js/modules/appointment-create.js public-schedule-admin.js
+          if git diff --cached --quiet; then
+            echo "La integración ya estaba aplicada."
+          else
+            git commit -m "Integrar simplificación con correcciones actuales de producción"
+            git push origin HEAD:integracion-admin-simplificado-2026-08-07
+          fi
+
+      - name: Configurar GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Preparar sitio del administrador
+        run: |
+          set -euo pipefail
+          rm -rf _site
+          mkdir -p _site
+          rsync -a \
+            --exclude '.git' \
+            --exclude '.github' \
+            --exclude '_site' \
+            --exclude 'tools' \
+            --exclude '*.md' \
+            --exclude '.clasp.json' \
+            --exclude '.claspignore' \
+            --exclude 'appsscript.json' \
+            --exclude 'google-apps-script.js' \
+            ./ _site/
+          test -f _site/index.html
+          test -f _site/js/core/session.js
+          test -f _site/js/modules/daily-control.js
+          test -f _site/public-schedule-admin.js
+
+      - name: Cargar sitio validado
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - name: Publicar administrador
+        id: deployment
+        uses: actions/deploy-pages@v5
+        with:
+          timeout: 1800000
+          reporting_interval: 5000
+          error_count: 30
+
+      - name: Smoke test del sitio publicado
+        env:
+          PAGE_URL: ${{ steps.deployment.outputs.page_url }}
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 12); do
+            body=$(curl -fsSL --max-time 20 "${PAGE_URL}" || true)
+            if printf '%s' "$body" | grep -q 'js/core/session.js' && printf '%s' "$body" | grep -q 'public-schedule-admin.js'; then
+              echo "Sitio publicado con runtime modular y horarios públicos."
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "El despliegue terminó pero el contenido esperado no respondió a tiempo."
+          exit 1
