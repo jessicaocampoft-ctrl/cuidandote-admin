@@ -62,7 +62,7 @@
       const data = await ctx.fetchJsonWithTimeout(ctx.apiUrl, {
         method: 'POST',
         body: JSON.stringify({ action: 'adminLogin', user, password })
-      }, 45000);
+      }, 120000);
 
       if (!data.ok) {
         runtime.loginAttempts += 1;

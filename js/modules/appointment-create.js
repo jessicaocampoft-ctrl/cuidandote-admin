@@ -64,8 +64,33 @@ async function submitAdminBookingMulti() {
 
   _submittingBooking = true;
   const btn = document.getElementById('ncSubmitBtn');
-  const origLabel = document.getElementById('ncSubmitLabel').textContent;
+  const label = document.getElementById('ncSubmitLabel');
+  const origLabel = label.textContent;
   btn.disabled = true;
+
+  const restoreSubmitButton = () => {
+    _submittingBooking = false;
+    btn.disabled = false;
+    label.textContent = origLabel;
+  };
+
+  // Confirmar que la sesión administrativa siga activa antes de enviar datos.
+  try {
+    const pingResponse = await fetch(`${APPS_SCRIPT_URL}?action=ping&token=${encodeURIComponent(TOKEN)}`);
+    const pingData = await pingResponse.json();
+    if (!pingData.ok) {
+      restoreSubmitButton();
+      const sessionExpired = String(pingData.error || '').toLowerCase().includes('permiso');
+      toast(sessionExpired
+        ? 'Tu sesión venció. Cierra sesión, vuelve a ingresar y crea la cita una sola vez.'
+        : 'No se pudo validar tu sesión: ' + (pingData.error || 'respuesta inválida del servidor.'), 'err');
+      return;
+    }
+  } catch (error) {
+    restoreSubmitButton();
+    toast('No se pudo conectar con el servidor para validar la sesión. Revisa la conexión e inténtalo nuevamente.', 'err');
+    return;
+  }
 
   // Datos base de la cita
   const phone = document.getElementById('ncPhone').value.trim();
@@ -128,14 +153,23 @@ async function submitAdminBookingMulti() {
   }
 
   let creadas = 0, errores = 0;
+  const erroresDetalle = [];
   for (let i = 0; i < fechas.length; i++) {
     document.getElementById('ncSubmitLabel').textContent = `Creando ${i+1}/${fechas.length}...`;
     const data = { ...baseData, date: fechas[i].date, time: fechas[i].time };
     try {
       const r = await fetch(`${APPS_SCRIPT_URL}?action=adminBook&token=${encodeURIComponent(TOKEN)}&data=${encodeURIComponent(JSON.stringify(data))}`);
       const d = await r.json();
-      if (d.ok) creadas++; else errores++;
-    } catch(e) { errores++; }
+      if (d.ok) {
+        creadas++;
+      } else {
+        errores++;
+        erroresDetalle.push(d.error || 'El servidor rechazó la cita.');
+      }
+    } catch(e) {
+      errores++;
+      erroresDetalle.push(e && e.message ? e.message : 'Error de conexión con el servidor.');
+    }
 
     // Segunda persona: usa la misma fecha pero la hora calculada
     if (_duoActive && duoData) {
@@ -145,17 +179,31 @@ async function submitAdminBookingMulti() {
       try {
         const r2 = await fetch(`${APPS_SCRIPT_URL}?action=adminBook&token=${encodeURIComponent(TOKEN)}&data=${encodeURIComponent(JSON.stringify(data2))}`);
         const d2 = await r2.json();
-        if (d2.ok) creadas++; else errores++;
-      } catch(e) { errores++; }
+        if (d2.ok) {
+          creadas++;
+        } else {
+          errores++;
+          erroresDetalle.push(d2.error || 'El servidor rechazó la cita de la segunda persona.');
+        }
+      } catch(e) {
+        errores++;
+        erroresDetalle.push(e && e.message ? e.message : 'Error de conexión con el servidor.');
+      }
     }
   }
 
-  _submittingBooking = false;
-  btn.disabled = false;
-  document.getElementById('ncSubmitLabel').textContent = origLabel;
+  restoreSubmitButton();
 
   if (errores > 0) {
-    toast(`${creadas} cita${creadas!==1?'s':''} creada${creadas!==1?'s':''} · ${errores} error${errores!==1?'es':''}`, 'warn');
+    const detalle = [...new Set(erroresDetalle.filter(Boolean))].join(' · ') || 'El servidor no explicó el motivo.';
+    const sessionExpired = detalle.toLowerCase().includes('sin permiso');
+    if (creadas === 0) {
+      toast(sessionExpired
+        ? 'No se creó la cita porque tu sesión venció. Cierra sesión, vuelve a ingresar y crea la cita una sola vez.'
+        : 'No se creó la cita: ' + detalle, 'err');
+    } else {
+      toast(`${creadas} cita${creadas!==1?'s':''} creada${creadas!==1?'s':''} · ${errores} sin crear: ${detalle}`, 'warn');
+    }
   } else {
     const personas = _duoActive ? ' (2 personas)' : '';
     toast(`✓ ${creadas} cita${creadas!==1?'s':''} creada${creadas!==1?'s':''} correctamente${personas}`, 'ok');
