@@ -32,7 +32,7 @@ jobs:
           set -euo pipefail
           node --check public-schedule-admin.js
           grep -q 'public-schedule-admin.js' index.html
-          grep -q "action:'adminLogin'" index.html
+          grep -q "action: 'adminLogin'" index.html
           grep -q 'TOKEN = d.sessionToken' index.html
           grep -q 'passportSaveProgress' index.html
           grep -q 'saveManualPayment' index.html
