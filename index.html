@@ -15158,8 +15158,7 @@ function imprimirReporteMes() {
     <p style="color:#6B7280;font-size:.85rem;margin-bottom:28px">Reporte automático de indicadores de gestión</p>
     ${body}
     <p style="margin-top:28px;font-size:.75rem;color:#6B7280">Generado el ${new Date().toLocaleDateString('es-CO',{day:'2-digit',month:'long',year:'numeric'})}</p>
-  <script src="public-schedule-admin.js?v=20260807-1"></script>
-</body></html>`);
+  </body></html>`);
   w.document.close();
   setTimeout(() => w.print(), 500);
 }
@@ -20435,6 +20434,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 <script src="admin-copy-tools.js"></script>
+  <script src="public-schedule-admin.js?v=20260807-1"></script>
 </body>
 </html>
 
