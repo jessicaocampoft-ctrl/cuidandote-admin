@@ -1,1 +1,1 @@
-Validar e integrar módulo de Horarios públicos en rama aislada.
+Revalidar e integrar módulo de Horarios públicos después de ajustar las comprobaciones.
