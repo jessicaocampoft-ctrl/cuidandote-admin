@@ -31,7 +31,8 @@ jobs:
           t = Path('index.html').read_text(encoding='utf-8-sig')
           tag = '<script src="public-schedule-admin.js?v=20260807-1"></script>'
           assert t.count(tag) == 1
-          assert t.rfind(tag) > t.rfind('</script>')
+          after = t[t.rfind(tag) + len(tag):].strip()
+          assert after.startswith('</body>')
           assert t.rfind(tag) > len(t) - 500
           assert 'Reporte automático de indicadores de gestión' in t
           assert 'w.document.close();' in t
