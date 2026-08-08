@@ -97,14 +97,15 @@ jobs:
         run: |
           set -euo pipefail
           base=origin/simplificacion-panel-fase11-validacion-integral-2026-08-07
-          changed=$(git diff --name-only "$base" -- index.html 'js/**/*.js' public-schedule-admin.js google-apps-script.js | sort)
+          changed=$(git diff --name-only "$base" -- index.html 'js/**/*.js' google-apps-script.js | sort)
           printf '%s\n' "$changed"
           expected=$(printf '%s\n' \
             index.html \
             js/core/session.js \
-            js/modules/appointment-create.js \
-            public-schedule-admin.js | sort)
+            js/modules/appointment-create.js | sort)
           test "$changed" = "$expected"
+          untracked=$(git ls-files --others --exclude-standard -- public-schedule-admin.js)
+          test "$untracked" = "public-schedule-admin.js"
           git diff --exit-code "$base" -- google-apps-script.js
           cmp public-schedule-admin.js <(git show origin/main:public-schedule-admin.js)
 
@@ -133,8 +134,6 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          dispatched_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-          echo "$dispatched_at" > /tmp/dispatched_at
           code=$(curl --silent --show-error \
             --output /tmp/dispatch-response.txt \
             --write-out '%{http_code}' \
