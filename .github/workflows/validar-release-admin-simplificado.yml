@@ -1,0 +1,114 @@
+name: Validar release administrador simplificado
+
+on:
+  push:
+    branches:
+      - release-admin-simplificado-2026-08-07
+    paths:
+      - VALIDAR_RELEASE_ADMIN_SIMPLIFICADO.md
+
+permissions:
+  contents: read
+
+jobs:
+  validar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout release
+        uses: actions/checkout@v4
+        with:
+          ref: release-admin-simplificado-2026-08-07
+          fetch-depth: 0
+
+      - name: Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Confirmar base y alcance
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          main_sha=$(git rev-parse origin/main)
+          test "$main_sha" = "3829173cde7d5995ef1921a760f55733296e0d24"
+          runtime_commit="87a1fdf351ded057b0a353f66ca234ac720172dd"
+          test "$(git merge-base "$main_sha" "$runtime_commit")" = "$main_sha"
+          changed=$(git diff --name-only "$main_sha" "$runtime_commit")
+          echo "$changed"
+          printf '%s\n' "$changed" | grep -qx 'index.html'
+          extra=$(printf '%s\n' "$changed" | grep -v '^index\.html$' | grep -v '^js/' || true)
+          test -z "$extra"
+
+      - name: Validar todos los JavaScript del runtime
+        run: |
+          set -euo pipefail
+          node --check public-schedule-admin.js
+          find js -type f -name '*.js' -print0 | while IFS= read -r -d '' f; do node --check "$f"; done
+
+      - name: Validar scripts locales referenciados por index
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs = require('fs');
+          const html = fs.readFileSync('index.html','utf8');
+          const refs = [...html.matchAll(/<script\s+[^>]*src=["']([^"']+)["'][^>]*><\/script>/g)].map(m=>m[1]);
+          const local = refs.map(x=>x.split('?')[0]).filter(x=>!/^https?:\/\//.test(x));
+          const missing = local.filter(x=>!fs.existsSync(x));
+          if (missing.length) throw new Error('Scripts locales faltantes: '+missing.join(', '));
+          const dup = local.filter((x,i,a)=>a.indexOf(x)!==i);
+          if (dup.length) throw new Error('Scripts locales duplicados: '+[...new Set(dup)].join(', '));
+          console.log(`Scripts locales validados: ${local.length}`);
+          NODE
+
+      - name: Validar contratos críticos de producción
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs = require('fs');
+          const html = fs.readFileSync('index.html','utf8');
+          const session = fs.readFileSync('js/core/session.js','utf8');
+          const booking = fs.readFileSync('js/modules/appointment-create.js','utf8');
+          const schedule = fs.readFileSync('public-schedule-admin.js','utf8');
+          function ok(v,m){if(!v)throw new Error(m)}
+          const login = session.indexOf("action: 'adminLogin'");
+          ok(login >= 0 && session.slice(Math.max(0,login-250),login+260).includes('120000'),'Login no conserva timeout 120 s');
+          ok(booking.includes('action=ping&token='),'Falta ping de sesión en nueva cita');
+          ok(booking.includes('erroresDetalle'),'Falta detalle de errores en nueva cita');
+          ok(booking.includes('No se creó la cita: '),'Falta error real de servidor en nueva cita');
+          ok(html.includes('Valoración fisioterapéutica inicial'),'Falta etiqueta actual de valoración');
+          ok(html.includes('Rehabilitación y readaptación funcional'),'Falta etiqueta actual de readaptación');
+          const tag='<script src="public-schedule-admin.js?v=20260807-1"></script>';
+          ok(html.split(tag).length-1===1,'Horarios públicos debe cargarse exactamente una vez');
+          ok(html.slice(html.lastIndexOf(tag)+tag.length).trim().startsWith('</body>'),'Horarios públicos no está al cierre real');
+          ok(schedule.includes('publicScheduleConfig') && schedule.includes('function saveConfig()'),'Horarios públicos incompleto');
+          NODE
+
+      - name: Validar simplificación final
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs = require('fs');
+          const req = {
+            'js/modules/daily-control.js':'PanelDailyControl',
+            'js/modules/daily-control-completion.js':'Confirmaciones y datos',
+            'js/modules/patient-hub.js':'PanelPatientHub',
+            'js/modules/follow-up-hub.js':'PanelFollowUpHub',
+            'js/modules/commissions-hub.js':'PanelCommissionsHub',
+            'js/modules/communications-hub.js':'PanelCommunicationsHub',
+            'js/modules/finance-hub.js':'PanelFinanceHub',
+            'js/modules/admin-profile-accessibility.js':'Gestión'
+          };
+          for (const [p,needle] of Object.entries(req)) {
+            if(!fs.existsSync(p)) throw new Error('Falta '+p);
+            if(!fs.readFileSync(p,'utf8').includes(needle)) throw new Error('Contrato faltante en '+p+': '+needle);
+          }
+          const html=fs.readFileSync('index.html','utf8');
+          ['js/core/config.js','js/core/api.js','js/core/session.js','js/core/navigation.js','js/modules/admin-profile-accessibility.js'].forEach(x=>{if(!html.includes(x))throw new Error('index no carga '+x)});
+          console.log('Simplificación final presente.');
+          NODE
+
+      - name: Confirmar que producción adicional de main se preserva
+        run: |
+          set -euo pipefail
+          git diff --exit-code 3829173cde7d5995ef1921a760f55733296e0d24 87a1fdf351ded057b0a353f66ca234ac720172dd -- public-schedule-admin.js admin-copy-tools.js pasaporte.html .github/workflows/manual-pages-admin.yml
+          echo 'Archivos recientes de main preservados.'
