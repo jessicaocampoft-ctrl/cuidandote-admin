@@ -1,1 +1,0 @@
-Reejecutar validación final del módulo Horarios públicos con comprobaciones corregidas.
