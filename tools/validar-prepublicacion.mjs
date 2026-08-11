@@ -55,7 +55,7 @@ for (const [file, content] of contents) {
 }
 if (!errors.some(e => e.includes('marcadores de conflicto'))) ok('Sin marcadores de conflicto Git en archivos críticos');
 
-const expectedScripts = [
+const expectedDirectScripts = [
   'js/core/config.js',
   'js/core/api.js',
   'js/core/navigation.js',
@@ -66,12 +66,18 @@ const expectedScripts = [
   'js/modules/appointment-edit.js',
   'js/modules/patient-records.js',
   'js/modules/shared-storage.js',
-  'js/modules/admin-profile-accessibility.js',
-  'js/modules/sidebar-management.js'
+  'js/modules/admin-profile-accessibility.js'
 ];
-for (const src of expectedScripts) {
+for (const src of expectedDirectScripts) {
   if (index.includes(src)) ok(`index.html carga ${src}`);
   else fail(`index.html dejó de cargar módulo crítico: ${src}`);
+}
+
+const adminUx = contents.get('js/modules/admin-profile-accessibility.js') || '';
+if (adminUx.includes("script.src = 'js/modules/sidebar-management.js'")) {
+  ok('admin-profile-accessibility.js carga dinámicamente sidebar-management.js');
+} else {
+  fail('Se perdió la carga dinámica de sidebar-management.js');
 }
 
 const localScriptRefs = [...index.matchAll(/<script\b[^>]*\bsrc=["']([^"']+)["'][^>]*>/gi)]
