@@ -51,21 +51,21 @@ function waLink(tel, nombre, fecha, hora, serv, precio, modalidad) {
     ? '*' + serv + '* — ' + ordinalES(infoSes.numero) + ' sesion de ' + infoSes.total
     : '*' + serv + '*';
   const lines = [
-    'Hola ' + waNombre(nombre) + '! Te escribo para confirmar tu cita \ud83d\udccb',
+    'Hola ' + waNombre(nombre) + '! Te escribo para confirmar tu cita ' + String.fromCodePoint(0x1F4CB),
     '',
     servLine,
     '' + waFechaES(fecha) + ' · ' + waAmPm(hora),
-    '\uD83D\uDCCD ' + (modalidad === 'Domicilio' ? 'A domicilio' : 'En sitio'),
+    String.fromCodePoint(0x1F4CD) + ' ' + (modalidad === 'Domicilio' ? 'A domicilio' : 'En sitio'),
   ];
   if (conPago && precio) {
     lines.push(
       '',
-      '\u2B50 Valor: *' + precio + '*',
+      String.fromCodePoint(0x2B50) + ' Valor: *' + precio + '*',
       '',
       'Para el pago:',
-      '\uD83C\uDFE6 Bancolombia Ahorros: 91257857099',
-      '\uD83D\uDCF1 Nequi: 3136467945',
-      '\uD83D\uDDDD\uFE0F Llave: 1010124692',
+      String.fromCodePoint(0x1F3E6) + ' Bancolombia Ahorros: 91257857099',
+      String.fromCodePoint(0x1F4F1) + ' Nequi: 3136467945',
+      String.fromCodePoint(0x1F5DD, 0xFE0F) + ' Llave: 1010124692',
       'Titular: Jessica Andrea Ocampo Barbosa'
     );
   }
