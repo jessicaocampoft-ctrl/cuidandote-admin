@@ -134,7 +134,7 @@ function _simplifyMobileNav() {
   if (!nav || nav.dataset.simplified === '1') return;
   nav.dataset.simplified = '1';
 
-  ['mobBtn-calendario','mobBtn-finanzas'].forEach(id => {
+  ['mobBtn-finanzas'].forEach(id => {
     const btn = document.getElementById(id);
     if (btn) btn.hidden = true;
   });

@@ -2,7 +2,7 @@
 (function (global) {
   'use strict';
 
-  const PRIMARY_IDS = ['sb-dashboard','sb-agenda','sb-pacientes','sb-pagos','sb-seguimiento','sb-pasaporte'];
+  const PRIMARY_IDS = ['sb-calendario','sb-dashboard','sb-agenda','sb-pacientes','sb-pagos','sb-seguimiento','sb-pasaporte'];
   const LEGACY_HIDDEN_IDS = [
     'sb-tareas','sb-basedatos','sb-recordatorios','sb-guioneswa','sb-recuperacion',
     'sb-guiakpis','sb-presupuesto','sb-comisiones','sb-acciones'
@@ -13,7 +13,7 @@
     { id:'commercial', label:'Comercial', items:['sb-empresas','sb-codigos'] },
     { id:'team', label:'Equipo', items:['sb-equipo'] },
     { id:'communications', label:'Comunicación', items:['sb-mensajes'] },
-    { id:'tools', label:'Herramientas', items:['sb-calendario','sb-evaluacion','sb-evalexpress'] }
+    { id:'tools', label:'Herramientas', items:['sb-evaluacion','sb-evalexpress'] }
   ];
 
   let _observer = null;
@@ -233,6 +233,171 @@
     _observer.observe(sidebar, { childList:true });
   }
 
+  let _dashboardRecoveryTimer = null;
+  let _dashboardRecoveryAttempts = 0;
+
+  function _dashboardNeedsRecovery() {
+    const app = document.getElementById('adminApp');
+    if (!app || getComputedStyle(app).display === 'none') return false;
+    const stHoy = document.getElementById('stHoy');
+    const tlHoy = document.getElementById('tlHoy');
+    const tlProximas = document.getElementById('tlProximas');
+    const statPending = !!stHoy && stHoy.textContent.trim() === '—';
+    const todayPending = !!tlHoy && /Cargando/i.test(tlHoy.textContent || '');
+    const upcomingPending = !!tlProximas && /Cargando/i.test(tlProximas.textContent || '');
+    return statPending || todayPending || upcomingPending;
+  }
+
+  function _dashboardRecoveryNormDate(value) {
+    if (!value) return '';
+    if (value instanceof Date) {
+      const y = value.getFullYear();
+      const m = String(value.getMonth() + 1).padStart(2, '0');
+      const d = String(value.getDate()).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    }
+    return String(value).split('T')[0].trim();
+  }
+
+  function _dashboardRecoveryEsc(value) {
+    return String(value == null ? '' : value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function _dashboardRecoveryAppointments() {
+    try {
+      if (typeof citasReales === 'function') {
+        const rows = citasReales();
+        if (Array.isArray(rows)) return rows;
+      }
+    } catch (error) {
+      console.warn('Dashboard recovery: citasReales no disponible', error);
+    }
+    const source = typeof allData !== 'undefined' && Array.isArray(allData?.citas) ? allData.citas : [];
+    const seen = new Set();
+    return source.filter(c => {
+      const estado = String(c?.estado || '');
+      if (estado === 'Cancelada' || estado === 'Registro') return false;
+      const hora = String(c?.hora || '').trim();
+      if (!hora || /^00:[0-5]\d$/.test(hora)) return false;
+      const servicio = String(c?.servicio || '').trim().toLowerCase();
+      if (servicio === 'registro') return false;
+      const key = `${String(c?.nombre || '').toLowerCase().trim()}|${_dashboardRecoveryNormDate(c?.fecha)}|${hora}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }
+
+  function _dashboardRecoveryDateLabel(value) {
+    const norm = _dashboardRecoveryNormDate(value);
+    const parts = norm.split('-').map(Number);
+    if (parts.length !== 3 || parts.some(Number.isNaN)) return norm || '—';
+    return new Date(parts[0], parts[1] - 1, parts[2]).toLocaleDateString('es-CO', {
+      weekday: 'short', day: 'numeric', month: 'short'
+    });
+  }
+
+  function _renderDashboardCoreRecovery() {
+    const citas = _dashboardRecoveryAppointments();
+    const now = new Date();
+    const todayStr = _dashboardRecoveryNormDate(now);
+    const dow = now.getDay();
+    const startW = new Date(now);
+    startW.setDate(now.getDate() - (dow === 0 ? 6 : dow - 1));
+    startW.setHours(0, 0, 0, 0);
+    const endW = new Date(startW);
+    endW.setDate(startW.getDate() + 6);
+    endW.setHours(23, 59, 59, 999);
+
+    const asLocalDate = value => {
+      const [y, m, d] = _dashboardRecoveryNormDate(value).split('-').map(Number);
+      return new Date(y, m - 1, d);
+    };
+
+    const hoy = citas.filter(c => _dashboardRecoveryNormDate(c.fecha) === todayStr).length;
+    const semana = citas.filter(c => {
+      const d = asLocalDate(c.fecha);
+      return !Number.isNaN(d.getTime()) && d >= startW && d <= endW;
+    }).length;
+    const mes = citas.filter(c => {
+      const [y, m] = _dashboardRecoveryNormDate(c.fecha).split('-').map(Number);
+      return y === now.getFullYear() && m === now.getMonth() + 1;
+    }).length;
+    const pacientes = new Set(citas.map(c => c.telefono || c.email || String(c.nombre || '').toLowerCase().trim()).filter(Boolean)).size;
+
+    const values = { stHoy: hoy, stSemana: semana, stMes: mes, stPacientes: pacientes };
+    Object.entries(values).forEach(([id, value]) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = String(value);
+    });
+
+    const renderRow = (c, showDate) => {
+      const date = showDate ? `<div class="tl-time" style="min-width:80px">${_dashboardRecoveryEsc(_dashboardRecoveryDateLabel(c.fecha))}<br><small style="color:var(--muted)">${_dashboardRecoveryEsc(c.hora || '')}</small></div>` : `<div class="tl-time">${_dashboardRecoveryEsc(c.hora || '')}</div>`;
+      const service = [c.servicio, c.modalidad].filter(Boolean).join(' » ');
+      return `<div class="tl-item">${date}<div class="tl-body"><div class="tl-name">${_dashboardRecoveryEsc(c.nombre || 'Paciente')}</div><div class="tl-serv">${_dashboardRecoveryEsc(service)}</div><div class="tl-actions"><button type="button" class="btn btn-ghost btn-sm" onclick="showView('agenda')">Abrir agenda</button></div></div></div>`;
+    };
+
+    const hoyRows = citas
+      .filter(c => _dashboardRecoveryNormDate(c.fecha) === todayStr)
+      .sort((a, b) => String(a.hora || '').localeCompare(String(b.hora || '')));
+    const tlHoy = document.getElementById('tlHoy');
+    if (tlHoy) {
+      tlHoy.innerHTML = hoyRows.length
+        ? hoyRows.map(c => renderRow(c, false)).join('')
+        : '<div class="empty"><p>No hay citas hoy</p></div>';
+    }
+
+    const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+    const in7 = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 7, 23, 59, 59, 999);
+    const upcoming = citas
+      .filter(c => {
+        const d = asLocalDate(c.fecha);
+        return !Number.isNaN(d.getTime()) && d >= tomorrow && d <= in7;
+      })
+      .sort((a, b) => `${_dashboardRecoveryNormDate(a.fecha)}${a.hora || ''}`.localeCompare(`${_dashboardRecoveryNormDate(b.fecha)}${b.hora || ''}`))
+      .slice(0, 8);
+    const tlProximas = document.getElementById('tlProximas');
+    if (tlProximas) {
+      tlProximas.innerHTML = upcoming.length
+        ? upcoming.map(c => renderRow(c, true)).join('')
+        : '<div class="empty"><p>No hay citas en los próximos 7 días</p></div>';
+    }
+    document.body.dataset.dashboardRecovery = 'fallback';
+  }
+
+  function _attemptDashboardRecovery() {
+    _dashboardRecoveryTimer = null;
+    if (!_dashboardNeedsRecovery()) return;
+    _dashboardRecoveryAttempts += 1;
+    try {
+      if (typeof initDashboard === 'function') initDashboard();
+    } catch (error) {
+      console.warn('Dashboard recovery: initDashboard falló', error);
+    }
+    if (_dashboardNeedsRecovery() && _dashboardRecoveryAttempts >= 2) {
+      _renderDashboardCoreRecovery();
+    }
+    if (_dashboardNeedsRecovery() && _dashboardRecoveryAttempts < 8) {
+      _dashboardRecoveryTimer = setTimeout(_attemptDashboardRecovery, 1500);
+    }
+  }
+
+  function _installDashboardRecovery() {
+    if (document.body?.dataset.dashboardRecoveryWatch === '1') return;
+    if (document.body) document.body.dataset.dashboardRecoveryWatch = '1';
+    _dashboardRecoveryTimer = setTimeout(_attemptDashboardRecovery, 1500);
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState !== 'visible' || !_dashboardNeedsRecovery()) return;
+      clearTimeout(_dashboardRecoveryTimer);
+      _dashboardRecoveryTimer = setTimeout(_attemptDashboardRecovery, 250);
+    });
+  }
+
   function initSidebarManagement() {
     const sidebar = document.getElementById('sidebar');
     if (!sidebar) return false;
@@ -243,6 +408,7 @@
     _moveItems(sidebar);
     _watchDynamicLinks(sidebar);
     sidebar.dataset.managementOrganized = '1';
+    _installDashboardRecovery();
     return true;
   }
 
