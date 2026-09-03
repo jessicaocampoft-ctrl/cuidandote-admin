@@ -390,11 +390,23 @@
   function _installDashboardRecovery() {
     if (document.body?.dataset.dashboardRecoveryWatch === '1') return;
     if (document.body) document.body.dataset.dashboardRecoveryWatch = '1';
+
+    const scheduleRecovery = (delay = 250) => {
+      if (!_dashboardNeedsRecovery()) return;
+      clearTimeout(_dashboardRecoveryTimer);
+      _dashboardRecoveryTimer = setTimeout(_attemptDashboardRecovery, delay);
+    };
+
+    const app = document.getElementById('adminApp');
+    if (app && typeof MutationObserver === 'function') {
+      const observer = new MutationObserver(() => scheduleRecovery(100));
+      observer.observe(app, { attributes:true, attributeFilter:['style','class'] });
+    }
+
     _dashboardRecoveryTimer = setTimeout(_attemptDashboardRecovery, 1500);
     document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState !== 'visible' || !_dashboardNeedsRecovery()) return;
-      clearTimeout(_dashboardRecoveryTimer);
-      _dashboardRecoveryTimer = setTimeout(_attemptDashboardRecovery, 250);
+      if (document.visibilityState !== 'visible') return;
+      scheduleRecovery(250);
     });
   }
 
