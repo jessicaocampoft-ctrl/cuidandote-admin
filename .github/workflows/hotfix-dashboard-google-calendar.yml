@@ -1,0 +1,265 @@
+name: Validar hotfix dashboard y Google Calendar
+
+on:
+  push:
+    branches:
+      - hotfix-dashboard-google-calendar-2026-09-03
+    paths:
+      - .github/workflows/hotfix-dashboard-google-calendar.yml
+
+permissions:
+  contents: write
+
+jobs:
+  hotfix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Aplicar hotfix quirúrgico
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          sidebar_path = Path('js/modules/sidebar-management.js')
+          sidebar = sidebar_path.read_text(encoding='utf-8')
+
+          old_primary = "const PRIMARY_IDS = ['sb-dashboard','sb-agenda','sb-pacientes','sb-pagos','sb-seguimiento','sb-pasaporte'];"
+          new_primary = "const PRIMARY_IDS = ['sb-calendario','sb-dashboard','sb-agenda','sb-pacientes','sb-pagos','sb-seguimiento','sb-pasaporte'];"
+          if sidebar.count(old_primary) != 1:
+              raise SystemExit('No se encontró exactamente una definición PRIMARY_IDS esperada')
+          sidebar = sidebar.replace(old_primary, new_primary, 1)
+
+          old_tools = "{ id:'tools', label:'Herramientas', items:['sb-calendario','sb-evaluacion','sb-evalexpress'] }"
+          new_tools = "{ id:'tools', label:'Herramientas', items:['sb-evaluacion','sb-evalexpress'] }"
+          if sidebar.count(old_tools) != 1:
+              raise SystemExit('No se encontró exactamente el grupo Herramientas esperado')
+          sidebar = sidebar.replace(old_tools, new_tools, 1)
+
+          marker = "  function initSidebarManagement() {\n"
+          if sidebar.count(marker) != 1:
+              raise SystemExit('No se encontró el punto de inserción de recuperación del dashboard')
+
+          recovery = r'''  let _dashboardRecoveryTimer = null;
+  let _dashboardRecoveryAttempts = 0;
+
+  function _dashboardNeedsRecovery() {
+    const app = document.getElementById('adminApp');
+    if (!app || getComputedStyle(app).display === 'none') return false;
+    const stHoy = document.getElementById('stHoy');
+    const tlHoy = document.getElementById('tlHoy');
+    const tlProximas = document.getElementById('tlProximas');
+    const statPending = !!stHoy && stHoy.textContent.trim() === '—';
+    const todayPending = !!tlHoy && /Cargando/i.test(tlHoy.textContent || '');
+    const upcomingPending = !!tlProximas && /Cargando/i.test(tlProximas.textContent || '');
+    return statPending || todayPending || upcomingPending;
+  }
+
+  function _dashboardRecoveryNormDate(value) {
+    if (!value) return '';
+    if (value instanceof Date) {
+      const y = value.getFullYear();
+      const m = String(value.getMonth() + 1).padStart(2, '0');
+      const d = String(value.getDate()).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    }
+    return String(value).split('T')[0].trim();
+  }
+
+  function _dashboardRecoveryEsc(value) {
+    return String(value == null ? '' : value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function _dashboardRecoveryAppointments() {
+    try {
+      if (typeof citasReales === 'function') {
+        const rows = citasReales();
+        if (Array.isArray(rows)) return rows;
+      }
+    } catch (error) {
+      console.warn('Dashboard recovery: citasReales no disponible', error);
+    }
+    const source = typeof allData !== 'undefined' && Array.isArray(allData?.citas) ? allData.citas : [];
+    const seen = new Set();
+    return source.filter(c => {
+      const estado = String(c?.estado || '');
+      if (estado === 'Cancelada' || estado === 'Registro') return false;
+      const hora = String(c?.hora || '').trim();
+      if (!hora || /^00:[0-5]\d$/.test(hora)) return false;
+      const servicio = String(c?.servicio || '').trim().toLowerCase();
+      if (servicio === 'registro') return false;
+      const key = `${String(c?.nombre || '').toLowerCase().trim()}|${_dashboardRecoveryNormDate(c?.fecha)}|${hora}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }
+
+  function _dashboardRecoveryDateLabel(value) {
+    const norm = _dashboardRecoveryNormDate(value);
+    const parts = norm.split('-').map(Number);
+    if (parts.length !== 3 || parts.some(Number.isNaN)) return norm || '—';
+    return new Date(parts[0], parts[1] - 1, parts[2]).toLocaleDateString('es-CO', {
+      weekday: 'short', day: 'numeric', month: 'short'
+    });
+  }
+
+  function _renderDashboardCoreRecovery() {
+    const citas = _dashboardRecoveryAppointments();
+    const now = new Date();
+    const todayStr = _dashboardRecoveryNormDate(now);
+    const dow = now.getDay();
+    const startW = new Date(now);
+    startW.setDate(now.getDate() - (dow === 0 ? 6 : dow - 1));
+    startW.setHours(0, 0, 0, 0);
+    const endW = new Date(startW);
+    endW.setDate(startW.getDate() + 6);
+    endW.setHours(23, 59, 59, 999);
+
+    const asLocalDate = value => {
+      const [y, m, d] = _dashboardRecoveryNormDate(value).split('-').map(Number);
+      return new Date(y, m - 1, d);
+    };
+
+    const hoy = citas.filter(c => _dashboardRecoveryNormDate(c.fecha) === todayStr).length;
+    const semana = citas.filter(c => {
+      const d = asLocalDate(c.fecha);
+      return !Number.isNaN(d.getTime()) && d >= startW && d <= endW;
+    }).length;
+    const mes = citas.filter(c => {
+      const [y, m] = _dashboardRecoveryNormDate(c.fecha).split('-').map(Number);
+      return y === now.getFullYear() && m === now.getMonth() + 1;
+    }).length;
+    const pacientes = new Set(citas.map(c => c.telefono || c.email || String(c.nombre || '').toLowerCase().trim()).filter(Boolean)).size;
+
+    const values = { stHoy: hoy, stSemana: semana, stMes: mes, stPacientes: pacientes };
+    Object.entries(values).forEach(([id, value]) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = String(value);
+    });
+
+    const renderRow = (c, showDate) => {
+      const date = showDate ? `<div class="tl-time" style="min-width:80px">${_dashboardRecoveryEsc(_dashboardRecoveryDateLabel(c.fecha))}<br><small style="color:var(--muted)">${_dashboardRecoveryEsc(c.hora || '')}</small></div>` : `<div class="tl-time">${_dashboardRecoveryEsc(c.hora || '')}</div>`;
+      const service = [c.servicio, c.modalidad].filter(Boolean).join(' · ');
+      return `<div class="tl-item">${date}<div class="tl-body"><div class="tl-name">${_dashboardRecoveryEsc(c.nombre || 'Paciente')}</div><div class="tl-serv">${_dashboardRecoveryEsc(service)}</div><div class="tl-actions"><button type="button" class="btn btn-ghost btn-sm" onclick="showView('agenda')">Abrir agenda</button></div></div></div>`;
+    };
+
+    const hoyRows = citas
+      .filter(c => _dashboardRecoveryNormDate(c.fecha) === todayStr)
+      .sort((a, b) => String(a.hora || '').localeCompare(String(b.hora || '')));
+    const tlHoy = document.getElementById('tlHoy');
+    if (tlHoy) {
+      tlHoy.innerHTML = hoyRows.length
+        ? hoyRows.map(c => renderRow(c, false)).join('')
+        : '<div class="empty"><p>No hay citas hoy</p></div>';
+    }
+
+    const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+    const in7 = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 7, 23, 59, 59, 999);
+    const upcoming = citas
+      .filter(c => {
+        const d = asLocalDate(c.fecha);
+        return !Number.isNaN(d.getTime()) && d >= tomorrow && d <= in7;
+      })
+      .sort((a, b) => `${_dashboardRecoveryNormDate(a.fecha)}${a.hora || ''}`.localeCompare(`${_dashboardRecoveryNormDate(b.fecha)}${b.hora || ''}`))
+      .slice(0, 8);
+    const tlProximas = document.getElementById('tlProximas');
+    if (tlProximas) {
+      tlProximas.innerHTML = upcoming.length
+        ? upcoming.map(c => renderRow(c, true)).join('')
+        : '<div class="empty"><p>No hay citas en los próximos 7 días</p></div>';
+    }
+    document.body.dataset.dashboardRecovery = 'fallback';
+  }
+
+  function _attemptDashboardRecovery() {
+    _dashboardRecoveryTimer = null;
+    if (!_dashboardNeedsRecovery()) return;
+    _dashboardRecoveryAttempts += 1;
+    try {
+      if (typeof initDashboard === 'function') initDashboard();
+    } catch (error) {
+      console.warn('Dashboard recovery: initDashboard falló', error);
+    }
+    if (_dashboardNeedsRecovery() && _dashboardRecoveryAttempts >= 2) {
+      _renderDashboardCoreRecovery();
+    }
+    if (_dashboardNeedsRecovery() && _dashboardRecoveryAttempts < 8) {
+      _dashboardRecoveryTimer = setTimeout(_attemptDashboardRecovery, 1500);
+    }
+  }
+
+  function _installDashboardRecovery() {
+    if (document.body?.dataset.dashboardRecoveryWatch === '1') return;
+    if (document.body) document.body.dataset.dashboardRecoveryWatch = '1';
+    _dashboardRecoveryTimer = setTimeout(_attemptDashboardRecovery, 1500);
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState !== 'visible' || !_dashboardNeedsRecovery()) return;
+      clearTimeout(_dashboardRecoveryTimer);
+      _dashboardRecoveryTimer = setTimeout(_attemptDashboardRecovery, 250);
+    });
+  }
+
+'''
+          sidebar = sidebar.replace(marker, recovery + marker, 1)
+
+          old_ready = "    sidebar.dataset.managementOrganized = '1';\n    return true;"
+          new_ready = "    sidebar.dataset.managementOrganized = '1';\n    _installDashboardRecovery();\n    return true;"
+          if sidebar.count(old_ready) != 1:
+              raise SystemExit('No se encontró el cierre esperado de initSidebarManagement')
+          sidebar = sidebar.replace(old_ready, new_ready, 1)
+          sidebar_path.write_text(sidebar, encoding='utf-8')
+
+          profile_path = Path('js/modules/admin-profile-accessibility.js')
+          profile = profile_path.read_text(encoding='utf-8')
+          old_mobile = "['mobBtn-calendario','mobBtn-finanzas'].forEach(id => {"
+          new_mobile = "['mobBtn-finanzas'].forEach(id => {"
+          if profile.count(old_mobile) != 1:
+              raise SystemExit('No se encontró la simplificación móvil esperada')
+          profile = profile.replace(old_mobile, new_mobile, 1)
+          profile_path.write_text(profile, encoding='utf-8')
+          PY
+
+      - name: Validar sintaxis y alcance
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check js/modules/sidebar-management.js
+          node --check js/modules/admin-profile-accessibility.js
+          python - <<'PY'
+          from pathlib import Path
+          s = Path('js/modules/sidebar-management.js').read_text(encoding='utf-8')
+          p = Path('js/modules/admin-profile-accessibility.js').read_text(encoding='utf-8')
+          assert "const PRIMARY_IDS = ['sb-calendario','sb-dashboard'" in s
+          assert "items:['sb-evaluacion','sb-evalexpress']" in s
+          assert "items:['sb-calendario','sb-evaluacion','sb-evalexpress']" not in s
+          assert '_installDashboardRecovery();' in s
+          assert 'Dashboard recovery: initDashboard falló' in s
+          assert "['mobBtn-finanzas'].forEach" in p
+          assert "['mobBtn-calendario','mobBtn-finanzas'].forEach" not in p
+          print('Hotfix validado: sintaxis OK, Google Calendar primero y recuperación del dashboard instalada.')
+          PY
+
+      - name: Guardar hotfix y retirar workflow temporal
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/hotfix-dashboard-google-calendar.yml
+          git add js/modules/sidebar-management.js js/modules/admin-profile-accessibility.js
+          git commit -m "fix: recuperar dashboard y priorizar Google Calendar"
+          git push
