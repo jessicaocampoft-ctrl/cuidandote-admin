@@ -1,0 +1,77 @@
+name: Validar recuperación de dashboard al mostrar admin
+
+on:
+  push:
+    branches:
+      - hotfix-dashboard-visibility-recovery-2026-09-03
+    paths:
+      - .github/workflows/hotfix-dashboard-visibility-recovery.yml
+
+permissions:
+  contents: write
+
+jobs:
+  hotfix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Aplicar observador de visibilidad
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('js/modules/sidebar-management.js')
+          s = p.read_text(encoding='utf-8')
+          start = s.index('  function _installDashboardRecovery() {')
+          end = s.index('\n  function initSidebarManagement()', start)
+          lines = [
+              '  function _installDashboardRecovery() {',
+              "    if (document.body?.dataset.dashboardRecoveryWatch === '1') return;",
+              "    if (document.body) document.body.dataset.dashboardRecoveryWatch = '1';",
+              '',
+              '    const scheduleRecovery = (delay = 250) => {',
+              '      if (!_dashboardNeedsRecovery()) return;',
+              '      clearTimeout(_dashboardRecoveryTimer);',
+              '      _dashboardRecoveryTimer = setTimeout(_attemptDashboardRecovery, delay);',
+              '    };',
+              '',
+              "    const app = document.getElementById('adminApp');",
+              "    if (app && typeof MutationObserver === 'function') {",
+              '      const observer = new MutationObserver(() => scheduleRecovery(100));',
+              "      observer.observe(app, { attributes:true, attributeFilter:['style','class'] });",
+              '    }',
+              '',
+              '    _dashboardRecoveryTimer = setTimeout(_attemptDashboardRecovery, 1500);',
+              "    document.addEventListener('visibilitychange', () => {",
+              "      if (document.visibilityState !== 'visible') return;",
+              '      scheduleRecovery(250);',
+              '    });',
+              '  }',
+              ''
+          ]
+          s = s[:start] + '\n'.join(lines) + s[end:]
+          p.write_text(s, encoding='utf-8')
+          PY
+      - name: Validar sintaxis y observador
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check js/modules/sidebar-management.js
+          grep -q "new MutationObserver" js/modules/sidebar-management.js
+          grep -q "attributeFilter:\['style','class'\]" js/modules/sidebar-management.js
+      - name: Guardar cambio y retirar workflow temporal
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/hotfix-dashboard-visibility-recovery.yml
+          git add js/modules/sidebar-management.js
+          git commit -m "fix: activar recuperación al mostrar el panel"
+          git push
