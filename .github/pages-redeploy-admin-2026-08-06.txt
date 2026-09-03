@@ -1,1 +1,1 @@
-Publicación del administrador solicitada nuevamente el 2026-08-26 a las 19:20 (Colombia) para desplegar la corrección de emojis de WhatsApp. Este archivo no modifica el contenido ni el funcionamiento del administrador.
+Publicación del administrador solicitada nuevamente el 2026-09-03 para desplegar la recuperación del dashboard y priorizar Google Calendar. Este archivo no modifica el contenido ni el funcionamiento del administrador.
