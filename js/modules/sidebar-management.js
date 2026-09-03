@@ -227,6 +227,12 @@
       scheduled = true;
       queueMicrotask(() => {
         scheduled = false;
+        // Algunos enlaces (incluido Google Calendar) se insertan después de
+        // cargar este módulo. Reaplicar la navegación principal evita que
+        // queden dentro de Gestión por el orden en que se creó el DOM.
+        const primary = _ensurePrimary(sidebar);
+        const toggle = _ensureToggle(sidebar, primary);
+        _ensurePanel(sidebar, toggle);
         _moveItems(sidebar);
       });
     });

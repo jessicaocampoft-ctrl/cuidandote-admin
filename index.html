@@ -10067,7 +10067,25 @@ function getKPIConfig(...args) {
   return module.getKPIConfig(...args);
 }
 
-const _cfg0 = getKPIConfig();
+// Este bloque se ejecuta antes de cargar los módulos externos.  No puede
+// depender de PanelKPI todavía: si el módulo aún no está listo, el tablero
+// debe poder iniciar con los valores base y el módulo actualizará los datos
+// guardados cuando se complete la sesión.
+const _KPI_BOOT_DEFAULTS = {
+  meta_sesiones_semana: 30,
+  meta_ventas_mes: 10265000,
+  meta_nps: 90,
+  meta_encuestas: 70,
+  meta_cancelacion: 10,
+  meta_retencion: 60
+};
+const _cfg0 = (() => {
+  try {
+    return { ..._KPI_BOOT_DEFAULTS, ...getKPIConfig() };
+  } catch (_) {
+    return { ..._KPI_BOOT_DEFAULTS };
+  }
+})();
 // kpiConfig es siempre la fuente de verdad; costosEstructura solo se usa para calcular en su propia sección
 let META_SESIONES_SEMANA = _cfg0.meta_sesiones_semana;
 let META_VENTAS_SEMANA   = Math.round(_cfg0.meta_ventas_mes / 4);
