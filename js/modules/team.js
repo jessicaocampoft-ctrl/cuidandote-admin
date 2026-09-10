@@ -18,7 +18,11 @@ function professionalName(id) {
 async function loadTeamData() {
   if (!TOKEN) return teamData;
   try {
-    const d = await fetch(`${APPS_SCRIPT_URL}?action=teamData&token=${encodeURIComponent(TOKEN)}`).then(r => r.json());
+    const d = await global.PanelApi.fetchJsonWithTimeout(
+      `${APPS_SCRIPT_URL}?action=teamData&token=${encodeURIComponent(TOKEN)}`,
+      {},
+      20000
+    );
     if (d.ok) {
       teamData = {
         profesionales: d.profesionales || [],

@@ -8,7 +8,11 @@ let _kvFlushTimer = null;
 
 async function loadAdminKV() {
   try {
-    const r = await fetch(`${APPS_SCRIPT_URL}?action=getAdminKV&token=${encodeURIComponent(TOKEN)}`).then(x => x.json());
+    const r = await global.PanelApi.fetchJsonWithTimeout(
+      `${APPS_SCRIPT_URL}?action=getAdminKV&token=${encodeURIComponent(TOKEN)}`,
+      {},
+      20000
+    );
     if (r.ok && r.kv) {
       _gasKV = r.kv;
       Object.entries(r.kv).forEach(([k, v]) => localStorage.setItem(k, v));

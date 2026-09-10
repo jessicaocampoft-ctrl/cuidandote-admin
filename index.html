@@ -6258,11 +6258,18 @@ function _sessionBridge() {
     setLoginTime: value => { _loginTime = value; },
     setAllData: value => { allData = value; },
     onAdminReady: async () => {
-      await loadAdminKV();
-      await loadTeamData();
-      reloadMetas();
       _initSidebarState();
       initDashboard();
+
+      // El tablero ya tiene las citas recibidas en adminData: no debe esperar
+      // las preferencias ni el módulo de equipo para mostrarse. Ambas cargas
+      // son complementarias y se resuelven en paralelo en segundo plano.
+      const kvReady = loadAdminKV().catch(() => null);
+      const teamReady = loadTeamData().catch(() => null);
+      await kvReady;
+      reloadMetas();
+      initDashboard();
+      await teamReady;
       await _runUrlRepairIfRequested();
     },
     reloadPage: () => location.reload(),
