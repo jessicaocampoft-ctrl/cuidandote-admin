@@ -2,7 +2,9 @@
 (function (global) {
   'use strict';
 
-  const PRIMARY_IDS = ['sb-calendario','sb-dashboard','sb-agenda','sb-pacientes','sb-pagos','sb-seguimiento','sb-pasaporte'];
+  // Reservamos este nivel para la operación diaria. Lo clínico menos frecuente
+  // sigue disponible en Gestión, sin borrar ninguna función.
+  const PRIMARY_IDS = ['sb-calendario','sb-dashboard','sb-agenda','sb-seguimiento','sb-pacientes','sb-pagos'];
   const LEGACY_HIDDEN_IDS = [
     'sb-tareas','sb-basedatos','sb-recordatorios','sb-guioneswa','sb-recuperacion',
     'sb-guiakpis','sb-presupuesto','sb-comisiones','sb-acciones'
@@ -13,7 +15,7 @@
     { id:'commercial', label:'Comercial', items:['sb-empresas','sb-codigos'] },
     { id:'team', label:'Equipo', items:['sb-equipo'] },
     { id:'communications', label:'Comunicación', items:['sb-mensajes'] },
-    { id:'tools', label:'Herramientas', items:['sb-evaluacion','sb-evalexpress'] }
+    { id:'tools', label:'Herramientas clínicas', items:['sb-pasaporte','sb-evaluacion','sb-evalexpress'] }
   ];
 
   let _observer = null;
@@ -111,7 +113,7 @@
       el.removeAttribute('aria-hidden');
       if (el.parentElement !== primary) primary.appendChild(el);
     });
-    _setSimpleLabel('sb-dashboard','Inicio');
+    _setSimpleLabel('sb-dashboard','Hoy');
     return primary;
   }
 

@@ -66,7 +66,7 @@
       const title = segHeader.querySelector('.page-title');
       const sub = segHeader.querySelector('.page-sub');
       if (title) title.innerHTML = '<em>Seguimiento</em>';
-      if (sub) sub.textContent = 'Reagendamiento y recordatorios de pacientes desde un solo lugar';
+      if (sub) sub.textContent = 'Personas a las que vale la pena escribir hoy, con recordatorios en un solo lugar';
     }
 
     const tabs = document.createElement('div');
@@ -79,7 +79,7 @@
     segBtn.className = 'follow-hub-tab';
     segBtn.dataset.followHubTab = 'seguimiento';
     segBtn.setAttribute('role', 'tab');
-    segBtn.textContent = 'Reagendamiento';
+    segBtn.textContent = 'Para escribir hoy';
     segBtn.addEventListener('click', () => setTab('seguimiento'));
 
     const recBtn = document.createElement('button');
