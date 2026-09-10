@@ -100,7 +100,7 @@
       <div class="ps-admin-head">
         <div>
           <h1 class="page-title"><em>Horarios</em> públicos</h1>
-          <p class="ps-admin-intro">Controla qué sedes aparecen disponibles para reservar desde la página pública, qué servicios se pueden agendar en cada sede y en qué franjas horarias. Los bloqueos, las citas existentes y Google Calendar siguen teniendo prioridad.</p>
+          <p class="ps-admin-intro">Controla los servicios y las franjas disponibles para reservar en línea en Sede Santa Mónica. Los bloqueos, las citas existentes y Google Calendar siguen teniendo prioridad.</p>
         </div>
         <div class="ps-admin-actions">
           <button type="button" class="btn btn-ghost" id="psReloadBtn">Descartar cambios</button>
@@ -191,9 +191,12 @@
   }
 
   function venueCard(key) {
-    const venue = config.venues[key];
+    const venue = config && config.venues && config.venues[key];
+    if (!venue) return '';
     const isRecovery = key === 'recovery';
-    const services = SERVICES[key];
+    const services = SERVICES[key] || [];
+    const activeServices = Array.isArray(venue.services) ? venue.services : [];
+    const weekly = venue.weekly || {};
     return `
       <article class="ps-venue" data-venue="${key}">
         <div class="ps-venue-head">
@@ -206,13 +209,13 @@
         <div class="ps-block">
           <div class="ps-block-title">Servicios disponibles en esta sede</div>
           <div class="ps-services">
-            ${services.map(([value,label]) => `<label class="ps-service"><input type="checkbox" data-role="service" value="${escapeHtml(value)}" ${venue.services.includes(value) ? 'checked' : ''}><span>${escapeHtml(label)}</span></label>`).join('')}
+            ${services.map(([value,label]) => `<label class="ps-service"><input type="checkbox" data-role="service" value="${escapeHtml(value)}" ${activeServices.includes(value) ? 'checked' : ''}><span>${escapeHtml(label)}</span></label>`).join('')}
           </div>
         </div>
         <div class="ps-block">
           <div class="ps-block-title">Horario semanal mostrado en la página pública</div>
           <div class="ps-schedule">
-            ${DAYS.map(([day,label]) => dayRow(day,label,venue.weekly[day] || [])).join('')}
+            ${DAYS.map(([day,label]) => dayRow(day,label,weekly[day] || [])).join('')}
           </div>
         </div>
         ${isRecovery ? '<div class="ps-note"><strong>Protección de sede:</strong> Valoración fisioterapéutica y Rehabilitación/readaptación no pueden habilitarse en Campestre Recovery desde este módulo.</div>' : ''}
@@ -236,7 +239,8 @@
   function render() {
     const root = document.getElementById('psScheduleRoot');
     if (!root || !config || !config.venues) return;
-    root.innerHTML = `<div class="ps-venue-grid">${venueCard('santa')}${venueCard('recovery')}</div>${config.updatedAt ? `<div class="ps-updated">Última actualización guardada: ${escapeHtml(new Date(config.updatedAt).toLocaleString('es-CO'))}</div>` : ''}`;
+    const venueKeys = Object.keys(config.venues).filter(key => SERVICES[key]);
+    root.innerHTML = `<div class="ps-venue-grid">${venueKeys.map(venueCard).join('')}</div>${config.updatedAt ? `<div class="ps-updated">Última actualización guardada: ${escapeHtml(new Date(config.updatedAt).toLocaleString('es-CO'))}</div>` : ''}`;
     root.querySelectorAll('[data-role="day-open"]').forEach(input => {
       input.addEventListener('change', () => input.closest('.ps-day').classList.toggle('closed', !input.checked));
     });
@@ -290,7 +294,7 @@
     if (next.venues.santa.enabled && next.venues.santa.services.length === 0) {
       setStatus('Santa Mónica está habilitada pero no tiene ningún servicio seleccionado.', 'err'); return;
     }
-    if (next.venues.recovery.enabled && next.venues.recovery.services.length === 0) {
+    if (next.venues.recovery && next.venues.recovery.enabled && next.venues.recovery.services.length === 0) {
       setStatus('Campestre Recovery está habilitada pero no tiene ningún servicio seleccionado.', 'err'); return;
     }
 
