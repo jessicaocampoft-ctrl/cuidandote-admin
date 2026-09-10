@@ -2,9 +2,109 @@
 (function (global) {
 'use strict';
 
+const WEEKLY_SCHEDULE_KEY = 'horarios_semanales_v1';
+const WEEK_DAYS = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+const DEFAULT_WEEKLY_SCHEDULE = [
+  { enabled:false, ranges:[] },
+  { enabled:true,  ranges:[['08:00','16:30']] },
+  { enabled:true,  ranges:[['08:00','17:00']] },
+  { enabled:true,  ranges:[['08:00','17:00']] },
+  { enabled:true,  ranges:[['08:00','20:00']] },
+  { enabled:true,  ranges:[['08:00','20:00']] },
+  { enabled:true,  ranges:[['07:00','09:30'],['14:00','18:00']] }
+];
+
+function _copyDefaultWeeklySchedule() {
+  return DEFAULT_WEEKLY_SCHEDULE.map(day => ({ enabled:day.enabled, ranges:day.ranges.map(range => [...range]) }));
+}
+
+function _normaliseWeeklySchedule(value) {
+  if (!Array.isArray(value) || value.length !== 7) return _copyDefaultWeeklySchedule();
+  return value.map(day => {
+    const ranges = Array.isArray(day?.ranges) ? day.ranges
+      .filter(range => Array.isArray(range) && /^\d{2}:\d{2}$/.test(range[0]) && /^\d{2}:\d{2}$/.test(range[1]) && range[0] < range[1])
+      .slice(0, 2).map(range => [range[0], range[1]]) : [];
+    return { enabled:Boolean(day?.enabled) && ranges.length > 0, ranges };
+  });
+}
+
+function getWeeklySchedule() {
+  try {
+    return _normaliseWeeklySchedule(JSON.parse(kvGet(WEEKLY_SCHEDULE_KEY) || 'null'));
+  } catch (error) {
+    return _copyDefaultWeeklySchedule();
+  }
+}
+
+function _weeklyRowEnabled(day) {
+  const checkbox = document.getElementById(`ws-${day}-enabled`);
+  const row = document.getElementById(`ws-${day}-row`);
+  if (!checkbox || !row) return;
+  row.querySelectorAll('input[type="time"]').forEach(input => { input.disabled = !checkbox.checked; });
+  row.style.opacity = checkbox.checked ? '1' : '.5';
+}
+
+function renderWeeklySchedule() {
+  const wrap = document.getElementById('weeklyScheduleRows');
+  if (!wrap) return;
+  const schedule = getWeeklySchedule();
+  wrap.innerHTML = schedule.map((day, index) => {
+    const first = day.ranges[0] || ['08:00','17:00'];
+    const second = day.ranges[1] || ['',''];
+    return `<div id="ws-${index}-row" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;align-items:end;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--s2)">
+      <label style="display:flex;align-items:center;gap:8px;margin:0;font-weight:700;cursor:pointer"><input id="ws-${index}-enabled" type="checkbox" ${day.enabled ? 'checked' : ''} onchange="weeklyScheduleToggle(${index})"> ${WEEK_DAYS[index]}</label>
+      <label style="margin:0;font-size:.75rem;color:var(--muted)">Inicio<input id="ws-${index}-start1" type="time" value="${first[0]}" style="margin-top:4px;width:100%"></label>
+      <label style="margin:0;font-size:.75rem;color:var(--muted)">Fin<input id="ws-${index}-end1" type="time" value="${first[1]}" style="margin-top:4px;width:100%"></label>
+      <label style="margin:0;font-size:.75rem;color:var(--muted)">2.º inicio <span style="font-weight:400">(opcional)</span><input id="ws-${index}-start2" type="time" value="${second[0]}" style="margin-top:4px;width:100%"></label>
+      <label style="margin:0;font-size:.75rem;color:var(--muted)">2.º fin<input id="ws-${index}-end2" type="time" value="${second[1]}" style="margin-top:4px;width:100%"></label>
+    </div>`;
+  }).join('');
+  schedule.forEach((_, index) => _weeklyRowEnabled(index));
+}
+
+function weeklyScheduleToggle(day) { _weeklyRowEnabled(day); }
+
+async function saveWeeklySchedule() {
+  const schedule = [];
+  for (let day = 0; day < 7; day += 1) {
+    const enabled = Boolean(document.getElementById(`ws-${day}-enabled`)?.checked);
+    const first = [document.getElementById(`ws-${day}-start1`)?.value, document.getElementById(`ws-${day}-end1`)?.value];
+    const second = [document.getElementById(`ws-${day}-start2`)?.value, document.getElementById(`ws-${day}-end2`)?.value];
+    const ranges = [];
+    for (const [start, end] of [first, second]) {
+      if (!start && !end) continue;
+      if (!start || !end || start >= end) {
+        toast(`Revisa el horario de ${WEEK_DAYS[day]}`, 'err');
+        return;
+      }
+      ranges.push([start, end]);
+    }
+    if (enabled && !ranges.length) {
+      toast(`Agrega al menos un rango para ${WEEK_DAYS[day]}`, 'err');
+      return;
+    }
+    if (ranges.length === 2 && ranges[0][1] > ranges[1][0]) {
+      toast(`Los turnos de ${WEEK_DAYS[day]} se cruzan`, 'err');
+      return;
+    }
+    schedule.push({ enabled, ranges });
+  }
+  kvSet(WEEKLY_SCHEDULE_KEY, JSON.stringify(schedule));
+  try { await _flushKV(); } catch (error) { /* queda en cola para el siguiente intento */ }
+  toast('Horarios semanales guardados');
+}
+
+function resetWeeklySchedule() {
+  const confirmed = global.confirm('¿Restaurar el horario semanal sugerido? Tus citas y bloqueos puntuales no cambiarán.');
+  if (!confirmed) return;
+  kvSet(WEEKLY_SCHEDULE_KEY, JSON.stringify(_copyDefaultWeeklySchedule()));
+  renderWeeklySchedule();
+  toast('Horario sugerido restaurado. Pulsa Guardar para confirmarlo.');
+}
 
 
 function renderBloqueos() {
+  renderWeeklySchedule();
   const bl = document.getElementById('blockList');
   if (!allData.bloqueos.length) {
     bl.innerHTML = '<div class="empty"><p>No hay bloqueos activos</p></div>';
@@ -124,15 +224,8 @@ function adminScheduleRanges(date) {
   if (!date) return [];
   const [y, m, d] = date.split('-').map(Number);
   const day = new Date(y, m - 1, d).getDay();
-  return {
-    0: [],
-    1: [['08:00','16:30']],
-    2: [['08:00','17:00']],
-    3: [['08:00','17:00']],
-    4: [['08:00','20:00']],
-    5: [['08:00','20:00']],
-    6: [['07:00','09:30'], ['14:00','18:00']]
-  }[day] || [];
+  const weekly = getWeeklySchedule()[day];
+  return weekly?.enabled ? weekly.ranges : [];
 }
 
 function adminTimeToMinutes(time) {
@@ -238,6 +331,11 @@ function _updateRecPreview() {
 
 global.PanelScheduleOperations = Object.freeze({
     renderBloqueos,
+    renderWeeklySchedule,
+    weeklyScheduleToggle,
+    saveWeeklySchedule,
+    resetWeeklySchedule,
+    getWeeklySchedule,
     doBlock,
     doUnblock,
     toggleRecurringPanel,
