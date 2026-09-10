@@ -12112,6 +12112,16 @@ function renderComisiones(...args) {
 // ══════════════════════════════════════════
 const DISP_SLOTS_ORDER = ['07:00','08:00','09:00','10:00','11:00','13:00','14:00','15:00','16:00','17:00','18:00','19:00'];
 
+function slotDentroDeHorarioSemanal(fecha, hora) {
+  if (typeof adminScheduleRanges !== 'function') return true;
+  const toMinutes = value => {
+    const [h, m] = String(value || '').split(':').map(Number);
+    return Number.isNaN(h) || Number.isNaN(m) ? -1 : h * 60 + m;
+  };
+  const slot = toMinutes(hora);
+  return adminScheduleRanges(fecha).some(([inicio, fin]) => slot >= toMinutes(inicio) && slot < toMinutes(fin));
+}
+
 function abrirModalDisp() {
   const modal = document.getElementById('modalDisp');
   if (!modal) return;
@@ -12151,9 +12161,9 @@ async function _buscarDisp() {
     if (!res.ok) throw new Error(res.error || 'Error');
 
     const slots = res.slots || {};
-    const libres = DISP_SLOTS_ORDER.filter(s => slots[s]);
+    const libres = DISP_SLOTS_ORDER.filter(s => slots[s] && slotDentroDeHorarioSemanal(fecha, s));
     const html = DISP_SLOTS_ORDER.map(s => {
-      const libre = !!slots[s];
+      const libre = !!slots[s] && slotDentroDeHorarioSemanal(fecha, s);
       const h = parseInt(s.split(':')[0]);
       const label = h < 12 ? s + ' AM' : (h === 12 ? '12:00 PM' : (h-12) + ':00 PM');
       return `<div class="disp-slot ${libre ? 'libre' : 'ocupado'}">${libre ? '✓ ' : ''}${label}</div>`;
