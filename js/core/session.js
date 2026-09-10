@@ -83,9 +83,27 @@
       storage(ctx).setItem('adminToken', data.sessionToken);
       ctx.setLoginTime(Date.now());
       showOnlyScreen('adminApp', ctx);
-      ctx.setAllData(data);
+
+      // Las versiones nuevas del servidor confirman la identidad primero y
+      // entregan los datos del panel en una segunda lectura protegida. Esto
+      // evita que el acceso quede esperando la carga completa de Sheets.
+      // Conservamos compatibilidad con la respuesta antigua, que ya incluía
+      // citas y pacientes en el mismo POST.
+      let adminData = data;
+      if (!Array.isArray(adminData.citas)) {
+        adminData = await ctx.fetchJsonWithTimeout(
+          `${ctx.apiUrl}?action=adminData&token=${encodeURIComponent(data.sessionToken)}`,
+          {},
+          60000
+        );
+        if (!adminData.ok) throw new Error(adminData.error || 'No pudimos cargar los datos del panel.');
+        adminData.sessionToken = data.sessionToken;
+        adminData.currentUser = data.currentUser || adminData.currentUser;
+      }
+
+      ctx.setAllData(adminData);
       await ctx.onAdminReady();
-      return data;
+      return adminData;
     } catch (error) {
       showAdminError(ctx, error?.message || 'Error de conexión. Revisa tu internet.');
       return { ok: false, error: error?.message || 'Error de conexión' };
