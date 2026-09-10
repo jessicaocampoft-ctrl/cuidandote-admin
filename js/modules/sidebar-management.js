@@ -11,7 +11,8 @@
   ];
   const GROUPS = [
     { id:'finance', label:'Finanzas', items:['sb-finanzas'] },
-    { id:'operations', label:'Operación', items:['sb-nueva','sb-bloquear','sb-horariospublicos','sb-paquetes','sb-espera','sb-automatizaciones'] },
+    { id:'operations', label:'Agenda y horarios', items:['sb-nueva','sb-bloquear','sb-horariospublicos'] },
+    { id:'advanced', label:'Operación avanzada', items:['sb-paquetes','sb-espera','sb-automatizaciones'] },
     { id:'commercial', label:'Comercial', items:['sb-empresas','sb-codigos'] },
     { id:'team', label:'Equipo', items:['sb-equipo'] },
     { id:'communications', label:'Comunicación', items:['sb-mensajes'] },
@@ -195,6 +196,8 @@
       _assignEvaluationId(sidebar);
       _hideLegacy();
       _setSimpleLabel('sb-finanzas','Gestión financiera');
+      _setSimpleLabel('sb-bloquear','Horario de trabajo');
+      _setSimpleLabel('sb-horariospublicos','Reservas públicas');
       _setCodesLabel();
 
       GROUPS.forEach(def => {
