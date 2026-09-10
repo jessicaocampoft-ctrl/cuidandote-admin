@@ -36,6 +36,37 @@ function validateNoMidnight(time, contexto='la cita') {
   return false;
 }
 
+function _addOptimisticAppointment(data, result) {
+  if (!Array.isArray(allData?.citas) || !result?.id) return;
+  if (allData.citas.some(cita => cita.id === result.id)) return;
+  allData.citas.unshift({
+    id: result.id,
+    nombre: data.name,
+    telefono: data.phone || '',
+    email: data.email || '',
+    servicio: data.service,
+    modalidad: data.modality,
+    fecha: data.date,
+    hora: data.time,
+    precio: data.priceP || 'A convenir',
+    direccion: data.address || '',
+    notas: data.notes || '',
+    notaAdmin: data.notaAdmin || '',
+    estado: 'Confirmada',
+    pago: ''
+  });
+}
+
+function _refreshPanelAfterBooking() {
+  clearTimeout(global._bookingRefreshTimer);
+  global._bookingRefreshTimer = setTimeout(async () => {
+    await reload();
+    renderAgenda();
+    initDashboard();
+    if (document.getElementById('vCalendario')?.style.display !== 'none') renderCalendar();
+  }, 1800);
+}
+
 async function submitAdminBookingMulti() {
   if (_submittingBooking) return;
 
@@ -73,24 +104,6 @@ async function submitAdminBookingMulti() {
     btn.disabled = false;
     label.textContent = origLabel;
   };
-
-  // Confirmar que la sesión administrativa siga activa antes de enviar datos.
-  try {
-    const pingResponse = await fetch(`${APPS_SCRIPT_URL}?action=ping&token=${encodeURIComponent(TOKEN)}`);
-    const pingData = await pingResponse.json();
-    if (!pingData.ok) {
-      restoreSubmitButton();
-      const sessionExpired = String(pingData.error || '').toLowerCase().includes('permiso');
-      toast(sessionExpired
-        ? 'Tu sesión venció. Cierra sesión, vuelve a ingresar y crea la cita una sola vez.'
-        : 'No se pudo validar tu sesión: ' + (pingData.error || 'respuesta inválida del servidor.'), 'err');
-      return;
-    }
-  } catch (error) {
-    restoreSubmitButton();
-    toast('No se pudo conectar con el servidor para validar la sesión. Revisa la conexión e inténtalo nuevamente.', 'err');
-    return;
-  }
 
   // Datos base de la cita
   const phone = document.getElementById('ncPhone').value.trim();
@@ -162,6 +175,7 @@ async function submitAdminBookingMulti() {
       const d = await r.json();
       if (d.ok) {
         creadas++;
+        _addOptimisticAppointment(data, d);
       } else {
         errores++;
         erroresDetalle.push(d.error || 'El servidor rechazó la cita.');
@@ -181,6 +195,7 @@ async function submitAdminBookingMulti() {
         const d2 = await r2.json();
         if (d2.ok) {
           creadas++;
+          _addOptimisticAppointment(data2, d2);
         } else {
           errores++;
           erroresDetalle.push(d2.error || 'El servidor rechazó la cita de la segunda persona.');
@@ -208,8 +223,11 @@ async function submitAdminBookingMulti() {
     const personas = _duoActive ? ' (2 personas)' : '';
     toast(`✓ ${creadas} cita${creadas!==1?'s':''} creada${creadas!==1?'s':''} correctamente${personas}`, 'ok');
     logChange('Nueva cita', `${name}${_duoActive ? ' + '+duoData.name : ''} · ${serv} · ${creadas} turno${creadas!==1?'s':''}`);
-    await reload();
+    // La cita aparece de inmediato. La actualización completa se hace en
+    // segundo plano para no detener el flujo por Google Calendar/Sheets.
     renderAgenda(); initDashboard();
+    _calGCeventsWeek = '';
+    _refreshPanelAfterBooking();
     if (_scheduleMode !== 'unica') { _multiDates = []; _renderMultiChips(); }
     clearNuevaCita();
   }

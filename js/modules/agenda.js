@@ -202,8 +202,31 @@ function calNext()  { calWeekStart.setDate(calWeekStart.getDate()+7); renderCale
 
 function calToday() { calWeekStart = getMonday(new Date()); renderCalendar(); }
 
+function _calendarWeekKey(days) {
+  return `${toDateStr(days[0])}:${toDateStr(days[days.length - 1])}`;
+}
+
+function _loadGoogleCalendarEvents(from, to, weekKey) {
+  if (_calGCeventsLoading === weekKey) return;
+  _calGCeventsLoading = weekKey;
+  fetch(`${APPS_SCRIPT_URL}?action=getCalEvents&token=${encodeURIComponent(TOKEN)}&from=${from}&to=${to}`)
+    .then(r => r.json())
+    .then(data => {
+      if (!data.ok) return;
+      _calGCevents = data.events || [];
+      _calGCeventsWeek = weekKey;
+      // Actualiza solo si la persona sigue viendo la misma semana.
+      if (_calendarWeekKey(Array.from({length:7}, (_, i) => {
+        const date = new Date(calWeekStart); date.setDate(date.getDate() + i); return date;
+      })) === weekKey) renderCalendar();
+    })
+    .catch(() => {
+      if (_calGCeventsWeek !== weekKey) _calGCevents = [];
+    })
+    .finally(() => { if (_calGCeventsLoading === weekKey) _calGCeventsLoading = ''; });
+}
+
 async function renderCalendar() {
-  await reload();
   const HOURS = [6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21];
   const todayStr = today();
 
@@ -219,13 +242,13 @@ async function renderCalendar() {
     days[0].toLocaleDateString('es-CO', opts) + ' — ' +
     days[6].toLocaleDateString('es-CO', {day:'numeric', month:'short', year:'numeric'});
 
-  // Obtener eventos personales de Google Calendar para esta semana
-  try {
-    const from = toDateStr(days[0]), to = toDateStr(days[6]);
-    const r = await fetch(`${APPS_SCRIPT_URL}?action=getCalEvents&token=${encodeURIComponent(TOKEN)}&from=${from}&to=${to}`);
-    const d = await r.json();
-    if (d.ok) _calGCevents = d.events || [];
-  } catch(e) { _calGCevents = []; }
+  // Pintamos primero las citas que ya están en el panel. La lectura de Google
+  // Calendar continúa en segundo plano para no congelar esta pantalla.
+  const weekKey = _calendarWeekKey(days);
+  const calendarEvents = _calGCeventsWeek === weekKey ? _calGCevents : [];
+  if (_calGCeventsWeek !== weekKey) {
+    _loadGoogleCalendarEvents(toDateStr(days[0]), toDateStr(days[6]), weekKey);
+  }
 
   // Encabezado
   const dayNames = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
@@ -295,7 +318,7 @@ async function renderCalendar() {
       });
 
       // Eventos personales de Google Calendar
-      _calGCevents.forEach(ev => {
+      calendarEvents.forEach(ev => {
         if (ev.fecha !== ds) return;
         if (ev.allDay) {
           if (h === 7) html += `<div class="cal-ev cal-ev-gcal" onclick="event.stopPropagation()" title="${ev.title}">
@@ -320,6 +343,18 @@ async function renderCalendar() {
   document.getElementById('calGrid').innerHTML = html;
 }
 
+async function refreshCalendar() {
+  const button = document.getElementById('calRefreshBtn');
+  if (button) { button.disabled = true; button.textContent = 'Actualizando…'; }
+  try {
+    await reload();
+    _calGCeventsWeek = '';
+    renderCalendar();
+  } finally {
+    if (button) { button.disabled = false; button.textContent = 'Actualizar'; }
+  }
+}
+
   global.PanelAgenda = Object.freeze({
     goAgendaPatient,
     filtrarDia,
@@ -330,6 +365,7 @@ async function renderCalendar() {
     calPrev,
     calNext,
     calToday,
-    renderCalendar
+    renderCalendar,
+    refreshCalendar
   });
 })(window);

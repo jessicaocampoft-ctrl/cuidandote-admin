@@ -3209,6 +3209,7 @@ Primero evaluamos cómo está el cuerpo ahora, luego tratamos, luego te enseñam
           <p class="page-sub">Vista semanal de todas tus citas. Haz clic en cualquier cita para ver el detalle.</p>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button id="calRefreshBtn" class="btn btn-ghost btn-sm" type="button" onclick="refreshCalendar()">Actualizar</button>
           <button class="btn btn-primary btn-sm" onclick="showView('nueva')" style="gap:6px">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
             Nueva Cita
@@ -9438,6 +9439,8 @@ function calToday(...args) {
 }
 
 let _calGCevents = []; // cache de eventos de Google Calendar
+let _calGCeventsWeek = '';
+let _calGCeventsLoading = '';
 
 async function renderCalendar(...args) {
   const module = window.PanelAgenda;
@@ -10107,6 +10110,14 @@ function getKPIConfig(...args) {
     throw new Error('El módulo Indicadores y KPI no está disponible: getKPIConfig');
   }
   return module.getKPIConfig(...args);
+}
+
+async function refreshCalendar(...args) {
+  const module = window.PanelAgenda;
+  if (!module || typeof module.refreshCalendar !== 'function') {
+    throw new Error('El módulo de Agenda no está disponible: refreshCalendar');
+  }
+  return await module.refreshCalendar(...args);
 }
 
 // Este bloque se ejecuta antes de cargar los módulos externos.  No puede
