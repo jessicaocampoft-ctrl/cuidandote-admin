@@ -2,6 +2,45 @@
 (function (global) {
   'use strict';
 
+const EDIT_RETRY_DELAY_MS = 900;
+
+async function saveEditWithRetry(url) {
+  let lastError;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const response = await fetch(url, {cache: 'no-store'});
+      const body = await response.text();
+      if (!response.ok) {
+        const error = new Error(`El servidor respondió ${response.status}.`);
+        error.retryable = response.status === 408 || response.status === 429 || response.status >= 500;
+        throw error;
+      }
+      let payload;
+      try { payload = JSON.parse(body); }
+      catch (_) {
+        const error = new Error('El servidor devolvió una respuesta inválida.');
+        error.retryable = true;
+        throw error;
+      }
+      if (payload && payload.ok) return payload;
+
+      // Errores de validación, permisos o disponibilidad no se repiten: el
+      // usuario debe ver el motivo real en vez de esperar innecesariamente.
+      const error = new Error((payload && payload.error) || 'El servidor no confirmó el guardado.');
+      error.retryable = false;
+      throw error;
+    } catch (error) {
+      lastError = error;
+      const retryable = error && error.retryable !== false;
+      if (attempt === 0 && retryable) {
+        await new Promise(resolve => setTimeout(resolve, EDIT_RETRY_DELAY_MS));
+        continue;
+      }
+    }
+  }
+  throw lastError || new Error('No se pudo confirmar el guardado.');
+}
+
 function toggleReagendar(id) {
   const panel = document.getElementById('reagendarPanel_' + id);
   if (panel) panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
@@ -317,31 +356,28 @@ async function guardarEdicion() {
   btn.textContent = 'Guardando...'; btn.disabled = true;
   try {
     const data = encodeURIComponent(JSON.stringify({id, servicio, modalidad, fecha, hora, precio, notas}));
-    const r = await fetch(`${APPS_SCRIPT_URL}?action=editBooking&token=${encodeURIComponent(TOKEN)}&data=${data}`);
-    const d = await r.json();
-    if (d.ok) {
-      if (anterior) logChange('Cita editada', `${anterior.nombre} · ${anterior.fecha} ${anterior.hora} → ${fecha} ${hora} · ${servicio}`);
-      // Reflejar la confirmación inmediatamente. La recarga completa queda en
-      // segundo plano para no mantener el modal bloqueado por Sheets/Calendar.
-      if (anterior) Object.assign(anterior, {servicio, modalidad, fecha, hora, precio, notas});
-      closeModal('modalEditar');
-      renderAgenda();
-      renderCitasResumen();
-      toast('Cita actualizada correctamente');
+    await saveEditWithRetry(`${APPS_SCRIPT_URL}?action=editBooking&token=${encodeURIComponent(TOKEN)}&data=${data}`);
+    if (anterior) logChange('Cita editada', `${anterior.nombre} · ${anterior.fecha} ${anterior.hora} → ${fecha} ${hora} · ${servicio}`);
+    // Reflejar la confirmación inmediatamente. La recarga completa queda en
+    // segundo plano para no mantener el modal bloqueado por Sheets/Calendar.
+    if (anterior) Object.assign(anterior, {servicio, modalidad, fecha, hora, precio, notas});
+    closeModal('modalEditar');
+    renderAgenda();
+    renderCitasResumen();
+    toast('Cita actualizada correctamente');
 
-      Promise.resolve(reload()).then(() => {
-        initDashboard();
-        renderAgenda();
-        renderCalendar();
-        renderIngresosDetalle();
-        renderCitasResumen();
-      }).catch(() => {
-        // La edición ya fue confirmada por el servidor; la siguiente apertura
-        // volverá a sincronizar aunque falle esta actualización secundaria.
-        console.warn('No se pudo recargar el panel después de editar la cita');
-      });
-    } else toast('Error al guardar: ' + (d.error||''), 'err');
-  } catch(e) { toast('Error de conexión', 'err'); }
+    Promise.resolve(reload()).then(() => {
+      initDashboard();
+      renderAgenda();
+      renderCalendar();
+      renderIngresosDetalle();
+      renderCitasResumen();
+    }).catch(() => {
+      // La edición ya fue confirmada por el servidor; la siguiente apertura
+      // volverá a sincronizar aunque falle esta actualización secundaria.
+      console.warn('No se pudo recargar el panel después de editar la cita');
+    });
+  } catch(e) { toast('No se guardó la cita: ' + (e.message || 'intenta de nuevo.'), 'err'); }
   btn.textContent = 'Guardar cambios'; btn.disabled = false;
 }
 
