@@ -321,14 +321,25 @@ async function guardarEdicion() {
     const d = await r.json();
     if (d.ok) {
       if (anterior) logChange('Cita editada', `${anterior.nombre} · ${anterior.fecha} ${anterior.hora} → ${fecha} ${hora} · ${servicio}`);
-      await reload();
-      toast('Cita actualizada correctamente');
+      // Reflejar la confirmación inmediatamente. La recarga completa queda en
+      // segundo plano para no mantener el modal bloqueado por Sheets/Calendar.
+      if (anterior) Object.assign(anterior, {servicio, modalidad, fecha, hora, precio, notas});
       closeModal('modalEditar');
-      initDashboard();
       renderAgenda();
-      renderCalendar();
-      renderIngresosDetalle();
       renderCitasResumen();
+      toast('Cita actualizada correctamente');
+
+      Promise.resolve(reload()).then(() => {
+        initDashboard();
+        renderAgenda();
+        renderCalendar();
+        renderIngresosDetalle();
+        renderCitasResumen();
+      }).catch(() => {
+        // La edición ya fue confirmada por el servidor; la siguiente apertura
+        // volverá a sincronizar aunque falle esta actualización secundaria.
+        console.warn('No se pudo recargar el panel después de editar la cita');
+      });
     } else toast('Error al guardar: ' + (d.error||''), 'err');
   } catch(e) { toast('Error de conexión', 'err'); }
   btn.textContent = 'Guardar cambios'; btn.disabled = false;
