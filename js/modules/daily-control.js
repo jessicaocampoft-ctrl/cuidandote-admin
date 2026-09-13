@@ -3,6 +3,7 @@
 
 let _observer = null;
 let _refreshTimer = null;
+const DAILY_CONTROL_BASELINE_KEY = 'daily_control_baseline_v1';
 
 function _safeArray(value) { return Array.isArray(value) ? value : []; }
 function _realAppointments() {
@@ -35,6 +36,18 @@ function _tomorrow() {
   const d = new Date(today() + 'T12:00:00');
   d.setDate(d.getDate() + 1);
   return toDateStr(d);
+}
+function _baselineDate() {
+  const stored = String(kvGet(DAILY_CONTROL_BASELINE_KEY) || '').trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(stored)) return stored;
+  const baseline = today();
+  // This is only a view preference: it never changes appointments, payments or patients.
+  kvSet(DAILY_CONTROL_BASELINE_KEY, baseline);
+  return baseline;
+}
+function _isBeforeBaseline(dateStr) {
+  const date = normDate(dateStr);
+  return Boolean(date && date < _baselineDate());
 }
 function _phone(raw) {
   const digits = String(raw || '').replace(/\D/g, '');
@@ -72,6 +85,7 @@ function _pastAppointmentsToClose() {
   return _allAppointments().filter(c => {
     if (!c || !['Confirmada','Pendiente'].includes(c.estado)) return false;
     if (_isRegister(c)) return false;
+    if (_isBeforeBaseline(c.fecha)) return false;
     const f = normDate(c.fecha);
     if (!f || !c.hora) return false;
     const end = new Date(f + 'T' + c.hora);
@@ -84,6 +98,7 @@ function _pastAppointmentsToClose() {
 function _overdueCollections() {
   return _realAppointments().filter(c => {
     if (!c || c.estado !== 'Atendida' || c.pago) return false;
+    if (_isBeforeBaseline(c.fecha)) return false;
     if (kvGet('pago_' + c.id) === '1') return false;
     if (parsePrecio(c.precio) === 0) return false;
     const days = _daysSince(c.fecha);
@@ -96,6 +111,8 @@ function _paymentsToReview() {
   return _payments().filter(p => {
     const status = p && (p.EstadoPago || '');
     if (!['Por verificar','COMPROBANTE_RECIBIDO'].includes(status)) return false;
+    const appointment = _allAppointments().find(c => String(c && c.id || '') === String(p.CitaID || ''));
+    if (appointment && _isBeforeBaseline(appointment.fecha)) return false;
     const key = p.CitaID ? 'c:' + p.CitaID : 'p:' + p.ID;
     if (seen.has(key)) return false;
     seen.add(key);
@@ -132,6 +149,7 @@ function _rebookingTasks() {
     });
   });
   return Array.from(latest.values()).map(p => ({ ...p, dias: _daysSince(p.fecha) }))
+    .filter(p => !_isBeforeBaseline(p.fecha))
     .filter(p => p.dias !== null && p.dias >= 35 && !followNames.has(p.nombre.toLowerCase()))
     .filter(p => {
       try { return !(follow && typeof follow.segReagendo === 'function' && follow.segReagendo(p.nombre)); }
@@ -143,13 +161,17 @@ function _rebookingTasks() {
 function _pendingBonuses() {
   const codes = _codes();
   const withBonus = new Set(codes.filter(c => c && c.tipo === 'BONO').map(c => c.codigoRef));
-  return codes.filter(c => c && c.tipo === 'REF' && !withBonus.has(c.codigo) && c.estado !== 'Usado');
+  return codes.filter(c => {
+    if (!c || c.tipo !== 'REF' || withBonus.has(c.codigo) || c.estado === 'Usado') return false;
+    const created = c.fecha || c.Fecha || c.fechaCreacion || c.FechaCreacion || '';
+    return !created || !_isBeforeBaseline(created);
+  });
 }
 
 function _companyActions() {
   try {
     if (typeof global._getEmpresas !== 'function') return [];
-    return _safeArray(global._getEmpresas()).filter(e => e && e.fechaAccion && e.fechaAccion <= today() && !['Cerrada-ganada','Cerrada-perdida'].includes(e.estado));
+    return _safeArray(global._getEmpresas()).filter(e => e && e.fechaAccion && !_isBeforeBaseline(e.fechaAccion) && e.fechaAccion <= today() && !['Cerrada-ganada','Cerrada-perdida'].includes(e.estado));
   } catch (_) { return []; }
 }
 
@@ -162,7 +184,7 @@ function _tomorrowAppointments() {
 
 function collectDailyControl() {
   return {
-    followUps: _followUpTasks(),
+    followUps: _followUpTasks().filter(t => !_isBeforeBaseline(t && (t.fSesion || (t.c && t.c.fecha)))),
     completedToday: _completedFollowUpsToday(),
     pastToClose: _pastAppointmentsToClose(),
     overdueCollections: _overdueCollections(),
@@ -306,7 +328,7 @@ function renderDailyControl() {
 
   root.innerHTML = `
     <div class="daily-head">
-      <div><div class="daily-eyebrow">CONTROL DIARIO</div><h2>${pendingTotal ? `Tienes ${pendingTotal} pendiente${pendingTotal === 1 ? '' : 's'}` : 'Todo al día'}</h2><p>Empieza aquí: confirma, cobra o da seguimiento sin buscar en otros menús.</p></div>
+      <div><div class="daily-eyebrow">CONTROL DIARIO</div><h2>${pendingTotal ? `Tienes ${pendingTotal} pendiente${pendingTotal === 1 ? '' : 's'}` : 'Todo al día'}</h2><p>Empieza aquí: confirma, cobra o da seguimiento sin buscar en otros menús. El historial anterior al ${fmtDate(_baselineDate())} no cuenta como pendiente.</p></div>
       <button class="daily-refresh" type="button" onclick="PanelDailyControl.refresh(true)">↻ Actualizar</button>
     </div>
     ${_quickActions()}
