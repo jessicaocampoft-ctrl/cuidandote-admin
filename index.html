@@ -8129,16 +8129,25 @@ function renderSmartCobrosCenter() {
   const box = document.getElementById('smartCobrosCenter');
   if (!box) return;
   const hoy = today();
+  const savedCutoff = String(kvGet('daily_control_baseline_v1') || '').trim();
+  const cutoff = /^\d{4}-\d{2}-\d{2}$/.test(savedCutoff) ? savedCutoff : hoy;
   const now = new Date();
   const m = now.getMonth() + 1, y = now.getFullYear();
-  const d = smartBriefingData();
-  const citas = citasReales().filter(smartIsActiveAppointment);
+  const citas = citasReales().filter(smartIsActiveAppointment).filter(c => normDate(c.fecha) >= cutoff);
+  const week = smartWeekBounds();
+  const vencidosVisibles = citas.filter(c => normDate(c.fecha) < hoy && !smartIsPaid(c));
+  const semanaVisible = citas.filter(c => {
+    const fecha = normDate(c.fecha);
+    return fecha >= hoy && fecha >= week.startStr && fecha <= week.endStr && !smartIsPaid(c);
+  });
+  const totalVencidoVisible = vencidosVisibles.reduce((sum, c) => sum + parsePrecio(c.precio), 0);
+  const totalSemanaVisible = semanaVisible.reduce((sum, c) => sum + parsePrecio(c.precio), 0);
   const mesPend = citas.filter(c => {
     const [cy,cm] = normDate(c.fecha).split('-').map(Number);
     return cy === y && cm === m && isOperationalDate(c.fecha) && !smartIsPaid(c);
   });
   const totalMes = mesPend.reduce((s,c)=>s+parsePrecio(c.precio),0);
-  const prioridad = [...d.cobrosVencidos, ...d.porCobrarSemana]
+  const prioridad = [...vencidosVisibles, ...semanaVisible]
     .sort((a,b)=>(normDate(a.fecha)+a.hora).localeCompare(normDate(b.fecha)+b.hora))
     .slice(0,5);
   if (!prioridad.length && totalMes === 0) { box.style.display = 'none'; return; }
@@ -8152,8 +8161,8 @@ function renderSmartCobrosCenter() {
       <button type="button" class="btn btn-ghost btn-sm" onclick="showView('finanzas')">Ver finanzas →</button>
     </div>
     <div class="smart-cobros-grid">
-      <div class="smart-money-card"><span>Vencido</span><strong>${smartPeso(d.totalVencido)}</strong><small style="color:var(--muted)">${d.cobrosVencidos.length} cita(s)</small></div>
-      <div class="smart-money-card"><span>Esta semana</span><strong>${smartPeso(d.totalSemana)}</strong><small style="color:var(--muted)">${d.porCobrarSemana.length} cita(s)</small></div>
+      <div class="smart-money-card"><span>Vencido</span><strong>${smartPeso(totalVencidoVisible)}</strong><small style="color:var(--muted)">${vencidosVisibles.length} cita(s)</small></div>
+      <div class="smart-money-card"><span>Esta semana</span><strong>${smartPeso(totalSemanaVisible)}</strong><small style="color:var(--muted)">${semanaVisible.length} cita(s)</small></div>
       <div class="smart-money-card"><span>Pendiente mes</span><strong>${smartPeso(totalMes)}</strong><small style="color:var(--muted)">${mesPend.length} cita(s)</small></div>
     </div>
     ${prioridad.length ? `<div class="smart-list">

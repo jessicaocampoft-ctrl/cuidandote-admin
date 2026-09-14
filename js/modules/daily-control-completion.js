@@ -23,6 +23,12 @@
     catch (_) { return true; }
   }
 
+  function _dashboardStartDate() {
+    const stored = typeof global.kvGet === 'function' ? String(global.kvGet('daily_control_baseline_v1') || '').trim() : '';
+    if (/^\d{4}-\d{2}-\d{2}$/.test(stored)) return stored;
+    return typeof global.today === 'function' ? global.today() : new Date().toISOString().slice(0, 10);
+  }
+
   function _todayAppointmentsToConfirm() {
     const f = typeof global.today === 'function' ? global.today() : new Date().toISOString().slice(0,10);
     return _appointments()
@@ -39,7 +45,7 @@
       .filter(c => c && !_isRegister(c) && _isOperational(c.fecha) && c.estado !== 'Cancelada')
       .filter(c => {
         const d = typeof global.normDate === 'function' ? global.normDate(c.fecha) : String(c.fecha || '').slice(0,10);
-        return d && d <= f;
+        return d && d >= _dashboardStartDate() && d <= f;
       })
       .forEach(c => {
         const name = String(c.nombre || '').trim();

@@ -213,7 +213,7 @@
     const existing = document.querySelector('script[data-panel-daily-completion]');
     if (existing) { existing.addEventListener('load', start, { once:true }); return; }
     const script = document.createElement('script');
-    script.src = 'js/modules/daily-control-completion.js';
+    script.src = 'js/modules/daily-control-completion.js?v=20260913-3';
     script.dataset.panelDailyCompletion = '1';
     script.addEventListener('load', start, { once:true });
     script.addEventListener('error', () => console.warn('No se pudo completar Control Diario'), { once:true });
