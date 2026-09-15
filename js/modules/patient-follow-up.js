@@ -18,6 +18,23 @@ function toggleSegFiltro(f) {
 }
 
 function segReagendo(nombre)    { return !!kvGet('seg_reagendo_'+nombre); }
+function segNoContact(nombre)   { return !!kvGet('seg_no_contact_'+String(nombre || '').toLocaleLowerCase('es')); }
+
+function segToggleNoContact(nombre) {
+  const key = 'seg_no_contact_' + String(nombre || '').toLocaleLowerCase('es');
+  if (segNoContact(nombre)) {
+    kvRemove(key);
+    segLogAction(nombre, 'contact', 'Se reactivó en campañas de seguimiento');
+    toast('El paciente vuelve a aparecer en Reactivación', 'ok');
+  } else {
+    if (!confirm(`¿Marcar a ${nombre} como “No contactar”? Dejará de aparecer en Reactivación. Podrás restaurarlo después desde Resultados.`)) return;
+    kvSet(key, '1');
+    segLogAction(nombre, 'no_contact', 'Marcado como No contactar');
+    toast('Paciente retirado de Reactivación', 'ok');
+  }
+  renderSeguimiento();
+  renderFollowUpResults();
+}
 
 function segToggleR(nombre)     {
   const now = new Date(), y = now.getFullYear(), m = now.getMonth()+1;
@@ -155,6 +172,9 @@ function renderFollowUpResults() {
   const noContact = tasks.filter(task => task.status === 'no_contact').length;
   const conversion = sent ? Math.round((booked / sent) * 100) : 0;
   const recent = tasks.slice().sort((a,b) => String(b.createdAt || '').localeCompare(String(a.createdAt || ''))).slice(0,8);
+  const excluded = [...(window._segData || []), ...(window._segReadapData || [])]
+    .filter(person => person && segNoContact(person.nombre))
+    .filter((person, index, items) => items.findIndex(item => String(item.nombre || '').toLocaleLowerCase('es') === String(person.nombre || '').toLocaleLowerCase('es')) === index);
   root.innerHTML = `<div class="seg-results-grid">
     <div><span>Mensajes enviados</span><strong>${sent}</strong></div>
     <div><span>Respondieron</span><strong>${responded}</strong></div>
@@ -162,7 +182,8 @@ function renderFollowUpResults() {
     <div><span>Conversión a cita</span><strong>${conversion}%</strong></div>
   </div>
   <div class="follow-hub-intro" style="margin-top:16px"><strong>Cómo leerlo</strong><span>Estos indicadores se alimentan cuando la auxiliar marca los resultados de cada pendiente. “No contactar” (${noContact}) queda fuera de la conversión para no insistir a esa persona.</span></div>
-  <div class="card" style="margin-top:16px"><div class="card-title" style="margin-bottom:12px">Últimos pendientes creados</div>${recent.length ? recent.map(task => `<div class="seg-log-item"><div class="seg-log-dot" style="background:#7c3aed"></div><div class="seg-log-time">${task.createdAt ? fmtDate(task.createdAt) : '—'}</div><div style="flex:1"><strong style="font-size:.83rem">${escFollowUp(task.nombre || 'Paciente')}</strong> — <span style="color:var(--muted)">${task.status === 'booked' ? 'Agendó' : task.status === 'responded' ? 'Respondió' : task.status === 'sent' ? 'Mensaje enviado' : task.status === 'no_contact' ? 'No contactar' : 'Pendiente de enviar'}</span></div></div>`).join('') : '<div class="empty" style="padding:24px 0"><p>Aún no hay resultados. Crea el primer pendiente desde Hoy.</p></div>'}</div>`;
+  <div class="card" style="margin-top:16px"><div class="card-title" style="margin-bottom:12px">Últimos pendientes creados</div>${recent.length ? recent.map(task => `<div class="seg-log-item"><div class="seg-log-dot" style="background:#7c3aed"></div><div class="seg-log-time">${task.createdAt ? fmtDate(task.createdAt) : '—'}</div><div style="flex:1"><strong style="font-size:.83rem">${escFollowUp(task.nombre || 'Paciente')}</strong> — <span style="color:var(--muted)">${task.status === 'booked' ? 'Agendó' : task.status === 'responded' ? 'Respondió' : task.status === 'sent' ? 'Mensaje enviado' : task.status === 'no_contact' ? 'No contactar' : 'Pendiente de enviar'}</span></div></div>`).join('') : '<div class="empty" style="padding:24px 0"><p>Aún no hay resultados. Crea el primer pendiente desde Hoy.</p></div>'}</div>
+  ${excluded.length ? `<div class="card" style="margin-top:16px"><div class="card-title" style="margin-bottom:12px">No contactar (${excluded.length})</div>${excluded.map(person => `<div class="seg-log-item"><div class="seg-log-dot" style="background:var(--err)"></div><div style="flex:1"><strong style="font-size:.83rem">${escFollowUp(person.nombre)}</strong> — <span style="color:var(--muted)">Excluido de Reactivación</span></div><button class="btn btn-ghost btn-sm" onclick="PanelPatientFollowUp.segToggleNoContact(decodeURIComponent('${encodeURIComponent(person.nombre)}'))">Restaurar</button></div>`).join('')}</div>` : ''}`;
 }
 
 async function teamTaskAction(action, encodedId) {
@@ -287,12 +308,12 @@ function _renderSegLista(pacientes, readapPacs) {
   readapPacs = readapPacs || window._segReadapData || [];
 
   // Descargas: separar reagendados
-  const activos    = pacientes.filter(p => !segReagendo(p.nombre));
-  const reagendados = pacientes.filter(p =>  segReagendo(p.nombre));
+  const activos    = pacientes.filter(p => !segReagendo(p.nombre) && !segNoContact(p.nombre));
+  const reagendados = pacientes.filter(p =>  segReagendo(p.nombre) && !segNoContact(p.nombre));
 
   // Readaptación: separar reagendados
-  const readapActivos    = readapPacs.filter(p => !segReagendo(p.nombre));
-  const readapReagendados = readapPacs.filter(p =>  segReagendo(p.nombre));
+  const readapActivos    = readapPacs.filter(p => !segReagendo(p.nombre) && !segNoContact(p.nombre));
+  const readapReagendados = readapPacs.filter(p =>  segReagendo(p.nombre) && !segNoContact(p.nombre));
 
   const descargaCards = [
     ...(_segFiltros.has('sem3') ? activos.filter(p=>p.semana==='sem3').sort((a,b)=>a.dias-b.dias) : []),
@@ -388,6 +409,7 @@ function _segCard(p) {
         ${p.semana==='sem5' && wa5 ? `<a href="${wa5}" target="_blank" class="btn btn-err btn-sm" onclick="segMarkWa('${p.nombre.replace(/'/g,"\\'")}','sem5',${p.dias})" style="${waSent5?'opacity:.55':''}">💬 WA ${waSent5?'(enviado)':'Sem 5+'}</a>` : ''}
         ${p.email && p.email.includes('@') ? `<a href="mailto:${p.email}" class="btn btn-ghost btn-sm">📧</a>` : ''}
         <button class="btn btn-ghost btn-sm" onclick="agendarDesdeSeg('${encodeURIComponent(p.nombre)}','${encodeURIComponent(p.telefono)}','${encodeURIComponent(p.email)}')">+ Agendar</button>
+        <button class="btn btn-ghost btn-sm" style="color:var(--err);border-color:rgba(220,38,38,.35)" onclick="segToggleNoContact(decodeURIComponent('${encodeURIComponent(p.nombre)}'))">No contactar</button>
         <button class="btn btn-ghost btn-sm" style="color:var(--ok);border-color:rgba(22,163,74,.3)" onclick="segToggleR('${p.nombre.replace(/'/g,"\\'")}')">✓ Reagendó</button>
       `}
     </div>
@@ -449,6 +471,7 @@ function _segCardReadap(p) {
           : `<span style="font-size:.75rem;color:var(--muted);padding:5px 8px">${hasWA?'Llena la zona primero':'Sin teléfono'}</span>`}
         ${p.email && p.email.includes('@') ? `<a href="mailto:${p.email}" class="btn btn-ghost btn-sm">📧</a>` : ''}
         <button class="btn btn-ghost btn-sm" onclick="agendarDesdeSeg('${encodeURIComponent(p.nombre)}','${encodeURIComponent(p.telefono)}','${encodeURIComponent(p.email)}')">+ Agendar</button>
+        <button class="btn btn-ghost btn-sm" style="color:var(--err);border-color:rgba(220,38,38,.35)" onclick="segToggleNoContact(decodeURIComponent('${encodeURIComponent(p.nombre)}'))">No contactar</button>
         <button class="btn btn-ghost btn-sm" style="color:var(--ok);border-color:rgba(22,163,74,.3)" onclick="segToggleR('${p.nombre.replace(/'/g,"\\'")}')">✓ Reagendó</button>
       `}
     </div>
@@ -477,17 +500,17 @@ function exportarSeguimientoCSV() {
   const data  = window._segData || [];
   const dataR = window._segReadapData || [];
   if (!data.length && !dataR.length) { toast('No hay datos para exportar', 'err'); return; }
-  const header = ['Nombre','Teléfono','Email','Tipo','Servicio','Última sesión','Días','Semana/Zona','Reagendó','WA Enviado'];
+  const header = ['Nombre','Teléfono','Email','Tipo','Servicio','Última sesión','Días','Semana/Zona','Reagendó','No contactar','WA Enviado'];
   const rowsD = data.map(p => [
     p.nombre, p.telefono, p.email, 'Descarga muscular', p.servicio, p.fecha, p.dias,
     p.semana==='sem3'?'Semana 3':p.semana==='sem4'?'Semana 4':'Semana 5+',
-    segReagendo(p.nombre)?'Sí':'No',
+    segReagendo(p.nombre)?'Sí':'No', segNoContact(p.nombre)?'Sí':'No',
     (segWaSent(p.nombre,'sem3')||segWaSent(p.nombre,'sem4')||segWaSent(p.nombre,'sem5'))?'Sí':'No'
   ]);
   const rowsR = dataR.map(p => [
     p.nombre, p.telefono, p.email, 'Readaptación Funcional', p.servicio, p.fecha, p.dias,
     readapZona(p.nombre)||'—',
-    segReagendo(p.nombre)?'Sí':'No',
+    segReagendo(p.nombre)?'Sí':'No', segNoContact(p.nombre)?'Sí':'No',
     segWaSent(p.nombre,'readap')?'Sí':'No'
   ]);
   const csv = [header,...rowsD,...rowsR].map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');
@@ -501,6 +524,8 @@ function exportarSeguimientoCSV() {
     toggleSegFiltro,
     segReagendo,
     segToggleR,
+    segNoContact,
+    segToggleNoContact,
     segWaSent,
     segMarkWa,
     segLogAction,
