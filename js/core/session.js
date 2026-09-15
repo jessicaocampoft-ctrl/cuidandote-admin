@@ -62,7 +62,7 @@
       const data = await ctx.fetchJsonWithTimeout(ctx.apiUrl, {
         method: 'POST',
         body: JSON.stringify({ action: 'adminLogin', user, password })
-      }, 120000);
+      }, 120000, true);
 
       if (!data.ok) {
         runtime.loginAttempts += 1;
@@ -94,7 +94,8 @@
         adminData = await ctx.fetchJsonWithTimeout(
           `${ctx.apiUrl}?action=adminData&token=${encodeURIComponent(data.sessionToken)}`,
           {},
-          60000
+          60000,
+          true
         );
         if (!adminData.ok) throw new Error(adminData.error || 'No pudimos cargar los datos del panel.');
         adminData.sessionToken = data.sessionToken;
