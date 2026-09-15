@@ -106,7 +106,7 @@ function _initDailyControlModule() {
   const existing = document.querySelector('script[data-panel-daily-control]');
   if (existing) { existing.addEventListener('load', start, { once:true }); return; }
   const script = document.createElement('script');
-    script.src = 'js/modules/daily-control.js?v=20260913-2';
+    script.src = 'js/modules/daily-control.js?v=20260915-followup-tasks';
   script.dataset.panelDailyControl = '1';
   script.addEventListener('load', start, { once:true });
   script.addEventListener('error', () => console.warn('No se pudo cargar Control Diario'), { once:true });

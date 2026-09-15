@@ -4,6 +4,7 @@
 let _observer = null;
 let _refreshTimer = null;
 const DAILY_CONTROL_BASELINE_KEY = 'daily_control_baseline_v1';
+const MANUAL_REMINDERS_KEY = 'daily_manual_discharge_reminders_v1';
 
 function _safeArray(value) { return Array.isArray(value) ? value : []; }
 function _realAppointments() {
@@ -57,6 +58,45 @@ function _phone(raw) {
 function _attr(value) { return encodeURIComponent(String(value == null ? '' : value)); }
 function _decode(value) {
   try { return decodeURIComponent(String(value || '')); } catch (_) { return String(value || ''); }
+}
+
+function _manualReminders() {
+  try {
+    const value = JSON.parse(kvGet(MANUAL_REMINDERS_KEY) || '[]');
+    return Array.isArray(value) ? value : [];
+  } catch (_) { return []; }
+}
+function _saveManualReminders(items) {
+  kvSet(MANUAL_REMINDERS_KEY, JSON.stringify(items.slice(-100)));
+}
+function _pendingManualReminders() {
+  return _manualReminders()
+    .filter(item => item && !['done', 'booked', 'no_contact'].includes(item.status) && (item.dueDate || today()) <= today())
+    .sort((a, b) => String(a.dueDate || '').localeCompare(String(b.dueDate || '')));
+}
+function _patientChoices() {
+  const byName = new Map();
+  const add = person => {
+    const name = String(person && person.nombre || '').trim();
+    if (!name) return;
+    const key = name.toLocaleLowerCase('es');
+    const current = byName.get(key) || {};
+    byName.set(key, { nombre:name, telefono:person.telefono || current.telefono || '', servicio:person.servicio || current.servicio || '' });
+  };
+  try { _safeArray(allData && allData.pacientes).forEach(add); } catch (_) {}
+  _allAppointments().forEach(add);
+  return Array.from(byName.values()).sort((a,b) => a.nombre.localeCompare(b.nombre, 'es'));
+}
+function _manualReminderMessage(item) {
+  const firstName = String(item.nombre || 'Hola').trim().split(/\s+/)[0];
+  const service = String(item.servicio || '').toLowerCase();
+  const focus = service.includes('descarga') ? 'después de una descarga muscular' : 'después de tu sesión';
+  return `Hola ${firstName}! Espero que estés muy bien. ${focus.charAt(0).toUpperCase() + focus.slice(1)} a veces es recomendable hacer otra sesión para terminar de liberar los nudos o contracturas. Si has sentido tensión de nuevo, podemos agendarte esta semana. ¿Qué día te queda mejor?\n\n— Cuidándote Fisioterapia`;
+}
+function _manualReminderLabel(item) {
+  if (item.status === 'sent') return 'Mensaje enviado · pendiente de respuesta';
+  if (item.status === 'responded') return 'Respondió · requiere seguimiento';
+  return 'Pendiente de enviar';
 }
 
 function _followUpTasks() {
@@ -193,6 +233,7 @@ function collectDailyControl() {
     rebookings: _rebookingTasks(),
     bonuses: _pendingBonuses(),
     companyActions: _companyActions(),
+    manualReminders: _pendingManualReminders(),
     tomorrow: _tomorrowAppointments()
   };
 }
@@ -268,7 +309,18 @@ function _renderFollowUps(data) {
     meta:`${esc(p.servicio || 'Descarga muscular')} · ${esc(p.dias)} días desde la última sesión`,
     action:'<button class="daily-btn primary" type="button" onclick="showView(\'seguimiento\')">Gestionar seguimiento</button>'
   })));
+  data.manualReminders.forEach(item => cards.push(_manualReminderCard(item)));
   return cards.join('');
+}
+
+function _manualReminderCard(item) {
+  const id = _attr(item.id);
+  return _taskCard({
+    level: item.status === 'responded' ? 'medium' : 'normal', icon:'💆', title:`Seguimiento · ${esc(item.nombre || 'Paciente')}`,
+    meta: `${_manualReminderLabel(item)} · ${esc(item.owner || 'Auxiliar')}${item.servicio ? ` · ${esc(item.servicio)}` : ''}${item.note ? `<br>${esc(item.note)}` : ''}`,
+    action: `<button class="daily-btn primary" type="button" onclick="PanelDailyControl.copyManualReminder('${id}')">Copiar mensaje</button><button class="daily-btn" type="button" onclick="PanelDailyControl.manualReminderAction('responded','${id}')">Respondió</button><button class="daily-btn" type="button" onclick="PanelDailyControl.manualReminderAction('booked','${id}')">Agendó ✓</button>`,
+    secondary: `<button class="daily-btn ghost" type="button" onclick="PanelDailyControl.manualReminderAction('tomorrow','${id}')">Mañana</button><button class="daily-btn ghost" type="button" onclick="PanelDailyControl.manualReminderAction('no_contact','${id}')">No contactar</button>`
+  });
 }
 
 function _renderManagement(data) {
@@ -310,6 +362,7 @@ function _renderTomorrow(data) {
 function _quickActions() {
   return `<nav class="daily-quick-actions" aria-label="Acciones rápidas">
     <button class="daily-quick primary" type="button" onclick="showView('nueva')"><span>＋</span>Nueva cita</button>
+    <button class="daily-quick" type="button" onclick="PanelDailyControl.openManualReminder()"><span>💬</span>Recordatorio</button>
     <button class="daily-quick" type="button" onclick="showView('agenda')"><span>▣</span>Ver agenda</button>
     <button class="daily-quick" type="button" onclick="showView('pagos')"><span>⌁</span>Pagos</button>
     <button class="daily-quick" type="button" onclick="showView('seguimiento')"><span>↗</span>Seguimiento</button>
@@ -321,7 +374,7 @@ function renderDailyControl() {
   if (!root) return;
   const data = collectDailyControl();
   const urgentCount = data.pastToClose.length + data.paymentsToReview.length + data.todayPaymentIssues.length + data.overdueCollections.length;
-  const followCount = data.followUps.length + data.rebookings.length;
+  const followCount = data.followUps.length + data.rebookings.length + data.manualReminders.length;
   const managementCount = data.bonuses.length + data.companyActions.length;
   const pendingTotal = urgentCount + followCount + managementCount;
   const overdueFollow = data.followUps.filter(t => t.estado === 'vencida').length;
@@ -345,6 +398,88 @@ function renderDailyControl() {
       <summary><span>Preparar mañana</span><strong>${data.tomorrow.length} cita${data.tomorrow.length === 1 ? '' : 's'}</strong></summary>
       <div class="daily-group-body">${_renderTomorrow(data)}</div>
     </details>`;
+}
+
+function openManualReminder() {
+  const choices = _patientChoices();
+  if (!choices.length) { alert('No hay pacientes disponibles en la base de datos todavía.'); return; }
+  document.getElementById('dailyReminderModal')?.remove();
+  const modal = document.createElement('div');
+  modal.id = 'dailyReminderModal';
+  modal.className = 'daily-reminder-modal';
+  modal.innerHTML = `<div class="daily-reminder-dialog" role="dialog" aria-modal="true" aria-labelledby="dailyReminderTitle">
+    <div class="daily-reminder-title"><div><div class="daily-eyebrow">TAREA PARA EL EQUIPO</div><h3 id="dailyReminderTitle">Crear pendiente de seguimiento</h3><p>Deja claro a quién escribir, cuándo hacerlo y qué debe saber la auxiliar. El mensaje se envía manualmente por WhatsApp.</p></div><button type="button" class="daily-reminder-close" aria-label="Cerrar">×</button></div>
+    <label>Paciente<select id="dailyReminderPatient"><option value="">Selecciona un paciente…</option>${choices.map((p, i) => `<option value="${i}">${esc(p.nombre)}${p.telefono ? ` · ${esc(p.telefono)}` : ' · sin teléfono'}</option>`).join('')}</select></label>
+    <div class="daily-reminder-grid"><label>Fecha para escribir<input id="dailyReminderDue" type="date" value="${today()}" min="${today()}"></label><label>Responsable<select id="dailyReminderOwner"><option>Auxiliar</option><option>Jessica</option></select></label></div>
+    <label>Nota para el equipo <textarea id="dailyReminderNote" maxlength="280" placeholder="Ej.: le recomendé otra sesión para terminar de liberar la tensión del cuello."></textarea></label>
+    <div id="dailyReminderPreview" class="daily-reminder-preview">Selecciona un paciente para revisar el mensaje sugerido.</div>
+    <div class="daily-reminder-actions"><button type="button" class="daily-btn ghost">Cancelar</button><button type="button" class="daily-btn primary" disabled>Crear pendiente</button></div>
+  </div>`;
+  document.body.appendChild(modal);
+  const select = modal.querySelector('#dailyReminderPatient');
+  const preview = modal.querySelector('#dailyReminderPreview');
+  const create = modal.querySelector('.daily-reminder-actions .primary');
+  const close = () => modal.remove();
+  modal.querySelector('.daily-reminder-close').addEventListener('click', close);
+  modal.querySelector('.daily-reminder-actions .ghost').addEventListener('click', close);
+  modal.addEventListener('click', event => { if (event.target === modal) close(); });
+  select.addEventListener('change', () => {
+    const patient = choices[Number(select.value)];
+    if (!patient) { preview.textContent = 'Selecciona un paciente para revisar el texto.'; create.disabled = true; return; }
+    preview.textContent = _manualReminderMessage(patient);
+    create.disabled = false;
+  });
+  create.addEventListener('click', () => {
+    const patient = choices[Number(select.value)];
+    if (!patient) return;
+    const items = _manualReminders();
+    const dueDate = String(modal.querySelector('#dailyReminderDue').value || today());
+    const owner = String(modal.querySelector('#dailyReminderOwner').value || 'Auxiliar');
+    const note = String(modal.querySelector('#dailyReminderNote').value || '').trim();
+    const duplicate = items.find(item => item && String(item.nombre || '').toLowerCase() === patient.nombre.toLowerCase()
+      && !['done', 'booked', 'no_contact'].includes(item.status));
+    if (duplicate && !confirm(`${patient.nombre} ya tiene un pendiente abierto. ¿Quieres crear otro de todas formas?`)) return;
+    items.push({ id:`mr_${Date.now()}_${Math.random().toString(36).slice(2,8)}`, nombre:patient.nombre, telefono:patient.telefono || '', servicio:patient.servicio || '', createdAt:today(), dueDate, owner, note, status:'pending' });
+    _saveManualReminders(items);
+    close();
+    renderDailyControl();
+    if (typeof global.toast === 'function') global.toast(`Pendiente creado para ${owner} · ${fmtDate(dueDate)}`, 'ok');
+  });
+}
+
+function manualReminderAction(action, encodedId) {
+  const id = _decode(encodedId);
+  const items = _manualReminders();
+  const item = items.find(entry => entry && entry.id === id);
+  if (!item) return;
+  if (action === 'done') { item.status = 'done'; item.doneAt = new Date().toISOString(); }
+  if (action === 'tomorrow') { item.dueDate = _tomorrow(); }
+  if (action === 'sent') { item.status = 'sent'; item.sentAt = new Date().toISOString(); }
+  if (action === 'responded') { item.status = 'responded'; item.respondedAt = new Date().toISOString(); }
+  if (action === 'booked') { item.status = 'booked'; item.bookedAt = new Date().toISOString(); }
+  if (action === 'no_contact') { item.status = 'no_contact'; item.closedAt = new Date().toISOString(); }
+  _saveManualReminders(items);
+  renderDailyControl();
+}
+
+async function copyManualReminder(encodedId) {
+  const item = _manualReminders().find(entry => entry && entry.id === _decode(encodedId));
+  if (!item) return;
+  const message = _manualReminderMessage(item);
+  try {
+    await navigator.clipboard.writeText(message);
+  } catch (_) {
+    const field = document.createElement('textarea');
+    field.value = message;
+    field.style.position = 'fixed';
+    field.style.opacity = '0';
+    document.body.appendChild(field);
+    field.select();
+    document.execCommand('copy');
+    field.remove();
+  }
+  manualReminderAction('sent', encodedId);
+  alert('Mensaje copiado. Ábrelo en WhatsApp, envíalo al paciente y marca la tarea como completada cuando termine.');
 }
 
 function taskAction(action, encodedKey) {
@@ -373,7 +508,7 @@ function _injectStyles() {
   const style = document.createElement('style');
   style.id = 'dailyControlStyles';
   style.textContent = `
-    #dailyControl{margin-bottom:22px}.daily-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;padding:20px 22px;background:linear-gradient(135deg,rgba(27,191,176,.12),var(--s1));border:1px solid var(--border);border-radius:16px 16px 0 0}.daily-eyebrow{font:700 .68rem var(--font-m);letter-spacing:.11em;color:var(--primary);margin-bottom:4px}.daily-head h2{font:700 1.55rem var(--font-h);margin:0}.daily-head p{color:var(--muted);font-size:.82rem;margin-top:3px}.daily-refresh{border:1px solid var(--border);background:var(--s1);color:var(--text);border-radius:10px;padding:9px 12px;cursor:pointer;font-weight:700}.daily-quick-actions{display:flex;gap:8px;flex-wrap:wrap;padding:12px 14px;background:var(--s1);border-left:1px solid var(--border);border-right:1px solid var(--border)}.daily-quick{border:1px solid var(--border);background:var(--bg);color:var(--text);border-radius:9px;padding:9px 12px;font:700 .76rem var(--font-b);cursor:pointer;display:inline-flex;align-items:center;gap:6px}.daily-quick:hover{border-color:var(--primary);color:var(--primary-h)}.daily-quick span{font-size:1.05rem;line-height:1}.daily-quick.primary{background:var(--primary);border-color:var(--primary);color:#0d0d0d}.daily-summary{display:grid;grid-template-columns:repeat(4,1fr);background:var(--s1);border-left:1px solid var(--border);border-right:1px solid var(--border);border-bottom:1px solid var(--border)}.daily-summary>div{padding:14px 18px;border-right:1px solid var(--border)}.daily-summary>div:last-child{border-right:0}.daily-summary strong{display:block;font:700 1.45rem var(--font-h);color:var(--primary)}.daily-summary span{display:block;font-size:.7rem;color:var(--muted);margin-top:2px}.daily-group{background:var(--s1);border:1px solid var(--border);border-top:0}.daily-group:last-child{border-radius:0 0 16px 16px}.daily-group summary{list-style:none;display:flex;align-items:center;justify-content:space-between;padding:13px 18px;cursor:pointer;font-size:.86rem;font-weight:750}.daily-group summary::-webkit-details-marker{display:none}.daily-group summary strong{font:700 .75rem var(--font-m);color:var(--primary);background:rgba(27,191,176,.10);border-radius:99px;padding:3px 8px}.daily-group-body{padding:0 14px 14px;display:grid;gap:8px}.daily-task{display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--border);border-radius:11px;background:var(--bg)}.daily-task[data-level="high"]{border-left:4px solid var(--err)}.daily-task[data-level="medium"]{border-left:4px solid var(--warn)}.daily-task[data-level="normal"]{border-left:4px solid var(--primary)}.daily-task-icon{width:34px;height:34px;display:flex;align-items:center;justify-content:center;border-radius:9px;background:var(--s1);flex-shrink:0}.daily-task-copy{flex:1;min-width:0}.daily-task-title{font-weight:700;font-size:.84rem}.daily-task-meta{color:var(--muted);font-size:.72rem;margin-top:3px;line-height:1.35}.daily-task-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}.daily-btn{border:1px solid var(--border);background:var(--s1);color:var(--text);border-radius:8px;padding:7px 9px;font:700 .7rem var(--font-b);cursor:pointer;text-decoration:none;white-space:nowrap}.daily-btn.primary{background:var(--primary);border-color:var(--primary);color:#0d0d0d}.daily-btn.ghost{color:var(--muted)}.daily-empty{text-align:center;color:var(--muted);padding:18px;border:1px dashed var(--border);border-radius:10px;font-size:.8rem}.daily-tomorrow-row{display:grid;grid-template-columns:54px minmax(0,1fr) auto auto;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg);font-size:.8rem}.daily-tomorrow-row>div{display:grid;gap:2px}.daily-tomorrow-row span{color:var(--muted);font-size:.72rem}.daily-flag{padding:3px 7px;border-radius:99px;font-size:.65rem!important;font-weight:700}.daily-flag.warn{background:rgba(217,119,6,.1);color:var(--warn)}#bannerAutoAtendida,#bannerCobros,#bannerTareas,#bannerBonos{display:none!important}@media(max-width:760px){.daily-summary{grid-template-columns:1fr 1fr}.daily-summary>div:nth-child(2){border-right:0}.daily-summary>div{border-bottom:1px solid var(--border)}.daily-task{align-items:flex-start;flex-wrap:wrap}.daily-task-actions{width:100%;justify-content:flex-start;padding-left:46px}.daily-tomorrow-row{grid-template-columns:46px minmax(0,1fr)}.daily-tomorrow-row .daily-flag,.daily-tomorrow-row .daily-btn{grid-column:2}.daily-head{padding:17px}.daily-head h2{font-size:1.35rem}.daily-quick-actions{padding:10px}.daily-quick{flex:1;justify-content:center;min-width:120px}}
+    #dailyControl{margin-bottom:22px}.daily-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;padding:20px 22px;background:linear-gradient(135deg,rgba(27,191,176,.12),var(--s1));border:1px solid var(--border);border-radius:16px 16px 0 0}.daily-eyebrow{font:700 .68rem var(--font-m);letter-spacing:.11em;color:var(--primary);margin-bottom:4px}.daily-head h2{font:700 1.55rem var(--font-h);margin:0}.daily-head p{color:var(--muted);font-size:.82rem;margin-top:3px}.daily-refresh{border:1px solid var(--border);background:var(--s1);color:var(--text);border-radius:10px;padding:9px 12px;cursor:pointer;font-weight:700}.daily-quick-actions{display:flex;gap:8px;flex-wrap:wrap;padding:12px 14px;background:var(--s1);border-left:1px solid var(--border);border-right:1px solid var(--border)}.daily-quick{border:1px solid var(--border);background:var(--bg);color:var(--text);border-radius:9px;padding:9px 12px;font:700 .76rem var(--font-b);cursor:pointer;display:inline-flex;align-items:center;gap:6px}.daily-quick:hover{border-color:var(--primary);color:var(--primary-h)}.daily-quick span{font-size:1.05rem;line-height:1}.daily-quick.primary{background:var(--primary);border-color:var(--primary);color:#0d0d0d}.daily-summary{display:grid;grid-template-columns:repeat(4,1fr);background:var(--s1);border-left:1px solid var(--border);border-right:1px solid var(--border);border-bottom:1px solid var(--border)}.daily-summary>div{padding:14px 18px;border-right:1px solid var(--border)}.daily-summary>div:last-child{border-right:0}.daily-summary strong{display:block;font:700 1.45rem var(--font-h);color:var(--primary)}.daily-summary span{display:block;font-size:.7rem;color:var(--muted);margin-top:2px}.daily-group{background:var(--s1);border:1px solid var(--border);border-top:0}.daily-group:last-child{border-radius:0 0 16px 16px}.daily-group summary{list-style:none;display:flex;align-items:center;justify-content:space-between;padding:13px 18px;cursor:pointer;font-size:.86rem;font-weight:750}.daily-group summary::-webkit-details-marker{display:none}.daily-group summary strong{font:700 .75rem var(--font-m);color:var(--primary);background:rgba(27,191,176,.10);border-radius:99px;padding:3px 8px}.daily-group-body{padding:0 14px 14px;display:grid;gap:8px}.daily-task{display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--border);border-radius:11px;background:var(--bg)}.daily-task[data-level="high"]{border-left:4px solid var(--err)}.daily-task[data-level="medium"]{border-left:4px solid var(--warn)}.daily-task[data-level="normal"]{border-left:4px solid var(--primary)}.daily-task-icon{width:34px;height:34px;display:flex;align-items:center;justify-content:center;border-radius:9px;background:var(--s1);flex-shrink:0}.daily-task-copy{flex:1;min-width:0}.daily-task-title{font-weight:700;font-size:.84rem}.daily-task-meta{color:var(--muted);font-size:.72rem;margin-top:3px;line-height:1.35}.daily-task-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}.daily-btn{border:1px solid var(--border);background:var(--s1);color:var(--text);border-radius:8px;padding:7px 9px;font:700 .7rem var(--font-b);cursor:pointer;text-decoration:none;white-space:nowrap}.daily-btn.primary{background:var(--primary);border-color:var(--primary);color:#0d0d0d}.daily-btn.ghost{color:var(--muted)}.daily-empty{text-align:center;color:var(--muted);padding:18px;border:1px dashed var(--border);border-radius:10px;font-size:.8rem}.daily-tomorrow-row{display:grid;grid-template-columns:54px minmax(0,1fr) auto auto;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg);font-size:.8rem}.daily-tomorrow-row>div{display:grid;gap:2px}.daily-tomorrow-row span{color:var(--muted);font-size:.72rem}.daily-flag{padding:3px 7px;border-radius:99px;font-size:.65rem!important;font-weight:700}.daily-flag.warn{background:rgba(217,119,6,.1);color:var(--warn)}.daily-reminder-modal{position:fixed;inset:0;z-index:10020;background:rgba(15,23,42,.5);display:grid;place-items:center;padding:18px}.daily-reminder-dialog{width:min(620px,100%);max-height:calc(100vh - 36px);overflow:auto;background:var(--s1);border:1px solid var(--border);border-radius:16px;padding:20px;box-shadow:0 22px 56px rgba(15,23,42,.25)}.daily-reminder-title{display:flex;justify-content:space-between;gap:14px;margin-bottom:16px}.daily-reminder-title h3{margin:0;font:700 1.3rem var(--font-h)}.daily-reminder-title p{margin:4px 0 0;color:var(--muted);font-size:.82rem;line-height:1.45}.daily-reminder-close{border:0;background:transparent;color:var(--muted);font-size:1.55rem;cursor:pointer}.daily-reminder-dialog label{display:grid;gap:6px;margin-top:12px;font-size:.78rem;font-weight:700;color:var(--muted)}.daily-reminder-dialog input,.daily-reminder-dialog select,.daily-reminder-dialog textarea{width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:10px;color:var(--text);font:400 .88rem var(--font-b)}.daily-reminder-dialog textarea{min-height:72px;resize:vertical}.daily-reminder-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.daily-reminder-preview{white-space:pre-wrap;background:rgba(27,191,176,.08);border:1px solid rgba(27,191,176,.25);border-radius:10px;padding:12px;margin-top:14px;color:var(--text);font-size:.82rem;line-height:1.55}.daily-reminder-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}#bannerAutoAtendida,#bannerCobros,#bannerTareas,#bannerBonos{display:none!important}@media(max-width:760px){.daily-summary{grid-template-columns:1fr 1fr}.daily-summary>div:nth-child(2){border-right:0}.daily-summary>div{border-bottom:1px solid var(--border)}.daily-task{align-items:flex-start;flex-wrap:wrap}.daily-task-actions{width:100%;justify-content:flex-start;padding-left:46px}.daily-tomorrow-row{grid-template-columns:46px minmax(0,1fr)}.daily-tomorrow-row .daily-flag,.daily-tomorrow-row .daily-btn{grid-column:2}.daily-head{padding:17px}.daily-head h2{font-size:1.35rem}.daily-quick-actions{padding:10px}.daily-quick{flex:1;justify-content:center;min-width:120px}.daily-reminder-grid{grid-template-columns:1fr}}
   `;
   document.head.appendChild(style);
 }
@@ -426,6 +561,9 @@ global.PanelDailyControl = Object.freeze({
   scheduleRefresh,
   taskAction,
   openPayment,
-  openAgendaClose
+  openAgendaClose,
+  openManualReminder,
+  manualReminderAction,
+  copyManualReminder
 });
 })(typeof window !== 'undefined' ? window : globalThis);
