@@ -51,6 +51,17 @@ function limpiarLogSeguimiento() {
   toast('Historial limpiado');
 }
 
+function openLogPatient(encodedName) {
+  const nombre = decodeURIComponent(String(encodedName || ''));
+  if (!nombre) return;
+  const records = global.PanelPatientRecords;
+  if (!records || typeof records.verHistorial !== 'function') {
+    toast('El historial del paciente todavía no está disponible', 'err');
+    return;
+  }
+  records.verHistorial(encodeURIComponent(nombre));
+}
+
 function esDescargaMusc(serv) {
   const s = (serv||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
   return s.includes('descarga');
@@ -332,11 +343,12 @@ function _renderSegLog() {
   }
   const dotColors = { sem3:'#7c3aed', sem4:'#d97706', sem5:'#dc2626', reagendo:'#16a34a', readap:'#0369a1' };
   el.innerHTML = `<div style="max-height:320px;overflow-y:auto;padding-right:4px">` +
-    log.map(l => `<div class="seg-log-item">
+    log.map(l => `<button type="button" class="seg-log-item seg-log-open" onclick="PanelPatientFollowUp.openLogPatient('${encodeURIComponent(String(l.nombre || ''))}')" title="Abrir historial de ${String(l.nombre || '')}">
       <div class="seg-log-dot" style="background:${dotColors[l.tipo]||'var(--primary)'}"></div>
       <div class="seg-log-time">${l.fecha}</div>
-      <div style="flex:1"><strong style="font-size:.83rem">${l.nombre}</strong> — <span style="color:var(--muted)">${l.accion}</span></div>
-    </div>`).join('') + `</div>`;
+      <div style="flex:1;text-align:left"><strong style="font-size:.83rem">${l.nombre}</strong> — <span style="color:var(--muted)">${l.accion}</span></div>
+      <span class="seg-log-open-label">Abrir ›</span>
+    </button>`).join('') + `</div>`;
 }
 
 function exportarSeguimientoCSV() {
@@ -371,6 +383,7 @@ function exportarSeguimientoCSV() {
     segMarkWa,
     segLogAction,
     limpiarLogSeguimiento,
+    openLogPatient,
     esDescargaMusc,
     esReadaptacion,
     readapZona,

@@ -814,6 +814,9 @@ tr.evt-row:hover td{background:rgba(139,92,246,.07)}
   border-bottom:1px solid rgba(27,191,176,.07);font-size:.82rem;
 }
 .seg-log-item:last-child{border-bottom:none}
+.seg-log-open{width:100%;border:0;background:transparent;color:var(--text);cursor:pointer;font-family:inherit;text-align:left}
+.seg-log-open:hover{background:rgba(27,191,176,.07);border-radius:8px}.seg-log-open:focus-visible{outline:2px solid var(--primary);outline-offset:2px;border-radius:8px}
+.seg-log-open-label{font-size:.72rem;font-weight:700;color:var(--primary);white-space:nowrap}
 .seg-log-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:5px}
 .seg-log-time{font-family:var(--font-m);font-size:.72rem;color:var(--muted);white-space:nowrap;min-width:80px}
 .seg-section-label{
@@ -12715,7 +12718,7 @@ document.addEventListener('DOMContentLoaded', () => {
   <script src="js/modules/monthly-report.js"></script>
 <script src="js/modules/smart-metrics.js"></script>
 <script src="js/modules/income-analysis.js"></script>
-<script src="js/modules/patient-follow-up.js"></script>
+<script src="js/modules/patient-follow-up.js?v=20260915-open-history"></script>
 <script src="js/modules/patient-recovery.js"></script>
 <script src="js/modules/operations-automation.js"></script>
 <script src="js/modules/whatsapp-tools.js?v=20260826-emoji1"></script>
