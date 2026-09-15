@@ -57,12 +57,16 @@
       button.textContent = 'Verificando...';
       button.disabled = true;
     }
+    const slowLoginTimer = setTimeout(() => {
+      if (button) button.textContent = 'Conectando...';
+    }, 8000);
 
     try {
       const data = await ctx.fetchJsonWithTimeout(ctx.apiUrl, {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'adminLogin', user, password })
-      }, 120000, true);
+      }, 25000, true);
 
       if (!data.ok) {
         runtime.loginAttempts += 1;
@@ -109,6 +113,7 @@
       showAdminError(ctx, error?.message || 'Error de conexión. Revisa tu internet.');
       return { ok: false, error: error?.message || 'Error de conexión' };
     } finally {
+      clearTimeout(slowLoginTimer);
       if (button) {
         button.textContent = 'Ingresar';
         button.disabled = false;
