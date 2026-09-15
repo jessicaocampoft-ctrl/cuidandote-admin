@@ -547,4 +547,15 @@ function exportarSeguimientoCSV() {
     _renderSegLog,
     exportarSeguimientoCSV
   });
+
+  // Estas tarjetas se generan como HTML y sus botones usan manejadores
+  // declarativos. Conservamos estos puentes explícitos para que cada acción
+  // llegue al módulo, sin depender de funciones implícitas del navegador.
+  Object.assign(global, {
+    segToggleR,
+    segMarkWa,
+    segToggleNoContact,
+    setReadapZona,
+    _renderSegLista
+  });
 })(window);
