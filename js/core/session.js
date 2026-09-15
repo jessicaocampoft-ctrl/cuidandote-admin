@@ -64,8 +64,11 @@
     try {
       const data = await ctx.fetchJsonWithTimeout(ctx.apiUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'adminLogin', user, password })
+        // URLSearchParams usa un formulario CORS-simple. Apps Script lo
+        // recibe en `payload` sin forzar una solicitud OPTIONS adicional.
+        body: new URLSearchParams({
+          payload: JSON.stringify({ action: 'adminLogin', user, password })
+        })
       }, 25000, true);
 
       if (!data.ok) {
