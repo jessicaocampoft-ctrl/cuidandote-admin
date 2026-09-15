@@ -2,7 +2,7 @@
 (function (global) {
   'use strict';
 
-  let _activeTab = 'seguimiento';
+  let _activeTab = 'today';
   let _originalShowView = null;
 
   function _injectStyles() {
@@ -14,25 +14,31 @@
       .follow-hub-tab{appearance:none;border:1px solid transparent;background:transparent;color:var(--muted);font:600 .84rem var(--font-b);padding:9px 14px;border-radius:9px;cursor:pointer;transition:var(--tr);min-height:40px;display:inline-flex;align-items:center;gap:7px}
       .follow-hub-tab:hover{color:var(--text);background:var(--s1)}
       .follow-hub-tab.active{background:var(--s1);color:var(--primary-h);border-color:var(--border);box-shadow:0 3px 12px rgba(0,0,0,.05)}
+      .follow-hub-count{display:inline-flex;align-items:center;justify-content:center;min-width:19px;height:19px;padding:0 5px;border-radius:99px;background:var(--primary);color:#063b36;font:700 .68rem var(--font-m)}
       .follow-hub-panel{display:none}
       .follow-hub-panel.active{display:block}
+      .follow-hub-intro{display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap;padding:13px 16px;margin-bottom:16px;border:1px solid rgba(27,191,176,.25);border-radius:11px;background:rgba(27,191,176,.06);font-size:.83rem;line-height:1.45}.follow-hub-intro strong{color:var(--primary-h)}.follow-hub-intro span{color:var(--muted);flex:1;min-width:240px}
       @media(max-width:640px){.follow-hub-tabs{display:grid;grid-template-columns:1fr}.follow-hub-tab{width:100%;justify-content:space-between;text-align:left}}
     `;
     document.head.appendChild(style);
   }
 
   function _renderForTab(tab) {
-    if (tab === 'seguimiento') {
+    if (tab === 'today') {
+      if (global.PanelPatientFollowUp && typeof global.PanelPatientFollowUp.renderRecentFollowUps === 'function') global.PanelPatientFollowUp.renderRecentFollowUps();
+      return;
+    }
+    if (tab === 'reactivation') {
       if (typeof global.renderSeguimiento === 'function') global.renderSeguimiento();
       return;
     }
-    if (tab === 'recordatorios') {
-      if (typeof global.cargarRecordatorios === 'function') global.cargarRecordatorios();
+    if (tab === 'team') {
+      if (global.PanelPatientFollowUp && typeof global.PanelPatientFollowUp.renderTeamFollowUpTasks === 'function') global.PanelPatientFollowUp.renderTeamFollowUpTasks();
     }
   }
 
   function setTab(tab) {
-    if (!['seguimiento', 'recordatorios'].includes(tab)) tab = 'seguimiento';
+    if (!['today', 'reactivation', 'team'].includes(tab)) tab = 'today';
     _activeTab = tab;
     document.querySelectorAll('[data-follow-hub-tab]').forEach(btn => {
       const active = btn.dataset.followHubTab === tab;
@@ -66,7 +72,7 @@
       const title = segHeader.querySelector('.page-title');
       const sub = segHeader.querySelector('.page-sub');
       if (title) title.innerHTML = '<em>Seguimiento</em>';
-      if (sub) sub.textContent = 'Personas a las que vale la pena escribir hoy, con recordatorios en un solo lugar';
+      if (sub) sub.textContent = 'Organiza conversaciones de cuidado, reactivación y tareas para el equipo';
     }
 
     const tabs = document.createElement('div');
@@ -74,43 +80,37 @@
     tabs.setAttribute('role', 'tablist');
     tabs.setAttribute('aria-label', 'Seguimiento de pacientes');
 
-    const segBtn = document.createElement('button');
-    segBtn.type = 'button';
-    segBtn.className = 'follow-hub-tab';
-    segBtn.dataset.followHubTab = 'seguimiento';
-    segBtn.setAttribute('role', 'tab');
-    segBtn.textContent = 'Para escribir hoy';
-    segBtn.addEventListener('click', () => setTab('seguimiento'));
+    const makeTab = (key, label, countId) => {
+      const btn = document.createElement('button');
+      btn.type = 'button'; btn.className = 'follow-hub-tab'; btn.dataset.followHubTab = key; btn.setAttribute('role', 'tab');
+      btn.append(label);
+      if (countId) { const count = document.createElement('span'); count.id = countId; count.className = 'follow-hub-count'; count.textContent = '0'; btn.append(count); }
+      btn.addEventListener('click', () => setTab(key));
+      return btn;
+    };
+    tabs.append(
+      makeTab('today', 'Seguimientos de hoy', 'segTodayCount'),
+      makeTab('reactivation', 'Reactivación de pacientes'),
+      makeTab('team', 'Pendientes del equipo', 'segTeamCount')
+    );
 
-    const recBtn = document.createElement('button');
-    recBtn.type = 'button';
-    recBtn.className = 'follow-hub-tab';
-    recBtn.dataset.followHubTab = 'recordatorios';
-    recBtn.setAttribute('role', 'tab');
-    const recLabel = document.createElement('span');
-    recLabel.textContent = 'Recordatorios';
-    recBtn.appendChild(recLabel);
-    const recBadge = document.getElementById('badgeRecordatorios');
-    if (recBadge) recBtn.appendChild(recBadge);
-    recBtn.addEventListener('click', () => setTab('recordatorios'));
-
-    tabs.append(segBtn, recBtn);
+    const todayPanel = document.createElement('div');
+    todayPanel.className = 'follow-hub-panel'; todayPanel.dataset.followHubPanel = 'today'; todayPanel.setAttribute('role', 'tabpanel');
+    todayPanel.innerHTML = '<div class="follow-hub-intro"><strong>Después de una sesión</strong><span>Pregunta cómo evolucionó la persona entre 1 y 3 días después. Esta conversación cuida la experiencia y permite detectar si requiere atención.</span></div><div id="segTodayList" style="display:flex;flex-direction:column;gap:10px"></div>';
 
     const segPanel = document.createElement('div');
     segPanel.className = 'follow-hub-panel';
-    segPanel.dataset.followHubPanel = 'seguimiento';
+    segPanel.dataset.followHubPanel = 'reactivation';
     segPanel.setAttribute('role', 'tabpanel');
     segChildren.forEach(el => segPanel.appendChild(el));
 
-    const recPanel = document.createElement('div');
-    recPanel.className = 'follow-hub-panel';
-    recPanel.dataset.followHubPanel = 'recordatorios';
-    recPanel.setAttribute('role', 'tabpanel');
-    recChildren.forEach(el => recPanel.appendChild(el));
+    const teamPanel = document.createElement('div');
+    teamPanel.className = 'follow-hub-panel'; teamPanel.dataset.followHubPanel = 'team'; teamPanel.setAttribute('role', 'tabpanel');
+    teamPanel.innerHTML = '<div class="follow-hub-intro"><strong>Lo que tú le dejas a la auxiliar</strong><span>Usa “Recordatorio” desde Hoy después de una sesión para indicar a quién escribir, cuándo y con qué contexto.</span></div><div id="segTeamTasks" style="display:flex;flex-direction:column;gap:10px"></div>';
 
     if (segHeader) segHeader.insertAdjacentElement('afterend', tabs);
     else seguimiento.prepend(tabs);
-    seguimiento.append(segPanel, recPanel);
+    seguimiento.append(todayPanel, segPanel, teamPanel);
 
     const oldSidebar = document.getElementById('sb-recordatorios');
     if (oldSidebar) {
@@ -120,6 +120,11 @@
     }
     recordatorios.style.display = 'none';
     recordatorios.setAttribute('aria-hidden', 'true');
+    // Esta acción elimina citas y pertenece a Agenda, no a una sección de
+    // conversaciones con pacientes. Se conserva la función, pero se retira
+    // de esta vista para evitar errores operativos.
+    const cleanup = document.getElementById('btnLimpiarSinHora');
+    if (cleanup) cleanup.style.display = 'none';
 
     setTab(_activeTab);
     return true;
@@ -132,13 +137,9 @@
     global.__followUpHubNavigationWrapped = true;
 
     global.showView = function(view, ...args) {
-      if (view === 'recordatorios') {
-        const result = _originalShowView.call(this, 'seguimiento', ...args);
-        setTimeout(() => setTab('recordatorios'), 0);
-        return result;
-      }
+      if (view === 'recordatorios') { const result = _originalShowView.call(this, 'seguimiento', ...args); setTimeout(() => setTab('reactivation'), 0); return result; }
       const result = _originalShowView.call(this, view, ...args);
-      if (view === 'seguimiento') setTimeout(() => setTab('seguimiento'), 0);
+      if (view === 'seguimiento') setTimeout(() => setTab('today'), 0);
       return result;
     };
   }

@@ -2,6 +2,7 @@
   'use strict';
 
 let _segFiltros = new Set(['sem3','sem4','sem5','reagendo','readap']);
+const MANUAL_REMINDERS_KEY = 'daily_manual_discharge_reminders_v1';
 
 function toggleSegFiltro(f) {
   if (_segFiltros.has(f)) _segFiltros.delete(f);
@@ -32,7 +33,7 @@ function segWaSent(nombre, tipo){ return !!kvGet('seg_wa_'+tipo+'_'+nombre); }
 
 function segMarkWa(nombre, tipo, dias) {
   kvSet('seg_wa_'+tipo+'_'+nombre, Date.now());
-  const label = tipo==='sem3' ? 'WA aviso 3 semanas' : tipo==='sem4' ? 'WA semana 4' : 'WA semana 5+';
+  const label = tipo==='sem3' ? 'WA semana 5' : tipo==='sem4' ? 'WA semana 6' : 'WA semana 7+';
   segLogAction(nombre, tipo, label + ' enviado (' + dias + ' días sin descarga)');
   renderSeguimiento();
 }
@@ -49,6 +50,101 @@ function limpiarLogSeguimiento() {
   kvRemove('seg_log');
   _renderSegLog();
   toast('Historial limpiado');
+}
+
+function _recentKey(person) {
+  return `seg_recent_${person.fecha}_${String(person.nombre || '').toLowerCase()}`;
+}
+
+function _recentFollowUps() {
+  const now = new Date(); now.setHours(0,0,0,0);
+  const latest = new Map();
+  (allData.citas || []).forEach(c => {
+    if (!c || ['Cancelada','Pendiente','Confirmada'].includes(c.estado) || esRegistroServ(c.servicio)) return;
+    const fecha = normDate(c.fecha);
+    if (!fecha) return;
+    const date = new Date(`${fecha}T12:00:00`);
+    // La fecha de la cita se normaliza al mediodía para evitar cambios por
+    // zona horaria; redondear permite que la sesión de ayer aparezca hoy.
+    const days = Math.round((now - date) / 86400000);
+    if (days < 1 || days > 3) return;
+    const nombre = String(c.nombre || '').trim();
+    if (!nombre) return;
+    const key = nombre.toLocaleLowerCase('es');
+    const prev = latest.get(key);
+    if (!prev || fecha > prev.fecha) latest.set(key, { nombre, telefono:c.telefono || '', email:c.email || '', servicio:c.servicio || 'sesión', fecha, dias:days });
+  });
+  return Array.from(latest.values()).sort((a,b) => a.fecha.localeCompare(b.fecha));
+}
+
+function recentFollowState(person) {
+  return String(kvGet(_recentKey(person)) || '');
+}
+
+function markRecentFollow(encodedPerson, state) {
+  let person;
+  try { person = JSON.parse(decodeURIComponent(encodedPerson)); } catch (_) { return; }
+  if (!person || !person.nombre) return;
+  kvSet(_recentKey(person), state);
+  const labels = { sent:'Mensaje enviado', well:'Evoluciona bien', attention:'Requiere revisión' };
+  segLogAction(person.nombre, 'recent', `${labels[state] || 'Seguimiento'} · ${person.dias} día(s) después de la sesión`);
+  renderRecentFollowUps();
+}
+
+function renderRecentFollowUps() {
+  const root = document.getElementById('segTodayList');
+  const count = document.getElementById('segTodayCount');
+  if (!root) return;
+  const pending = _recentFollowUps().filter(person => !['well','attention'].includes(recentFollowState(person)));
+  if (count) count.textContent = pending.length;
+  if (!pending.length) {
+    root.innerHTML = '<div class="empty" style="padding:42px 20px"><p>Todo al día: no hay sesiones recientes pendientes de seguimiento.</p></div>';
+    return;
+  }
+  root.innerHTML = pending.map(person => {
+    const phone = String(person.telefono || '').replace(/\D/g, '');
+    const waPhone = phone.length <= 10 ? `57${phone}` : phone;
+    const first = person.nombre.split(' ')[0];
+    const message = `Hola ${first}! 😊 Queríamos saber cómo te has sentido después de tu sesión de ${person.servicio}. ¿Cómo sigue tu cuerpo hoy? Si notas alguna molestia o tienes dudas, cuéntanos para orientarte.`;
+    const encoded = encodeURIComponent(JSON.stringify(person));
+    const wa = phone.length >= 7 ? `https://wa.me/${waPhone}?text=${encodeURIComponent(message)}` : '';
+    return `<div class="seg-card" style="border-left:3px solid var(--primary)">
+      <div class="pac-badge" style="flex-shrink:0;background:rgba(27,191,176,.08)">${person.nombre.split(' ').map(x => x[0]).join('').slice(0,2).toUpperCase()}</div>
+      <div style="flex:1;min-width:160px"><div style="font-weight:700;font-size:.9rem">${person.nombre}</div><div style="font-size:.78rem;color:var(--muted);margin-top:3px">${person.servicio} · sesión hace ${person.dias} día${person.dias === 1 ? '' : 's'}</div></div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;flex-shrink:0">
+        ${wa ? `<a href="${wa}" target="_blank" class="btn btn-wa btn-sm" onclick="PanelPatientFollowUp.markRecentFollow('${encoded}','sent')">💬 Preguntar cómo le fue</a>` : '<span style="font-size:.75rem;color:var(--muted);padding:5px">Sin teléfono</span>'}
+        <button class="btn btn-ghost btn-sm" onclick="PanelPatientFollowUp.markRecentFollow('${encoded}','well')">Todo bien ✓</button>
+        <button class="btn btn-ghost btn-sm" onclick="PanelPatientFollowUp.markRecentFollow('${encoded}','attention')">Requiere revisión</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderTeamFollowUpTasks() {
+  const root = document.getElementById('segTeamTasks');
+  const count = document.getElementById('segTeamCount');
+  if (!root) return;
+  let tasks = [];
+  try { tasks = JSON.parse(kvGet(MANUAL_REMINDERS_KEY) || '[]'); } catch (_) {}
+  tasks = tasks.filter(task => task && !['done','booked','no_contact'].includes(task.status)).sort((a,b) => String(a.dueDate || '').localeCompare(String(b.dueDate || '')));
+  if (count) count.textContent = tasks.length;
+  if (!tasks.length) {
+    root.innerHTML = '<div class="empty" style="padding:42px 20px"><p>No hay pendientes para el equipo. Puedes crear uno desde Hoy con el botón Recordatorio.</p></div>';
+    return;
+  }
+  root.innerHTML = tasks.map(task => `<div class="seg-card" style="border-left:3px solid #7c3aed">
+    <div class="pac-badge" style="flex-shrink:0;background:rgba(124,58,237,.08);border-color:#7c3aed">💬</div>
+    <div style="flex:1;min-width:160px"><div style="font-weight:700;font-size:.9rem">${task.nombre || 'Paciente'}</div><div style="font-size:.78rem;color:var(--muted);margin-top:3px">Para: ${task.owner || 'Auxiliar'} · ${task.dueDate ? fmtDate(task.dueDate) : 'Hoy'}${task.note ? `<br>${task.note}` : ''}</div></div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;flex-shrink:0"><button class="btn btn-wa btn-sm" onclick="PanelPatientFollowUp.teamTaskAction('copy','${encodeURIComponent(task.id)}')">Copiar mensaje</button><button class="btn btn-ghost btn-sm" onclick="PanelPatientFollowUp.teamTaskAction('booked','${encodeURIComponent(task.id)}')">Agendó ✓</button></div>
+  </div>`).join('');
+}
+
+async function teamTaskAction(action, encodedId) {
+  const daily = global.PanelDailyControl;
+  if (!daily) { toast('Las tareas del equipo todavía están cargando. Intenta de nuevo en un momento.', 'err'); return; }
+  if (action === 'copy' && typeof daily.copyManualReminder === 'function') await daily.copyManualReminder(encodedId);
+  if (action !== 'copy' && typeof daily.manualReminderAction === 'function') daily.manualReminderAction(action, encodedId);
+  renderTeamFollowUpTasks();
 }
 
 function openLogPatient(encodedName) {
@@ -213,7 +309,7 @@ function _segCard(p) {
   const color      = colorMap[p.semana] || 'var(--primary)';
   const fillColor  = fillMap[p.semana]  || 'var(--primary)';
 
-  const labelMap   = { sem3:'Semana 3 — aviso previo', sem4:'Semana 4 — momento ideal', sem5:'Semana 5+ — urgente' };
+  const labelMap   = { sem3:'Semana 5 — aviso previo', sem4:'Semana 6 — momento ideal', sem5:'Semana 7+ — urgente' };
   const label      = labelMap[p.semana] || '';
 
   const tel   = String(p.telefono||'').replace(/\D/g,'');
@@ -234,8 +330,8 @@ function _segCard(p) {
   const cierre3 = paraQuien ? '¿Reagendamos?' : '¿Te agendo?';
   const cierre4 = paraQuien ? '¿Reagendamos esta semana?' : '¿Te agendo esta semana?';
   const cierre5 = paraQuien ? '¿Cuando les viene bien retomar? Cuentame y coordinamos. \uD83D\uDCAA' : '¿Cuando te viene bien retomar? Cuentame y coordinamos. \uD83D\uDCAA';
-  const msg3 = `Hola ${primero}! \uD83D\uDC4B Te escribimos de Cuidándote Fisioterapia. Ya van 3 semanas desde ${sujeto3}. La proxima semana seria el momento ideal para reagendar antes de que el cuerpo empiece a acumular tension. ${cierre3}`;
-  const msg4 = `Hola ${primero}! \uD83D\uDC4B Te escribimos de Cuidándote Fisioterapia. Ya se cumplieron las 4 semanas desde ${sujeto4} — es el momento de reagendar. Mantener la frecuencia es lo que hace que los resultados se sostengan. ${cierre4}`;
+  const msg3 = `Hola ${primero}! \uD83D\uDC4B Te escribimos de Cuidándote Fisioterapia. Ya van 5 semanas desde ${sujeto3}. Si has vuelto a sentir tensión, la próxima semana puede ser un buen momento para reagendar. ${cierre3}`;
+  const msg4 = `Hola ${primero}! \uD83D\uDC4B Te escribimos de Cuidándote Fisioterapia. Ya se cumplieron 6 semanas desde ${sujeto4}. Si sientes que la tensión ha vuelto, podemos buscarte un espacio esta semana. ${cierre4}`;
   const msg5 = `Hola ${primero}! \uD83D\uDC4B Te escribimos de Cuidándote Fisioterapia. Hace mas de un mes desde ${sujeto5}. El cuerpo ya empieza a acumular tension de nuevo. ${cierre5}`;
 
   const wa3 = hasWA ? `https://wa.me/${phone}?text=${encodeURIComponent(msg3)}` : null;
@@ -384,6 +480,10 @@ function exportarSeguimientoCSV() {
     segLogAction,
     limpiarLogSeguimiento,
     openLogPatient,
+    markRecentFollow,
+    renderRecentFollowUps,
+    renderTeamFollowUpTasks,
+    teamTaskAction,
     esDescargaMusc,
     esReadaptacion,
     readapZona,
