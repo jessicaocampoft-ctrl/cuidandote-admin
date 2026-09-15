@@ -169,7 +169,7 @@
     const existing = document.querySelector('script[data-panel-follow-up-hub]');
     if (existing) { existing.addEventListener('load', start, { once:true }); return; }
     const script = document.createElement('script');
-    script.src = 'js/modules/follow-up-hub.js?v=20260915-followup-structure';
+    script.src = 'js/modules/follow-up-hub.js?v=20260915-followup-results';
     script.dataset.panelFollowUpHub = '1';
     script.addEventListener('load', start, { once:true });
     script.addEventListener('error', () => console.warn('No se pudo cargar Seguimiento unificado'), { once:true });

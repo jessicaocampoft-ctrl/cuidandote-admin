@@ -122,7 +122,7 @@ function _initPatientHubModule() {
   const existing = document.querySelector('script[data-panel-patient-hub]');
   if (existing) { existing.addEventListener('load', start, { once:true }); return; }
   const script = document.createElement('script');
-  script.src = 'js/modules/patient-hub.js';
+  script.src = 'js/modules/patient-hub.js?v=20260915-followup-results';
   script.dataset.panelPatientHub = '1';
   script.addEventListener('load', start, { once:true });
   script.addEventListener('error', () => console.warn('No se pudo cargar Pacientes unificado'), { once:true });
@@ -163,7 +163,7 @@ function _initSidebarManagementModule() {
   const existing = document.querySelector('script[data-panel-sidebar-management]');
   if (existing) { existing.addEventListener('load', start, { once:true }); return; }
   const script = document.createElement('script');
-  script.src = 'js/modules/sidebar-management.js';
+  script.src = 'js/modules/sidebar-management.js?v=20260915-operational-menu';
   script.dataset.panelSidebarManagement = '1';
   script.addEventListener('load', start, { once:true });
   script.addEventListener('error', () => console.warn('No se pudo cargar la navegación organizada'), { once:true });

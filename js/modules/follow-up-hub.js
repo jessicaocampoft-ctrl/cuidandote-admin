@@ -18,7 +18,8 @@
       .follow-hub-panel{display:none}
       .follow-hub-panel.active{display:block}
       .follow-hub-intro{display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap;padding:13px 16px;margin-bottom:16px;border:1px solid rgba(27,191,176,.25);border-radius:11px;background:rgba(27,191,176,.06);font-size:.83rem;line-height:1.45}.follow-hub-intro strong{color:var(--primary-h)}.follow-hub-intro span{color:var(--muted);flex:1;min-width:240px}
-      @media(max-width:640px){.follow-hub-tabs{display:grid;grid-template-columns:1fr}.follow-hub-tab{width:100%;justify-content:space-between;text-align:left}}
+      .seg-results-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.seg-results-grid>div{padding:16px;background:var(--s1);border:1px solid var(--border);border-radius:12px}.seg-results-grid span{display:block;color:var(--muted);font-size:.73rem}.seg-results-grid strong{display:block;margin-top:5px;color:var(--primary-h);font:700 1.45rem var(--font-h)}
+      @media(max-width:640px){.follow-hub-tabs{display:grid;grid-template-columns:1fr}.follow-hub-tab{width:100%;justify-content:space-between;text-align:left}.seg-results-grid{grid-template-columns:1fr 1fr}}
     `;
     document.head.appendChild(style);
   }
@@ -34,11 +35,15 @@
     }
     if (tab === 'team') {
       if (global.PanelPatientFollowUp && typeof global.PanelPatientFollowUp.renderTeamFollowUpTasks === 'function') global.PanelPatientFollowUp.renderTeamFollowUpTasks();
+      return;
+    }
+    if (tab === 'results') {
+      if (global.PanelPatientFollowUp && typeof global.PanelPatientFollowUp.renderFollowUpResults === 'function') global.PanelPatientFollowUp.renderFollowUpResults();
     }
   }
 
   function setTab(tab) {
-    if (!['today', 'reactivation', 'team'].includes(tab)) tab = 'today';
+    if (!['today', 'reactivation', 'team', 'results'].includes(tab)) tab = 'today';
     _activeTab = tab;
     document.querySelectorAll('[data-follow-hub-tab]').forEach(btn => {
       const active = btn.dataset.followHubTab === tab;
@@ -61,9 +66,7 @@
     if (seguimiento.dataset.followHubReady === '1') return true;
 
     const segHeader = seguimiento.querySelector(':scope > .page-header');
-    const recHeader = recordatorios.querySelector(':scope > .page-header');
     const segChildren = Array.from(seguimiento.children).filter(el => el !== segHeader);
-    const recChildren = Array.from(recordatorios.children).filter(el => el !== recHeader);
 
     seguimiento.dataset.followHubReady = '1';
     _injectStyles();
@@ -91,7 +94,8 @@
     tabs.append(
       makeTab('today', 'Seguimientos de hoy', 'segTodayCount'),
       makeTab('reactivation', 'Reactivación de pacientes'),
-      makeTab('team', 'Pendientes del equipo', 'segTeamCount')
+      makeTab('team', 'Pendientes del equipo', 'segTeamCount'),
+      makeTab('results', 'Resultados')
     );
 
     const todayPanel = document.createElement('div');
@@ -108,9 +112,13 @@
     teamPanel.className = 'follow-hub-panel'; teamPanel.dataset.followHubPanel = 'team'; teamPanel.setAttribute('role', 'tabpanel');
     teamPanel.innerHTML = '<div class="follow-hub-intro"><strong>Lo que tú le dejas a la auxiliar</strong><span>Usa “Recordatorio” desde Hoy después de una sesión para indicar a quién escribir, cuándo y con qué contexto.</span></div><div id="segTeamTasks" style="display:flex;flex-direction:column;gap:10px"></div>';
 
+    const resultsPanel = document.createElement('div');
+    resultsPanel.className = 'follow-hub-panel'; resultsPanel.dataset.followHubPanel = 'results'; resultsPanel.setAttribute('role', 'tabpanel');
+    resultsPanel.innerHTML = '<div class="follow-hub-intro"><strong>Resultados de seguimiento</strong><span>Mide qué conversaciones se convirtieron en citas. Marca cada resultado para que esta vista te ayude a decidir qué campaña repetir.</span></div><div id="segResults"></div>';
+
     if (segHeader) segHeader.insertAdjacentElement('afterend', tabs);
     else seguimiento.prepend(tabs);
-    seguimiento.append(todayPanel, segPanel, teamPanel);
+    seguimiento.append(todayPanel, segPanel, teamPanel, resultsPanel);
 
     const oldSidebar = document.getElementById('sb-recordatorios');
     if (oldSidebar) {

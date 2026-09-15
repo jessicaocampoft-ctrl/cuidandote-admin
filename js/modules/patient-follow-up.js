@@ -4,6 +4,10 @@
 let _segFiltros = new Set(['sem3','sem4','sem5','reagendo','readap']);
 const MANUAL_REMINDERS_KEY = 'daily_manual_discharge_reminders_v1';
 
+function escFollowUp(value) {
+  return String(value == null ? '' : value).replace(/[&<>'"]/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' })[char]);
+}
+
 function toggleSegFiltro(f) {
   if (_segFiltros.has(f)) _segFiltros.delete(f);
   else _segFiltros.add(f);
@@ -134,9 +138,31 @@ function renderTeamFollowUpTasks() {
   }
   root.innerHTML = tasks.map(task => `<div class="seg-card" style="border-left:3px solid #7c3aed">
     <div class="pac-badge" style="flex-shrink:0;background:rgba(124,58,237,.08);border-color:#7c3aed">💬</div>
-    <div style="flex:1;min-width:160px"><div style="font-weight:700;font-size:.9rem">${task.nombre || 'Paciente'}</div><div style="font-size:.78rem;color:var(--muted);margin-top:3px">Para: ${task.owner || 'Auxiliar'} · ${task.dueDate ? fmtDate(task.dueDate) : 'Hoy'}${task.note ? `<br>${task.note}` : ''}</div></div>
+    <div style="flex:1;min-width:160px"><div style="font-weight:700;font-size:.9rem">${escFollowUp(task.nombre || 'Paciente')}</div><div style="font-size:.78rem;color:var(--muted);margin-top:3px">Para: ${escFollowUp(task.owner || 'Auxiliar')} · ${task.dueDate ? fmtDate(task.dueDate) : 'Hoy'}${task.note ? `<br>${escFollowUp(task.note)}` : ''}</div></div>
     <div style="display:flex;gap:6px;flex-wrap:wrap;flex-shrink:0"><button class="btn btn-wa btn-sm" onclick="PanelPatientFollowUp.teamTaskAction('copy','${encodeURIComponent(task.id)}')">Copiar mensaje</button><button class="btn btn-ghost btn-sm" onclick="PanelPatientFollowUp.teamTaskAction('booked','${encodeURIComponent(task.id)}')">Agendó ✓</button></div>
   </div>`).join('');
+}
+
+function renderFollowUpResults() {
+  const root = document.getElementById('segResults');
+  if (!root) return;
+  let tasks = [];
+  try { tasks = JSON.parse(kvGet(MANUAL_REMINDERS_KEY) || '[]'); } catch (_) {}
+  tasks = tasks.filter(Boolean);
+  const sent = tasks.filter(task => ['sent','responded','booked'].includes(task.status)).length;
+  const responded = tasks.filter(task => ['responded','booked'].includes(task.status)).length;
+  const booked = tasks.filter(task => task.status === 'booked').length;
+  const noContact = tasks.filter(task => task.status === 'no_contact').length;
+  const conversion = sent ? Math.round((booked / sent) * 100) : 0;
+  const recent = tasks.slice().sort((a,b) => String(b.createdAt || '').localeCompare(String(a.createdAt || ''))).slice(0,8);
+  root.innerHTML = `<div class="seg-results-grid">
+    <div><span>Mensajes enviados</span><strong>${sent}</strong></div>
+    <div><span>Respondieron</span><strong>${responded}</strong></div>
+    <div><span>Agendaron</span><strong>${booked}</strong></div>
+    <div><span>Conversión a cita</span><strong>${conversion}%</strong></div>
+  </div>
+  <div class="follow-hub-intro" style="margin-top:16px"><strong>Cómo leerlo</strong><span>Estos indicadores se alimentan cuando la auxiliar marca los resultados de cada pendiente. “No contactar” (${noContact}) queda fuera de la conversión para no insistir a esa persona.</span></div>
+  <div class="card" style="margin-top:16px"><div class="card-title" style="margin-bottom:12px">Últimos pendientes creados</div>${recent.length ? recent.map(task => `<div class="seg-log-item"><div class="seg-log-dot" style="background:#7c3aed"></div><div class="seg-log-time">${task.createdAt ? fmtDate(task.createdAt) : '—'}</div><div style="flex:1"><strong style="font-size:.83rem">${escFollowUp(task.nombre || 'Paciente')}</strong> — <span style="color:var(--muted)">${task.status === 'booked' ? 'Agendó' : task.status === 'responded' ? 'Respondió' : task.status === 'sent' ? 'Mensaje enviado' : task.status === 'no_contact' ? 'No contactar' : 'Pendiente de enviar'}</span></div></div>`).join('') : '<div class="empty" style="padding:24px 0"><p>Aún no hay resultados. Crea el primer pendiente desde Hoy.</p></div>'}</div>`;
 }
 
 async function teamTaskAction(action, encodedId) {
@@ -484,6 +510,7 @@ function exportarSeguimientoCSV() {
     renderRecentFollowUps,
     renderTeamFollowUpTasks,
     teamTaskAction,
+    renderFollowUpResults,
     esDescargaMusc,
     esReadaptacion,
     readapZona,

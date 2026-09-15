@@ -4,18 +4,20 @@
 
   // Reservamos este nivel para la operación diaria. Lo clínico menos frecuente
   // sigue disponible en Gestión, sin borrar ninguna función.
-  const PRIMARY_IDS = ['sb-calendario','sb-dashboard','sb-agenda','sb-seguimiento','sb-pacientes','sb-pagos'];
+  const PRIMARY_IDS = ['sb-calendario','sb-dashboard','sb-agenda','sb-nueva','sb-seguimiento','sb-pacientes','sb-pagos'];
   const LEGACY_HIDDEN_IDS = [
-    'sb-tareas','sb-basedatos','sb-recordatorios','sb-guioneswa','sb-recuperacion',
-    'sb-guiakpis','sb-presupuesto','sb-comisiones','sb-acciones'
+    // Recordatorios ya vive dentro de Seguimiento. Centro de acciones es una
+    // versión anterior del control diario y se conserva oculto para evitar
+    // duplicar pendientes.
+    'sb-recordatorios','sb-acciones'
   ];
   const GROUPS = [
-    { id:'finance', label:'Finanzas', items:['sb-finanzas'] },
-    { id:'operations', label:'Agenda y horarios', items:['sb-nueva','sb-bloquear','sb-horariospublicos'] },
-    { id:'advanced', label:'Operación avanzada', items:['sb-paquetes','sb-espera','sb-automatizaciones'] },
-    { id:'commercial', label:'Comercial', items:['sb-empresas','sb-codigos'] },
+    { id:'operations', label:'Agenda y disponibilidad', items:['sb-bloquear','sb-horariospublicos','sb-espera','sb-tareas'] },
+    { id:'followup', label:'Seguimiento y comunicación', items:['sb-mensajes','sb-guioneswa','sb-recuperacion'] },
+    { id:'finance', label:'Finanzas y resultados', items:['sb-finanzas','sb-guiakpis','sb-presupuesto','sb-comisiones'] },
+    { id:'commercial', label:'Comercial', items:['sb-paquetes','sb-empresas','sb-codigos'] },
     { id:'team', label:'Equipo', items:['sb-equipo'] },
-    { id:'communications', label:'Comunicación', items:['sb-mensajes'] },
+    { id:'advanced', label:'Administración avanzada', items:['sb-basedatos','sb-automatizaciones'] },
     { id:'tools', label:'Herramientas clínicas', items:['sb-pasaporte','sb-evaluacion','sb-evalexpress'] }
   ];
 
@@ -137,14 +139,14 @@
     toggle.setAttribute('aria-controls','sbManagementPanel');
     toggle.setAttribute('aria-expanded', String(sidebar.classList.contains('tools-open')));
     const label = toggle.querySelector('span');
-    if (label) label.textContent = 'Gestión';
+    if (label) label.textContent = 'Gestión avanzada';
     if (!toggle.dataset.managementBound) {
       toggle.dataset.managementBound = '1';
       toggle.addEventListener('click', () => {
         const open = sidebar.classList.toggle('tools-open');
         toggle.setAttribute('aria-expanded', String(open));
         const txt = toggle.querySelector('span');
-        if (txt) txt.textContent = 'Gestión';
+        if (txt) txt.textContent = 'Gestión avanzada';
       });
     }
     if (toggle.previousElementSibling !== primary) primary.insertAdjacentElement('afterend', toggle);
