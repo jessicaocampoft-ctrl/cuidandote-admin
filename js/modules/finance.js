@@ -471,6 +471,122 @@ function renderEstructuraFinanciera() {
   el.innerHTML = html;
 }
 
+function _analysisExportModal() {
+  let modal = document.getElementById('analysisExportModal');
+  if (modal) return modal;
+  modal = document.createElement('div');
+  modal.id = 'analysisExportModal';
+  modal.className = 'modal-bg';
+  modal.style.cssText = 'display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1300;align-items:center;justify-content:center;padding:18px';
+  modal.innerHTML = `<div class="modal" role="dialog" aria-modal="true" aria-labelledby="analysisExportTitle" style="max-width:560px;width:100%">
+    <div class="modal-title" id="analysisExportTitle">Descargar datos para análisis</div>
+    <p style="font-size:.85rem;color:var(--muted);line-height:1.5;margin:0 0 16px">Genera un CSV con una fila por cita, pago, egreso, paquete, bloqueo o disponibilidad semanal. Puedes adjuntarlo directamente a ChatGPT.</p>
+    <div class="form-grid g2" style="gap:12px">
+      <div class="field"><label>Desde <span style="font-weight:400">(opcional)</span></label><input id="analysisFrom" type="date"></div>
+      <div class="field"><label>Hasta <span style="font-weight:400">(opcional)</span></label><input id="analysisTo" type="date"></div>
+    </div>
+    <label style="display:flex;gap:9px;align-items:flex-start;margin:16px 0;font-size:.84rem;cursor:pointer"><input id="analysisNames" type="checkbox" style="margin-top:3px"><span><strong>Incluir nombres de pacientes</strong><br><span style="color:var(--muted)">Déjalo desmarcado si vas a enviar el archivo a ChatGPT u otra persona. El archivo usará un ID anónimo por paciente.</span></span></label>
+    <div style="padding:11px 13px;border:1px solid rgba(245,158,11,.35);background:rgba(245,158,11,.08);border-radius:9px;font-size:.8rem;color:var(--muted);line-height:1.45">No incluye teléfonos, correos, direcciones, notas clínicas ni comprobantes. Los campos que no estén registrados quedan vacíos, no se inventan.</div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:18px;flex-wrap:wrap"><button class="btn btn-ghost" onclick="PanelFinance.closeAnalysisExport()">Cancelar</button><button id="analysisDownloadBtn" class="btn btn-teal" onclick="PanelFinance.downloadAnalysisExport()">Descargar CSV</button></div>
+  </div>`;
+  modal.addEventListener('click', event => { if (event.target === modal) closeAnalysisExport(); });
+  document.body.appendChild(modal);
+  return modal;
+}
+
+function openAnalysisExport() {
+  const modal = _analysisExportModal();
+  modal.style.display = 'flex';
+  document.getElementById('analysisFrom')?.focus();
+}
+
+function closeAnalysisExport() {
+  const modal = document.getElementById('analysisExportModal');
+  if (modal) modal.style.display = 'none';
+}
+
+function _analysisDate(value) {
+  if (!value) return '';
+  try { return normDate(value); } catch (_) { return String(value).slice(0, 10); }
+}
+
+function _analysisPatientId(name) {
+  let hash = 2166136261;
+  const source = String(name || '').trim().toLocaleLowerCase('es');
+  for (let index = 0; index < source.length; index += 1) { hash ^= source.charCodeAt(index); hash = Math.imul(hash, 16777619); }
+  return source ? `PAC-${(hash >>> 0).toString(36).toUpperCase()}` : '';
+}
+
+function _analysisCsvValue(value) {
+  return `"${String(value == null ? '' : value).replace(/"/g, '""')}"`;
+}
+
+function _analysisInRange(date, from, until) {
+  if (!date) return !from && !until;
+  return (!from || date >= from) && (!until || date <= until);
+}
+
+async function downloadAnalysisExport() {
+  const from = document.getElementById('analysisFrom')?.value || '';
+  const until = document.getElementById('analysisTo')?.value || '';
+  const includeNames = Boolean(document.getElementById('analysisNames')?.checked);
+  if (from && until && from > until) { toast('La fecha inicial debe ser anterior a la fecha final', 'err'); return; }
+  const button = document.getElementById('analysisDownloadBtn');
+  if (button) { button.disabled = true; button.textContent = 'Preparando…'; }
+  try {
+    if (global.PanelPayments?.loadOperationsData) await global.PanelPayments.loadOperationsData();
+    const header = ['Tipo de registro','Fecha','Hora','Paciente ID','Paciente','Servicio o concepto','Estado','Modalidad o categoría','Profesional','Canal de captación','Convenio o empresa','Precio normal','Descuento','Valor cobrado','Forma de pago','Paquete','Sesiones compradas','Sesiones usadas','Sesiones pendientes','Detalle'];
+    const rows = [];
+    const patient = name => [ _analysisPatientId(name), includeNames ? String(name || '') : '' ];
+    const appointmentRows = (allData?.citas || []).filter(cita => !esRegistroServ(cita.servicio)).map(cita => {
+      const date = _analysisDate(cita.fecha); if (!_analysisInRange(date, from, until)) return null;
+      const [patientId, patientName] = patient(cita.nombre);
+      const professional = cita.profesionalNombre || cita.profesional || cita.fisioterapeuta || cita.profesionalId || '';
+      const agreement = cita.convenio || cita.gimnasio || cita.empresa || '';
+      const normalPrice = cita.precioNormal || cita.valorNormal || cita.precioBase || '';
+      const discount = cita.descuento || cita.descuentoCliente || '';
+      return ['CITA', date, cita.hora || '', patientId, patientName, cita.servicio || '', cita.estado || '', cita.modalidad || '', professional, cita.canal || '', agreement, normalPrice, discount, cita.precio || '', '', '', '', '', '', ''];
+    }).filter(Boolean);
+    rows.push(...appointmentRows);
+    (operationsData?.pagos || []).forEach(pago => {
+      const date = _analysisDate(pago.FechaPago || pago.FechaVerificacion); if (!_analysisInRange(date, from, until)) return;
+      const [patientId, patientName] = patient(pago.Cliente);
+      rows.push(['PAGO', date, '', patientId, patientName, pago.ServicioPlan || '', pago.EstadoPago || '', '', '', '', '', pago.ValorEsperado || '', '', pago.ValorRecibido || '', pago.MedioPago || '', '', '', '', pago.Observaciones || '']);
+    });
+    (getEgresos() || []).forEach(egreso => {
+      const date = _analysisDate(egreso.fecha); if (!_analysisInRange(date, from, until)) return;
+      rows.push(['EGRESO', date, '', '', '', egreso.concepto || '', '', egreso.categoria || '', '', '', '', '', '', egreso.monto || '', '', '', '', '', '', egreso.descripcion || '']);
+    });
+    (global._getPkAsignados?.() || []).forEach(paquete => {
+      const date = _analysisDate(paquete.fechaCompra); if (!_analysisInRange(date, from, until)) return;
+      const [patientId, patientName] = patient(paquete.paciente);
+      const used = Number(paquete.consumidas || 0), total = Number(paquete.sesiones || 0);
+      rows.push(['PAQUETE', date, '', patientId, patientName, '', 'Activo', '', '', '', '', '', '', paquete.precio || '', '', paquete.nombre || '', total, used, Math.max(0, total - used), paquete.notas || '']);
+    });
+    (allData?.bloqueos || []).forEach(bloqueo => {
+      const date = _analysisDate(bloqueo.fecha); if (!_analysisInRange(date, from, until)) return;
+      rows.push(['BLOQUEO', date, `${bloqueo.inicio || ''}-${bloqueo.fin || ''}`, '', '', bloqueo.motivo || 'Bloqueo de agenda', 'Bloqueado', '', '', '', '', '', '', '', '', '', '', '', '', '']);
+    });
+    const weekly = global.PanelScheduleOperations?.getWeeklySchedule?.() || [];
+    const weekdays = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+    weekly.forEach((day, index) => (day.enabled ? (day.ranges || []).forEach(range => rows.push(['HORARIO_SEMANAL', '', `${range[0]}-${range[1]}`, '', '', `Disponibilidad ${weekdays[index]}`, 'Disponible', '', '', '', '', '', '', '', '', '', '', '', '', ''])) : null));
+    rows.sort((left, right) => String(left[1]).localeCompare(String(right[1])) || String(left[0]).localeCompare(String(right[0])));
+    if (!rows.length) { toast('No hay registros para el rango seleccionado', 'err'); return; }
+    const content = [header, ...rows].map(row => row.map(_analysisCsvValue).join(',')).join('\n');
+    const blob = new Blob(['\uFEFF' + content], { type:'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob), anchor = document.createElement('a');
+    anchor.href = url; anchor.download = `analisis_externo_${from || 'inicio'}_${until || 'hoy'}.csv`; anchor.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    toast(`Archivo listo: ${rows.length} registros. Ahora adjúntalo en ChatGPT.`, 'ok');
+    closeAnalysisExport();
+  } catch (error) {
+    console.error('No se pudo preparar el reporte para análisis', error);
+    toast('No se pudo preparar el reporte. Intenta actualizar la página.', 'err');
+  } finally {
+    if (button) { button.disabled = false; button.textContent = 'Descargar CSV'; }
+  }
+}
+
 function resRow(label, val, style='') {
   return `<div style="display:flex;justify-content:space-between;align-items:center;font-size:.85rem;padding:3px 0">
     <span style="color:var(--muted)">${label}</span>
@@ -489,6 +605,9 @@ function resRow(label, val, style='') {
     eliminarEgreso,
     actualizarConceptosEgreso,
     renderEstructuraFinanciera,
+    openAnalysisExport,
+    closeAnalysisExport,
+    downloadAnalysisExport,
     resRow
   });
 })(window);
