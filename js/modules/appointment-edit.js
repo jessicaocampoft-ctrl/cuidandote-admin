@@ -46,6 +46,37 @@ function toggleReagendar(id) {
   if (panel) panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
 }
 
+function _refreshAfterAppointmentChange() {
+  initDashboard(); renderAgenda(); renderCalendar(); renderIngresosDetalle(); renderCitasResumen();
+  // La sincronización completa sirve para validar los datos contra Sheets y
+  // Calendar, pero no debe congelar la respuesta visual del usuario.
+  Promise.resolve(reload()).then(() => {
+    initDashboard(); renderAgenda(); renderCalendar(); renderIngresosDetalle(); renderCitasResumen();
+  }).catch(() => console.warn('No se pudo sincronizar en segundo plano la cita actualizada'));
+}
+
+async function moveAppointmentFromCalendar(id, fecha, hora) {
+  const cita = allData.citas.find(item => item.id === id);
+  if (!cita) { toast('No encontramos esa cita. Actualiza el calendario.', 'err'); return false; }
+  if (!fecha || !hora || !validateNoMidnight(hora, 'mover la cita')) return false;
+  const previous = { fecha:cita.fecha, hora:cita.hora };
+  const data = encodeURIComponent(JSON.stringify({
+    id, servicio:cita.servicio, modalidad:cita.modalidad, fecha, hora,
+    precio:cita.precio, notas:cita.notas || ''
+  }));
+  try {
+    await saveEditWithRetry(`${APPS_SCRIPT_URL}?action=editBooking&token=${encodeURIComponent(TOKEN)}&data=${data}`);
+    Object.assign(cita, { fecha, hora });
+    logChange('Cita movida desde calendario', `${cita.nombre} · ${previous.fecha} ${previous.hora} → ${fecha} ${hora}`);
+    _refreshAfterAppointmentChange();
+    toast(`Cita movida a ${fmtDate(fecha)} · ${hora}`, 'ok');
+    return true;
+  } catch (error) {
+    toast('No se pudo mover la cita: ' + (error.message || 'intenta de nuevo.'), 'err');
+    return false;
+  }
+}
+
 async function confirmarReagendar(id) {
   const fecha = document.getElementById('rDate_' + id).value;
   const hora  = document.getElementById('rTime_' + id).value;
@@ -53,21 +84,8 @@ async function confirmarReagendar(id) {
   if (!validateNoMidnight(hora, 'reagendar')) return;
   const cita = allData.citas.find(c => c.id === id);
   if (!cita) return;
-  const data = encodeURIComponent(JSON.stringify({
-    id, servicio: cita.servicio, modalidad: cita.modalidad,
-    fecha, hora, precio: cita.precio, notas: cita.notas || ''
-  }));
-  try {
-    const r = await fetch(`${APPS_SCRIPT_URL}?action=editBooking&token=${encodeURIComponent(TOKEN)}&data=${data}`);
-    const d = await r.json();
-    if (d.ok) {
-      logChange('Cita reagendada', `${cita.nombre} · ${cita.fecha} ${cita.hora} → ${fecha} ${hora}`);
-      await reload();
-      toast('Cita reagendada: ' + fmtDate(fecha) + ' ' + hora);
-      closeModal('modalDetalle');
-      initDashboard(); renderAgenda(); renderCalendar(); renderIngresosDetalle(); renderCitasResumen();
-    } else toast('Error: ' + (d.error || ''), 'err');
-  } catch(e) { toast('Error de conexión', 'err'); }
+  const ok = await moveAppointmentFromCalendar(id, fecha, hora);
+  if (ok) closeModal('modalDetalle');
 }
 
 async function guardarNotaAdmin(id) {
@@ -394,6 +412,7 @@ async function guardarEdicion() {
     getCancelMotivo,
     esCancelExcluida,
     marcarErrorMio,
+    moveAppointmentFromCalendar,
     editarCita,
     toggleDescuentoEdit,
     calcDescuentoEdit,

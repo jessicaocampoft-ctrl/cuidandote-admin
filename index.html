@@ -704,6 +704,8 @@ tr.evt-row:hover td{background:rgba(139,92,246,.07)}
 .cal-day-cell:hover{background:rgba(27,191,176,.06)}
 .cal-day-cell.cal-today{background:rgba(27,191,176,.04)}
 .cal-day-cell.cal-today:hover{background:rgba(27,191,176,.09)}
+.cal-day-cell.cal-drop-target{background:rgba(27,191,176,.18)!important;outline:2px dashed var(--primary);outline-offset:-3px}
+.cal-ev[draggable="true"]{cursor:grab}.cal-ev[draggable="true"]:active{cursor:grabbing}
 .cal-ev{border-radius:5px;padding:3px 6px;margin-bottom:2px;cursor:pointer;transition:.15s ease;overflow:hidden}
 .cal-ev:hover{opacity:.82;transform:scale(1.01)}
 .cal-ev-ok  {background:#d1faf6;color:#0d7a70;border-left:3px solid #1BBFB0}
@@ -12708,9 +12710,9 @@ document.addEventListener('DOMContentLoaded', () => {
 <script src="js/modules/shared-storage.js"></script>
 <script src="js/modules/payments.js"></script>
   <script src="js/modules/passport.js"></script>
-  <script src="js/modules/agenda.js"></script>
+  <script src="js/modules/agenda.js?v=20260922-calendar-actions"></script>
   <script src="js/modules/appointment-create.js"></script>
-  <script src="js/modules/appointment-edit.js?v=20260911-2"></script>
+  <script src="js/modules/appointment-edit.js?v=20260922-fast-move"></script>
   <script src="js/modules/team.js"></script>
   <script src="js/modules/database.js"></script>
   <script src="js/modules/referrals.js"></script>
@@ -12729,7 +12731,7 @@ document.addEventListener('DOMContentLoaded', () => {
 <script src="js/modules/voice-assistant.js"></script>
 <script src="js/modules/reminders.js"></script>
 <script src="js/modules/waitlist.js"></script>
-<script src="js/modules/schedule-operations.js"></script>
+<script src="js/modules/schedule-operations.js?v=20260922-quick-block"></script>
 <script src="js/modules/events-agreements.js"></script>
 <script src="js/modules/commissions.js"></script>
 <script src="js/modules/patient-search.js"></script>

@@ -125,6 +125,10 @@ async function doBlock() {
   const start = document.getElementById('blStart').value;
   const end   = document.getElementById('blEnd').value;
   const reason= document.getElementById('blReason').value;
+  return createQuickBlock(date, start, end, reason);
+}
+
+async function createQuickBlock(date, start, end, reason = '') {
   if (!date||!start||!end) { toast('Completa fecha, hora inicio y fin','err'); return; }
   if (start >= end) { toast('La hora de fin debe ser mayor al inicio','err'); return; }
   try {
@@ -134,10 +138,16 @@ async function doBlock() {
       allData.bloqueos.push({bid: d.bid||'', fecha:date, inicio:start, fin:end, motivo:reason||'Bloqueado'});
       toast('Horario bloqueado correctamente');
       renderBloqueos();
-      document.getElementById('blDate').value = '';
-      document.getElementById('blReason').value = '';
+      if (typeof global.PanelAgenda?.renderCalendar === 'function') global.PanelAgenda.renderCalendar();
+      else if (typeof global.renderCalendar === 'function') global.renderCalendar();
+      const dateInput = document.getElementById('blDate');
+      const reasonInput = document.getElementById('blReason');
+      if (dateInput) dateInput.value = '';
+      if (reasonInput) reasonInput.value = '';
+      return true;
     } else toast('Error al bloquear', 'err');
   } catch(e) { toast('Error de conexión','err'); }
+  return false;
 }
 
 async function doUnblock(bid, date, startTime) {
@@ -337,6 +347,7 @@ global.PanelScheduleOperations = Object.freeze({
     resetWeeklySchedule,
     getWeeklySchedule,
     doBlock,
+    createQuickBlock,
     doUnblock,
     toggleRecurringPanel,
     switchScheduleMode,

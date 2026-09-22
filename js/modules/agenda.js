@@ -202,6 +202,100 @@ function calNext()  { calWeekStart.setDate(calWeekStart.getDate()+7); renderCale
 
 function calToday() { calWeekStart = getMonday(new Date()); renderCalendar(); }
 
+let _calendarDragId = '';
+
+function startCalendarDrag(event, encodedId) {
+  const id = decodeURIComponent(encodedId || '');
+  const cita = allData.citas.find(item => String(item.id) === id);
+  if (!cita || ['Cancelada','Atendida'].includes(cita.estado)) { event.preventDefault(); return; }
+  _calendarDragId = id;
+  event.dataTransfer.effectAllowed = 'move';
+  event.dataTransfer.setData('text/plain', id);
+  event.currentTarget.classList.add('cal-dragging');
+}
+
+function allowCalendarDrop(event) {
+  if (!_calendarDragId) return;
+  event.preventDefault();
+  event.dataTransfer.dropEffect = 'move';
+  event.currentTarget.classList.add('cal-drop-target');
+}
+
+function clearCalendarDrop(event) {
+  event?.currentTarget?.classList.remove('cal-drop-target');
+}
+
+async function dropCalendarAppointment(event, date, hour) {
+  event.preventDefault();
+  clearCalendarDrop(event);
+  const id = event.dataTransfer.getData('text/plain') || _calendarDragId;
+  _calendarDragId = '';
+  document.querySelectorAll('.cal-dragging,.cal-drop-target').forEach(node => node.classList.remove('cal-dragging','cal-drop-target'));
+  const cita = allData.citas.find(item => String(item.id) === String(id));
+  const newTime = `${pad(hour)}:00`;
+  if (!cita || (normDate(cita.fecha) === date && cita.hora === newTime)) return;
+  if (!confirm(`¿Mover la cita de ${cita.nombre} a ${fmtDate(date)} a las ${newTime}?`)) return;
+  if (!global.PanelAppointmentEdit?.moveAppointmentFromCalendar) { toast('La edición de citas todavía está cargando. Intenta de nuevo.', 'err'); return; }
+  await global.PanelAppointmentEdit.moveAppointmentFromCalendar(cita.id, date, newTime);
+}
+
+function _calendarSlotModal() {
+  let modal = document.getElementById('calendarSlotModal');
+  if (modal) return modal;
+  modal = document.createElement('div');
+  modal.id = 'calendarSlotModal';
+  modal.className = 'modal-bg';
+  modal.style.cssText = 'display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1300;align-items:center;justify-content:center;padding:18px';
+  modal.innerHTML = `<div class="modal" role="dialog" aria-modal="true" aria-labelledby="calendarSlotTitle" style="max-width:430px;width:100%">
+    <div class="modal-title" id="calendarSlotTitle">Este espacio está libre</div>
+    <p id="calendarSlotSummary" style="color:var(--muted);font-size:.86rem;margin:-4px 0 16px"></p>
+    <div id="calendarSlotBlockFields" style="display:none">
+      <div class="field"><label>Hora final</label><input id="calendarSlotEnd" type="time"></div>
+      <div class="field"><label>Motivo <span style="font-weight:400">(opcional)</span></label><input id="calendarSlotReason" type="text" placeholder="Ej: descanso, cita personal, viaje..."></div>
+    </div>
+    <div style="display:flex;gap:9px;justify-content:flex-end;flex-wrap:wrap;margin-top:18px">
+      <button id="calendarSlotCancel" class="btn btn-ghost" type="button">Cancelar</button>
+      <button id="calendarSlotNew" class="btn btn-primary" type="button">Nueva cita</button>
+      <button id="calendarSlotBlock" class="btn btn-teal" type="button">Bloquear este horario</button>
+    </div>
+  </div>`;
+  modal.addEventListener('click', event => { if (event.target === modal) modal.style.display = 'none'; });
+  document.body.appendChild(modal);
+  return modal;
+}
+
+function openCalendarSlot(date, hour) {
+  const modal = _calendarSlotModal();
+  const start = `${pad(hour)}:00`;
+  const end = `${pad(hour + 1)}:00`;
+  const summary = document.getElementById('calendarSlotSummary');
+  const endInput = document.getElementById('calendarSlotEnd');
+  const reasonInput = document.getElementById('calendarSlotReason');
+  const fields = document.getElementById('calendarSlotBlockFields');
+  const blockButton = document.getElementById('calendarSlotBlock');
+  if (summary) summary.textContent = `${fmtDate(date)} · desde las ${start}`;
+  if (endInput) endInput.value = end;
+  if (reasonInput) reasonInput.value = '';
+  if (fields) fields.style.display = 'none';
+  modal.style.display = 'flex';
+  document.getElementById('calendarSlotCancel').onclick = () => { modal.style.display = 'none'; };
+  document.getElementById('calendarSlotNew').onclick = () => {
+    modal.style.display = 'none';
+    const openNew = global.PanelAppointmentCreate?.openNuevaCitaFromCal || global.openNuevaCitaFromCal;
+    if (typeof openNew === 'function') openNew(date, hour);
+    else toast('No se pudo abrir Nueva cita. Actualiza la página e intenta de nuevo.', 'err');
+  };
+  blockButton.onclick = async () => {
+    if (fields.style.display === 'none') { fields.style.display = 'block'; blockButton.textContent = 'Confirmar bloqueo'; return; }
+    const finalHour = endInput.value;
+    if (!finalHour || finalHour <= start) { toast('La hora final debe ser posterior a la inicial', 'err'); return; }
+    blockButton.disabled = true; blockButton.textContent = 'Guardando…';
+    const ok = await global.PanelScheduleOperations?.createQuickBlock(date, start, finalHour, reasonInput.value.trim());
+    blockButton.disabled = false; blockButton.textContent = 'Bloquear este horario';
+    if (ok) modal.style.display = 'none';
+  };
+}
+
 function _calendarWeekKey(days) {
   return `${toDateStr(days[0])}:${toDateStr(days[days.length - 1])}`;
 }
@@ -269,7 +363,7 @@ async function renderCalendar() {
     days.forEach(d => {
       const ds = toDateStr(d);
       const isT = ds === todayStr;
-      html += `<div class="cal-day-cell ${isT?'cal-today':''}" onclick="openNuevaCitaFromCal('${ds}',${h})">`;
+      html += `<div class="cal-day-cell ${isT?'cal-today':''}" onclick="PanelAgenda.openCalendarSlot('${ds}',${h})" ondragover="PanelAgenda.allowCalendarDrop(event)" ondragleave="PanelAgenda.clearCalendarDrop(event)" ondrop="PanelAgenda.dropCalendarAppointment(event,'${ds}',${h})">`;
 
       // Citas del sistema
       allData.citas.forEach(c => {
@@ -280,7 +374,7 @@ async function renderCalendar() {
         const [ch] = c.hora.split(':').map(Number);
         if (ch !== h) return;
         const cls = c.estado==='Confirmada'?'cal-ev-ok':c.estado==='Atendida'?'cal-ev-info':c.estado==='Cancelada'?'cal-ev-err':'cal-ev-warn';
-        html += `<div class="cal-ev ${cls}" onclick="event.stopPropagation();verDetalle('${c.id}')">
+        html += `<div class="cal-ev ${cls}" draggable="${['Cancelada','Atendida'].includes(c.estado) ? 'false' : 'true'}" ondragstart="PanelAgenda.startCalendarDrag(event,'${encodeURIComponent(String(c.id))}')" onclick="event.stopPropagation();verDetalle('${c.id}')">
           <span class="cal-ev-time">${c.hora} · ${c.modalidad==='Domicilio'?'Dom':'Pres'}</span>
           <span class="cal-ev-name">${c.nombre}</span>
           <span class="cal-ev-serv">${c.servicio.replace('Descarga Muscular','D.Musc.').replace('Readaptación','Readap.').replace('Valoración','Val.')}</span>
@@ -365,6 +459,11 @@ async function refreshCalendar() {
     calPrev,
     calNext,
     calToday,
+    startCalendarDrag,
+    allowCalendarDrop,
+    clearCalendarDrop,
+    dropCalendarAppointment,
+    openCalendarSlot,
     renderCalendar,
     refreshCalendar
   });
