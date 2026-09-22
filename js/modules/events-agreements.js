@@ -84,10 +84,16 @@ function renderConveniosReport() {
 
 function switchNuevaMode(mode) {
   const isEvento = mode === 'evento';
-  document.getElementById('formCita').style.display   = isEvento ? 'none' : 'block';
+  const isBloqueo = mode === 'bloqueo';
+  document.getElementById('formCita').style.display   = isEvento || isBloqueo ? 'none' : 'block';
   document.getElementById('formEvento').style.display = isEvento ? 'block' : 'none';
-  document.getElementById('toggleCita').classList.toggle('active', !isEvento);
+  document.getElementById('formBloqueo').style.display = isBloqueo ? 'block' : 'none';
+  document.getElementById('toggleCita').classList.toggle('active', !isEvento && !isBloqueo);
   document.getElementById('toggleEvento').classList.toggle('active', isEvento);
+  document.getElementById('toggleBloqueo').classList.toggle('active', isBloqueo);
+  if (isBloqueo && typeof global.PanelScheduleOperations?.prepareQuickBlockFromNueva === 'function') {
+    global.PanelScheduleOperations.prepareQuickBlockFromNueva();
+  }
 }
 
 function calcDuracion() {

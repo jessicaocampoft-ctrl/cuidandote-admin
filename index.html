@@ -2732,6 +2732,7 @@ Primero evaluamos cómo está el cuerpo ahora, luego tratamos, luego te enseñam
         <div class="nc-toggle" style="margin-bottom:20px">
           <button class="nc-toggle-btn active" id="toggleCita" onclick="switchNuevaMode('cita')">Cita de paciente</button>
           <button class="nc-toggle-btn" id="toggleEvento" onclick="switchNuevaMode('evento')">⚡ Evento</button>
+          <button class="nc-toggle-btn" id="toggleBloqueo" onclick="switchNuevaMode('bloqueo')">🔒 Bloquear horario</button>
         </div>
 
         <!-- ══ FORMULARIO EVENTO ══ -->
@@ -2781,6 +2782,33 @@ Primero evaluamos cómo está el cuerpo ahora, luego tratamos, luego te enseñam
               Crear evento
             </button>
             <button class="btn btn-ghost" onclick="clearEvento()">Limpiar</button>
+          </div>
+        </div>
+
+        <!-- ══ BLOQUEO RÁPIDO DE HORARIO ══ -->
+        <div id="formBloqueo" style="display:none">
+          <div class="info-box" style="margin-bottom:16px">Reserva este espacio para que no aparezca disponible al agendar. Las citas existentes no se modifican.</div>
+          <div class="form-grid">
+            <div class="field">
+              <label>Fecha *</label>
+              <input type="date" id="quickBlockDate">
+            </div>
+            <div class="field">
+              <label>Motivo</label>
+              <input type="text" id="quickBlockReason" placeholder="Ej: Almuerzo, reunión, diligencia">
+            </div>
+            <div class="field">
+              <label>Hora de inicio *</label>
+              <input type="time" id="quickBlockStart">
+            </div>
+            <div class="field">
+              <label>Hora de finalización *</label>
+              <input type="time" id="quickBlockEnd">
+            </div>
+          </div>
+          <div style="margin-top:16px;display:flex;gap:10px">
+            <button class="btn btn-teal" onclick="PanelScheduleOperations.submitQuickBlockFromNueva()">🔒 Bloquear horario</button>
+            <button class="btn btn-ghost" onclick="PanelScheduleOperations.clearQuickBlockFromNueva()">Limpiar</button>
           </div>
         </div>
 
@@ -12731,8 +12759,8 @@ document.addEventListener('DOMContentLoaded', () => {
 <script src="js/modules/voice-assistant.js"></script>
 <script src="js/modules/reminders.js"></script>
 <script src="js/modules/waitlist.js"></script>
-<script src="js/modules/schedule-operations.js?v=20260922-quick-block"></script>
-<script src="js/modules/events-agreements.js"></script>
+<script src="js/modules/schedule-operations.js?v=20260922-quick-block-tab"></script>
+<script src="js/modules/events-agreements.js?v=20260922-quick-block-tab"></script>
 <script src="js/modules/commissions.js"></script>
 <script src="js/modules/patient-search.js"></script>
 <script src="js/modules/patient-records.js"></script>

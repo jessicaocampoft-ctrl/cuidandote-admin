@@ -150,6 +150,37 @@ async function createQuickBlock(date, start, end, reason = '') {
   return false;
 }
 
+function prepareQuickBlockFromNueva() {
+  const today = new Date().toLocalDateStr();
+  const date = document.getElementById('quickBlockDate');
+  const start = document.getElementById('quickBlockStart');
+  const end = document.getElementById('quickBlockEnd');
+  if (date && !date.value) date.value = today;
+  if (start && !start.value) start.value = '12:00';
+  if (end && !end.value) end.value = '13:00';
+}
+
+function clearQuickBlockFromNueva() {
+  const date = document.getElementById('quickBlockDate');
+  const start = document.getElementById('quickBlockStart');
+  const end = document.getElementById('quickBlockEnd');
+  const reason = document.getElementById('quickBlockReason');
+  if (date) date.value = new Date().toLocalDateStr();
+  if (start) start.value = '12:00';
+  if (end) end.value = '13:00';
+  if (reason) reason.value = '';
+}
+
+async function submitQuickBlockFromNueva() {
+  const date = document.getElementById('quickBlockDate')?.value || '';
+  const start = document.getElementById('quickBlockStart')?.value || '';
+  const end = document.getElementById('quickBlockEnd')?.value || '';
+  const reason = document.getElementById('quickBlockReason')?.value.trim() || '';
+  const ok = await createQuickBlock(date, start, end, reason);
+  if (ok) clearQuickBlockFromNueva();
+  return ok;
+}
+
 async function doUnblock(bid, date, startTime) {
   try {
     const r = await fetch(`${APPS_SCRIPT_URL}?action=unblock&token=${encodeURIComponent(TOKEN)}&bid=${encodeURIComponent(bid)}&date=${date}&startTime=${startTime}`);
@@ -348,6 +379,9 @@ global.PanelScheduleOperations = Object.freeze({
     getWeeklySchedule,
     doBlock,
     createQuickBlock,
+    prepareQuickBlockFromNueva,
+    clearQuickBlockFromNueva,
+    submitQuickBlockFromNueva,
     doUnblock,
     toggleRecurringPanel,
     switchScheduleMode,
