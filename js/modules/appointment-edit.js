@@ -110,9 +110,18 @@ async function changeStatus(id, status) {
     const d = await r.json();
     if (d.ok) {
       const cita = allData.citas.find(c => c.id === id);
+      const estabaAtendida = cita?.estado === 'Atendida';
       if (cita) cita.estado = status;
       if (cita) logChange('Estado cambiado', `${cita.nombre} · ${cita.servicio} ${cita.fecha} → ${status}`);
-      toast('Estado actualizado: ' + status);
+      let paqueteMsg = '';
+      if (cita && status === 'Atendida' && !estabaAtendida && global.PanelPackages?.consumeSessionForAppointment) {
+        const consumo = global.PanelPackages.consumeSessionForAppointment(cita);
+        if (consumo.ok && !consumo.already) paqueteMsg = ` · Paquete: sesión ${consumo.sesion} de ${consumo.paquete.sesiones}`;
+      } else if (cita && estabaAtendida && status !== 'Atendida' && global.PanelPackages?.releaseSessionForAppointment) {
+        const reverso = global.PanelPackages.releaseSessionForAppointment(cita);
+        if (reverso.ok) paqueteMsg = ' · Sesión devuelta al paquete';
+      }
+      toast('Estado actualizado: ' + status + paqueteMsg);
       if (status === 'No asistió' && cita) {
         const t = String(cita.telefono||'').replace(/\D/g,'');
         const phone = t.length <= 10 ? '57'+t : t;

@@ -13,7 +13,7 @@ function _savePkPlantillas(a) { kvSet('pk_plantillas', JSON.stringify(a)); }
 function abrirModalPaquete(plIdxPre) {
   const plantillas = _getPkPlantillas();
   const sel = document.getElementById('pkPlantillaSel');
-  if (sel) sel.innerHTML = '<option value="">— Elige plantilla —</option>' + plantillas.map((pl,i) => `<option value="${i}" ${i===plIdxPre?'selected':''}>${pl.nombre}</option>`).join('');
+  if (sel) sel.innerHTML = '<option value="">— Paquete personalizado —</option>' + plantillas.map((pl,i) => `<option value="${i}" ${i===plIdxPre?'selected':''}>${pl.nombre}</option>`).join('');
   const dl = document.getElementById('pkPacienteList');
   if (dl) {
     const nomCitas = allData.citas.map(c=>c.nombre||'').filter(Boolean);
@@ -22,7 +22,26 @@ function abrirModalPaquete(plIdxPre) {
     dl.innerHTML   = todos.map(n=>`<option value="${n}">`).join('');
   }
   const fi = document.getElementById('pkFechaCompra'); if (fi) fi.value = today();
+  const nombre = document.getElementById('pkNombrePaquete'); if (nombre) nombre.value = '';
+  const sesiones = document.getElementById('pkSesionesTotal'); if (sesiones) sesiones.value = '';
+  const iniciales = document.getElementById('pkSesionesIniciales'); if (iniciales) iniciales.value = 0;
+  const valor = document.getElementById('pkValorTotal'); if (valor) valor.value = '';
+  const abono = document.getElementById('pkAbonoInicial'); if (abono) abono.value = '';
+  if (plIdxPre !== undefined) autocompletarPaqueteDesdePlantilla();
   const pkModal = document.getElementById('modalPaquete'); if (pkModal) pkModal.style.display = 'flex';
+}
+
+function autocompletarPaqueteDesdePlantilla() {
+  const idx = document.getElementById('pkPlantillaSel')?.value;
+  if (idx === undefined || idx === '') return;
+  const pl = _getPkPlantillas()[Number(idx)];
+  if (!pl) return;
+  const nombre = document.getElementById('pkNombrePaquete');
+  const sesiones = document.getElementById('pkSesionesTotal');
+  const valor = document.getElementById('pkValorTotal');
+  if (nombre) nombre.value = pl.nombre || '';
+  if (sesiones) sesiones.value = Number(pl.sesiones) || '';
+  if (valor) valor.value = pl.precio || '';
 }
 
 function abrirModalPlantillaPaquete() { const m = document.getElementById('modalPlantillaPaquete'); if (m) m.style.display='flex'; }
@@ -64,7 +83,7 @@ function renderPaquetes() {
     const diff = Math.round((new Date(p.vencimiento+'T12:00:00') - new Date(hoy+'T12:00:00'))/86400000);
     return diff >= 0 && diff <= 7;
   });
-  const valorTotal = activos.reduce((s,p) => s+parsePrecio(p.precio||0),0);
+  const valorTotal = activos.reduce((s,p) => s + Number(p.valorTotal ?? parsePrecio(p.precio || 0)), 0);
   const sv = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
   sv('pkActivos', activos.length); sv('pkValor', '$'+valorTotal.toLocaleString('es-CO'));
   sv('pkPorVencer', porVencer.length); sv('pkAgotados', agotados.length);
@@ -103,6 +122,10 @@ function renderPaquetes() {
     const barC      = agotado?'#ef4444':penultimo?'#f59e0b':'var(--primary)';
     const pkTel    = (p.telefono || '').replace(/\D/g, '');
     const pkNombre = (p.paciente || '').split(' ')[0];
+    const valorPaquete = Number(p.valorTotal ?? parsePrecio(p.precio || 0));
+    const abonado = Number(p.abonado || 0);
+    const saldo = Math.max(0, valorPaquete - abonado);
+    const pagoColor = saldo > 0 ? '#d97706' : '#059669';
     const _pkWa    = (msg) => pkTel.length >= 7 ? `https://wa.me/57${pkTel.slice(-10)}?text=${encodeURIComponent(msg)}` : null;
     let alerta = '';
     if (agotado) {
@@ -131,14 +154,16 @@ function renderPaquetes() {
           <div style="font-size:.8rem;color:var(--muted)">${p.nombre||'—'} · Comprado: ${fmtDate(p.fechaCompra)} · Vence: ${p.vencimiento?fmtDate(p.vencimiento):'—'}</div>
         </div>
         <div style="text-align:right">
-          <div style="font-family:var(--font-m);font-size:.82rem;color:var(--primary)">${p.consumidas||0}/${p.sesiones||0} sesiones consumidas</div>
-          <div style="font-size:.75rem;color:var(--muted)">Restantes: <strong>${rest}</strong></div>
+          <div style="font-family:var(--font-m);font-size:.82rem;color:var(--primary)">Sesión ${agotado ? p.sesiones : (p.consumidas||0)+1} de ${p.sesiones||0}</div>
+          <div style="font-size:.75rem;color:var(--muted)">Realizadas: <strong>${p.consumidas||0}</strong> · Restantes: <strong>${rest}</strong></div>
+          ${valorPaquete > 0 ? `<div style="font-size:.75rem;color:${pagoColor};margin-top:4px">Pagado: <strong>${fmtPeso(abonado)}</strong> · Debe: <strong>${fmtPeso(saldo)}</strong></div>` : ''}
         </div>
       </div>
       <div style="margin:10px 0 4px;background:var(--s2);border-radius:99px;height:8px;overflow:hidden"><div style="width:${pct}%;height:100%;background:${barC};border-radius:99px;transition:width .5s"></div></div>
       ${alerta}
       <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
         <button class="btn btn-teal btn-sm" onclick="usarSesion(${i})" ${agotado?'disabled':''}>➕ Usar sesión</button>
+        ${valorPaquete > 0 && saldo > 0 ? `<button class="btn btn-ghost btn-sm" onclick="PanelPackages.registrarAbonoPaquete(${i})">💳 Registrar abono</button>` : ''}
         <button class="btn btn-ghost btn-sm" onclick="ajustarSesiones(${i})">✏️ Ajustar sesiones</button>
         <button class="btn btn-ghost btn-sm" onclick="borrarPaqueteAsignado(${i})">🗑️ Eliminar</button>
       </div>
@@ -153,17 +178,106 @@ function usarSesion(idx) {
   renderPaquetes(); toast(`Sesión registrada: ${p.consumidas}/${p.sesiones}`);
 }
 
+function registrarAbonoPaquete(idx) {
+  const paquetes = _getPkAsignados();
+  const p = paquetes[idx];
+  if (!p) return;
+  const total = Number(p.valorTotal ?? parsePrecio(p.precio || 0));
+  const actual = Number(p.abonado || 0);
+  const saldo = Math.max(0, total - actual);
+  const valor = prompt(`Abono de "${p.nombre}" (${p.paciente})\nSaldo actual: ${fmtPeso(saldo)}\n¿Cuánto recibió?`, '');
+  if (valor === null) return;
+  const abono = parsePrecio(valor);
+  if (!abono || abono <= 0 || abono > saldo) { toast('Ingresa un abono válido que no supere el saldo','err'); return; }
+  p.valorTotal = total;
+  p.abonado = actual + abono;
+  _savePkAsignados(paquetes);
+  renderPaquetes();
+  toast(`Abono registrado. Saldo: ${fmtPeso(total - p.abonado)}`);
+}
+
+function _normalizarPaciente(value) {
+  return String(value || '').trim().toLocaleLowerCase('es-CO').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ');
+}
+
+function _telefonoComparable(value) {
+  const digits = String(value || '').replace(/\D/g, '');
+  return digits.length >= 7 ? digits.slice(-10) : '';
+}
+
+function _paqueteParaCita(cita, paquetes = _getPkAsignados()) {
+  const nombre = _normalizarPaciente(cita?.nombre);
+  const tel = _telefonoComparable(cita?.telefono);
+  return paquetes
+    .map((p, index) => ({p, index}))
+    .filter(({p}) => {
+      const coincideTelefono = tel && _telefonoComparable(p.telefono) === tel;
+      const coincideNombre = nombre && _normalizarPaciente(p.paciente) === nombre;
+      return (coincideTelefono || coincideNombre) && Number(p.sesiones || 0) > Number(p.consumidas || 0);
+    })
+    .sort((a, b) => String(b.p.fechaCompra || '').localeCompare(String(a.p.fechaCompra || '')))[0];
+}
+
+function consumeSessionForAppointment(cita) {
+  if (!cita?.id) return {ok:false};
+  const paquetes = _getPkAsignados();
+  const found = _paqueteParaCita(cita, paquetes);
+  if (!found) return {ok:false};
+  const {p} = found;
+  p.consumoCitas = Array.isArray(p.consumoCitas) ? p.consumoCitas : [];
+  const existing = p.consumoCitas.find(item => String(item.id) === String(cita.id));
+  if (existing) return {ok:true, already:true, paquete:p, sesion:Number(existing.sesion || p.consumidas)};
+  p.consumidas = Number(p.consumidas || 0) + 1;
+  p.consumoCitas.push({id:String(cita.id), sesion:p.consumidas});
+  _savePkAsignados(paquetes);
+  if (document.getElementById('pkLista')) renderPaquetes();
+  return {ok:true, paquete:p, sesion:p.consumidas};
+}
+
+function releaseSessionForAppointment(cita) {
+  if (!cita?.id) return {ok:false};
+  const paquetes = _getPkAsignados();
+  const found = paquetes.map((p, index) => ({p, index})).find(({p}) =>
+    Array.isArray(p.consumoCitas) && p.consumoCitas.some(item => String(item.id) === String(cita.id))
+  );
+  if (!found) return {ok:false};
+  const {p} = found;
+  p.consumoCitas = p.consumoCitas.filter(item => String(item.id) !== String(cita.id));
+  p.consumidas = Math.max(0, Number(p.consumidas || 0) - 1);
+  _savePkAsignados(paquetes);
+  if (document.getElementById('pkLista')) renderPaquetes();
+  return {ok:true, paquete:p};
+}
+
+function getAppointmentPackageBadge(cita) {
+  const paquetes = _getPkAsignados();
+  const found = paquetes.map(p => ({p, record:(p.consumoCitas || []).find(item => String(item.id) === String(cita?.id))}))
+    .find(item => item.record) || _paqueteParaCita(cita, paquetes);
+  if (!found) return '';
+  const p = found.p;
+  const sesion = found.record ? Number(found.record.sesion) : Math.min(Number(p.sesiones || 0), Number(p.consumidas || 0) + 1);
+  const total = Number(p.sesiones || 0);
+  if (!sesion || !total) return '';
+  const estado = found.record ? 'registrada' : 'próxima';
+  return `<br><span style="font-size:.72rem;color:var(--primary);font-weight:700">📦 ${esc(p.nombre || 'Paquete')} · Sesión ${sesion} de ${total} (${estado})</span>`;
+}
+
   global.PanelPackages = Object.freeze({
     _getPkAsignados,
     _getPkPlantillas,
     _savePkAsignados,
     _savePkPlantillas,
     abrirModalPaquete,
+    autocompletarPaqueteDesdePlantilla,
     abrirModalPlantillaPaquete,
     ajustarSesiones,
     borrarPaqueteAsignado,
     borrarPlantillaPaquete,
     renderPaquetes,
-    usarSesion
+    usarSesion,
+    registrarAbonoPaquete,
+    consumeSessionForAppointment,
+    releaseSessionForAppointment,
+    getAppointmentPackageBadge
   });
 })(window);

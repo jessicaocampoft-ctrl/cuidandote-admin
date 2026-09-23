@@ -136,7 +136,7 @@ function renderAgenda(keepPage = false) {
         <small style="color:var(--muted)">${esc(c.telefono||'')}</small><br>
         <button class="btn btn-ghost btn-sm" style="margin-top:3px;font-size:.7rem;padding:2px 7px" onclick="verHistorial('${encodeURIComponent(c.nombre)}')">📋 Historial</button>
       </td>
-      <td style="font-size:.82rem">${esc(c.servicio)}${sesionBadge(c.nombre, c.servicio)}<br><span class="health-badge ${h.tone}">${esc(h.badge)}</span></td>
+      <td style="font-size:.82rem">${esc(c.servicio)}${sesionBadge(c)}<br><span class="health-badge ${h.tone}">${esc(h.badge)}</span></td>
       <td><span class="chip ${c.modalidad==='Domicilio'?'chip-info':c.modalidad==='Virtual'?'chip-warn':'chip-ok'}" style="font-size:.7rem">${esc(c.modalidad)}</span></td>
       <td style="font-family:var(--font-m);color:var(--primary);font-size:.82rem">${esc(c.precio)}<br>${pagoBadge(c.id)}</td>
       <td>
@@ -265,35 +265,9 @@ function _calendarSlotModal() {
 }
 
 function openCalendarSlot(date, hour) {
-  const modal = _calendarSlotModal();
-  const start = `${pad(hour)}:00`;
-  const end = `${pad(hour + 1)}:00`;
-  const summary = document.getElementById('calendarSlotSummary');
-  const endInput = document.getElementById('calendarSlotEnd');
-  const reasonInput = document.getElementById('calendarSlotReason');
-  const fields = document.getElementById('calendarSlotBlockFields');
-  const blockButton = document.getElementById('calendarSlotBlock');
-  if (summary) summary.textContent = `${fmtDate(date)} · desde las ${start}`;
-  if (endInput) endInput.value = end;
-  if (reasonInput) reasonInput.value = '';
-  if (fields) fields.style.display = 'none';
-  modal.style.display = 'flex';
-  document.getElementById('calendarSlotCancel').onclick = () => { modal.style.display = 'none'; };
-  document.getElementById('calendarSlotNew').onclick = () => {
-    modal.style.display = 'none';
-    const openNew = global.PanelAppointmentCreate?.openNuevaCitaFromCal || global.openNuevaCitaFromCal;
-    if (typeof openNew === 'function') openNew(date, hour);
-    else toast('No se pudo abrir Nueva cita. Actualiza la página e intenta de nuevo.', 'err');
-  };
-  blockButton.onclick = async () => {
-    if (fields.style.display === 'none') { fields.style.display = 'block'; blockButton.textContent = 'Confirmar bloqueo'; return; }
-    const finalHour = endInput.value;
-    if (!finalHour || finalHour <= start) { toast('La hora final debe ser posterior a la inicial', 'err'); return; }
-    blockButton.disabled = true; blockButton.textContent = 'Guardando…';
-    const ok = await global.PanelScheduleOperations?.createQuickBlock(date, start, finalHour, reasonInput.value.trim());
-    blockButton.disabled = false; blockButton.textContent = 'Bloquear este horario';
-    if (ok) modal.style.display = 'none';
-  };
+  const openNew = global.PanelAppointmentCreate?.openNuevaCitaFromCal || global.openNuevaCitaFromCal;
+  if (typeof openNew === 'function') openNew(date, hour);
+  else toast('No se pudo abrir Nueva cita. Actualiza la página e intenta de nuevo.', 'err');
 }
 
 function _calendarWeekKey(days) {

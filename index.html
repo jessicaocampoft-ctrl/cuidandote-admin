@@ -3486,7 +3486,18 @@ Primero evaluamos cómo está el cuerpo ahora, luego tratamos, luego te enseñam
         <div class="modal-title">Asignar paquete a paciente</div>
         <div class="field"><label>Paciente *</label><input type="text" id="pkPaciente" placeholder="Nombre" list="pkPacienteList"><datalist id="pkPacienteList"></datalist></div>
         <div class="field"><label>Teléfono</label><input type="text" id="pkTelefono" placeholder="3136..."></div>
-        <div class="field"><label>Plantilla *</label><select id="pkPlantillaSel" style="width:100%;background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font-b);font-size:.9rem;padding:10px 12px;outline:none"><option value="">— Elige —</option></select></div>
+        <div class="field"><label>Plantilla (opcional)</label><select id="pkPlantillaSel" onchange="PanelPackages.autocompletarPaqueteDesdePlantilla()" style="width:100%;background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font-b);font-size:.9rem;padding:10px 12px;outline:none"><option value="">— Paquete personalizado —</option></select></div>
+        <div class="field"><label>Nombre del paquete *</label><input type="text" id="pkNombrePaquete" placeholder="Ej: Pack 6 sesiones descarga"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div class="field"><label>Total de sesiones *</label><input type="number" id="pkSesionesTotal" min="1" placeholder="6"></div>
+          <div class="field"><label>Sesiones ya realizadas</label><input type="number" id="pkSesionesIniciales" min="0" value="0" placeholder="0"></div>
+        </div>
+        <div style="font-size:.76rem;color:var(--muted);margin:-4px 0 10px">Si el paciente ya había iniciado el paquete, registra aquí las sesiones que ya llevó. La siguiente aparecerá como la sesión correspondiente.</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div class="field"><label>Valor total del paquete</label><input type="text" id="pkValorTotal" placeholder="Ej: 420.000"></div>
+          <div class="field"><label>Abono recibido</label><input type="text" id="pkAbonoInicial" placeholder="Ej: 200.000"></div>
+        </div>
+        <div style="font-size:.76rem;color:var(--muted);margin:-4px 0 10px">El saldo pendiente se calcula automáticamente: valor total menos abonos recibidos.</div>
         <div class="field"><label>Fecha de compra</label><input type="date" id="pkFechaCompra"></div>
         <div class="field"><label>Notas</label><input type="text" id="pkNotas" placeholder="Observaciones..."></div>
         <div style="display:flex;gap:10px;margin-top:18px">
@@ -9008,7 +9019,12 @@ function updateSesionesInfo(...args) {
   return module.updateSesionesInfo(...args);
 }
 
-function sesionBadge(nombre, servicio) {
+function sesionBadge(citaONombre, servicio) {
+  const cita = typeof citaONombre === 'object' ? citaONombre : null;
+  const packageBadge = cita && window.PanelPackages?.getAppointmentPackageBadge?.(cita);
+  if (packageBadge) return packageBadge;
+  const nombre = cita ? cita.nombre : citaONombre;
+  servicio = cita ? cita.servicio : servicio;
   const n = sesionesPorPaquete[servicio];
   if (!n) return '';
   const norm   = (nombre||'').toLowerCase().trim();
@@ -11472,13 +11488,20 @@ function guardarPaqueteAsignado() {
   const fechaC   = document.getElementById('pkFechaCompra').value || today();
   const notas    = (document.getElementById('pkNotas').value||'').trim();
   const tel      = (document.getElementById('pkTelefono').value||'').replace(/\D/g,'');
-  if (!paciente || plIdx === '') { toast('Completa paciente y plantilla','err'); return; }
-  const pl = _getPkPlantillas()[+plIdx];
-  if (!pl) { toast('Plantilla no encontrada','err'); return; }
+  const nombre   = (document.getElementById('pkNombrePaquete').value||'').trim();
+  const sesiones = parseInt(document.getElementById('pkSesionesTotal').value, 10);
+  const consumidas = parseInt(document.getElementById('pkSesionesIniciales').value || '0', 10);
+  const valorTotal = parsePrecio((document.getElementById('pkValorTotal').value||'').trim());
+  const abonado = parsePrecio((document.getElementById('pkAbonoInicial').value||'').trim());
+  const pl = plIdx === '' ? null : _getPkPlantillas()[+plIdx];
+  if (!paciente || !nombre || !sesiones || sesiones < 1) { toast('Completa paciente, nombre y total de sesiones','err'); return; }
+  if (!Number.isInteger(consumidas) || consumidas < 0 || consumidas > sesiones) { toast('Las sesiones realizadas deben estar entre 0 y el total','err'); return; }
+  if (abonado < 0 || valorTotal < 0 || (valorTotal > 0 && abonado > valorTotal)) { toast('Revisa el valor total y el abono recibido','err'); return; }
+  if (plIdx !== '' && !pl) { toast('Plantilla no encontrada','err'); return; }
   const vigD = new Date(fechaC+'T12:00:00');
-  vigD.setDate(vigD.getDate() + (+pl.vigencia||60));
+  vigD.setDate(vigD.getDate() + (+(pl?.vigencia)||60));
   const asignados = _getPkAsignados();
-  asignados.push({ paciente, telefono:tel, nombre:pl.nombre, sesiones:+pl.sesiones, consumidas:0, precio:pl.precio, fechaCompra:fechaC, vencimiento:vigD.toLocalDateStr(), notas });
+  asignados.push({ id:'pk_'+Date.now(), paciente, telefono:tel, nombre, sesiones, consumidas, consumoCitas:[], precio:pl?.precio||'', valorTotal, abonado, fechaCompra:fechaC, vencimiento:vigD.toLocalDateStr(), notas });
   _savePkAsignados(asignados);
   document.getElementById('modalPaquete').style.display='none';
   renderPaquetes(); toast('Paquete asignado ✓');
@@ -12738,13 +12761,13 @@ document.addEventListener('DOMContentLoaded', () => {
 <script src="js/modules/shared-storage.js"></script>
 <script src="js/modules/payments.js"></script>
   <script src="js/modules/passport.js"></script>
-  <script src="js/modules/agenda.js?v=20260922-calendar-actions"></script>
+  <script src="js/modules/agenda.js?v=20260922-package-progress"></script>
   <script src="js/modules/appointment-create.js"></script>
-  <script src="js/modules/appointment-edit.js?v=20260922-fast-move"></script>
+  <script src="js/modules/appointment-edit.js?v=20260922-package-progress"></script>
   <script src="js/modules/team.js"></script>
   <script src="js/modules/database.js"></script>
   <script src="js/modules/referrals.js"></script>
-  <script src="js/modules/packages.js"></script>
+  <script src="js/modules/packages.js?v=20260922-package-progress"></script>
   <script src="js/modules/finance.js?v=20260917-analysis-export"></script>
   <script src="js/modules/kpi.js"></script>
   <script src="js/modules/budget.js"></script>
