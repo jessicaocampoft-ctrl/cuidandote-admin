@@ -270,6 +270,97 @@ function openCalendarSlot(date, hour) {
   else toast('No se pudo abrir Nueva cita. Actualiza la página e intenta de nuevo.', 'err');
 }
 
+function _calendarDuplicateModal() {
+  let modal = document.getElementById('calendarDuplicateModal');
+  if (modal) return modal;
+  modal = document.createElement('div');
+  modal.id = 'calendarDuplicateModal';
+  modal.className = 'modal-bg';
+  modal.style.cssText = 'display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1300;align-items:center;justify-content:center;padding:18px';
+  modal.innerHTML = `<div class="modal" role="dialog" aria-modal="true" aria-labelledby="calendarDuplicateTitle" style="max-width:470px;width:100%">
+    <div class="modal-title" id="calendarDuplicateTitle">Duplicar cita</div>
+    <p id="calendarDuplicateSummary" style="color:var(--muted);font-size:.86rem;line-height:1.5;margin:-4px 0 16px"></p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="field"><label>Nueva fecha *</label><input id="calendarDuplicateDate" type="date" required></div>
+      <div class="field"><label>Nueva hora *</label><input id="calendarDuplicateTime" type="time" required></div>
+    </div>
+    <p style="font-size:.78rem;color:var(--muted);margin:3px 0 0">Se crea una cita nueva. La cita original no se modifica.</p>
+    <div style="display:flex;gap:9px;justify-content:flex-end;flex-wrap:wrap;margin-top:18px">
+      <button id="calendarDuplicateCancel" class="btn btn-ghost" type="button">Cancelar</button>
+      <button id="calendarDuplicateSubmit" class="btn btn-primary" type="button">Duplicar cita</button>
+    </div>
+  </div>`;
+  modal.addEventListener('click', event => { if (event.target === modal) modal.style.display = 'none'; });
+  document.body.appendChild(modal);
+  return modal;
+}
+
+function openCalendarDuplicate(event, encodedId) {
+  event?.preventDefault();
+  event?.stopPropagation();
+  const id = decodeURIComponent(encodedId || '');
+  const cita = allData.citas.find(item => String(item.id) === id);
+  if (!cita) { toast('No encontramos esa cita. Actualiza el calendario e intenta de nuevo.', 'err'); return; }
+
+  const modal = _calendarDuplicateModal();
+  const dateInput = modal.querySelector('#calendarDuplicateDate');
+  const timeInput = modal.querySelector('#calendarDuplicateTime');
+  const summary = modal.querySelector('#calendarDuplicateSummary');
+  const submit = modal.querySelector('#calendarDuplicateSubmit');
+  const cancel = modal.querySelector('#calendarDuplicateCancel');
+
+  summary.textContent = `${cita.nombre} · ${cita.servicio} · ${fmtDate(cita.fecha)} a las ${cita.hora}.`;
+  dateInput.value = normDate(cita.fecha) || '';
+  timeInput.value = String(cita.hora || '').slice(0, 5);
+  modal.style.display = 'flex';
+  setTimeout(() => dateInput.focus(), 0);
+
+  cancel.onclick = () => { modal.style.display = 'none'; };
+  submit.onclick = async () => {
+    const date = dateInput.value;
+    const time = timeInput.value;
+    if (!date || !time) { toast('Elige la nueva fecha y hora.', 'err'); return; }
+    if (!global.PanelAppointmentCreate?.validateNoMidnight?.(time, 'duplicar la cita')) return;
+
+    submit.disabled = true;
+    const originalLabel = submit.textContent;
+    submit.textContent = 'Duplicando…';
+    try {
+      const data = {
+        name: cita.nombre || '', phone: cita.telefono || '', email: cita.email || '',
+        service: cita.servicio || '', modality: cita.modalidad || 'Presencial',
+        date, time, priceP: cita.precio || 'A convenir', priceD: cita.precio || 'A convenir',
+        address: cita.direccion || '', notes: cita.notas || '', notaAdmin: cita.notaAdmin || '',
+        canal: cita.canal || 'Directo', gimnasio: cita.gimnasio || '',
+        descuentoCliente: cita.descuentoCliente || '', comisionGym: cita.comisionGym || '',
+        ingresoReal: cita.ingresoReal || '', margenPct: cita.margenPct || ''
+      };
+      const response = await fetch(`${APPS_SCRIPT_URL}?action=adminBook&token=${encodeURIComponent(TOKEN)}&data=${encodeURIComponent(JSON.stringify(data))}`);
+      const result = await response.json();
+      if (!response.ok || !result.ok) throw new Error(result?.error || 'El servidor no pudo crear la copia.');
+
+      if (typeof global._addOptimisticAppointment === 'function') global._addOptimisticAppointment(data, result);
+      else if (Array.isArray(allData.citas) && result.id) allData.citas.unshift({
+        id: result.id, nombre: data.name, telefono: data.phone, email: data.email,
+        servicio: data.service, modalidad: data.modality, fecha: data.date, hora: data.time,
+        precio: data.priceP, direccion: data.address, notas: data.notes, notaAdmin: data.notaAdmin,
+        estado: 'Confirmada', pago: ''
+      });
+      modal.style.display = 'none';
+      toast('✓ Cita duplicada. La original quedó intacta.', 'ok');
+      renderCalendar();
+      renderAgenda();
+      initDashboard();
+      if (typeof global._refreshPanelAfterBooking === 'function') global._refreshPanelAfterBooking();
+    } catch (error) {
+      toast('No se duplicó la cita: ' + (error?.message || 'Error de conexión.'), 'err');
+    } finally {
+      submit.disabled = false;
+      submit.textContent = originalLabel;
+    }
+  };
+}
+
 function _calendarWeekKey(days) {
   return `${toDateStr(days[0])}:${toDateStr(days[days.length - 1])}`;
 }
@@ -348,7 +439,7 @@ async function renderCalendar() {
         const [ch] = c.hora.split(':').map(Number);
         if (ch !== h) return;
         const cls = c.estado==='Confirmada'?'cal-ev-ok':c.estado==='Atendida'?'cal-ev-info':c.estado==='Cancelada'?'cal-ev-err':'cal-ev-warn';
-        html += `<div class="cal-ev ${cls}" draggable="${['Cancelada','Atendida'].includes(c.estado) ? 'false' : 'true'}" ondragstart="PanelAgenda.startCalendarDrag(event,'${encodeURIComponent(String(c.id))}')" onclick="event.stopPropagation();verDetalle('${c.id}')">
+        html += `<div class="cal-ev ${cls}" draggable="${['Cancelada','Atendida'].includes(c.estado) ? 'false' : 'true'}" ondragstart="PanelAgenda.startCalendarDrag(event,'${encodeURIComponent(String(c.id))}')" onclick="event.stopPropagation();verDetalle('${c.id}')" oncontextmenu="PanelAgenda.openCalendarDuplicate(event,'${encodeURIComponent(String(c.id))}')" title="Clic para ver · clic derecho para duplicar">
           <span class="cal-ev-time">${c.hora} · ${c.modalidad==='Domicilio'?'Dom':'Pres'}</span>
           <span class="cal-ev-name">${c.nombre}</span>
           <span class="cal-ev-serv">${c.servicio.replace('Descarga Muscular','D.Musc.').replace('Readaptación','Readap.').replace('Valoración','Val.')}</span>
@@ -438,6 +529,7 @@ async function refreshCalendar() {
     clearCalendarDrop,
     dropCalendarAppointment,
     openCalendarSlot,
+    openCalendarDuplicate,
     renderCalendar,
     refreshCalendar
   });
