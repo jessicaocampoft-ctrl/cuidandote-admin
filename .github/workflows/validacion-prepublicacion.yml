@@ -1,0 +1,46 @@
+name: Validación prepublicación
+
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  prepublicacion:
+    name: Prepublicación
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar código
+        uses: actions/checkout@v4
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Validar estructura y contratos críticos
+        run: node tools/validar-prepublicacion.mjs
+
+      - name: Validar sintaxis de JavaScript
+        shell: bash
+        run: |
+          set -euo pipefail
+          while IFS= read -r -d '' file; do
+            echo "Revisando $file"
+            node --check "$file"
+          done < <(find js -type f -name '*.js' -print0)
+          node --check public-schedule-admin.js
+
+      - name: Confirmar ausencia de conflictos Git
+        shell: bash
+        run: |
+          set -euo pipefail
+          if grep -RInE '^(<<<<<<<|=======|>>>>>>>)' -- index.html js public-schedule-admin.js; then
+            echo 'Se encontraron marcadores de conflicto Git.'
+            exit 1
+          fi
+          echo 'Sin marcadores de conflicto Git.'
