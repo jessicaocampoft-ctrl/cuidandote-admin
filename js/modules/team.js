@@ -1,4 +1,4 @@
-/* Cuidándote Fisioterapia — Equipo clínico y portal profesional. */
+/* Cuidándote Fisioterapia — Colaboradores Cuidándote. */
 (function (global) {
   'use strict';
 
@@ -175,7 +175,7 @@ function renderTeamOperations(pros, pendientes, novedades) {
                 <small>${r.citas.length ? r.citas.map(c => `${esc(c.hora || 'Sin hora')} ${esc(c.nombre || 'Paciente')}`).join(' · ') : 'Sin citas asignadas hoy'}</small>
               </div>
               <span class="team-pill ${r.citas.length ? 'info' : ''}">${r.citas.length} cita${r.citas.length === 1 ? '' : 's'}</span>
-            </div>`).join('') : '<div class="empty"><p>No hay fisioterapeutas activos.</p></div>'}
+            </div>`).join('') : '<div class="empty"><p>No hay colaboradores activos.</p></div>'}
         </div>
       </div>
       <div class="team-panel">
@@ -204,7 +204,7 @@ function renderEquipo() {
   const porPagar = cuentas.filter(c => (c.Estado || '') !== 'Pagada');
 
   document.getElementById('equipoStats').innerHTML = [
-    ['Profesionales activos', pros.filter(p => (p.estado || '') === 'Activo').length],
+    ['Colaboradores activos', pros.filter(p => (p.estado || '') === 'Activo').length],
     ['Citas asignadas', citasAsignadasOperativas.length],
     ['Novedades pendientes', novedades.filter(n => (n.EstadoAdmin || 'Pendiente') === 'Pendiente').length],
     ['Cuentas por pagar', porPagar.length]
@@ -232,7 +232,7 @@ function renderEquipo() {
         <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deletePro('${esc(p.id)}','${esc(p.nombre)}')">Eliminar</button>
       </div>
     </div>`;
-  }).join('') : '<div class="empty"><p>No hay fisioterapeutas creados aún.</p></div>';
+  }).join('') : '<div class="empty"><p>No hay colaboradores creados aún.</p></div>';
 
   document.getElementById('equipoPendientes').innerHTML = pendientes.length ? pendientes.map(c => `
     <div class="team-card">
@@ -270,7 +270,7 @@ function renderEquipo() {
 
 function openProfessionalSchedule(id) {
   const pro = byIdFrom(teamData.profesionales, 'id', id) || byIdFrom(teamData.profesionales, 'ID', id);
-  if (!pro) return toast('No encontré el fisioterapeuta', 'err');
+  if (!pro) return toast('No encontré el colaborador', 'err');
   const assignments = (teamData.asignaciones || []).filter(a => String(a.ProfesionalID || '') === String(id));
   const citas = assignments
     .map(a => {
@@ -285,10 +285,10 @@ function openProfessionalSchedule(id) {
   const anteriores = citas.filter(c => normDate(c.fecha) < hoyStr);
   const ordered = [...proximas, ...anteriores];
 
-  document.getElementById('proAgendaAdminTitle').textContent = `${pro.nombre || 'Fisioterapeuta'} · Agenda asignada`;
+  document.getElementById('proAgendaAdminTitle').textContent = `${pro.nombre || 'Colaborador'} · Agenda asignada`;
   document.getElementById('proAgendaAdminSummary').textContent = ordered.length
     ? `${ordered.length} cita${ordered.length === 1 ? '' : 's'} asignada${ordered.length === 1 ? '' : 's'} desde el inicio operativo del administrador.`
-    : 'Este profesional todavía no tiene citas asignadas desde hoy.';
+    : 'Este colaborador todavía no tiene citas asignadas desde hoy.';
   document.getElementById('proAgendaAdminContent').innerHTML = ordered.length ? ordered.map(c => {
     const fecha = normDate(c.fecha);
     const statusPill = fecha === hoyStr ? '<span class="team-pill info">Hoy</span>' : (fecha > hoyStr ? '<span class="team-pill ok">Próxima</span>' : '<span class="team-pill">Anterior</span>');
@@ -379,13 +379,13 @@ async function togglePro(id, estado) {
 }
 
 async function deletePro(id, nombre) {
-  const label = nombre || 'este fisioterapeuta';
-  if (!confirm(`¿Eliminar a ${label} de la lista de fisioterapeutas?\n\nNo podrá ingresar al portal. El historial interno se conserva para auditoría.`)) return;
+  const label = nombre || 'este colaborador';
+  if (!confirm(`¿Eliminar a ${label} de la lista de colaboradores?\n\nNo podrá ingresar al portal. El historial interno se conserva para auditoría.`)) return;
   const d = await fetch(`${APPS_SCRIPT_URL}?action=deleteProfessional&token=${encodeURIComponent(TOKEN)}&id=${encodeURIComponent(id)}`).then(r => r.json());
   if (d.ok) {
     await loadTeamData();
     renderEquipo();
-    toast('Fisioterapeuta eliminado de la lista');
+    toast('Colaborador eliminado de la lista');
   } else {
     toast(d.error || 'No se pudo eliminar', 'err');
   }
@@ -415,7 +415,7 @@ function renderAssignWarnings() {
   const cita = teamAppointmentById(citaId);
   const pro = byIdFrom(teamData.profesionales, 'id', proId) || byIdFrom(teamData.profesionales, 'ID', proId);
   if (!cita || !proId) {
-    box.innerHTML = '<div class="team-alert danger"><strong>Falta información</strong>Selecciona un fisioterapeuta activo para validar la asignación.</div>';
+    box.innerHTML = '<div class="team-alert danger"><strong>Falta información</strong>Selecciona un colaborador activo para validar la asignación.</div>';
     return;
   }
   const conflicts = teamConflictAppointments(proId, cita);

@@ -1783,9 +1783,9 @@ button:disabled{cursor:not-allowed;opacity:.58}
       Pacientes
     </button>
 
-    <button class="sb-link" id="sb-equipo" data-tooltip="Equipo clínico" onclick="showView('equipo')">
+    <button class="sb-link" id="sb-equipo" data-tooltip="Colaboradores Cuidándote" onclick="showView('equipo')">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-      Equipo clínico
+      Colaboradores
     </button>
 
     <button class="sb-link" id="sb-basedatos" data-tooltip="Base de datos" onclick="showView('basedatos')">
@@ -5686,8 +5686,8 @@ Acción: enviar mensaje de reenganche a los 14 pacientes que solo vinieron una v
     <section id="vEquipo" style="display:none">
       <div class="team-hero">
         <div>
-          <h1><em>Equipo</em> clínico</h1>
-          <p>Gestiona fisioterapeutas, asignaciones, autorizaciones, novedades y cuentas por pagar sin exponer información financiera del negocio al portal profesional.</p>
+          <h1><em>Colaboradores</em> Cuidándote</h1>
+          <p>Gestiona colaboradores, asignaciones, autorizaciones y novedades sin exponer información financiera del negocio en su espacio de trabajo.</p>
         </div>
         <div class="team-actions">
           <button class="btn btn-teal" onclick="openProfessionalForm()">+ Crear colaborador</button>
@@ -5701,7 +5701,7 @@ Acción: enviar mensaje de reenganche a los 14 pacientes que solo vinieron una v
 
       <div class="team-grid">
         <div class="team-panel">
-          <h2>Fisioterapeutas</h2>
+          <h2>Colaboradores</h2>
           <div id="equipoProfesionales" class="team-list"></div>
         </div>
         <div class="team-panel">
@@ -5760,7 +5760,7 @@ Acción: enviar mensaje de reenganche a los 14 pacientes que solo vinieron una v
       <div class="modal" style="max-width:460px">
         <h2 class="modal-title" id="tempPassTitle">Contraseña temporal</h2>
         <div class="team-temp-pass">
-          <p class="team-muted" id="tempPassHelp">Entrégale esta contraseña al fisioterapeuta. Al ingresar por primera vez, el sistema le pedirá cambiarla.</p>
+          <p class="team-muted" id="tempPassHelp">Entrégale esta contraseña al colaborador. Al ingresar por primera vez, el sistema le pedirá cambiarla.</p>
           <code id="tempPassValue"></code>
           <button class="btn btn-teal" onclick="copyTempPassword()">Copiar contraseña</button>
         </div>
@@ -5777,7 +5777,7 @@ Acción: enviar mensaje de reenganche a los 14 pacientes que solo vinieron una v
         <div id="assignCitaResumen" class="team-panel" style="margin-bottom:14px"></div>
         <div class="form-grid g2" style="gap:14px">
           <div class="field">
-            <label>Fisioterapeuta</label>
+            <label>Colaborador</label>
             <select id="assignProfessionalId" onchange="renderAssignWarnings()"></select>
           </div>
           <div class="field">
