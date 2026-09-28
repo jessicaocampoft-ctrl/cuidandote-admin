@@ -7308,9 +7308,30 @@ function renderAutomationLogs(logs) {
 }
 
 // Corrige texto guardado por versiones antiguas que interpretaron UTF-8 como
-// Latin-1. Se aplica solo al mostrar y copiar: no toca citas ni la cola.
+// Windows-1252. Se aplica solo al mostrar y copiar: no toca citas ni la cola.
 function repairAutomationText(value) {
   let text=String(value||'');
+  const cp1252={
+    '\u20ac':0x80,'\u201a':0x82,'\u0192':0x83,'\u201e':0x84,'\u2026':0x85,'\u2020':0x86,'\u2021':0x87,'\u02c6':0x88,'\u2030':0x89,
+    '\u0160':0x8a,'\u2039':0x8b,'\u0152':0x8c,'\u017d':0x8e,'\u2018':0x91,'\u2019':0x92,'\u201c':0x93,'\u201d':0x94,'\u2022':0x95,
+    '\u2013':0x96,'\u2014':0x97,'\u02dc':0x98,'\u2122':0x99,'\u0161':0x9a,'\u203a':0x9b,'\u0153':0x9c,'\u017e':0x9e,'\u0178':0x9f
+  };
+  const decodeBrokenUtf8=input=>{
+    const bytes=[];
+    for(const char of input){
+      const code=Object.prototype.hasOwnProperty.call(cp1252,char)?cp1252[char]:char.charCodeAt(0);
+      if(code>255)return null;
+      bytes.push(code);
+    }
+    try{return new TextDecoder('utf-8',{fatal:true}).decode(new Uint8Array(bytes));}catch(_){return null;}
+  };
+  // Las marcas siguientes solo aparecen cuando UTF-8 se leyó con la tabla
+  // equivocada. Dos pasadas cubren mensajes que fueron dañados dos veces.
+  for(let pass=0;pass<2 && /[\u00c2\u00c3\u00c2\u00e2\u00f0]/.test(text);pass++){
+    const fixed=decodeBrokenUtf8(text);
+    if(!fixed || fixed===text)break;
+    text=fixed;
+  }
   const pairs=[
     ['\u00c2\u00bf','\u00bf'],['\u00c2\u00a1','\u00a1'],['\u00c2\u00b7','\u00b7'],['\u00c2',''],
     ['\u00c3\u00a1','\u00e1'],['\u00c3\u00a9','\u00e9'],['\u00c3\u00ad','\u00ed'],['\u00c3\u00b3','\u00f3'],['\u00c3\u00ba','\u00fa'],['\u00c3\u00b1','\u00f1'],['\u00c3\u00bc','\u00fc'],
