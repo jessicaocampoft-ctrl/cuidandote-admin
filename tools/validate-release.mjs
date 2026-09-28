@@ -1,0 +1,44 @@
+import fs from 'node:fs';
+import { spawnSync } from 'node:child_process';
+
+const root = process.cwd();
+const files = [
+  'index.html',
+  'js/core/config.js',
+  'js/core/api.js',
+  'js/core/session.js',
+  'js/modules/payments.js',
+  'js/modules/team.js',
+  'js/modules/agenda.js',
+  'js/modules/appointment-create.js',
+  'js/modules/appointment-edit.js'
+];
+
+function fail(message) {
+  throw new Error(`VALIDACIÓN BLOQUEADA: ${message}`);
+}
+
+for (const relative of files) {
+  const full = `${root}/${relative}`;
+  if (!fs.existsSync(full)) fail(`falta ${relative}`);
+  if (relative.endsWith('.js')) {
+    const result = spawnSync(process.execPath, ['--check', full], { encoding: 'utf8' });
+    if (result.status !== 0) fail(`${relative} tiene un error de sintaxis: ${result.stderr.trim()}`);
+  }
+}
+
+const html = fs.readFileSync(`${root}/index.html`, 'utf8');
+const config = fs.readFileSync(`${root}/js/core/config.js`, 'utf8');
+const session = fs.readFileSync(`${root}/js/core/session.js`, 'utf8');
+const payments = fs.readFileSync(`${root}/js/modules/payments.js`, 'utf8');
+const team = fs.readFileSync(`${root}/js/modules/team.js`, 'utf8');
+
+if (!config.includes('APPS_SCRIPT_URL')) fail('falta la conexión principal del servidor');
+if (!config.includes('ADMIN_DATA_FALLBACK_URL')) fail('falta la ruta de respaldo de lectura');
+if (!session.includes('loadAdminData')) fail('falta el cargador protegido de datos');
+if (!session.includes('backupApiUrl')) fail('la sesión no tiene respaldo configurado');
+if (!payments.includes('savePaymentAndApprove') || !payments.includes('savePlanPayment')) fail('faltan acciones de pago o abono');
+if (!team.includes('teamLoadPromise')) fail('falta el control de carga de colaboradores');
+if (!html.includes('js/modules/payments.js') || !html.includes('js/modules/team.js')) fail('faltan módulos críticos en el panel');
+
+console.log(`VALIDACIÓN APROBADA: ${files.length} archivos críticos, acceso, agenda, pagos, planes y colaboradores presentes.`);

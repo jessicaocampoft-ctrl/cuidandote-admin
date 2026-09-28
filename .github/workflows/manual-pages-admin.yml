@@ -1,4 +1,4 @@
-name: Publicar administrador
+name: Validar y publicar administrador
 
 on:
   push:
@@ -13,10 +13,36 @@ permissions:
 
 concurrency:
   group: pages-admin
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
+  validar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar versión para validar
+        uses: actions/checkout@v4
+
+      - name: Configurar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Validar funciones críticas
+        run: node tools/validate-release.mjs
+
+      - name: Guardar respaldo del código validado
+        uses: actions/upload-artifact@v4
+        with:
+          name: respaldo-administrador-${{ github.sha }}
+          retention-days: 90
+          path: |
+            index.html
+            js
+            tools/validate-release.mjs
+            .github/workflows/manual-pages-admin.yml
+
   preparar:
+    needs: validar
     runs-on: ubuntu-latest
     steps:
       - name: Descargar la versión aprobada
