@@ -339,7 +339,9 @@ async function saveManualPayment(mode = 'verify') {
     const d = await fetchJsonWithTimeout(APPS_SCRIPT_URL, {
       method: 'POST',
       body: JSON.stringify({ action: paymentAction, token: TOKEN, data: payload })
-    }, 45000);
+    // El servidor ya mantiene su módulo operativo caliente; dejamos margen
+    // para el primer arranque sin cortar un pago que sí se está registrando.
+    }, 70000);
     if (!d.ok) throw new Error(d.error || 'No se pudo registrar el pago.');
     if (!d.id) throw new Error('El pago se registró, pero el servidor no devolvió su identificador. Actualiza antes de intentarlo otra vez.');
 

@@ -40,6 +40,23 @@
     err.style.display = 'block';
   }
 
+  async function loadAdminData(ctx, token) {
+    const urls = [ctx.backupApiUrl, ctx.apiUrl].filter((value, index, list) => value && list.indexOf(value) === index);
+    let lastError = new Error('No pudimos cargar los datos del panel.');
+    for (const baseUrl of urls) {
+      const separator = baseUrl.includes('?') ? '&' : '?';
+      const url = `${baseUrl}${separator}action=adminData&token=${encodeURIComponent(token)}&_=${Date.now()}`;
+      try {
+        const data = await ctx.fetchJsonWithTimeout(url, {}, 45000, false);
+        if (data && data.ok) return data;
+        lastError = new Error(data?.error || 'No pudimos cargar los datos del panel.');
+      } catch (error) {
+        lastError = error;
+      }
+    }
+    throw lastError;
+  }
+
   async function doAdminLogin(ctx) {
     const now = Date.now();
     if (runtime.loginLockedUntil > now) {
@@ -101,12 +118,7 @@
       // citas y pacientes en el mismo POST.
       let adminData = data;
       if (!Array.isArray(adminData.citas)) {
-        adminData = await ctx.fetchJsonWithTimeout(
-          `${ctx.apiUrl}?action=adminData&token=${encodeURIComponent(data.sessionToken)}&_=${Date.now()}`,
-          {},
-          60000,
-          true
-        );
+        adminData = await loadAdminData(ctx, data.sessionToken);
         if (!adminData.ok) throw new Error(adminData.error || 'No pudimos cargar los datos del panel.');
         adminData.sessionToken = data.sessionToken;
         adminData.currentUser = data.currentUser || adminData.currentUser;
@@ -352,11 +364,7 @@
     if (!ctx.getAdminToken()) return { mode: 'login' };
 
     try {
-      const data = await ctx.fetchJsonWithTimeout(
-        `${ctx.apiUrl}?action=adminData&token=${encodeURIComponent(ctx.getAdminToken())}&_=${Date.now()}`,
-        {},
-        45000
-      );
+      const data = await loadAdminData(ctx, ctx.getAdminToken());
       if (data.ok) {
         ctx.setLoginTime(Date.now());
         showOnlyScreen('adminApp', ctx);
