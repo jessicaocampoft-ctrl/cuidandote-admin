@@ -7316,18 +7316,28 @@ function repairAutomationText(value) {
     '\u0160':0x8a,'\u2039':0x8b,'\u0152':0x8c,'\u017d':0x8e,'\u2018':0x91,'\u2019':0x92,'\u201c':0x93,'\u201d':0x94,'\u2022':0x95,
     '\u2013':0x96,'\u2014':0x97,'\u02dc':0x98,'\u2122':0x99,'\u0161':0x9a,'\u203a':0x9b,'\u0153':0x9c,'\u017e':0x9e,'\u0178':0x9f
   };
+  const byteOf=char=>Object.prototype.hasOwnProperty.call(cp1252,char)?cp1252[char]:char.charCodeAt(0);
+  // Decodifica únicamente las secuencias UTF-8 rotas. Así funciona aunque el
+  // mismo texto ya contenga un guion largo o cualquier otro carácter correcto.
   const decodeBrokenUtf8=input=>{
-    const bytes=[];
-    for(const char of input){
-      const code=Object.prototype.hasOwnProperty.call(cp1252,char)?cp1252[char]:char.charCodeAt(0);
-      if(code>255)return null;
-      bytes.push(code);
+    let result='';
+    for(let index=0;index<input.length;index++){
+      const first=byteOf(input[index]);
+      const length=first>=0xc2&&first<=0xdf?2:first>=0xe0&&first<=0xef?3:first>=0xf0&&first<=0xf4?4:0;
+      if(!length){result+=input[index];continue;}
+      const chars=input.slice(index,index+length);
+      const bytes=Array.from(chars,byteOf);
+      if(bytes.length!==length||bytes.some(code=>code>255)){result+=input[index];continue;}
+      try{
+        const decoded=new TextDecoder('utf-8',{fatal:true}).decode(new Uint8Array(bytes));
+        result+=decoded;index+=length-1;
+      }catch(_){result+=input[index];}
     }
-    try{return new TextDecoder('utf-8',{fatal:true}).decode(new Uint8Array(bytes));}catch(_){return null;}
+    return result;
   };
   // Las marcas siguientes solo aparecen cuando UTF-8 se leyó con la tabla
   // equivocada. Dos pasadas cubren mensajes que fueron dañados dos veces.
-  for(let pass=0;pass<2 && /[\u00c2\u00c3\u00c2\u00e2\u00f0]/.test(text);pass++){
+  for(let pass=0;pass<4 && /[\u00c2\u00c3\u00e2\u00f0]/.test(text);pass++){
     const fixed=decodeBrokenUtf8(text);
     if(!fixed || fixed===text)break;
     text=fixed;
