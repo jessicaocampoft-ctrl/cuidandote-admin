@@ -7289,13 +7289,27 @@ async function runAutomationJob(job) {
 function renderAutomationQueue(items) {
   const el=document.getElementById('autoQueue');if(!el)return;document.getElementById('autoQueueCount').textContent=items.length;
   if(!items.length){el.innerHTML='<div class="empty-compact">No hay mensajes pendientes.</div>';return;}
-  el.innerHTML=items.slice(0,30).map(m=>{const phone=String(m.telefono||'').replace(/\D/g,'');const url=`https://wa.me/${phone}?text=${encodeURIComponent(m.mensaje||'')}`;return `<div class="queue-item"><div class="queue-copy"><div class="queue-name">${esc(m.nombre||m.type)}</div><div class="queue-reason">${esc(m.type)} · ${esc(m.motivo||'')}</div><div class="queue-msg">${esc(m.mensaje||'')}</div></div><a class="btn btn-wa btn-sm" href="${url}" target="_blank" rel="noopener" onclick="markAutomationMessage('${esc(m.id)}')">Enviar</a></div>`}).join('');
+  el.innerHTML=items.slice(0,30).map(m=>{const phone=String(m.telefono||'').replace(/\D/g,'');const message=repairAutomationText(m.mensaje);const type=repairAutomationText(m.type);const reason=repairAutomationText(m.motivo);const url=`https://wa.me/${phone}?text=${encodeURIComponent(message)}`;return `<div class="queue-item"><div class="queue-copy"><div class="queue-name">${esc(m.nombre||type)}</div><div class="queue-reason">${esc(type)} · ${esc(reason)}</div><div class="queue-msg">${esc(message)}</div></div><a class="btn btn-wa btn-sm" href="${url}" target="_blank" rel="noopener" onclick="markAutomationMessage('${esc(m.id)}')">Enviar</a></div>`}).join('');
 }
 
 function renderAutomationLogs(logs) {
   const el=document.getElementById('autoLogs');if(!el)return;
   if(!logs.length){el.innerHTML='<div class="empty-compact">Todavía no hay ejecuciones.</div>';return;}
-  el.innerHTML=logs.map(l=>`<div class="auto-log"><div><strong>${esc(l.job)}</strong><div style="font-size:.68rem;color:var(--muted);margin-top:2px">${esc((l.detail||'').slice(0,90))}</div></div><span>${new Date(l.timestamp).toLocaleDateString('es-CO',{day:'numeric',month:'short'})}</span></div>`).join('');
+  el.innerHTML=logs.map(l=>`<div class="auto-log"><div><strong>${esc(repairAutomationText(l.job))}</strong><div style="font-size:.68rem;color:var(--muted);margin-top:2px">${esc(repairAutomationText(l.detail).slice(0,90))}</div></div><span>${new Date(l.timestamp).toLocaleDateString('es-CO',{day:'numeric',month:'short'})}</span></div>`).join('');
+}
+
+// Corrige texto guardado por versiones antiguas que interpretaron UTF-8 como
+// Latin-1. Se aplica solo al mostrar y copiar: no toca citas ni la cola.
+function repairAutomationText(value) {
+  let text=String(value||'');
+  const pairs=[
+    ['\u00c2\u00bf','\u00bf'],['\u00c2\u00a1','\u00a1'],['\u00c2\u00b7','\u00b7'],['\u00c2',''],
+    ['\u00c3\u00a1','\u00e1'],['\u00c3\u00a9','\u00e9'],['\u00c3\u00ad','\u00ed'],['\u00c3\u00b3','\u00f3'],['\u00c3\u00ba','\u00fa'],['\u00c3\u00b1','\u00f1'],['\u00c3\u00bc','\u00fc'],
+    ['\u00c3\u0081','\u00c1'],['\u00c3\u0089','\u00c9'],['\u00c3\u008d','\u00cd'],['\u00c3\u0093','\u00d3'],['\u00c3\u009a','\u00da'],['\u00c3\u0091','\u00d1'],
+    ['\u00e2\u20ac\u201d','\u2014'],['\u00e2\u20ac\u201c','\u2013'],['\u00e2\u20ac\u00a2','\u2022']
+  ];
+  pairs.forEach(pair=>{text=text.split(pair[0]).join(pair[1]);});
+  return text;
 }
 
 async function markAutomationMessage(id) {
