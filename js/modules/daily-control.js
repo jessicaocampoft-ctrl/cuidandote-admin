@@ -89,9 +89,7 @@ function _patientChoices() {
 }
 function _manualReminderMessage(item) {
   const firstName = String(item.nombre || 'Hola').trim().split(/\s+/)[0];
-  const service = String(item.servicio || '').toLowerCase();
-  const focus = service.includes('descarga') ? 'después de una descarga muscular' : 'después de tu sesión';
-  return `Hola ${firstName}! Espero que estés muy bien. ${focus.charAt(0).toUpperCase() + focus.slice(1)} a veces es recomendable hacer otra sesión para terminar de liberar los nudos o contracturas. Si has sentido tensión de nuevo, podemos agendarte esta semana. ¿Qué día te queda mejor?\n\n— Cuidándote Fisioterapia`;
+  return `Hola, ${firstName}. Espero que estés muy bien.\n\nPara completar tu proceso de descarga muscular, te sugiero una nueva sesión esta semana. Podemos revisar cómo has evolucionado y continuar trabajando las zonas que aún lo necesiten.\n\nRespóndeme con el día y horario que te funcione y con gusto te ayudo a agendar.\n\n— Cuidándote Fisioterapia`;
 }
 function _manualReminderLabel(item) {
   if (item.status === 'sent') return 'Mensaje enviado · pendiente de respuesta';
