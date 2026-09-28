@@ -6227,7 +6227,7 @@ Acción: enviar mensaje de reenganche a los 14 pacientes que solo vinieron una v
 
 <script src="js/core/config.js"></script>
 <script src="js/core/api.js?v=20260915-login-fast"></script>
-<script src="js/core/session.js?v=20260928-login-warm"></script>
+<script src="js/core/session.js?v=20260928-data-retry"></script>
 <script src="js/core/navigation.js"></script>
 <script>
 // ══════════════════════════════════════════════════════════════
@@ -8053,16 +8053,18 @@ function toast(...args) {
 
 async function reload() {
   try {
-    const r = await fetch(APPS_SCRIPT_URL + '?action=adminData&token=' + encodeURIComponent(TOKEN));
-    if (!r.ok) { toast('Error del servidor (' + r.status + '). Recarga la página.', 'err'); return; }
-    const d = await r.json();
+    // El timestamp y no-store evitan reutilizar respuestas antiguas de Apps
+    // Script. Se reintenta una vez antes de avisar al usuario.
+    const sep = APPS_SCRIPT_URL.includes('?') ? '&' : '?';
+    const url = APPS_SCRIPT_URL + sep + 'action=adminData&token=' + encodeURIComponent(TOKEN) + '&_=' + Date.now();
+    const d = await fetchJsonWithTimeout(url, {}, 70000, true);
     if (d.ok) {
       allData = d;
       await loadTeamData();
     }
     else if (d.error === 'Sin permiso') { toast('Sesión expirada. Volviendo al login...', 'warn'); setTimeout(logout, 1500); }
   } catch(e) {
-    toast('Sin conexión. Verifica tu internet.', 'err');
+    toast(e?.message || 'No pudimos actualizar los datos. Intenta nuevamente.', 'err');
   }
 }
 

@@ -102,7 +102,7 @@
       let adminData = data;
       if (!Array.isArray(adminData.citas)) {
         adminData = await ctx.fetchJsonWithTimeout(
-          `${ctx.apiUrl}?action=adminData&token=${encodeURIComponent(data.sessionToken)}`,
+          `${ctx.apiUrl}?action=adminData&token=${encodeURIComponent(data.sessionToken)}&_=${Date.now()}`,
           {},
           60000,
           true
@@ -353,7 +353,7 @@
 
     try {
       const data = await ctx.fetchJsonWithTimeout(
-        `${ctx.apiUrl}?action=adminData&token=${encodeURIComponent(ctx.getAdminToken())}`,
+        `${ctx.apiUrl}?action=adminData&token=${encodeURIComponent(ctx.getAdminToken())}&_=${Date.now()}`,
         {},
         45000
       );
