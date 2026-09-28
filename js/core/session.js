@@ -69,7 +69,10 @@
         body: new URLSearchParams({
           payload: JSON.stringify({ action: 'adminLogin', user, password })
         })
-      }, 25000, true);
+      // Apps Script puede demorar al despertar después de un periodo sin uso.
+      // Una sola petición con margen suficiente evita duplicar el inicio de
+      // sesión y que el panel corte un acceso válido durante ese arranque.
+      }, 70000, false);
 
       if (!data.ok) {
         runtime.loginAttempts += 1;
@@ -331,6 +334,14 @@
 
   async function restoreOnLoad(ctx) {
     ctx.initAdminUX();
+
+    // Despierta el servicio mientras se muestra la pantalla de acceso. Es una
+    // consulta pública de salud; no incluye credenciales ni datos del negocio.
+    // Así, al pulsar «Ingresar» normalmente el servidor ya está listo.
+    try {
+      const separator = ctx.apiUrl.includes('?') ? '&' : '?';
+      fetch(`${ctx.apiUrl}${separator}test=1&_=${Date.now()}`, { cache: 'no-store' }).catch(() => {});
+    } catch (_) {}
 
     if (ctx.location.hash.startsWith('#/profesionales') || ctx.location.hash.startsWith('#profesionales')) {
       if (ctx.getProfessionalToken()) await ctx.showProfessionalApp();
