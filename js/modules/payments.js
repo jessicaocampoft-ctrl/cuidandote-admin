@@ -18,12 +18,39 @@ function maskAccountNumber(number) {
 
 async function loadOperationsData() {
   if (!TOKEN) return operationsData;
-  try {
-    const d = await fetch(`${APPS_SCRIPT_URL}?action=operationsData&token=${encodeURIComponent(TOKEN)}`).then(r => r.json());
-    if (d.ok) operationsData = d;
-  } catch(e) {
-    console.warn('No se pudo cargar Pagos', e);
+  const notice = document.getElementById('paymentsLoadNotice');
+  const showNotice = (message, tone = 'error') => {
+    if (!notice) return;
+    if (!message) {
+      notice.style.display = 'none';
+      notice.textContent = '';
+      return;
+    }
+    notice.style.display = 'block';
+    notice.style.background = tone === 'error' ? 'rgba(254,226,226,.72)' : 'rgba(224,242,254,.8)';
+    notice.style.color = tone === 'error' ? '#b91c1c' : '#075985';
+    notice.style.border = '1px solid ' + (tone === 'error' ? 'rgba(248,113,113,.5)' : 'rgba(56,189,248,.45)');
+    notice.textContent = message;
+  };
+  let lastError = null;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const separator = APPS_SCRIPT_URL.includes('?') ? '&' : '?';
+      const url = `${APPS_SCRIPT_URL}${separator}action=operationsData&token=${encodeURIComponent(TOKEN)}&_=${Date.now()}`;
+      const response = await fetch(url, {cache:'no-store', credentials:'omit'});
+      if (!response.ok) throw new Error(`El servidor respondió ${response.status}`);
+      const d = await response.json();
+      if (!d || !d.ok) throw new Error(d?.error || 'El servidor no pudo preparar los cobros.');
+      operationsData = d;
+      showNotice('');
+      return operationsData;
+    } catch(e) {
+      lastError = e;
+      if (attempt === 0) await new Promise(resolve => setTimeout(resolve, 650));
+    }
   }
+  console.warn('No se pudo cargar Pagos', lastError);
+  showNotice('No pudimos cargar los cobros ahora. Pulsa “Actualizar” para reintentar; no se ha modificado ningún pago.');
   return operationsData;
 }
 
