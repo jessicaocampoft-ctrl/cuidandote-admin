@@ -447,44 +447,80 @@ function renderAssignWarnings() {
 
 async function saveAssignPro(options = {}) {
   const { closeOnSuccess = true } = options;
+  const saveButton = document.getElementById('assignSaveButton');
+  const authorizeButton = document.getElementById('assignAuthorizeButton');
+  const citaId = document.getElementById('assignCitaId').value;
+  const profesionalId = document.getElementById('assignProfessionalId').value;
+  const originalLabel = saveButton?.textContent;
+  if (!citaId || !profesionalId) {
+    toast('Selecciona un colaborador para continuar.', 'err');
+    return false;
+  }
+  if (saveButton) { saveButton.disabled = true; saveButton.textContent = 'Guardando…'; }
+  if (authorizeButton) authorizeButton.disabled = true;
   const params = new URLSearchParams({
     action:'assignProfessional',
     token:TOKEN,
-    citaId:document.getElementById('assignCitaId').value,
-    profesionalId:document.getElementById('assignProfessionalId').value,
+    citaId,
+    profesionalId,
     tarifa:'',
     override:document.getElementById('assignOverride').value
   });
-  const d = await fetch(`${APPS_SCRIPT_URL}?${params.toString()}`).then(r => r.json());
-  if (d.ok) {
-    await loadTeamData();
+  try {
+    const d = await global.PanelApi.fetchJsonWithTimeout(`${APPS_SCRIPT_URL}?${params.toString()}`, {}, 70000, false);
+    if (!d.ok) {
+      toast(d.error || 'No se pudo asignar', 'err');
+      return false;
+    }
+    const assignment = { CitaID:citaId, ProfesionalID:profesionalId, EstadoAutorizacion:'', OverrideAtencion:document.getElementById('assignOverride').value === '1' ? 'SI' : '', Tarifa:'' };
+    const index = (teamData.asignaciones || []).findIndex(a => String(a.CitaID) === String(citaId));
+    if (index >= 0) teamData.asignaciones[index] = { ...teamData.asignaciones[index], ...assignment };
+    else teamData.asignaciones = [...(teamData.asignaciones || []), assignment];
+    const cita = teamAppointmentById(citaId);
+    if (cita) cita.profesionalId = profesionalId;
     renderEquipo();
     renderAgenda(true);
     if (closeOnSuccess) closeModal('modalAsignarPro');
     toast('Cita asignada');
+    // El refresco completo no debe retener ni bloquear el modal.
+    loadTeamData().then(() => { renderEquipo(); renderAgenda(true); }).catch(() => {});
     return true;
+  } catch (error) {
+    toast(error?.message || 'No se pudo asignar. Intenta nuevamente.', 'err');
+    return false;
+  } finally {
+    if (saveButton) { saveButton.disabled = false; saveButton.textContent = originalLabel || 'Guardar asignación'; }
+    if (authorizeButton) authorizeButton.disabled = false;
   }
-  toast(d.error || 'No se pudo asignar', 'err');
-  return false;
 }
 
 async function authorizeAssignPro() {
+  const authorizeButton = document.getElementById('assignAuthorizeButton');
+  const originalLabel = authorizeButton?.textContent;
+  if (authorizeButton) { authorizeButton.disabled = true; authorizeButton.textContent = 'Autorizando…'; }
   const assigned = await saveAssignPro({ closeOnSuccess:false });
-  if (!assigned) return;
+  if (!assigned) { if (authorizeButton) { authorizeButton.disabled = false; authorizeButton.textContent = originalLabel || 'Autorizar para atender'; } return; }
   const params = new URLSearchParams({
     action:'authorizeAppointment',
     token:TOKEN,
     citaId:document.getElementById('assignCitaId').value,
     excepcion:document.getElementById('assignExcepcion').value
   });
-  const d = await fetch(`${APPS_SCRIPT_URL}?${params.toString()}`).then(r => r.json());
-  if (d.ok) {
+  try {
+    const d = await global.PanelApi.fetchJsonWithTimeout(`${APPS_SCRIPT_URL}?${params.toString()}`, {}, 70000, false);
+    if (!d.ok) { toast(d.error || 'No se pudo autorizar', 'err'); return; }
+    const cita = teamAppointmentById(params.get('citaId'));
+    if (cita) cita.estado = 'Autorizada para atender';
     closeModal('modalAsignarPro');
-    await reload();
-    await loadTeamData();
     renderEquipo();
+    renderAgenda(true);
     toast('Cita autorizada para atender');
-  } else toast(d.error || 'No se pudo autorizar', 'err');
+    reload().then(() => { renderEquipo(); renderAgenda(true); }).catch(() => {});
+  } catch (error) {
+    toast(error?.message || 'No se pudo autorizar. Intenta nuevamente.', 'err');
+  } finally {
+    if (authorizeButton) { authorizeButton.disabled = false; authorizeButton.textContent = originalLabel || 'Autorizar para atender'; }
+  }
 }
 
 async function markPayablePaid(id) {
