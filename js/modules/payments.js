@@ -138,6 +138,7 @@ function updateSelectedPaymentCard(c) {
   if (!card) return;
   if (!c) {
     card.innerHTML = '<h3>Sin cita seleccionada</h3><div class="team-muted">Elige una cita de la lista para cargar sus datos automáticamente.</div>';
+    updatePlanPaymentUI();
     return;
   }
   card.innerHTML = `
@@ -152,6 +153,58 @@ function updateSelectedPaymentCard(c) {
       <div class="team-muted">Valor esperado<br><strong style="color:var(--primary)">${formatPrecio(parsePrecio(c.precio || 0))}</strong></div>
       <div class="team-muted">Modalidad<br><strong style="color:var(--text)">${esc(c.modalidad || '')}</strong></div>
     </div>`;
+  updatePlanPaymentUI();
+}
+
+function selectedPaymentAppointment() {
+  const id = document.getElementById('payCitaId')?.value || '';
+  return (allData.citas || []).find(x => String(x.id) === String(id)) || null;
+}
+
+function updatePlanPaymentUI() {
+  const panel = document.getElementById('paymentPlanPanel');
+  const check = document.getElementById('payIsPlan');
+  const fields = document.getElementById('paymentPlanFields');
+  const select = document.getElementById('payPlanRef');
+  const preview = document.getElementById('payPlanBalancePreview');
+  const cita = selectedPaymentAppointment();
+  if (!panel || !check || !fields || !select || !preview) return;
+  panel.style.display = cita ? 'block' : 'none';
+  if (!cita || !check.checked) { fields.style.display = 'none'; preview.textContent = ''; return; }
+  fields.style.display = 'block';
+  const previous = select.value;
+  const sameClientPlans = (operationsData.planesCliente || []).filter(p => String(p.Cliente || '').trim().toLowerCase() === String(cita.nombre || '').trim().toLowerCase());
+  const templates = operationsData.plantillasPlanes || [];
+  select.innerHTML = '<option value="">Selecciona el plan...</option>'
+    + sameClientPlans.map(p => `<option value="plan:${esc(p.ID)}">Plan existente · ${esc(p.NombrePlan || 'Plan')} · saldo ${formatPrecio(parsePrecio(p.SaldoPendiente || 0))}</option>`).join('')
+    + templates.map(t => `<option value="template:${esc(t.ID)}">Nuevo · ${esc(t.Nombre)} · total ${formatPrecio(parsePrecio(t.PrecioTotal || 0))}</option>`).join('');
+  if ([...select.options].some(option => option.value === previous)) select.value = previous;
+  const ref = select.value || '';
+  let total = 0, paid = 0, label = '';
+  if (ref.startsWith('plan:')) {
+    const plan = sameClientPlans.find(p => String(p.ID) === ref.slice(5));
+    total = plan ? parsePrecio(plan.SaldoPendiente || 0) : 0;
+    label = plan ? (plan.NombrePlan || 'Plan') : 'Plan';
+  } else if (ref.startsWith('template:')) {
+    const template = templates.find(t => String(t.ID) === ref.slice(9));
+    total = template ? parsePrecio(template.PrecioTotal || 0) : 0;
+    label = template ? (template.Nombre || 'Plan') : 'Plan';
+  }
+  const amount = parsePrecio(document.getElementById('payValorRecibido')?.value || 0);
+  const balance = Math.max(0, total - amount);
+  preview.innerHTML = total
+    ? `<strong>${esc(label)}</strong> · abono actual: <strong>${formatPrecio(amount)}</strong> · <strong style="color:${balance ? '#c2410c' : '#047857'}">saldo después de guardar: ${formatPrecio(balance)}</strong>`
+    : 'Selecciona un plan para calcular el saldo.';
+}
+
+function selectedPlanPayment() {
+  const check = document.getElementById('payIsPlan');
+  const ref = document.getElementById('payPlanRef')?.value || '';
+  if (!check?.checked) return null;
+  if (!ref) return {error:'Selecciona el plan que está pagando.'};
+  if (ref.startsWith('plan:')) return {planClienteId:ref.slice(5)};
+  if (ref.startsWith('template:')) return {plantillaId:ref.slice(9)};
+  return {error:'Selecciona el plan que está pagando.'};
 }
 
 function updatePaymentProofLabel() {
@@ -185,6 +238,7 @@ function prefillPaymentFromAppointment() {
 
 function clearPaymentForm() {
   ['payValorRecibido','payFechaPago','payComprobante','payObservaciones','payProofFile'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  const planCheck = document.getElementById('payIsPlan'); if (planCheck) planCheck.checked = false;
   const c = document.getElementById('payCitaId'); if (c) c.value = '';
   updatePaymentProofLabel();
   updateSelectedPaymentCard(null);
@@ -237,11 +291,13 @@ async function saveManualPayment(mode = 'verify') {
   const medioPago = medioEl?.value || '';
   const ref = refEl?.value.trim() || '';
   const observaciones = obsEl?.value.trim() || '';
+  const planPayment = selectedPlanPayment();
 
   if (!citaId) { setStatus('Selecciona una cita.', 'err'); return toast('Selecciona una cita', 'err'); }
   if (!valorRecibido) { setStatus('Escribe el valor recibido.', 'err'); return toast('Escribe el valor recibido', 'err'); }
   if (!fechaPago) { setStatus('Selecciona la fecha del pago.', 'err'); return toast('Selecciona la fecha del pago', 'err'); }
   if (!medioPago) { setStatus('Selecciona el medio de pago.', 'err'); return toast('Selecciona el medio de pago', 'err'); }
+  if (planPayment?.error) { setStatus(planPayment.error, 'err'); return toast(planPayment.error, 'err'); }
 
   const c = (allData.citas || []).find(x => String(x.id) === String(citaId));
   if (!c) { setStatus('La cita seleccionada ya no está disponible. Pulsa Actualizar y vuelve a seleccionarla.', 'err'); return toast('No encontré la cita seleccionada', 'err'); }
@@ -276,34 +332,39 @@ async function saveManualPayment(mode = 'verify') {
       observaciones,
       proofFile: proofFile || null
     };
+    if (planPayment) Object.assign(payload, planPayment);
+    payload.approveNow = mode === 'approve';
+    const paymentAction = planPayment ? 'savePlanPayment' : (mode === 'approve' ? 'savePaymentAndApprove' : 'savePayment');
 
     const d = await fetchJsonWithTimeout(APPS_SCRIPT_URL, {
       method: 'POST',
-      body: JSON.stringify({ action: 'savePayment', token: TOKEN, data: payload })
+      body: JSON.stringify({ action: paymentAction, token: TOKEN, data: payload })
     }, 45000);
     if (!d.ok) throw new Error(d.error || 'No se pudo registrar el pago.');
     if (!d.id) throw new Error('El pago se registró, pero el servidor no devolvió su identificador. Actualiza antes de intentarlo otra vez.');
 
     if (mode === 'approve') {
-      const obs = observaciones || 'Pago confirmado desde registro de comprobante';
-      const verifyUrl = APPS_SCRIPT_URL
-        + '?action=verifyPayment&token=' + encodeURIComponent(TOKEN)
-        + '&id=' + encodeURIComponent(d.id)
-        + '&estado=PAGO_APROBADO&observaciones=' + encodeURIComponent(obs);
-      const v = await fetchJsonWithTimeout(verifyUrl, {}, 45000);
-      if (!v.ok) throw new Error(v.error || 'El comprobante se guardó, pero no se pudo autorizar la cita. No repitas el pago; pulsa Actualizar.');
-      setStatus('Pago confirmado y cita autorizada correctamente.', 'ok');
+      const balanceNote = planPayment && Number(d.saldoPendiente || 0) > 0
+        ? ` Pago registrado: queda un saldo pendiente de ${formatPrecio(parsePrecio(d.saldoPendiente))}.`
+        : '';
+      setStatus('Pago confirmado y cita autorizada correctamente.' + balanceNote, 'ok');
       toast('Pago confirmado y cita autorizada');
     } else {
       setStatus('Comprobante guardado para revisión.', 'ok');
       toast('Comprobante subido para revisión');
     }
 
+    // La confirmación ya fue recibida: libera a la auxiliar enseguida. La
+    // sincronización completa ocurre en segundo plano para no congelar la vista.
+    c.estado = mode === 'approve' ? 'Autorizada para atender' : 'Pago por verificar';
     clearPaymentForm();
-    await reload();
-    await loadOperationsData();
-    renderPagos();
-    renderAgenda(true);
+    setTimeout(async () => {
+      try {
+        await Promise.all([reload(), loadOperationsData()]);
+        renderPagos();
+        renderAgenda(true);
+      } catch (_) {}
+    }, 0);
   } catch (error) {
     console.error('Error al guardar el pago:', error);
     const message = error?.message || 'No se pudo guardar el pago. Intenta nuevamente.';
@@ -395,9 +456,14 @@ function renderPagos() {
 
   const planTemplates = operationsData.plantillasPlanes || [];
   const clientPlans = operationsData.planesCliente || [];
+  const plansWithBalance = clientPlans.filter(p => parsePrecio(p.SaldoPendiente || 0) > 0);
   const settlements = operationsData.liquidaciones || [];
   const history = operationsData.historialEstados || [];
   document.getElementById('plansAuditList').innerHTML = `
+    <div class="team-card" style="background:rgba(255,247,237,.75);border-color:rgba(251,146,60,.38)">
+      <h3>Alertas de saldo de planes</h3>
+      <div class="team-muted">${plansWithBalance.length ? plansWithBalance.slice(0, 8).map(p => `<strong style="color:#9a3412">${esc(p.Cliente)}</strong> · ${esc(p.NombrePlan)} · debe ${formatPrecio(parsePrecio(p.SaldoPendiente || 0))}`).join('<br>') : 'No hay saldos pendientes en planes.'}</div>
+    </div>
     <div class="team-card">
       <h3>Plantillas de planes</h3>
       <div class="team-muted">${planTemplates.length ? planTemplates.map(p => `${esc(p.Nombre)} · ${esc(p.SesionesTotales)} sesiones · ${formatPrecio(parsePrecio(p.PrecioTotal || 0))}`).join('<br>') : 'No hay plantillas creadas.'}</div>
@@ -442,6 +508,8 @@ function openPago(citaId) {
     setPaymentListFilter,
     selectPaymentAppointment,
     updateSelectedPaymentCard,
+    updatePlanPaymentUI,
+    selectedPlanPayment,
     updatePaymentProofLabel,
     fillPaymentSelectors,
     prefillPaymentFromAppointment,

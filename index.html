@@ -3577,11 +3577,23 @@ Primero evaluamos cómo está el cuerpo ahora, luego tratamos, luego te enseñam
                 <h3>Sin cita seleccionada</h3>
                 <div class="team-muted">Elige una cita de la lista para cargar sus datos automáticamente.</div>
               </div>
+              <div id="paymentPlanPanel" class="team-card" style="display:none;margin-bottom:12px;background:rgba(255,247,237,.72);border-color:rgba(251,146,60,.38)">
+                <label style="display:flex;gap:8px;align-items:center;font-weight:800;cursor:pointer">
+                  <input id="payIsPlan" type="checkbox" onchange="updatePlanPaymentUI()">
+                  Este pago es un abono de plan
+                </label>
+                <div id="paymentPlanFields" style="display:none;margin-top:12px">
+                  <label class="team-muted" style="display:block;margin-bottom:6px">Plan que está pagando</label>
+                  <select id="payPlanRef" onchange="updatePlanPaymentUI()" style="width:100%"></select>
+                  <div id="payPlanBalancePreview" class="team-muted" style="margin-top:10px"></div>
+                  <small style="display:block;margin-top:8px;color:#9a3412">Al guardar el abono, el saldo pendiente quedará visible para seguimiento. No se habilitan sesiones nuevas hasta completar el plan.</small>
+                </div>
+              </div>
 
               <div class="form-grid g2" style="gap:12px">
                 <div class="field">
                   <label>2. Valor recibido</label>
-                  <input id="payValorRecibido" type="text" placeholder="Ej: 70000">
+                  <input id="payValorRecibido" type="text" placeholder="Ej: 70000" oninput="updatePlanPaymentUI()">
                 </div>
                 <div class="field">
                   <label>Fecha del pago</label>
@@ -6680,6 +6692,14 @@ function updateSelectedPaymentCard(...args) {
     throw new Error('El módulo de Pagos no está disponible: updateSelectedPaymentCard');
   }
   return module.updateSelectedPaymentCard(...args);
+}
+
+function updatePlanPaymentUI(...args) {
+  const module = window.PanelPayments;
+  if (!module || typeof module.updatePlanPaymentUI !== 'function') {
+    throw new Error('El módulo de Pagos no está disponible: updatePlanPaymentUI');
+  }
+  return module.updatePlanPaymentUI(...args);
 }
 
 function updatePaymentProofLabel(...args) {
@@ -12829,7 +12849,7 @@ document.addEventListener('DOMContentLoaded', () => {
 <script src="admin-copy-tools.js"></script>
   <script src="js/modules/shared-utils.js"></script>
 <script src="js/modules/shared-storage.js"></script>
-<script src="js/modules/payments.js?v=20260928-cobros-load"></script>
+<script src="js/modules/payments.js?v=20260928-plan-abonos"></script>
   <script src="js/modules/passport.js"></script>
   <script src="js/modules/agenda.js?v=20260924-duplicate-appointment"></script>
   <script src="js/modules/appointment-create.js"></script>
