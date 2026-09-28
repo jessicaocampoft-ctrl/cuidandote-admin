@@ -382,6 +382,7 @@
 
   global.PanelSession = Object.freeze({
     showOnlyScreen,
+    loadAdminData,
     doAdminLogin,
     logoutAdmin,
     openProfessionalLoginMode,

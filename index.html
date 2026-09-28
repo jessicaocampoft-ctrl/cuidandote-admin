@@ -8054,11 +8054,13 @@ function toast(...args) {
 
 async function reload() {
   try {
-    // El timestamp y no-store evitan reutilizar respuestas antiguas de Apps
-    // Script. Se reintenta una vez antes de avisar al usuario.
-    const sep = APPS_SCRIPT_URL.includes('?') ? '&' : '?';
-    const url = APPS_SCRIPT_URL + sep + 'action=adminData&token=' + encodeURIComponent(TOKEN) + '&_=' + Date.now();
-    const d = await fetchJsonWithTimeout(url, {}, 70000, true);
+    // La lectura posterior a un pago debe usar la misma ruta resiliente del
+    // inicio de sesión. La ruta principal puede devolver 404 mientras Apps
+    // Script despierta; la ruta de respaldo evita mostrar un falso error
+    // después de que el pago ya se confirmó correctamente.
+    const loader = window.PanelSession?.loadAdminData;
+    if (typeof loader !== 'function') throw new Error('No está disponible la carga segura de datos. Recarga la página.');
+    const d = await loader(_sessionBridge(), TOKEN);
     if (d.ok) {
       allData = d;
       await loadTeamData();
