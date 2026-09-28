@@ -15,15 +15,21 @@ function professionalName(id) {
   return p ? (p.nombre || p.Nombre || 'Equipo') : 'Sin asignar';
 }
 
+let teamLoadPromise = null;
+
 async function loadTeamData() {
   if (!TOKEN) return teamData;
-  try {
-    const d = await global.PanelApi.fetchJsonWithTimeout(
-      `${APPS_SCRIPT_URL}?action=teamData&token=${encodeURIComponent(TOKEN)}`,
-      {},
-      20000
-    );
-    if (d.ok) {
+  if (teamLoadPromise) return teamLoadPromise;
+  teamLoadPromise = (async () => {
+    try {
+      const separator = APPS_SCRIPT_URL.includes('?') ? '&' : '?';
+      const d = await global.PanelApi.fetchJsonWithTimeout(
+        `${APPS_SCRIPT_URL}${separator}action=teamData&token=${encodeURIComponent(TOKEN)}&_=${Date.now()}`,
+        {},
+        70000,
+        true
+      );
+      if (!d.ok) throw new Error(d.error || 'No se pudo cargar Colaboradores');
       teamData = {
         profesionales: d.profesionales || [],
         asignaciones: d.asignaciones || [],
@@ -37,11 +43,16 @@ async function loadTeamData() {
         c.estadoAutorizacion = a.EstadoAutorizacion || '';
         c.tarifaProfesional = a.Tarifa || '';
       });
+      return teamData;
+    } catch(e) {
+      console.warn('No se pudo cargar Colaboradores', e);
+      if (typeof global.toast === 'function') global.toast(e?.message || 'No se pudo cargar Colaboradores. Intenta Actualizar.', 'err');
+      return teamData;
+    } finally {
+      teamLoadPromise = null;
     }
-  } catch(e) {
-    console.warn('No se pudo cargar Equipo', e);
-  }
-  return teamData;
+  })();
+  return teamLoadPromise;
 }
 
 function activeProfessionals() {
