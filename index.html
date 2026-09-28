@@ -5690,7 +5690,7 @@ Acción: enviar mensaje de reenganche a los 14 pacientes que solo vinieron una v
           <p>Gestiona fisioterapeutas, asignaciones, autorizaciones, novedades y cuentas por pagar sin exponer información financiera del negocio al portal profesional.</p>
         </div>
         <div class="team-actions">
-          <button class="btn btn-teal" onclick="openProfessionalForm()">+ Crear fisioterapeuta</button>
+          <button class="btn btn-teal" onclick="openProfessionalForm()">+ Crear colaborador</button>
           <button class="btn btn-ghost" onclick="openProfessionalLoginMode()">Ver portal</button>
           <button class="btn btn-ghost" onclick="loadTeamData().then(renderEquipo)">Actualizar</button>
         </div>
@@ -5724,7 +5724,7 @@ Acción: enviar mensaje de reenganche a los 14 pacientes que solo vinieron una v
 
     <div id="modalProfesional" class="modal-bg" onclick="if(event.target===this)closeModal('modalProfesional')">
       <div class="modal">
-        <h2 class="modal-title" id="proFormTitle">Crear fisioterapeuta</h2>
+        <h2 class="modal-title" id="proFormTitle">Crear colaborador</h2>
         <input type="hidden" id="teamProId">
         <div class="form-grid g2" style="gap:14px">
           <div class="field"><label>Nombre</label><input type="text" id="teamProNombre" placeholder="Nombre completo"></div>
@@ -5734,6 +5734,7 @@ Acción: enviar mensaje de reenganche a los 14 pacientes que solo vinieron una v
             <label>Rol</label>
             <select id="teamProRol">
               <option>Fisioterapeuta</option>
+              <option>Auxiliar de fisioterapia</option>
               <option>Personal administrativo</option>
               <option>Administrador</option>
             </select>

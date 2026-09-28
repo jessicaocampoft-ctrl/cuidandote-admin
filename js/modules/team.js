@@ -309,7 +309,7 @@ function openProfessionalSchedule(id) {
 
 function openProfessionalForm(id='') {
   const p = id ? byIdFrom(teamData.profesionales, 'id', id) : null;
-  document.getElementById('proFormTitle').textContent = p ? 'Editar fisioterapeuta' : 'Crear fisioterapeuta';
+  document.getElementById('proFormTitle').textContent = p ? 'Editar colaborador' : 'Crear colaborador';
   document.getElementById('teamProId').value = p?.id || '';
   document.getElementById('teamProNombre').value = p?.nombre || '';
   document.getElementById('teamProUsuario').value = p?.usuario || '';
