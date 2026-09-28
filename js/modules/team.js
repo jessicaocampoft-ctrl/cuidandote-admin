@@ -503,6 +503,16 @@ function renderProfessionalAgenda() {
     if (professionalMode === 'semana') return d >= start && d < end;
     return d >= new Date(today() + 'T00:00:00');
   });
+  const todayAppointments = base.filter(c => c.fecha === today());
+  const attendedToday = todayAppointments.filter(c => c.estado === 'Sesión atendida').length;
+  const pendingAuthorization = base.filter(c => !c.autorizada && c.fecha >= today()).length;
+  const summary = document.getElementById('proSummary');
+  if (summary) {
+    summary.innerHTML = `
+      <div class="pro-summary-card"><strong>${todayAppointments.length}</strong><span>Citas asignadas hoy</span></div>
+      <div class="pro-summary-card"><strong>${attendedToday}</strong><span>Sesiones atendidas hoy</span></div>
+      <div class="pro-summary-card"><strong>${pendingAuthorization}</strong><span>Pendientes de autorización</span></div>`;
+  }
   document.getElementById('proAgendaList').innerHTML = list.length ? list.map(c => {
     const badge = c.autorizada ? (c.estado || 'Autorizada') : (c.autorizacion || 'Asignada pendiente de autorización');
     const canAttend = c.puedeAtender && c.estado !== 'Sesión atendida';
@@ -520,7 +530,7 @@ function renderProfessionalAgenda() {
         ${c.observaciones ? `<span><strong>Observaciones:</strong> ${esc(c.observaciones)}</span>` : ''}
       </div>
       <div class="pro-actions">
-        <button class="btn btn-teal btn-sm" ${canAttend ? '' : 'disabled'} onclick="markProfessionalAttended('${esc(c.id)}')">Marcar sesión atendida</button>
+        <button class="btn btn-teal btn-sm" ${canAttend ? '' : 'disabled'} onclick="markProfessionalAttended('${esc(c.id)}')">${c.estado === 'Sesión atendida' ? 'Sesión atendida' : 'Marcar sesión atendida'}</button>
         <button class="btn btn-ghost btn-sm" onclick="openProIssue('${esc(c.id)}')">Reportar novedad</button>
       </div>
     </article>`;

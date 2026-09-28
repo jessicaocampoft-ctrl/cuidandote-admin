@@ -81,7 +81,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-b);min-height
 .login-alt button:hover,.login-alt button:focus{border-color:var(--primary);box-shadow:0 0 0 3px var(--glow);outline:none}
 
 /* ══════════════════════════════════════════
-   PORTAL PROFESIONALES / EQUIPO
+   COLABORADORES CUIDÁNDOTE
 ══════════════════════════════════════════ */
 #proLoginScreen,#proApp{
   position:fixed;inset:0;background:var(--bg);z-index:1001;display:none;
@@ -112,10 +112,16 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-b);min-height
 .pro-seg{border:1px solid var(--border);background:var(--s1);color:var(--muted);border-radius:999px;padding:9px 13px;min-height:44px;cursor:pointer;font-weight:700}
 .pro-seg.active{background:var(--primary);color:#0D0D0D;border-color:var(--primary)}
 .pro-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:14px}
+.pro-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:16px}
+.pro-summary-card{padding:15px 16px;border-radius:14px;background:var(--s1);border:1px solid var(--border)}
+.pro-summary-card strong{display:block;color:var(--primary-h);font:600 1.65rem var(--font-m);line-height:1.1}
+.pro-summary-card span{display:block;margin-top:5px;color:var(--muted);font-size:.84rem}
+.pro-help{margin-bottom:16px;padding:12px 15px;border:1px solid var(--border);border-radius:12px;background:var(--s1);color:var(--muted);font-size:.88rem;line-height:1.45}
 .pro-appointment{padding:16px;border-left:4px solid var(--primary)}
 .pro-appointment h3{font-family:var(--font-h);font-size:1.35rem;margin-bottom:8px}
 .pro-meta{display:grid;gap:6px;color:var(--muted);font-size:.88rem;line-height:1.45}
 .pro-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+@media(max-width:560px){.pro-summary{grid-template-columns:1fr}.pro-card{padding:20px}.pro-header{align-items:flex-start}.pro-brand h1{font-size:1.65rem}}
 .team-hero{
   display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:center;
   margin-bottom:18px;padding:20px;border-radius:18px;
@@ -1649,26 +1655,26 @@ button:disabled{cursor:not-allowed;opacity:.58}
     <button class="login-btn" id="loginBtn" onclick="doLogin()">Ingresar</button>
     <p class="login-err" id="loginErr">Contraseña incorrecta. Inténtalo de nuevo.</p>
     <div class="login-alt">
-      <button type="button" onclick="openProfessionalLoginMode()">Portal del fisioterapeuta</button>
-      <small style="color:var(--muted);line-height:1.4">Acceso privado para el equipo clínico.</small>
+      <button type="button" onclick="openProfessionalLoginMode()">Colaboradores Cuidándote</button>
+      <small style="color:var(--muted);line-height:1.4">Acceso privado para el equipo autorizado.</small>
     </div>
   </div>
 </div>
 
 <!-- ══════════════════════════════════════════
-     PORTAL FISIOTERAPEUTAS
+     COLABORADORES CUIDÁNDOTE
 ══════════════════════════════════════════ -->
 <div id="proLoginScreen">
   <div class="pro-card pro-login-card">
     <img src="LogoCuidandote/logo-apilado.png" alt="Cuidándote Fisioterapia">
-    <h1>Portal del Fisioterapeuta</h1>
-    <p>Agenda privada del equipo. Cada profesional solo ve sus citas asignadas y autorizadas.</p>
+    <h1>Colaboradores Cuidándote</h1>
+    <p>Tu espacio de trabajo privado. Solo verás las citas y acciones que administración te haya asignado.</p>
     <div style="display:grid;gap:10px;text-align:left">
       <label class="sr-only" for="proUser">Usuario</label>
       <input class="pro-input" id="proUser" type="text" placeholder="Usuario o email" autocomplete="username">
       <label class="sr-only" for="proPass">Contraseña</label>
       <input class="pro-input" id="proPass" type="password" placeholder="Contraseña" autocomplete="current-password" onkeydown="if(event.key==='Enter')doProfessionalLogin()">
-      <button class="login-btn" id="proLoginBtn" onclick="doProfessionalLogin()">Ingresar al portal</button>
+      <button class="login-btn" id="proLoginBtn" onclick="doProfessionalLogin()">Ingresar a mi espacio</button>
       <p class="login-err" id="proLoginErr" style="margin:0;text-align:center"></p>
     </div>
     <div id="proFirstChangeBox" style="display:none;margin-top:16px;text-align:left;border-top:1px solid var(--border);padding-top:16px">
@@ -1688,8 +1694,8 @@ button:disabled{cursor:not-allowed;opacity:.58}
       <div class="pro-brand">
         <img src="LogoCuidandote/logo-horizontal.png" alt="Cuidándote Fisioterapia">
         <div>
-          <h1>Mi agenda clínica</h1>
-          <small id="proWelcome">Portal del equipo</small>
+          <h1>Colaboradores Cuidándote</h1>
+          <small id="proWelcome">Mi espacio de trabajo</small>
         </div>
       </div>
       <button class="btn btn-ghost" onclick="professionalSignout()">Cerrar sesión</button>
@@ -1701,6 +1707,8 @@ button:disabled{cursor:not-allowed;opacity:.58}
       <input class="team-input" style="width:auto;min-width:165px" id="proDate" type="date" onchange="setProfessionalMode('fecha')">
       <button class="btn btn-ghost" onclick="loadProfessionalAgenda()">Actualizar</button>
     </div>
+    <div id="proSummary" class="pro-summary" aria-live="polite"></div>
+    <div class="pro-help">Aquí verás solo tu agenda asignada. Marca una sesión como atendida al terminarla, o usa <strong>Reportar novedad</strong> si necesitas que administración intervenga.</div>
     <div id="proAgendaList" class="pro-grid"></div>
   </div>
 </div>

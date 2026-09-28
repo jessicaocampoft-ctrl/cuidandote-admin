@@ -184,7 +184,7 @@
     } finally {
       if (button) {
         button.disabled = false;
-        button.textContent = 'Ingresar al portal';
+        button.textContent = 'Ingresar a mi espacio';
       }
     }
   }
@@ -225,7 +225,7 @@
     if (welcome) {
       welcome.textContent = session
         ? `${session.nombre} · ${session.rol}`
-        : 'Portal del equipo';
+        : 'Mi espacio de trabajo';
     }
     const date = element(ctx, 'proDate');
     if (date) date.value = ctx.today();
@@ -260,7 +260,7 @@
       if (welcome) {
         welcome.textContent = data.professional
           ? `${data.professional.nombre} · ${data.professional.rol}`
-          : 'Portal del equipo';
+          : 'Mi espacio de trabajo';
       }
       ctx.setProfessionalAgenda(data.citas || []);
       ctx.renderProfessionalAgenda();
