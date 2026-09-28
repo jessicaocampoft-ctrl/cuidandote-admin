@@ -2,6 +2,20 @@
 (function (global) {
   'use strict';
 
+let paymentListFilter = 'pending';
+
+function isPaymentAdmin() {
+  return typeof global.isAuxAdmin === 'function' ? !global.isAuxAdmin() : true;
+}
+
+function maskAccountNumber(number) {
+  const text = String(number || '').trim();
+  if (!text) return 'Sin número';
+  if (isPaymentAdmin()) return text;
+  const visible = text.replace(/\s/g, '').slice(-4);
+  return visible ? `•••• ${visible}` : 'Número protegido';
+}
+
 async function loadOperationsData() {
   if (!TOKEN) return operationsData;
   try {
@@ -24,7 +38,7 @@ async function setupOperationsModuleUI() {
 
 function paymentAccountLabel(id) {
   const a = (operationsData.cuentas || []).find(x => String(x.ID) === String(id));
-  return a ? `${a.Medio} · ${a.Numero}` : (id || 'Sin cuenta');
+  return a ? `${a.Medio} · ${maskAccountNumber(a.Numero)}` : (id || 'Sin cuenta');
 }
 
 function paymentCandidateAppointments() {
@@ -47,8 +61,20 @@ function renderPaymentAppointmentList() {
   const q = (document.getElementById('payAppointmentSearch')?.value || '').toLowerCase().trim();
   const citas = paymentCandidateAppointments().filter(c => {
     const hay = `${c.id} ${c.nombre} ${c.servicio} ${fmtDate(c.fecha)} ${c.hora} ${c.estado}`.toLowerCase();
-    return !q || hay.includes(q);
+    if (q && !hay.includes(q)) return false;
+    const state = c.estado || '';
+    const isPending = ['Pendiente de pago','Pago por verificar','Pago rechazado'].includes(state);
+    const isReview = ['Pago por verificar','Pago rechazado'].includes(state);
+    if (paymentListFilter === 'pending') return isPending;
+    if (paymentListFilter === 'review') return isReview;
+    if (paymentListFilter === 'today') return normDate(c.fecha) === normDate(today());
+    return true;
   }).slice(0, 60);
+  document.querySelectorAll('[data-payment-filter]').forEach(button => {
+    const active = button.dataset.paymentFilter === paymentListFilter;
+    button.classList.toggle('btn-teal', active);
+    button.classList.toggle('btn-ghost', !active);
+  });
   list.innerHTML = citas.length ? citas.map(c => {
     const active = String(c.id) === String(selectedId);
     const pending = ['Pendiente de pago','Pago por verificar','Pago rechazado'].includes(c.estado || '');
@@ -61,11 +87,16 @@ function renderPaymentAppointmentList() {
         <span class="team-pill ${pending ? 'warn' : 'info'}">${esc(c.estado || 'Sin estado')}</span>
       </div>
       <div style="display:flex;justify-content:space-between;gap:8px;margin-top:8px;font-size:.82rem">
-        <span class="team-muted">ID ${esc(c.id || '')}</span>
+        <span class="team-muted">${pending ? 'Requiere cobro' : 'Cita registrada'}</span>
         <strong style="color:var(--primary)">${formatPrecio(parsePrecio(c.precio || 0))}</strong>
       </div>
     </button>`;
-  }).join('') : '<div class="empty"><p>No encontré citas para ese filtro.</p></div>';
+  }).join('') : '<div class="empty"><p>No hay citas en este filtro. Prueba “Todas” si necesitas encontrar otra.</p></div>';
+}
+
+function setPaymentListFilter(filter) {
+  paymentListFilter = ['pending','today','review','all'].includes(filter) ? filter : 'pending';
+  renderPaymentAppointmentList();
 }
 
 function selectPaymentAppointment(id) {
@@ -110,7 +141,7 @@ function fillPaymentSelectors(selectedId = '') {
   }
   const medioSel = document.getElementById('payMedioPago');
   if (medioSel) {
-    medioSel.innerHTML = (operationsData.cuentas || []).filter(a => (a.Estado || 'Activa') === 'Activa').map(a => `<option value="${esc(a.Medio)}" data-account="${esc(a.ID)}">${esc(a.Medio)} · ${esc(a.Numero)}</option>`).join('');
+    medioSel.innerHTML = (operationsData.cuentas || []).filter(a => (a.Estado || 'Activa') === 'Activa').map(a => `<option value="${esc(a.Medio)}" data-account="${esc(a.ID)}">${esc(a.Medio)} · ${esc(maskAccountNumber(a.Numero))}</option>`).join('');
   }
   prefillPaymentFromAppointment();
   renderPaymentAppointmentList();
@@ -310,8 +341,8 @@ function renderPagos() {
   document.getElementById('paymentAccountsList').innerHTML = cuentas.length ? cuentas
     .sort((a,b) => Number(a.Orden || 0) - Number(b.Orden || 0))
     .map(a => `<div class="team-card">
-      <div class="team-card-head"><div><h3>${esc(a.Medio)}</h3><div class="team-muted">${esc(a.Tipo)} · ${esc(a.Numero)}</div></div><span class="team-pill ok">${esc(a.Estado || 'Activa')}</span></div>
-      <div class="team-muted" style="margin-top:8px"><strong>Titular:</strong> ${esc(a.Titular)}</div>
+      <div class="team-card-head"><div><h3>${esc(a.Medio)}</h3><div class="team-muted">${esc(a.Tipo)} · ${esc(maskAccountNumber(a.Numero))}</div></div><span class="team-pill ok">${esc(a.Estado || 'Activa')}</span></div>
+      ${isPaymentAdmin() ? `<div class="team-muted" style="margin-top:8px"><strong>Titular:</strong> ${esc(a.Titular)}</div>` : '<div class="team-muted" style="margin-top:8px">Datos ocultos en la vista de colaborador.</div>'}
     </div>`).join('') : '<div class="empty"><p>No hay cuentas configuradas.</p></div>';
 
   document.getElementById('paymentsList').innerHTML = pagosUnicos.length ? pagosUnicos.slice(0, 40).map(p => {
@@ -378,8 +409,10 @@ function openPago(citaId) {
     loadOperationsData,
     setupOperationsModuleUI,
     paymentAccountLabel,
+    maskAccountNumber,
     paymentCandidateAppointments,
     renderPaymentAppointmentList,
+    setPaymentListFilter,
     selectPaymentAppointment,
     updateSelectedPaymentCard,
     updatePaymentProofLabel,

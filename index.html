@@ -3535,11 +3535,11 @@ Primero evaluamos cómo está el cuerpo ahora, luego tratamos, luego te enseñam
     <section id="vPagos" style="display:none">
       <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px">
         <div>
-          <h1 class="page-title"><em>Pagos</em> y autorizaciones</h1>
-          <p class="page-sub">Registro de pagos, cuentas oficiales, verificación administrativa e historial seguro.</p>
+          <h1 class="page-title"><em>Cobros</em> del día</h1>
+          <p class="page-sub">Selecciona una cita pendiente, registra el pago y termina la tarea en un solo lugar.</p>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button class="btn btn-ghost" onclick="setupOperationsModuleUI()">Inicializar módulo</button>
+          <button class="btn btn-ghost" onclick="setupOperationsModuleUI()" title="Solo usar si el módulo aún no existe">Inicializar módulo</button>
           <button class="btn btn-teal" onclick="loadOperationsData().then(renderPagos)">Actualizar</button>
         </div>
       </div>
@@ -3548,18 +3548,24 @@ Primero evaluamos cómo está el cuerpo ahora, luego tratamos, luego te enseñam
 
       <div class="team-grid">
         <div class="team-panel">
-          <h2>Registrar comprobante</h2>
-          <p class="team-muted" style="margin-bottom:12px">Primero selecciona la cita. Luego sube el pantallazo y decide si queda pendiente o si ya autorizas la atención.</p>
+          <h2>1. Cobros pendientes</h2>
+          <p class="team-muted" style="margin-bottom:12px">Elige una cita, confirma el valor recibido y guarda. Si falta validar algo, déjala para revisión.</p>
           <select id="payCitaId" onchange="selectPaymentAppointment(this.value)" style="display:none"></select>
 
           <div style="display:grid;grid-template-columns:minmax(260px,1fr) minmax(260px,.85fr);gap:16px;align-items:start">
             <div>
               <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:10px">
                 <div>
-                  <div style="font-family:var(--font-m);font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)">1 · Selecciona la cita</div>
-                  <div class="team-muted">Citas recientes y pendientes de pago</div>
+                  <div style="font-family:var(--font-m);font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)">Selecciona una cita</div>
+                  <div class="team-muted">La lista empieza con los cobros que requieren acción.</div>
                 </div>
                 <button class="btn btn-ghost btn-sm" onclick="renderPaymentAppointmentList()">Actualizar lista</button>
+              </div>
+              <div id="paymentQuickFilters" style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:10px" aria-label="Filtrar citas de pago">
+                <button class="btn btn-teal btn-sm" type="button" data-payment-filter="pending" onclick="setPaymentListFilter('pending')">Pendientes</button>
+                <button class="btn btn-ghost btn-sm" type="button" data-payment-filter="today" onclick="setPaymentListFilter('today')">Hoy</button>
+                <button class="btn btn-ghost btn-sm" type="button" data-payment-filter="review" onclick="setPaymentListFilter('review')">Para revisar</button>
+                <button class="btn btn-ghost btn-sm" type="button" data-payment-filter="all" onclick="setPaymentListFilter('all')">Todas</button>
               </div>
               <input id="payAppointmentSearch" class="search" type="search" placeholder="Buscar por paciente, código, fecha o servicio..." oninput="renderPaymentAppointmentList()" style="width:100%;margin-bottom:10px">
               <div id="paymentAppointmentList" class="team-list" style="max-height:430px;overflow:auto;padding-right:4px"></div>
@@ -3573,7 +3579,7 @@ Primero evaluamos cómo está el cuerpo ahora, luego tratamos, luego te enseñam
 
               <div class="form-grid g2" style="gap:12px">
                 <div class="field">
-                  <label>Valor recibido</label>
+                  <label>2. Valor recibido</label>
                   <input id="payValorRecibido" type="text" placeholder="Ej: 70000">
                 </div>
                 <div class="field">
@@ -3581,11 +3587,11 @@ Primero evaluamos cómo está el cuerpo ahora, luego tratamos, luego te enseñam
                   <input id="payFechaPago" type="date">
                 </div>
                 <div class="field" style="grid-column:1/-1">
-                  <label>Medio de pago</label>
+                  <label>3. Medio de pago</label>
                   <select id="payMedioPago"></select>
                 </div>
                 <div class="field" style="grid-column:1/-1">
-                  <label>Pantallazo / comprobante</label>
+                  <label>Comprobante (opcional si registras una referencia)</label>
                   <label for="payProofFile" style="display:flex;align-items:center;justify-content:center;min-height:92px;border:1.5px dashed var(--primary);border-radius:14px;background:rgba(20,184,166,.07);cursor:pointer;text-align:center;padding:16px">
                     <span id="payProofLabel" style="color:var(--text);font-weight:700">Subir pantallazo del pago</span>
                   </label>
@@ -3598,12 +3604,12 @@ Primero evaluamos cómo está el cuerpo ahora, luego tratamos, luego te enseñam
                 </div>
                 <div class="field" style="grid-column:1/-1">
                   <label>Nota interna</label>
-                  <textarea id="payObservaciones" rows="2" placeholder="Ej: revisar banco antes de autorizar"></textarea>
+                  <textarea id="payObservaciones" rows="2" placeholder="Ej: pago parcial, revisar banco o información para administración"></textarea>
                 </div>
               </div>
               <div class="team-card-actions" style="gap:8px;flex-wrap:wrap">
-                <button id="payVerifyBtn" class="btn btn-ghost" onclick="saveManualPayment('verify')">Subir para revisar</button>
-                <button id="payApproveBtn" class="btn btn-teal" onclick="saveManualPayment('approve')">Confirmar pago y autorizar</button>
+                <button id="payVerifyBtn" class="btn btn-ghost" onclick="saveManualPayment('verify')">Guardar para revisión</button>
+                <button id="payApproveBtn" class="btn btn-teal" onclick="saveManualPayment('approve')">Confirmar pago y habilitar cita</button>
                 <button class="btn btn-ghost" onclick="clearPaymentForm()">Limpiar</button>
               </div>
               <div id="payActionStatus" role="status" aria-live="polite" style="display:none;margin-top:10px;padding:10px 12px;border-radius:10px;font-size:.84rem;font-weight:700"></div>
@@ -3612,7 +3618,8 @@ Primero evaluamos cómo está el cuerpo ahora, luego tratamos, luego te enseñam
         </div>
 
         <div class="team-panel">
-          <h2>Cuentas oficiales</h2>
+          <h2>Cuentas para recibir pagos</h2>
+          <p class="team-muted" style="margin-bottom:12px">Verifica el medio escogido; los números se muestran protegidos para colaboradores.</p>
           <div id="paymentAccountsList" class="team-list"></div>
         </div>
       </div>
@@ -6648,6 +6655,14 @@ function renderPaymentAppointmentList(...args) {
     throw new Error('El módulo de Pagos no está disponible: renderPaymentAppointmentList');
   }
   return module.renderPaymentAppointmentList(...args);
+}
+
+function setPaymentListFilter(...args) {
+  const module = window.PanelPayments;
+  if (!module || typeof module.setPaymentListFilter !== 'function') {
+    throw new Error('El módulo de Pagos no está disponible: setPaymentListFilter');
+  }
+  return module.setPaymentListFilter(...args);
 }
 
 function selectPaymentAppointment(...args) {
