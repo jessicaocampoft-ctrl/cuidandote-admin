@@ -3,6 +3,23 @@
   'use strict';
 
 let paymentListFilter = 'pending';
+let operationsLoadPromise = null;
+const OPERATIONS_CACHE_KEY = 'cuidandote:operations-data:v1';
+const OPERATIONS_CACHE_MAX_AGE = 15 * 60 * 1000;
+
+function readOperationsCache() {
+  try {
+    const cached = JSON.parse(sessionStorage.getItem(OPERATIONS_CACHE_KEY) || 'null');
+    if (!cached?.data?.ok || !cached.savedAt || Date.now() - cached.savedAt > OPERATIONS_CACHE_MAX_AGE) return null;
+    return cached.data;
+  } catch (_) {
+    return null;
+  }
+}
+
+function saveOperationsCache(data) {
+  try { sessionStorage.setItem(OPERATIONS_CACHE_KEY, JSON.stringify({ savedAt: Date.now(), data })); } catch (_) {}
+}
 
 function isPaymentAdmin() {
   return typeof global.isAuxAdmin === 'function' ? !global.isAuxAdmin() : true;
@@ -16,8 +33,9 @@ function maskAccountNumber(number) {
   return visible ? `•••• ${visible}` : 'Número protegido';
 }
 
-async function loadOperationsData() {
+async function loadOperationsData(options = {}) {
   if (!TOKEN) return operationsData;
+  const { force = false } = options;
   const notice = document.getElementById('paymentsLoadNotice');
   const showNotice = (message, tone = 'error') => {
     if (!notice) return;
@@ -32,26 +50,39 @@ async function loadOperationsData() {
     notice.style.border = '1px solid ' + (tone === 'error' ? 'rgba(248,113,113,.5)' : 'rgba(56,189,248,.45)');
     notice.textContent = message;
   };
-  let lastError = null;
-  for (let attempt = 0; attempt < 2; attempt++) {
-    try {
-      const separator = APPS_SCRIPT_URL.includes('?') ? '&' : '?';
-      const url = `${APPS_SCRIPT_URL}${separator}action=operationsData&token=${encodeURIComponent(TOKEN)}&_=${Date.now()}`;
-      const response = await fetch(url, {cache:'no-store', credentials:'omit'});
-      if (!response.ok) throw new Error(`El servidor respondió ${response.status}`);
-      const d = await response.json();
-      if (!d || !d.ok) throw new Error(d?.error || 'El servidor no pudo preparar los cobros.');
-      operationsData = d;
-      showNotice('');
-      return operationsData;
-    } catch(e) {
-      lastError = e;
-      if (attempt === 0) await new Promise(resolve => setTimeout(resolve, 650));
-    }
+  const cached = force ? null : readOperationsCache();
+  if (cached) operationsData = cached;
+
+  if (!operationsLoadPromise) {
+    operationsLoadPromise = (async () => {
+      try {
+        const separator = APPS_SCRIPT_URL.includes('?') ? '&' : '?';
+        const url = `${APPS_SCRIPT_URL}${separator}action=operationsData&token=${encodeURIComponent(TOKEN)}&_=${Date.now()}`;
+        const d = await global.PanelApi.fetchJsonWithTimeout(url, {}, 45000, true);
+        if (!d || !d.ok) throw new Error(d?.error || 'El servidor no pudo preparar los cobros.');
+        operationsData = d;
+        saveOperationsCache(d);
+        showNotice('');
+        return operationsData;
+      } catch (error) {
+        console.warn('No se pudo cargar Pagos', error);
+        if (!cached) showNotice('No pudimos actualizar los cobros ahora. Conservamos la información visible; pulsa “Actualizar” para reintentar.');
+        return operationsData;
+      } finally {
+        operationsLoadPromise = null;
+      }
+    })();
   }
-  console.warn('No se pudo cargar Pagos', lastError);
-  showNotice('No pudimos cargar los cobros ahora. Pulsa “Actualizar” para reintentar; no se ha modificado ningún pago.');
-  return operationsData;
+
+  if (cached) {
+    showNotice('Mostrando la última información cargada mientras se actualiza…', 'info');
+    operationsLoadPromise.then(() => {
+      const view = document.getElementById('vPagos');
+      if (view && view.style.display !== 'none') renderPagos();
+    });
+    return operationsData;
+  }
+  return await operationsLoadPromise;
 }
 
 async function setupOperationsModuleUI() {
@@ -362,7 +393,7 @@ async function saveManualPayment(mode = 'verify') {
     clearPaymentForm();
     setTimeout(async () => {
       try {
-        await Promise.all([reload(), loadOperationsData()]);
+        await Promise.all([reload(), loadOperationsData({force:true})]);
         renderPagos();
         renderAgenda(true);
       } catch (_) {}

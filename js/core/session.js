@@ -42,19 +42,38 @@
 
   async function loadAdminData(ctx, token) {
     const urls = [ctx.backupApiUrl, ctx.apiUrl].filter((value, index, list) => value && list.indexOf(value) === index);
-    let lastError = new Error('No pudimos cargar los datos del panel.');
-    for (const baseUrl of urls) {
-      const separator = baseUrl.includes('?') ? '&' : '?';
-      const url = `${baseUrl}${separator}action=adminData&token=${encodeURIComponent(token)}&_=${Date.now()}`;
-      try {
-        const data = await ctx.fetchJsonWithTimeout(url, {}, 45000, false);
-        if (data && data.ok) return data;
-        lastError = new Error(data?.error || 'No pudimos cargar los datos del panel.');
-      } catch (error) {
-        lastError = error;
-      }
-    }
-    throw lastError;
+    if (!urls.length) throw new Error('No hay una ruta disponible para cargar los datos del panel.');
+
+    // Las dos rutas pertenecen al mismo proyecto y devuelven únicamente datos
+    // a una sesión válida. Consultarlas en paralelo evita que una instancia de
+    // Apps Script que está despertando retenga el acceso completo al panel.
+    return await new Promise((resolve, reject) => {
+      let pending = urls.length;
+      let settled = false;
+      let lastError = new Error('No pudimos cargar los datos del panel.');
+      urls.forEach(baseUrl => {
+        const separator = baseUrl.includes('?') ? '&' : '?';
+        const url = `${baseUrl}${separator}action=adminData&token=${encodeURIComponent(token)}&_=${Date.now()}`;
+        ctx.fetchJsonWithTimeout(url, {}, 45000, false)
+          .then(data => {
+            if (settled) return;
+            if (data && data.ok) {
+              settled = true;
+              resolve(data);
+              return;
+            }
+            lastError = new Error(data?.error || 'No pudimos cargar los datos del panel.');
+            pending -= 1;
+            if (!pending) reject(lastError);
+          })
+          .catch(error => {
+            if (settled) return;
+            lastError = error;
+            pending -= 1;
+            if (!pending) reject(lastError);
+          });
+      });
+    });
   }
 
   async function doAdminLogin(ctx) {

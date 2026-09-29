@@ -37,7 +37,10 @@ if (!config.includes('APPS_SCRIPT_URL')) fail('falta la conexión principal del 
 if (!config.includes('ADMIN_DATA_FALLBACK_URL')) fail('falta la ruta de respaldo de lectura');
 if (!session.includes('loadAdminData')) fail('falta el cargador protegido de datos');
 if (!session.includes('backupApiUrl')) fail('la sesión no tiene respaldo configurado');
+if (!session.includes('urls.forEach')) fail('la carga protegida no consulta rutas disponibles en paralelo');
 if (!payments.includes('savePaymentAndApprove') || !payments.includes('savePlanPayment')) fail('faltan acciones de pago o abono');
+if (!payments.includes('operationsLoadPromise')) fail('falta el control de carga única de pagos');
+if (!payments.includes('OPERATIONS_CACHE_KEY')) fail('falta el respaldo temporal de la vista de pagos');
 if (!team.includes('teamLoadPromise')) fail('falta el control de carga de colaboradores');
 if (!html.includes('js/modules/payments.js') || !html.includes('js/modules/team.js')) fail('faltan módulos críticos en el panel');
 
