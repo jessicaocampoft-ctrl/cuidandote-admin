@@ -38,6 +38,7 @@ if (!config.includes('ADMIN_DATA_FALLBACK_URL')) fail('falta la ruta de respaldo
 if (!session.includes('loadAdminData')) fail('falta el cargador protegido de datos');
 if (!session.includes('backupApiUrl')) fail('la sesión no tiene respaldo configurado');
 if (!session.includes('urls.forEach')) fail('la carga protegida no consulta rutas disponibles en paralelo');
+if (!session.includes('adminDataScore')) fail('falta la protección contra respuestas vacías de datos');
 if (!payments.includes('savePaymentAndApprove') || !payments.includes('savePlanPayment')) fail('faltan acciones de pago o abono');
 if (!payments.includes('operationsLoadPromise')) fail('falta el control de carga única de pagos');
 if (!payments.includes('OPERATIONS_CACHE_KEY')) fail('falta el respaldo temporal de la vista de pagos');

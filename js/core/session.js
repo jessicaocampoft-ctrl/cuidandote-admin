@@ -40,8 +40,18 @@
     err.style.display = 'block';
   }
 
+  function adminDataScore(data) {
+    if (!data || !data.ok) return -1;
+    // Una respuesta de datos debe traer al menos una colección del panel.
+    // El puntaje evita que un respaldo vacío sustituya una respuesta real.
+    return ['citas', 'pacientes', 'bloqueos', 'eventos', 'codigos']
+      .reduce((total, key) => total + (Array.isArray(data[key]) ? data[key].length : 0), 0);
+  }
+
   async function loadAdminData(ctx, token) {
-    const urls = [ctx.backupApiUrl, ctx.apiUrl].filter((value, index, list) => value && list.indexOf(value) === index);
+    // La ruta principal es la fuente de datos. El respaldo solo participa si
+    // la principal está lenta o temporalmente no disponible.
+    const urls = [ctx.apiUrl, ctx.backupApiUrl].filter((value, index, list) => value && list.indexOf(value) === index);
     if (!urls.length) throw new Error('No hay una ruta disponible para cargar los datos del panel.');
 
     // Las dos rutas pertenecen al mismo proyecto y devuelven únicamente datos
@@ -50,6 +60,7 @@
     return await new Promise((resolve, reject) => {
       let pending = urls.length;
       let settled = false;
+      let emptyResponse = null;
       let lastError = new Error('No pudimos cargar los datos del panel.');
       urls.forEach(baseUrl => {
         const separator = baseUrl.includes('?') ? '&' : '?';
@@ -57,14 +68,17 @@
         ctx.fetchJsonWithTimeout(url, {}, 45000, false)
           .then(data => {
             if (settled) return;
-            if (data && data.ok) {
+            if (adminDataScore(data) > 0) {
               settled = true;
               resolve(data);
               return;
             }
+            if (data && data.ok) emptyResponse = data;
             lastError = new Error(data?.error || 'No pudimos cargar los datos del panel.');
             pending -= 1;
-            if (!pending) reject(lastError);
+            // Solo aceptamos una respuesta sin registros si ninguna ruta pudo
+            // devolver datos. Así nunca se reemplaza la agenda por ceros.
+            if (!pending) emptyResponse ? resolve(emptyResponse) : reject(lastError);
           })
           .catch(error => {
             if (settled) return;
