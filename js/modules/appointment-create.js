@@ -16,6 +16,7 @@ function agendarHoy() { showView('nueva'); document.getElementById('ncDate').val
 function calcAbono() {
   const monto   = parsePrecio(document.getElementById('ncAbonoMonto').value);
   const fecha   = document.getElementById('ncAbonoFecha').value;
+  const sesiones = Number(document.getElementById('ncAbonoSesiones')?.value || 0);
   const precio  = parsePrecio(getPrecioFinal());
   const resumen = document.getElementById('abonoResumen');
   if (!monto || !fecha) { resumen.style.display = 'none'; return; }
@@ -26,6 +27,7 @@ function calcAbono() {
   const fechaLeg= d + '/' + m + '/' + y;
   let html = `💰 Abonó <strong>${formatPrecio(monto)}</strong> el ${fechaLeg}`;
   if (precio) html += ` · <span style="color:#059669;font-weight:700">${pct}% pagado</span> · Restante: <strong>${formatPrecio(restante)}</strong> <span style="color:#dc2626">(${pctRest}%)</span>`;
+  if (sesiones > 0) html += ` · Plan de <strong>${sesiones} ${sesiones === 1 ? 'sesión' : 'sesiones'}</strong>`;
   resumen.innerHTML = html;
   resumen.style.display = 'block';
 }
@@ -513,6 +515,7 @@ function clearNuevaCita() {
   document.getElementById('ncAbonoCheck').checked = false;
   document.getElementById('ncAbonoMonto').value   = '';
   document.getElementById('ncAbonoFecha').value   = '';
+  document.getElementById('ncAbonoSesiones').value = '';
   document.getElementById('abonoPanel').style.display   = 'none';
   document.getElementById('abonoResumen').style.display = 'none';
   const planSel = document.getElementById('ncServicePlan');

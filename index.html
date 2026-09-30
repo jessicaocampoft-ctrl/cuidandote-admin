@@ -3092,7 +3092,13 @@ Primero evaluamos cómo está el cuerpo ahora, luego tratamos, luego te enseñam
                 <input type="date" id="ncAbonoFecha" oninput="calcAbono()"
                   style="background:var(--s1);border:1px solid rgba(99,102,241,.3);border-radius:6px;color:var(--text);font-family:var(--font-b);font-size:.9rem;padding:6px 8px;outline:none">
               </div>
+              <div>
+                <label style="font-size:.78rem;color:var(--muted);display:block;margin-bottom:3px">Sesiones del plan</label>
+                <input type="number" id="ncAbonoSesiones" min="1" step="1" placeholder="Ej: 6" oninput="calcAbono()"
+                  style="width:122px;background:var(--s1);border:1px solid rgba(99,102,241,.3);border-radius:6px;color:var(--text);font-family:var(--font-b);font-size:.9rem;padding:6px 8px;outline:none">
+              </div>
             </div>
+            <div style="font-size:.72rem;color:var(--muted);margin-top:7px">Indica cuántas sesiones incluye el plan. Déjalo vacío si el abono corresponde solo a esta cita.</div>
             <div id="abonoResumen" style="display:none;margin-top:10px;padding:10px 14px;background:rgba(99,102,241,.08);border-radius:8px;font-size:.85rem;color:#3730a3;line-height:1.6"></div>
           </div>
         </div>
@@ -7722,12 +7728,14 @@ function getAbonoNota() {
   if (!document.getElementById('ncAbonoCheck').checked) return '';
   const monto  = parsePrecio(document.getElementById('ncAbonoMonto').value);
   const fecha  = document.getElementById('ncAbonoFecha').value;
+  const sesiones = Number(document.getElementById('ncAbonoSesiones')?.value || 0);
   if (!monto || !fecha) return '';
   const precio = parsePrecio(getPrecioFinal());
   const pct    = precio ? Math.round((monto / precio) * 100) : 0;
   const rest   = precio ? precio - monto : 0;
   const [y,m,d]= fecha.split('-');
-  return `[ABONO: ${formatPrecio(monto)} el ${d}/${m}/${y} · ${pct}% pagado · Restante: ${formatPrecio(rest)}]`;
+  const plan = sesiones > 0 ? ` · Plan: ${sesiones} ${sesiones === 1 ? 'sesión' : 'sesiones'}` : '';
+  return `[ABONO: ${formatPrecio(monto)} el ${d}/${m}/${y} · ${pct}% pagado · Restante: ${formatPrecio(rest)}${plan}]`;
 }
 
 // ── CITAS RECURRENTES ──
@@ -12860,7 +12868,7 @@ document.addEventListener('DOMContentLoaded', () => {
 <script src="js/modules/payments.js?v=20260929-payment-custom-plan"></script>
   <script src="js/modules/passport.js"></script>
   <script src="js/modules/agenda.js?v=20260924-duplicate-appointment"></script>
-  <script src="js/modules/appointment-create.js"></script>
+  <script src="js/modules/appointment-create.js?v=20260930-plan-sessions"></script>
   <script src="js/modules/appointment-edit.js?v=20260930-payment-agreement-note"></script>
 <script src="js/modules/team.js?v=20260928-team-retry"></script>
   <script src="js/modules/database.js"></script>
