@@ -4,6 +4,22 @@
 let _segFiltros = new Set(['sem3','sem4','sem5','reagendo','readap']);
 const MANUAL_REMINDERS_KEY = 'daily_manual_discharge_reminders_v1';
 
+// Regla clínica-operativa única para los seguimientos post-sesión. Mantenerla
+// alineada con la automatización del servidor: no mostrar tareas antes o
+// después del día que corresponde a cada tipo de servicio.
+function postSessionFollowUpRule(service) {
+  const normalized = String(service || '')
+    .toLocaleLowerCase('es')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  if (normalized.includes('descarga muscular')) {
+    return { days: 2, label: 'Seguimiento a los 2 días' };
+  }
+  if (normalized.includes('valoracion funcional') || normalized.includes('readaptacion') || normalized.includes('rehabilitacion')) {
+    return { days: 1, label: 'Seguimiento al día siguiente' };
+  }
+  return null;
+}
+
 function escFollowUp(value) {
   return String(value == null ? '' : value).replace(/[&<>'"]/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' })[char]);
 }
@@ -88,12 +104,13 @@ function _recentFollowUps() {
     // La fecha de la cita se normaliza al mediodía para evitar cambios por
     // zona horaria; redondear permite que la sesión de ayer aparezca hoy.
     const days = Math.round((now - date) / 86400000);
-    if (days < 1 || days > 3) return;
+    const rule = postSessionFollowUpRule(c.servicio);
+    if (!rule || days !== rule.days) return;
     const nombre = String(c.nombre || '').trim();
     if (!nombre) return;
     const key = nombre.toLocaleLowerCase('es');
     const prev = latest.get(key);
-    if (!prev || fecha > prev.fecha) latest.set(key, { nombre, telefono:c.telefono || '', email:c.email || '', servicio:c.servicio || 'sesión', fecha, dias:days });
+    if (!prev || fecha > prev.fecha) latest.set(key, { nombre, telefono:c.telefono || '', email:c.email || '', servicio:c.servicio || 'sesión', fecha, dias:days, rule });
   });
   return Array.from(latest.values()).sort((a,b) => a.fecha.localeCompare(b.fecha));
 }
@@ -131,7 +148,7 @@ function renderRecentFollowUps() {
     const wa = phone.length >= 7 ? `https://wa.me/${waPhone}?text=${encodeURIComponent(message)}` : '';
     return `<div class="seg-card" style="border-left:3px solid var(--primary)">
       <div class="pac-badge" style="flex-shrink:0;background:rgba(27,191,176,.08)">${person.nombre.split(' ').map(x => x[0]).join('').slice(0,2).toUpperCase()}</div>
-      <div style="flex:1;min-width:160px"><div style="font-weight:700;font-size:.9rem">${person.nombre}</div><div style="font-size:.78rem;color:var(--muted);margin-top:3px">${person.servicio} · sesión hace ${person.dias} día${person.dias === 1 ? '' : 's'}</div></div>
+      <div style="flex:1;min-width:160px"><div style="font-weight:700;font-size:.9rem">${person.nombre}</div><div style="font-size:.78rem;color:var(--muted);margin-top:3px">${person.servicio} · ${person.rule ? person.rule.label : `sesión hace ${person.dias} día${person.dias === 1 ? '' : 's'}`}</div></div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;flex-shrink:0">
         ${wa ? `<a href="${wa}" target="_blank" class="btn btn-wa btn-sm" onclick="PanelPatientFollowUp.markRecentFollow('${encoded}','sent')">💬 Preguntar cómo le fue</a>` : '<span style="font-size:.75rem;color:var(--muted);padding:5px">Sin teléfono</span>'}
         <button class="btn btn-ghost btn-sm" onclick="PanelPatientFollowUp.markRecentFollow('${encoded}','well')">Todo bien ✓</button>

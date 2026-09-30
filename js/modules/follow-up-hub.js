@@ -100,7 +100,7 @@
 
     const todayPanel = document.createElement('div');
     todayPanel.className = 'follow-hub-panel'; todayPanel.dataset.followHubPanel = 'today'; todayPanel.setAttribute('role', 'tabpanel');
-    todayPanel.innerHTML = '<div class="follow-hub-intro"><strong>Después de una sesión</strong><span>Pregunta cómo evolucionó la persona entre 1 y 3 días después. Esta conversación cuida la experiencia y permite detectar si requiere atención.</span></div><div id="segTodayList" style="display:flex;flex-direction:column;gap:10px"></div>';
+    todayPanel.innerHTML = '<div class="follow-hub-intro"><strong>Después de una sesión</strong><span>Hoy aparecen: valoración funcional, readaptación o rehabilitación al día siguiente; descargas musculares a los 2 días. Así el equipo escribe en el momento correcto.</span></div><div id="segTodayList" style="display:flex;flex-direction:column;gap:10px"></div>';
 
     const segPanel = document.createElement('div');
     segPanel.className = 'follow-hub-panel';
