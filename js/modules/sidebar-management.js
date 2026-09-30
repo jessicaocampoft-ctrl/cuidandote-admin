@@ -2,9 +2,9 @@
 (function (global) {
   'use strict';
 
-  // Reservamos este nivel para la operación diaria. Lo clínico menos frecuente
-  // sigue disponible en Gestión, sin borrar ninguna función.
-  const PRIMARY_IDS = ['sb-calendario','sb-dashboard','sb-agenda','sb-nueva','sb-seguimiento','sb-pacientes','sb-pagos'];
+  // Este primer nivel queda reservado para las cuatro entradas que Jessica
+  // usa durante la jornada. El resto se organiza debajo de Gestión avanzada.
+  const PRIMARY_IDS = ['sb-dashboard','sb-calendario','sb-mensajes','sb-equipo'];
   const LEGACY_HIDDEN_IDS = [
     // Recordatorios ya vive dentro de Seguimiento. Centro de acciones es una
     // versión anterior del control diario y se conserva oculto para evitar
@@ -12,11 +12,11 @@
     'sb-recordatorios','sb-acciones'
   ];
   const GROUPS = [
-    { id:'operations', label:'Agenda y disponibilidad', items:['sb-bloquear','sb-horariospublicos','sb-espera','sb-tareas'] },
-    { id:'followup', label:'Seguimiento y comunicación', items:['sb-mensajes','sb-guioneswa','sb-recuperacion'] },
+    { id:'daily', label:'Operación diaria', items:['sb-seguimiento','sb-pagos','sb-pacientes','sb-nueva','sb-agenda','sb-tareas'] },
+    { id:'operations', label:'Agenda y disponibilidad', items:['sb-bloquear','sb-horariospublicos','sb-espera'] },
+    { id:'followup', label:'Seguimiento y comunicación', items:['sb-guioneswa','sb-recuperacion'] },
     { id:'finance', label:'Finanzas y resultados', items:['sb-finanzas','sb-guiakpis','sb-presupuesto','sb-comisiones'] },
     { id:'commercial', label:'Comercial', items:['sb-paquetes','sb-empresas','sb-codigos'] },
-    { id:'team', label:'Equipo', items:['sb-equipo'] },
     { id:'advanced', label:'Administración avanzada', items:['sb-basedatos','sb-automatizaciones'] },
     { id:'tools', label:'Herramientas clínicas', items:['sb-pasaporte','sb-evaluacion','sb-evalexpress'] }
   ];
