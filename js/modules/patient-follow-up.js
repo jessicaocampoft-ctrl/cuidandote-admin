@@ -99,11 +99,6 @@ function followUpStatus(value) {
     .normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
 }
 
-function isCompletedFollowUpSession(status) {
-  const normalized = followUpStatus(status);
-  return normalized.includes('atendida') || normalized.includes('cerrada');
-}
-
 function isExcludedFollowUpSession(status) {
   const normalized = followUpStatus(status);
   return normalized.includes('cancel') || normalized.includes('no asist') || normalized.includes('reprogram');
@@ -138,7 +133,10 @@ function _recentFollowUps() {
       dias:days,
       rule,
       estado:c.estado || 'Sin estado',
-      ready:isCompletedFollowUpSession(c.estado)
+      // El seguimiento se prepara por la fecha de la cita, incluso si el
+      // equipo aún no ha cerrado el estado. Solo se excluyen canceladas,
+      // reprogramadas o inasistencias.
+      ready:true
     });
   });
   return Array.from(latest.values()).sort((a,b) => a.fecha.localeCompare(b.fecha));
@@ -179,7 +177,7 @@ function renderRecentFollowUps() {
     const dueText = overdue ? `Pendiente desde hace ${person.dias - person.rule.days} día${person.dias - person.rule.days === 1 ? '' : 's'}` : person.rule.label;
     const action = person.ready
       ? (wa ? `<a href="${wa}" target="_blank" class="btn btn-wa btn-sm" onclick="PanelPatientFollowUp.markRecentFollow('${encoded}','sent')">💬 Preguntar cómo le fue</a>` : '<span style="font-size:.75rem;color:var(--muted);padding:5px">Sin teléfono</span>')
-      : '<span style="font-size:.75rem;color:#a15c00;padding:5px;max-width:210px">Confirma la atención en la cita antes de enviar el seguimiento.</span>';
+      : '<span style="font-size:.75rem;color:var(--muted);padding:5px">Sin teléfono</span>';
     return `<div class="seg-card" style="border-left:3px solid var(--primary)">
       <div class="pac-badge" style="flex-shrink:0;background:rgba(27,191,176,.08)">${person.nombre.split(' ').map(x => x[0]).join('').slice(0,2).toUpperCase()}</div>
       <div style="flex:1;min-width:160px"><div style="font-weight:700;font-size:.9rem">${person.nombre}</div><div style="font-size:.78rem;color:var(--muted);margin-top:3px">${person.servicio} · ${dueText}<br>Estado de cita: ${escFollowUp(person.estado)}</div></div>
