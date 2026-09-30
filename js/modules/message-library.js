@@ -64,6 +64,20 @@ function _agregarAtencionClienteSiFalta(revision) {
   kvSet(revision, '1');
 }
 
+function _mensajesDisponibles() {
+  const existing = _getMensajesPre();
+  const ids = new Set(existing.map(message => message.id));
+  const missingCustomerCare = _MSG_DEFAULTS.filter(message => message.cat === 'atencion' && !ids.has(message.id));
+  // No dependemos de una migración antigua: si el servidor devuelve una
+  // biblioteca anterior, la vista se corrige en este mismo renderizado.
+  if (missingCustomerCare.length) {
+    const complete = existing.concat(missingCustomerCare);
+    _setMensajesPre(complete);
+    return complete;
+  }
+  return existing;
+}
+
 function _initMensajesPre() {
   if (!kvGet('mensajes_pre_seeded')) {
     _setMensajesPre(_MSG_DEFAULTS);
@@ -81,7 +95,7 @@ function renderMensajes() {
   _initMensajesPre();
   const grid = document.getElementById('msgGrid');
   if (!grid) return;
-  const msgs = _getMensajesPre();
+  const msgs = _mensajesDisponibles();
   const filtrados = _msgCatActiva ? msgs.filter(m => m.cat === _msgCatActiva) : msgs;
   if (!filtrados.length) {
     grid.innerHTML = '<div class="empty"><div style="font-size:2.5rem;margin-bottom:12px">💬</div><div>No hay mensajes aquí todavía.<br>Crea el primero con <strong>+ Nuevo mensaje</strong></div></div>';
