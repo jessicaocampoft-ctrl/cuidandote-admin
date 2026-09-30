@@ -5,8 +5,9 @@ let _segFiltros = new Set(['sem3','sem4','sem5','reagendo','readap']);
 const MANUAL_REMINDERS_KEY = 'daily_manual_discharge_reminders_v1';
 
 // Regla clínica-operativa única para los seguimientos post-sesión. Mantenerla
-// alineada con la automatización del servidor: no mostrar tareas antes o
-// después del día que corresponde a cada tipo de servicio.
+// alineada con la automatización del servidor: no mostrar tareas antes del
+// día que corresponde a cada tipo de servicio. Una tarea pendiente permanece
+// visible para que nunca se pierda por no gestionarla el día exacto.
 function postSessionFollowUpRule(service) {
   const normalized = String(service || '')
     .toLocaleLowerCase('es')
@@ -93,11 +94,26 @@ function _recentKey(person) {
   return `seg_recent_${person.fecha}_${String(person.nombre || '').toLowerCase()}`;
 }
 
+function followUpStatus(value) {
+  return String(value || '').toLocaleLowerCase('es')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+}
+
+function isCompletedFollowUpSession(status) {
+  const normalized = followUpStatus(status);
+  return normalized.includes('atendida') || normalized.includes('cerrada');
+}
+
+function isExcludedFollowUpSession(status) {
+  const normalized = followUpStatus(status);
+  return normalized.includes('cancel') || normalized.includes('no asist') || normalized.includes('reprogram');
+}
+
 function _recentFollowUps() {
   const now = new Date(); now.setHours(0,0,0,0);
   const latest = new Map();
   (allData.citas || []).forEach(c => {
-    if (!c || ['Cancelada','Pendiente','Confirmada'].includes(c.estado) || esRegistroServ(c.servicio)) return;
+    if (!c || esRegistroServ(c.servicio) || isExcludedFollowUpSession(c.estado)) return;
     const fecha = normDate(c.fecha);
     if (!fecha) return;
     const date = new Date(`${fecha}T12:00:00`);
@@ -105,12 +121,25 @@ function _recentFollowUps() {
     // zona horaria; redondear permite que la sesión de ayer aparezca hoy.
     const days = Math.round((now - date) / 86400000);
     const rule = postSessionFollowUpRule(c.servicio);
-    if (!rule || days !== rule.days) return;
+    // Mantener el pendiente visible durante dos semanas. Antes se usaba
+    // `days !== rule.days`, por lo que una tarea se perdía si no se abría la
+    // sección justo el día programado.
+    if (!rule || days < rule.days || days > 14) return;
     const nombre = String(c.nombre || '').trim();
     if (!nombre) return;
     const key = nombre.toLocaleLowerCase('es');
     const prev = latest.get(key);
-    if (!prev || fecha > prev.fecha) latest.set(key, { nombre, telefono:c.telefono || '', email:c.email || '', servicio:c.servicio || 'sesión', fecha, dias:days, rule });
+    if (!prev || fecha > prev.fecha) latest.set(key, {
+      nombre,
+      telefono:c.telefono || '',
+      email:c.email || '',
+      servicio:c.servicio || 'sesión',
+      fecha,
+      dias:days,
+      rule,
+      estado:c.estado || 'Sin estado',
+      ready:isCompletedFollowUpSession(c.estado)
+    });
   });
   return Array.from(latest.values()).sort((a,b) => a.fecha.localeCompare(b.fecha));
 }
@@ -146,13 +175,17 @@ function renderRecentFollowUps() {
     const message = `Hola ${first}! 😊 Queríamos saber cómo te has sentido después de tu sesión de ${person.servicio}. ¿Cómo sigue tu cuerpo hoy? Si notas alguna molestia o tienes dudas, cuéntanos para orientarte.`;
     const encoded = encodeURIComponent(JSON.stringify(person));
     const wa = phone.length >= 7 ? `https://wa.me/${waPhone}?text=${encodeURIComponent(message)}` : '';
+    const overdue = person.dias > person.rule.days;
+    const dueText = overdue ? `Pendiente desde hace ${person.dias - person.rule.days} día${person.dias - person.rule.days === 1 ? '' : 's'}` : person.rule.label;
+    const action = person.ready
+      ? (wa ? `<a href="${wa}" target="_blank" class="btn btn-wa btn-sm" onclick="PanelPatientFollowUp.markRecentFollow('${encoded}','sent')">💬 Preguntar cómo le fue</a>` : '<span style="font-size:.75rem;color:var(--muted);padding:5px">Sin teléfono</span>')
+      : '<span style="font-size:.75rem;color:#a15c00;padding:5px;max-width:210px">Confirma la atención en la cita antes de enviar el seguimiento.</span>';
     return `<div class="seg-card" style="border-left:3px solid var(--primary)">
       <div class="pac-badge" style="flex-shrink:0;background:rgba(27,191,176,.08)">${person.nombre.split(' ').map(x => x[0]).join('').slice(0,2).toUpperCase()}</div>
-      <div style="flex:1;min-width:160px"><div style="font-weight:700;font-size:.9rem">${person.nombre}</div><div style="font-size:.78rem;color:var(--muted);margin-top:3px">${person.servicio} · ${person.rule ? person.rule.label : `sesión hace ${person.dias} día${person.dias === 1 ? '' : 's'}`}</div></div>
+      <div style="flex:1;min-width:160px"><div style="font-weight:700;font-size:.9rem">${person.nombre}</div><div style="font-size:.78rem;color:var(--muted);margin-top:3px">${person.servicio} · ${dueText}<br>Estado de cita: ${escFollowUp(person.estado)}</div></div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;flex-shrink:0">
-        ${wa ? `<a href="${wa}" target="_blank" class="btn btn-wa btn-sm" onclick="PanelPatientFollowUp.markRecentFollow('${encoded}','sent')">💬 Preguntar cómo le fue</a>` : '<span style="font-size:.75rem;color:var(--muted);padding:5px">Sin teléfono</span>'}
-        <button class="btn btn-ghost btn-sm" onclick="PanelPatientFollowUp.markRecentFollow('${encoded}','well')">Todo bien ✓</button>
-        <button class="btn btn-ghost btn-sm" onclick="PanelPatientFollowUp.markRecentFollow('${encoded}','attention')">Requiere revisión</button>
+        ${action}
+        ${person.ready ? `<button class="btn btn-ghost btn-sm" onclick="PanelPatientFollowUp.markRecentFollow('${encoded}','well')">Todo bien ✓</button><button class="btn btn-ghost btn-sm" onclick="PanelPatientFollowUp.markRecentFollow('${encoded}','attention')">Requiere revisión</button>` : ''}
       </div>
     </div>`;
   }).join('');
