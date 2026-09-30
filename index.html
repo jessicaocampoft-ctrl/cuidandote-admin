@@ -1921,10 +1921,13 @@ button:disabled{cursor:not-allowed;opacity:.58}
           <h1 class="page-title">Bienvenida, <em>Jessica</em></h1>
           <p class="page-sub" id="dashDate"></p>
         </div>
-        <button class="btn btn-teal" onclick="agendarHoy()">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-          Agendar hoy
-        </button>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <button class="btn btn-ghost" type="button" onclick="PanelDailyControl.openManualReminder()">💬 Recordatorio</button>
+          <button class="btn btn-teal" onclick="agendarHoy()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+            Agendar hoy
+          </button>
+        </div>
       </div>
 
       <!-- Alerta cita próxima -->

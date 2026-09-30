@@ -359,11 +359,8 @@ function _renderTomorrow(data) {
 
 function _quickActions() {
   return `<nav class="daily-quick-actions" aria-label="Acciones rápidas">
-    <button class="daily-quick primary" type="button" onclick="showView('nueva')"><span>＋</span>Nueva cita</button>
-    <button class="daily-quick" type="button" onclick="PanelDailyControl.openManualReminder()"><span>💬</span>Recordatorio</button>
-    <button class="daily-quick" type="button" onclick="showView('agenda')"><span>▣</span>Ver agenda</button>
-    <button class="daily-quick" type="button" onclick="showView('pagos')"><span>⌁</span>Pagos</button>
     <button class="daily-quick" type="button" onclick="showView('seguimiento')"><span>↗</span>Seguimiento</button>
+    <button class="daily-quick" type="button" onclick="showView('pagos')"><span>⌁</span>Pagos</button>
   </nav>`;
 }
 
