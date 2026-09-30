@@ -112,6 +112,12 @@ function paymentCandidateAppointments() {
     .slice(0, 160);
 }
 
+function paymentDateOffset(days) {
+  const base = new Date(`${normDate(today())}T12:00:00`);
+  base.setDate(base.getDate() + days);
+  return base.toISOString().slice(0, 10);
+}
+
 function renderPaymentAppointmentList() {
   const list = document.getElementById('paymentAppointmentList');
   if (!list) return;
@@ -126,6 +132,7 @@ function renderPaymentAppointmentList() {
     if (paymentListFilter === 'pending') return isPending;
     if (paymentListFilter === 'review') return isReview;
     if (paymentListFilter === 'today') return normDate(c.fecha) === normDate(today());
+    if (paymentListFilter === 'tomorrow') return normDate(c.fecha) === paymentDateOffset(1);
     return true;
   }).slice(0, 60);
   document.querySelectorAll('[data-payment-filter]').forEach(button => {
@@ -153,7 +160,7 @@ function renderPaymentAppointmentList() {
 }
 
 function setPaymentListFilter(filter) {
-  paymentListFilter = ['pending','today','review','all'].includes(filter) ? filter : 'pending';
+  paymentListFilter = ['pending','today','tomorrow','review','all'].includes(filter) ? filter : 'pending';
   renderPaymentAppointmentList();
 }
 
@@ -197,21 +204,25 @@ function updatePlanPaymentUI() {
   const check = document.getElementById('payIsPlan');
   const fields = document.getElementById('paymentPlanFields');
   const select = document.getElementById('payPlanRef');
+  const customFields = document.getElementById('payCustomPlanFields');
   const preview = document.getElementById('payPlanBalancePreview');
   const cita = selectedPaymentAppointment();
   if (!panel || !check || !fields || !select || !preview) return;
   panel.style.display = cita ? 'block' : 'none';
-  if (!cita || !check.checked) { fields.style.display = 'none'; preview.textContent = ''; return; }
+  if (!cita || !check.checked) { fields.style.display = 'none'; if (customFields) customFields.style.display = 'none'; preview.textContent = ''; return; }
   fields.style.display = 'block';
   const previous = select.value;
   const sameClientPlans = (operationsData.planesCliente || []).filter(p => String(p.Cliente || '').trim().toLowerCase() === String(cita.nombre || '').trim().toLowerCase());
   const templates = operationsData.plantillasPlanes || [];
-  select.innerHTML = '<option value="">Selecciona el plan...</option>'
+  select.innerHTML = '<option value="custom">Nuevo plan personalizado · valor libre</option>'
     + sameClientPlans.map(p => `<option value="plan:${esc(p.ID)}">Plan existente · ${esc(p.NombrePlan || 'Plan')} · saldo ${formatPrecio(parsePrecio(p.SaldoPendiente || 0))}</option>`).join('')
-    + templates.map(t => `<option value="template:${esc(t.ID)}">Nuevo · ${esc(t.Nombre)} · total ${formatPrecio(parsePrecio(t.PrecioTotal || 0))}</option>`).join('');
+    + templates.map(t => `<option value="template:${esc(t.ID)}">Usar plantilla · ${esc(t.Nombre)} · total ${formatPrecio(parsePrecio(t.PrecioTotal || 0))}</option>`).join('');
   if ([...select.options].some(option => option.value === previous)) select.value = previous;
   const ref = select.value || '';
-  let total = 0, paid = 0, label = '';
+  let total = 0, label = '';
+  const customTotal = parsePrecio(document.getElementById('payCustomPlanTotal')?.value || 0);
+  const customName = document.getElementById('payCustomPlanName')?.value.trim() || 'Plan personalizado';
+  if (customFields) customFields.style.display = ref === 'custom' ? 'grid' : 'none';
   if (ref.startsWith('plan:')) {
     const plan = sameClientPlans.find(p => String(p.ID) === ref.slice(5));
     total = plan ? parsePrecio(plan.SaldoPendiente || 0) : 0;
@@ -220,12 +231,15 @@ function updatePlanPaymentUI() {
     const template = templates.find(t => String(t.ID) === ref.slice(9));
     total = template ? parsePrecio(template.PrecioTotal || 0) : 0;
     label = template ? (template.Nombre || 'Plan') : 'Plan';
+  } else if (ref === 'custom') {
+    total = customTotal;
+    label = customName;
   }
   const amount = parsePrecio(document.getElementById('payValorRecibido')?.value || 0);
   const balance = Math.max(0, total - amount);
   preview.innerHTML = total
     ? `<strong>${esc(label)}</strong> · abono actual: <strong>${formatPrecio(amount)}</strong> · <strong style="color:${balance ? '#c2410c' : '#047857'}">saldo después de guardar: ${formatPrecio(balance)}</strong>`
-    : 'Selecciona un plan para calcular el saldo.';
+    : 'Escribe el valor total del plan para calcular el saldo.';
 }
 
 function selectedPlanPayment() {
@@ -235,6 +249,16 @@ function selectedPlanPayment() {
   if (!ref) return {error:'Selecciona el plan que está pagando.'};
   if (ref.startsWith('plan:')) return {planClienteId:ref.slice(5)};
   if (ref.startsWith('template:')) return {plantillaId:ref.slice(9)};
+  if (ref === 'custom') {
+    const valorTotalPlan = parsePrecio(document.getElementById('payCustomPlanTotal')?.value || 0);
+    if (!valorTotalPlan) return {error:'Escribe el valor total del plan.'};
+    return {
+      planPersonalizado:true,
+      nombrePlan:document.getElementById('payCustomPlanName')?.value.trim() || 'Plan personalizado',
+      valorTotalPlan,
+      sesionesPlan:document.getElementById('payCustomPlanSessions')?.value || ''
+    };
+  }
   return {error:'Selecciona el plan que está pagando.'};
 }
 

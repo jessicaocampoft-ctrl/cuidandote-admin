@@ -3565,6 +3565,7 @@ Primero evaluamos cómo está el cuerpo ahora, luego tratamos, luego te enseñam
               <div id="paymentQuickFilters" style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:10px" aria-label="Filtrar citas de pago">
                 <button class="btn btn-teal btn-sm" type="button" data-payment-filter="pending" onclick="setPaymentListFilter('pending')">Pendientes</button>
                 <button class="btn btn-ghost btn-sm" type="button" data-payment-filter="today" onclick="setPaymentListFilter('today')">Hoy</button>
+                <button class="btn btn-ghost btn-sm" type="button" data-payment-filter="tomorrow" onclick="setPaymentListFilter('tomorrow')">Mañana</button>
                 <button class="btn btn-ghost btn-sm" type="button" data-payment-filter="review" onclick="setPaymentListFilter('review')">Para revisar</button>
                 <button class="btn btn-ghost btn-sm" type="button" data-payment-filter="all" onclick="setPaymentListFilter('all')">Todas</button>
               </div>
@@ -3585,6 +3586,11 @@ Primero evaluamos cómo está el cuerpo ahora, luego tratamos, luego te enseñam
                 <div id="paymentPlanFields" style="display:none;margin-top:12px">
                   <label class="team-muted" style="display:block;margin-bottom:6px">Plan que está pagando</label>
                   <select id="payPlanRef" onchange="updatePlanPaymentUI()" style="width:100%"></select>
+                  <div id="payCustomPlanFields" class="form-grid g2" style="display:none;gap:10px;margin-top:10px">
+                    <div class="field"><label>Nombre del plan</label><input id="payCustomPlanName" type="text" placeholder="Ej: Plan de readaptación" oninput="updatePlanPaymentUI()"></div>
+                    <div class="field"><label>Valor total del plan</label><input id="payCustomPlanTotal" type="text" placeholder="Ej: 390000" oninput="updatePlanPaymentUI()"></div>
+                    <div class="field"><label>Sesiones incluidas <span class="team-muted">(opcional)</span></label><input id="payCustomPlanSessions" type="number" min="1" step="1" placeholder="Ej: 6"></div>
+                  </div>
                   <div id="payPlanBalancePreview" class="team-muted" style="margin-top:10px"></div>
                   <small style="display:block;margin-top:8px;color:#9a3412">Al guardar el abono, el saldo pendiente quedará visible para seguimiento. No se habilitan sesiones nuevas hasta completar el plan.</small>
                 </div>

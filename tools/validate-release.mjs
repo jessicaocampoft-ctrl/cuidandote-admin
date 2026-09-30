@@ -42,9 +42,11 @@ if (!session.includes('adminDataScore')) fail('falta la protección contra respu
 if (!payments.includes('savePaymentAndApprove') || !payments.includes('savePlanPayment')) fail('faltan acciones de pago o abono');
 if (!payments.includes('operationsLoadPromise')) fail('falta el control de carga única de pagos');
 if (!payments.includes('OPERATIONS_CACHE_KEY')) fail('falta el respaldo temporal de la vista de pagos');
+if (!payments.includes("'tomorrow'")) fail('falta el filtro de cobros de mañana');
+if (!payments.includes('planPersonalizado')) fail('falta el soporte de planes con valor libre');
 if (!team.includes('teamLoadPromise')) fail('falta el control de carga de colaboradores');
 if (!html.includes('js/modules/payments.js') || !html.includes('js/modules/team.js')) fail('faltan módulos críticos en el panel');
 if (!html.includes('session.js?v=20260929-data-source-guard')) fail('la sesión no tiene una versión actualizada para evitar caché antiguo');
-if (!html.includes('payments.js?v=20260929-payment-stable')) fail('pagos no tiene una versión actualizada para evitar caché antiguo');
+if (!html.includes('payments.js?v=20260929-payment-custom-plan')) fail('pagos no tiene una versión actualizada para evitar caché antiguo');
 
 console.log(`VALIDACIÓN APROBADA: ${files.length} archivos críticos, acceso, agenda, pagos, planes y colaboradores presentes.`);
