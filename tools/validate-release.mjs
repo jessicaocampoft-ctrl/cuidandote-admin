@@ -32,6 +32,7 @@ const config = fs.readFileSync(`${root}/js/core/config.js`, 'utf8');
 const session = fs.readFileSync(`${root}/js/core/session.js`, 'utf8');
 const payments = fs.readFileSync(`${root}/js/modules/payments.js`, 'utf8');
 const team = fs.readFileSync(`${root}/js/modules/team.js`, 'utf8');
+const messages = fs.readFileSync(`${root}/js/modules/message-library.js`, 'utf8');
 
 if (!config.includes('APPS_SCRIPT_URL')) fail('falta la conexión principal del servidor');
 if (!config.includes('ADMIN_DATA_FALLBACK_URL')) fail('falta la ruta de respaldo de lectura');
@@ -48,5 +49,6 @@ if (!team.includes('teamLoadPromise')) fail('falta el control de carga de colabo
 if (!html.includes('js/modules/payments.js') || !html.includes('js/modules/team.js')) fail('faltan módulos críticos en el panel');
 if (!html.includes('session.js?v=20260929-data-source-guard')) fail('la sesión no tiene una versión actualizada para evitar caché antiguo');
 if (!html.includes('payments.js?v=20260929-payment-custom-plan')) fail('pagos no tiene una versión actualizada para evitar caché antiguo');
+if (!html.includes('message-library.js?v=20260929-customer-care') || !messages.includes('mensajes_pre_atencion_v1')) fail('falta la biblioteca de atención al cliente');
 
 console.log(`VALIDACIÓN APROBADA: ${files.length} archivos críticos, acceso, agenda, pagos, planes y colaboradores presentes.`);
