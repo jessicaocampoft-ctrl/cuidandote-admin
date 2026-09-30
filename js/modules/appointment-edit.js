@@ -141,6 +141,10 @@ function verDetalle(id) {
   const c = allData.citas.find(x => x.id === id);
   if (!c) return;
   const esCancelada = c.estado === 'Cancelada';
+  // La asignación desde el calendario se habilita únicamente después de que
+  // pagos haya verificado la cita. Conservamos el mismo modal y validaciones
+  // de Colaboradores para no duplicar la lógica de asignación.
+  const puedeAsignarEquipo = ['Pago verificado','Autorizada para atender','Sesión iniciada','Sesión atendida','Cerrada'].includes(String(c.estado || ''));
   document.getElementById('modalDetalleContent').innerHTML = `
     <div style="display:grid;gap:12px">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
@@ -180,6 +184,7 @@ function verDetalle(id) {
       <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
         ${waBtn(c.telefono,c.nombre,c.fecha,c.hora,c.servicio,'WhatsApp confirmación',c.precio,c.modalidad)}
         <button class="btn btn-ghost btn-sm" onclick="(function(){ const p=(document.getElementById('notaParaQuienInput').value||'').trim(); const o=(document.getElementById('notaAdminInput').value||'').trim(); const nota=p?'[PARA: '+p+']'+(o?' '+o:''):o; seguimientoWA('${esc(c.telefono||'')}','${esc(c.nombre)}','${esc(c.servicio)}',nota); })()">💬 Seguimiento</button>
+        ${puedeAsignarEquipo ? `<button class="btn btn-teal btn-sm" onclick="closeModal('modalDetalle');abrirAsignarPro('${esc(c.id)}')">👥 Asignar colaborador</button>` : ''}
         ${waBtnPasaporte(c.telefono,c.nombre)}
         ${c.email ? `<a href="mailto:${c.email}" class="btn btn-ghost btn-sm">📧 Email</a>` : ''}
       </div>
