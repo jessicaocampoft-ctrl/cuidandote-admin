@@ -55,6 +55,15 @@ function _getMensajesPre() {
 
 function _setMensajesPre(arr) { kvSet('mensajes_pre', JSON.stringify(arr)); }
 
+function _agregarAtencionClienteSiFalta(revision) {
+  if (kvGet(revision)) return;
+  const existing = _getMensajesPre();
+  const ids = new Set(existing.map(message => message.id));
+  const additions = _MSG_DEFAULTS.filter(message => message.cat === 'atencion' && !ids.has(message.id));
+  if (additions.length) _setMensajesPre(existing.concat(additions));
+  kvSet(revision, '1');
+}
+
 function _initMensajesPre() {
   if (!kvGet('mensajes_pre_seeded')) {
     _setMensajesPre(_MSG_DEFAULTS);
@@ -62,13 +71,10 @@ function _initMensajesPre() {
   }
   // Las bibliotecas que ya existían conservan sus ediciones; solo se añaden
   // las respuestas nuevas de atención al cliente una única vez.
-  if (!kvGet('mensajes_pre_atencion_v1')) {
-    const existing = _getMensajesPre();
-    const ids = new Set(existing.map(message => message.id));
-    const additions = _MSG_DEFAULTS.filter(message => message.cat === 'atencion' && !ids.has(message.id));
-    if (additions.length) _setMensajesPre(existing.concat(additions));
-    kvSet('mensajes_pre_atencion_v1', '1');
-  }
+  _agregarAtencionClienteSiFalta('mensajes_pre_atencion_v1');
+  // Recupera bibliotecas donde una sincronización anterior alcanzó a marcar
+  // la migración antes de que se guardaran las plantillas.
+  _agregarAtencionClienteSiFalta('mensajes_pre_atencion_v2');
 }
 
 function renderMensajes() {
