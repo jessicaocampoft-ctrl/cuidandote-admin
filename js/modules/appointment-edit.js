@@ -90,8 +90,13 @@ async function confirmarReagendar(id) {
 
 async function guardarNotaAdmin(id) {
   const paraQuien = (document.getElementById('notaParaQuienInput').value||'').trim();
+  const acuerdo = (document.getElementById('notaAcuerdoInput').value||'').trim();
   const otrasNotas = document.getElementById('notaAdminInput').value.trim();
-  const nota = (paraQuien ? '[PARA: ' + paraQuien + ']' + (otrasNotas ? ' ' + otrasNotas : '') : otrasNotas);
+  const partes = [];
+  if (paraQuien) partes.push('[PARA: ' + paraQuien + ']');
+  if (acuerdo) partes.push('[ACUERDO: ' + acuerdo + ']');
+  if (otrasNotas) partes.push(otrasNotas);
+  const nota = partes.join(' ');
   try {
     const data = encodeURIComponent(JSON.stringify({id, notaAdmin: nota}));
     const r = await fetch(`${APPS_SCRIPT_URL}?action=editBooking&token=${encodeURIComponent(TOKEN)}&data=${data}`);
@@ -157,15 +162,20 @@ function verDetalle(id) {
         ${row('ID cita', esc(c.id))}
       </div>
       ${patientInsightHtml(c)}
-      <!-- Nota interna editable -->
+      <!-- Notas internas editables -->
       <div style="margin-top:10px;padding:10px 12px;background:rgba(251,191,36,.07);border:1px solid rgba(251,191,36,.25);border-radius:8px">
         <div style="font-size:.75rem;color:#92400e;font-family:var(--font-m);margin-bottom:8px">📝 Nota interna (solo tú la ves)</div>
         <div style="margin-bottom:8px">
           <div style="font-size:.72rem;color:#a16207;margin-bottom:4px">👤 ¿La sesión es para otra persona? (afecta el mensaje de seguimiento)</div>
           <input type="text" id="notaParaQuienInput" value="${(()=>{ const m=(c.notaAdmin||'').match(/\[PARA:\s*([^\]]+)\]/i); if(m) return m[1].trim(); const prev=allData.citas.filter(x=>x.nombre===c.nombre&&x.id!==c.id&&x.notaAdmin).sort((a,b)=>(normDate(b.fecha)+b.hora).localeCompare(normDate(a.fecha)+a.hora)); for(const p of prev){const mp=p.notaAdmin.match(/\[PARA:\s*([^\]]+)\]/i);if(mp)return mp[1].trim();} return ''; })()}" placeholder="Ej: tu esposo, tu mamá, tu hijo... (dejar en blanco si es para quien llama)" style="width:100%;background:rgba(255,255,255,.15);border:none;border-bottom:1px solid rgba(251,191,36,.4);border-radius:0;padding:4px 0;outline:none;font-family:var(--font-b);font-size:.85rem;color:var(--text)">
         </div>
+        <div style="margin-bottom:8px">
+          <div style="font-size:.72rem;color:#a16207;margin-bottom:4px">💳 Acuerdo de sesiones, plan y pago</div>
+          <textarea id="notaAcuerdoInput" rows="2" style="width:100%;background:rgba(255,255,255,.15);border:none;border-bottom:1px solid rgba(251,191,36,.4);border-radius:0;padding:4px 0;outline:none;font-family:var(--font-b);font-size:.85rem;color:var(--text);resize:vertical" placeholder="Ej: Le dejé las sesiones en $___; adquirió el plan ___ y pagará ___ hoy y ___ el ___.">${(()=>{ const m=(c.notaAdmin||'').match(/\[ACUERDO:\s*([^\]]+)\]/i); return m ? esc(m[1].trim()) : ''; })()}</textarea>
+          <div style="font-size:.7rem;color:#a16207;margin-top:4px">Registra el valor acordado, el plan y la forma o fechas de pago.</div>
+        </div>
         <div style="font-size:.72rem;color:#a16207;margin-bottom:4px">📋 Otras notas</div>
-        <textarea id="notaAdminInput" rows="2" style="width:100%;background:transparent;border:none;outline:none;font-family:var(--font-b);font-size:.85rem;color:var(--text);resize:none" placeholder="Ej: Debe pagar saldo, viene en transporte...">${(c.notaAdmin||'').replace(/\[PARA:[^\]]*\]\s*/i,'').trim()}</textarea>
+        <textarea id="notaAdminInput" rows="2" style="width:100%;background:transparent;border:none;outline:none;font-family:var(--font-b);font-size:.85rem;color:var(--text);resize:none" placeholder="Ej: Debe pagar saldo, viene en transporte...">${esc((c.notaAdmin||'').replace(/\[PARA:[^\]]*\]\s*/i,'').replace(/\[ACUERDO:[^\]]*\]\s*/i,'').trim())}</textarea>
         <button class="btn btn-ghost btn-sm" style="margin-top:6px" onclick="guardarNotaAdmin('${c.id}')">Guardar nota</button>
       </div>
       <!-- Mini-historial -->
@@ -183,7 +193,7 @@ function verDetalle(id) {
       })()}
       <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
         ${waBtn(c.telefono,c.nombre,c.fecha,c.hora,c.servicio,'WhatsApp confirmación',c.precio,c.modalidad)}
-        <button class="btn btn-ghost btn-sm" onclick="(function(){ const p=(document.getElementById('notaParaQuienInput').value||'').trim(); const o=(document.getElementById('notaAdminInput').value||'').trim(); const nota=p?'[PARA: '+p+']'+(o?' '+o:''):o; seguimientoWA('${esc(c.telefono||'')}','${esc(c.nombre)}','${esc(c.servicio)}',nota); })()">💬 Seguimiento</button>
+        <button class="btn btn-ghost btn-sm" onclick="(function(){ const p=(document.getElementById('notaParaQuienInput').value||'').trim(); const nota=p?'[PARA: '+p+']':''; seguimientoWA('${esc(c.telefono||'')}','${esc(c.nombre)}','${esc(c.servicio)}',nota); })()">💬 Seguimiento</button>
         ${puedeAsignarEquipo ? `<button class="btn btn-teal btn-sm" onclick="closeModal('modalDetalle');abrirAsignarPro('${esc(c.id)}')">👥 Asignar colaborador</button>` : ''}
         ${waBtnPasaporte(c.telefono,c.nombre)}
         ${c.email ? `<a href="mailto:${c.email}" class="btn btn-ghost btn-sm">📧 Email</a>` : ''}
