@@ -10,7 +10,9 @@ const _MSG_CATS = {
   general:        { label: '📋 General',         color: '#6b7280' }
 };
 
-let _msgCatActiva = '';
+// La primera vista de Mensajes prioriza las respuestas que usa el equipo para
+// atender nuevos contactos. El usuario todavía puede escoger "Todos".
+let _msgCatActiva = 'atencion';
 
 const _MSG_DEFAULTS = [
   { id:'atencion-bienvenida-inicial', cat:'atencion', titulo:'Mensaje inicial de bienvenida',

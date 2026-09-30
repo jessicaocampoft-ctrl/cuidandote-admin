@@ -170,7 +170,7 @@
     const existing = document.querySelector('script[data-panel-communications-hub]');
     if (existing) { existing.addEventListener('load', start, { once:true }); return; }
     const script = document.createElement('script');
-    script.src = 'js/modules/communications-hub.js';
+    script.src = 'js/modules/communications-hub.js?v=20260930-customer-care-default';
     script.dataset.panelCommunicationsHub = '1';
     script.addEventListener('load', start, { once:true });
     script.addEventListener('error', () => console.warn('No se pudo cargar Mensajes unificado'), { once:true });

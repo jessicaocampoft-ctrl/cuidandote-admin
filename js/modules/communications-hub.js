@@ -24,7 +24,10 @@
 
   function _renderForTab(tab) {
     if (tab === 'mensajes') {
-      if (typeof global.renderMensajes === 'function') global.renderMensajes();
+      // Cada vez que se abre Mensajes partimos de Atención al cliente para
+      // que las respuestas comerciales queden listas sin otro clic.
+      if (typeof global.setMsgCat === 'function') global.setMsgCat('atencion');
+      else if (typeof global.renderMensajes === 'function') global.renderMensajes();
       return;
     }
     if (tab === 'guiones') {
