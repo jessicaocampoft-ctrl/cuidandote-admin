@@ -151,7 +151,7 @@ function markRecentFollow(encodedPerson, state) {
   try { person = JSON.parse(decodeURIComponent(encodedPerson)); } catch (_) { return; }
   if (!person || !person.nombre) return;
   kvSet(_recentKey(person), state);
-  const labels = { sent:'Mensaje enviado', well:'Evoluciona bien', attention:'Requiere revisión' };
+  const labels = { sent:'Mensaje enviado', well:'Evoluciona bien', attention:'Requiere revisión', skipped:'Seguimiento omitido' };
   segLogAction(person.nombre, 'recent', `${labels[state] || 'Seguimiento'} · ${person.dias} día(s) después de la sesión`);
   renderRecentFollowUps();
 }
@@ -160,7 +160,7 @@ function renderRecentFollowUps() {
   const root = document.getElementById('segTodayList');
   const count = document.getElementById('segTodayCount');
   if (!root) return;
-  const pending = _recentFollowUps().filter(person => !['well','attention'].includes(recentFollowState(person)));
+  const pending = _recentFollowUps().filter(person => !['well','attention','skipped'].includes(recentFollowState(person)));
   if (count) count.textContent = pending.length;
   if (!pending.length) {
     root.innerHTML = '<div class="empty" style="padding:42px 20px"><p>Todo al día: no hay sesiones recientes pendientes de seguimiento.</p></div>';
@@ -183,7 +183,7 @@ function renderRecentFollowUps() {
       <div style="flex:1;min-width:160px"><div style="font-weight:700;font-size:.9rem">${person.nombre}</div><div style="font-size:.78rem;color:var(--muted);margin-top:3px">${person.servicio} · ${dueText}<br>Estado de cita: ${escFollowUp(person.estado)}</div></div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;flex-shrink:0">
         ${action}
-        ${person.ready ? `<button class="btn btn-ghost btn-sm" onclick="PanelPatientFollowUp.markRecentFollow('${encoded}','well')">Todo bien ✓</button><button class="btn btn-ghost btn-sm" onclick="PanelPatientFollowUp.markRecentFollow('${encoded}','attention')">Requiere revisión</button>` : ''}
+        ${person.ready ? `<button class="btn btn-ghost btn-sm" onclick="PanelPatientFollowUp.markRecentFollow('${encoded}','well')">Todo bien ✓</button><button class="btn btn-ghost btn-sm" onclick="PanelPatientFollowUp.markRecentFollow('${encoded}','attention')">Requiere revisión</button><button class="btn btn-ghost btn-sm" onclick="PanelPatientFollowUp.markRecentFollow('${encoded}','skipped')">Omitir</button>` : ''}
       </div>
     </div>`;
   }).join('');
