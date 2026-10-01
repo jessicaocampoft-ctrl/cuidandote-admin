@@ -122,9 +122,14 @@ function _msgCard(m) {
       </div>
     </div>
     <div style="font-size:.84rem;color:var(--muted);line-height:1.65;white-space:pre-wrap;flex:1">${preview}</div>
-    <button onclick="copiarMensajePre('${m.id}')" style="padding:10px 16px;background:var(--primary);color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:var(--font-b);font-size:.84rem;font-weight:600" onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">
-      📋 Copiar mensaje
-    </button>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button onclick="editarMensaje('${m.id}')" style="flex:1;min-width:132px;padding:10px 14px;background:var(--s2);color:var(--primary);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-family:var(--font-b);font-size:.84rem;font-weight:700">
+        ✏️ Editar mensaje
+      </button>
+      <button onclick="copiarMensajePre('${m.id}')" style="flex:1;min-width:132px;padding:10px 14px;background:var(--primary);color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:var(--font-b);font-size:.84rem;font-weight:600" onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">
+        📋 Copiar mensaje
+      </button>
+    </div>
   </div>`;
 }
 
@@ -155,6 +160,7 @@ function editarMensaje(id) {
   document.getElementById('msgCat').value = m.cat;
   document.getElementById('msgTexto').value = m.texto;
   openModal('modalMensaje');
+  setTimeout(() => document.getElementById('msgTexto').focus(), 100);
 }
 
 function guardarMensaje() {

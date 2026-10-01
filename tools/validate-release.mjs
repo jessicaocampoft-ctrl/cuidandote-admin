@@ -49,6 +49,6 @@ if (!team.includes('teamLoadPromise')) fail('falta el control de carga de colabo
 if (!html.includes('js/modules/payments.js') || !html.includes('js/modules/team.js')) fail('faltan módulos críticos en el panel');
 if (!html.includes('session.js?v=20260929-data-source-guard')) fail('la sesión no tiene una versión actualizada para evitar caché antiguo');
 if (!html.includes('payments.js?v=20260929-payment-custom-plan')) fail('pagos no tiene una versión actualizada para evitar caché antiguo');
-if (!html.includes('message-library.js?v=20260930-customer-care-default') || !messages.includes('_mensajesDisponibles')) fail('falta la biblioteca de atención al cliente');
+if (!html.includes('message-library.js?v=20261001-edit-messages') || !messages.includes('_mensajesDisponibles')) fail('falta la biblioteca de atención al cliente');
 
 console.log(`VALIDACIÓN APROBADA: ${files.length} archivos críticos, acceso, agenda, pagos, planes y colaboradores presentes.`);
