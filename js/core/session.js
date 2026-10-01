@@ -122,7 +122,10 @@
       // Apps Script puede demorar al despertar después de un periodo sin uso.
       // Una sola petición con margen suficiente evita duplicar el inicio de
       // sesión y que el panel corte un acceso válido durante ese arranque.
-      }, 70000, false);
+      // Si Apps Script devuelve un 404 transitorio mientras reanuda una
+      // instancia, repetimos una vez la misma autenticación. Así el equipo
+      // no tiene que cerrar sesión ni volver a abrir la página.
+      }, 70000, true);
 
       if (!data.ok) {
         runtime.loginAttempts += 1;
