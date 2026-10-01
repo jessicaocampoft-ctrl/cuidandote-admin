@@ -67,17 +67,10 @@ function _agregarAtencionClienteSiFalta(revision) {
 }
 
 function _mensajesDisponibles() {
-  const existing = _getMensajesPre();
-  const ids = new Set(existing.map(message => message.id));
-  const missingCustomerCare = _MSG_DEFAULTS.filter(message => message.cat === 'atencion' && !ids.has(message.id));
-  // No dependemos de una migración antigua: si el servidor devuelve una
-  // biblioteca anterior, la vista se corrige en este mismo renderizado.
-  if (missingCustomerCare.length) {
-    const complete = existing.concat(missingCustomerCare);
-    _setMensajesPre(complete);
-    return complete;
-  }
-  return existing;
+  // Las plantillas nuevas se agregan solo durante una migración versionada.
+  // No se reponen al renderizar: si el equipo elimina una, esa decisión debe
+  // conservarse al actualizar o volver a entrar a Mensajes.
+  return _getMensajesPre();
 }
 
 function _initMensajesPre() {
@@ -91,6 +84,7 @@ function _initMensajesPre() {
   // Recupera bibliotecas donde una sincronización anterior alcanzó a marcar
   // la migración antes de que se guardaran las plantillas.
   _agregarAtencionClienteSiFalta('mensajes_pre_atencion_v2');
+  _agregarAtencionClienteSiFalta('mensajes_pre_atencion_v3');
 }
 
 function renderMensajes() {
