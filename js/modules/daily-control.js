@@ -361,6 +361,7 @@ function _quickActions() {
   return `<nav class="daily-quick-actions" aria-label="Acciones rápidas">
     <button class="daily-quick" type="button" onclick="showView('seguimiento')"><span>↗</span>Seguimiento</button>
     <button class="daily-quick" type="button" onclick="showView('pagos')"><span>⌁</span>Pagos</button>
+    <button class="daily-quick" type="button" onclick="showView('agenda')" title="Abrir la agenda para enviar las confirmaciones por WhatsApp"><span>💬</span>WhatsApp confirmación</button>
   </nav>`;
 }
 
