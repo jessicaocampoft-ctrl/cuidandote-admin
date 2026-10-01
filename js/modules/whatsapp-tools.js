@@ -45,7 +45,6 @@ function waLink(tel, nombre, fecha, hora, serv, precio, modalidad) {
   const t = String(tel||'').replace(/\D/g,'');
   if (!t || t.length < 7) return null;
   const phone = t.length <= 10 ? '57'+t : t;
-  const conPago  = /descarga|valoraci/i.test(serv);
   const infoSes  = getInfoSesion(nombre, serv, fecha);
   const servLine = infoSes
     ? '*' + serv + '* — ' + ordinalES(infoSes.numero) + ' sesion de ' + infoSes.total
@@ -57,18 +56,6 @@ function waLink(tel, nombre, fecha, hora, serv, precio, modalidad) {
     '' + waFechaES(fecha) + ' · ' + waAmPm(hora),
     String.fromCodePoint(0x1F4CD) + ' ' + (modalidad === 'Domicilio' ? 'A domicilio' : 'En sitio'),
   ];
-  if (conPago && precio) {
-    lines.push(
-      '',
-      String.fromCodePoint(0x2B50) + ' Valor: *' + precio + '*',
-      '',
-      'Para el pago:',
-      String.fromCodePoint(0x1F3E6) + ' Bancolombia Ahorros: 91257857099',
-      String.fromCodePoint(0x1F4F1) + ' Nequi: 3136467945',
-      String.fromCodePoint(0x1F5DD, 0xFE0F) + ' Llave: 1010124692',
-      'Titular: Jessica Andrea Ocampo Barbosa'
-    );
-  }
   lines.push(
     '',
     'Respóndeme:',
@@ -78,6 +65,21 @@ function waLink(tel, nombre, fecha, hora, serv, precio, modalidad) {
     'Gracias! — Cuidándote Fisioterapia'
   );
   return 'https://wa.me/' + phone + '?text=' + encodeURIComponent(lines.join('\n'));
+}
+
+// El cobro anticipado se envía únicamente cuando el equipo lo decide. Nunca
+// se mezcla con la confirmación, especialmente si el paciente tiene un plan
+// activo o un acuerdo de pago parcial.
+function waLinkPago(tel, nombre, fecha, hora, serv, precio, modalidad) {
+  const t = String(tel||'').replace(/\D/g,'');
+  if (!t || t.length < 7) return null;
+  const phone = t.length <= 10 ? '57'+t : t;
+  const cita = fecha && hora
+    ? ` para tu cita de *${serv || 'fisioterapia'}* el ${waFechaES(fecha)} a las ${waAmPm(hora)}`
+    : '';
+  const valor = precio ? `\n\n💳 Valor a pagar por anticipado: *${precio}*` : '';
+  const msg = `Hola ${waNombre(nombre)}! 😊${cita}.${valor}\n\nPara realizar el pago puedes usar alguno de estos medios:\n🏦 Bancolombia Ahorros: 91257857099\n📱 Nequi: 3136467945\n🗝️ Llave: 1010124692\nTitular: Jessica Andrea Ocampo Barbosa\n\nCuando realices el pago, por favor envíanos el comprobante. ¡Gracias! — Cuidándote Fisioterapia`;
+  return 'https://wa.me/' + phone + '?text=' + encodeURIComponent(msg);
 }
 
 function waLinkRec(tel, nombre, fecha, hora, serv) {
@@ -567,6 +569,7 @@ function copiarMsgWA() {
     ordinalES,
     getInfoSesion,
     waLink,
+    waLinkPago,
     waLinkRec,
     waLinkSeg,
     _copyGestionMesKey,

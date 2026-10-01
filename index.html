@@ -8016,6 +8016,14 @@ function waLink(...args) {
   return module.waLink(...args);
 }
 
+function waLinkPago(...args) {
+  const module = window.PanelWhatsAppTools;
+  if (!module || typeof module.waLinkPago !== 'function') {
+    throw new Error('El módulo Herramientas de WhatsApp no está disponible: waLinkPago');
+  }
+  return module.waLinkPago(...args);
+}
+
 function waLinkRec(...args) {
   const module = window.PanelWhatsAppTools;
   if (!module || typeof module.waLinkRec !== 'function') {
@@ -8045,6 +8053,12 @@ function waBtn(tel, nombre, fecha, hora, serv, label, precio, modalidad) {
   const url = waLink(tel, nombre, fecha, hora, serv, precio, modalidad);
   if (!url) return '<span style="color:var(--muted);font-size:.75rem">Sin tel.</span>';
   return '<a href="' + url + '" target="_blank" class="btn btn-wa' + (label==='WA'?' btn-sm':'') + '">' + (label||'WA') + '</a>';
+}
+
+function waBtnPago(tel, nombre, fecha, hora, serv, precio, modalidad, label) {
+  const url = waLinkPago(tel, nombre, fecha, hora, serv, precio, modalidad);
+  if (!url) return '<span style="color:var(--muted);font-size:.75rem">Sin tel.</span>';
+  return '<a href="' + url + '" target="_blank" class="btn btn-ghost btn-sm" title="Enviar solicitud de pago anticipado">' + (label || '💳 Pago anticipado') + '</a>';
 }
 
 
@@ -12867,9 +12881,9 @@ document.addEventListener('DOMContentLoaded', () => {
 <script src="js/modules/shared-storage.js"></script>
 <script src="js/modules/payments.js?v=20260929-payment-custom-plan"></script>
   <script src="js/modules/passport.js"></script>
-  <script src="js/modules/agenda.js?v=20260924-duplicate-appointment"></script>
+  <script src="js/modules/agenda.js?v=20261001-separate-payment-confirmation"></script>
   <script src="js/modules/appointment-create.js?v=20260930-plan-sessions"></script>
-  <script src="js/modules/appointment-edit.js?v=20260930-payment-agreement-note"></script>
+  <script src="js/modules/appointment-edit.js?v=20261001-separate-payment-confirmation"></script>
 <script src="js/modules/team.js?v=20260928-team-retry"></script>
   <script src="js/modules/database.js"></script>
   <script src="js/modules/referrals.js"></script>
@@ -12883,7 +12897,7 @@ document.addEventListener('DOMContentLoaded', () => {
 <script src="js/modules/patient-follow-up.js?v=20260930-followup-omit-v2"></script>
 <script src="js/modules/patient-recovery.js"></script>
 <script src="js/modules/operations-automation.js"></script>
-<script src="js/modules/whatsapp-tools.js?v=20260826-emoji1"></script>
+<script src="js/modules/whatsapp-tools.js?v=20261001-separate-payment-confirmation"></script>
 <script src="js/modules/message-library.js?v=20261001-persistent-delete"></script>
 <script src="js/modules/voice-assistant.js"></script>
 <script src="js/modules/reminders.js"></script>

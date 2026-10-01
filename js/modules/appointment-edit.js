@@ -193,6 +193,7 @@ function verDetalle(id) {
       })()}
       <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
         ${waBtn(c.telefono,c.nombre,c.fecha,c.hora,c.servicio,'WhatsApp confirmación',c.precio,c.modalidad)}
+        ${waBtnPago(c.telefono,c.nombre,c.fecha,c.hora,c.servicio,c.precio,c.modalidad)}
         <button class="btn btn-ghost btn-sm" onclick="(function(){ const p=(document.getElementById('notaParaQuienInput').value||'').trim(); const nota=p?'[PARA: '+p+']':''; seguimientoWA('${esc(c.telefono||'')}','${esc(c.nombre)}','${esc(c.servicio)}',nota); })()">💬 Seguimiento</button>
         ${puedeAsignarEquipo ? `<button class="btn btn-teal btn-sm" onclick="closeModal('modalDetalle');abrirAsignarPro('${esc(c.id)}')">👥 Asignar colaborador</button>` : ''}
         ${waBtnPasaporte(c.telefono,c.nombre)}
