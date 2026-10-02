@@ -110,6 +110,12 @@ async function guardarNotaAdmin(id) {
 }
 
 async function changeStatus(id, status) {
+  const current = allData.citas.find(c => c.id === id);
+  const financial = current && global.PanelPackages?.getAppointmentFinancialSummary?.(current);
+  if (status === 'Atendida' && financial?.kind === 'package-session-due') {
+    toast('Primero registra el pago de esta sesión del paquete; después podrás marcarla como atendida.', 'warn');
+    return;
+  }
   try {
     const r = await fetch(`${APPS_SCRIPT_URL}?action=updateStatus&token=${encodeURIComponent(TOKEN)}&id=${id}&status=${status}`);
     const d = await r.json();

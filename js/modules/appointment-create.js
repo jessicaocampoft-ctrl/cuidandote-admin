@@ -399,6 +399,8 @@ async function submitAdminBooking() {
   const time  = document.getElementById('ncTime').value;
   if (!name||!serv||!date||!time) { toast('Completa los campos obligatorios (*)','err'); return; }
   if (!validateNoMidnight(time, 'agendar')) { updateTimeHelp('ncTime','ncTimeHelp'); return; }
+  const packagePrice = global.PanelPackages?.getSpecialSessionPrice?.({nombre:name, telefono:phone}) || 0;
+  const appointmentPrice = packagePrice ? ('$' + packagePrice.toLocaleString('es-CO')) : (getPrecioFinal() || 'A convenir');
 
   _submittingBooking = true;
   const btn = document.getElementById('ncSubmitBtn');
@@ -433,8 +435,8 @@ async function submitAdminBooking() {
     name, phone,
     email: document.getElementById('ncEmail').value.trim(),
     service: serv, modality: mod, date, time,
-    priceP: getPrecioFinal() || 'A convenir',
-    priceD: getPrecioFinal() || 'A convenir',
+    priceP: appointmentPrice,
+    priceD: appointmentPrice,
     address: document.getElementById('ncAddress').value.trim(),
     notes:   document.getElementById('ncNotes').value.trim(),
     notaAdmin: (() => { const partes = []; const p = (document.getElementById('ncParaQuien').value||'').trim(); if (p) partes.push('[PARA: ' + p + ']'); const ab = getAbonoNota(); if (ab) partes.push(ab); return partes.join(' '); })(),
@@ -499,7 +501,12 @@ function fillPatient(p) {
   if (p.ultimaDir) document.getElementById('ncAddress').value = p.ultimaDir;
   document.getElementById('pacSearch').value = p.nombre + ' — ' + (p.telefono||'');
   document.getElementById('pacDropdown').style.display = 'none';
-  toast('Datos de ' + p.nombre + ' cargados');
+  const packagePrice = global.PanelPackages?.getSpecialSessionPrice?.({nombre:p.nombre, telefono:p.telefono}) || 0;
+  if (packagePrice) {
+    document.getElementById('ncPrice').value = '$' + packagePrice.toLocaleString('es-CO');
+    toast(`Paquete pago por sesión: se aplicó ${fmtPeso(packagePrice)} a esta cita`);
+  }
+  else toast('Datos de ' + p.nombre + ' cargados');
   updateSesionesInfo();
 }
 

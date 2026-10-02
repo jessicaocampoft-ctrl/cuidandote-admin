@@ -85,6 +85,9 @@ function abrirModalPaquete(plIdxPre) {
   const iniciales = document.getElementById('pkSesionesIniciales'); if (iniciales) iniciales.value = 0;
   const valor = document.getElementById('pkValorTotal'); if (valor) valor.value = '';
   const abono = document.getElementById('pkAbonoInicial'); if (abono) abono.value = '';
+  const modalidadPago = document.getElementById('pkModalidadPago'); if (modalidadPago) modalidadPago.value = 'PAQUETE_COMPLETO';
+  const valorPorSesion = document.getElementById('pkValorPorSesion'); if (valorPorSesion) valorPorSesion.value = '';
+  if (typeof global.actualizarModalidadPagoPaquete === 'function') global.actualizarModalidadPagoPaquete();
   if (plIdxPre !== undefined) autocompletarPaqueteDesdePlantilla();
   const pkModal = document.getElementById('modalPaquete'); if (pkModal) pkModal.style.display = 'flex';
 }
@@ -184,6 +187,7 @@ function renderPaquetes() {
     const valorPaquete = Number(p.valorTotal ?? parsePrecio(p.precio || 0));
     const abonado = Number(p.abonado || 0);
     const saldo = Math.max(0, valorPaquete - abonado);
+    const pagoPorSesion = p.modalidadPago === 'PAGO_POR_SESION';
     const pagoColor = saldo > 0 ? '#d97706' : '#059669';
     const _pkWa    = (msg) => pkTel.length >= 7 ? `https://wa.me/57${pkTel.slice(-10)}?text=${encodeURIComponent(msg)}` : null;
     let alerta = '';
@@ -215,14 +219,14 @@ function renderPaquetes() {
         <div style="text-align:right">
           <div style="font-family:var(--font-m);font-size:.82rem;color:var(--primary)">Sesión ${agotado ? p.sesiones : (p.consumidas||0)+1} de ${p.sesiones||0}</div>
           <div style="font-size:.75rem;color:var(--muted)">Realizadas: <strong>${p.consumidas||0}</strong> · Restantes: <strong>${rest}</strong></div>
-          ${valorPaquete > 0 ? `<div style="font-size:.75rem;color:${pagoColor};margin-top:4px">Pagado: <strong>${fmtPeso(abonado)}</strong> · Debe: <strong>${fmtPeso(saldo)}</strong></div>` : ''}
+          ${pagoPorSesion ? `<div style="font-size:.75rem;color:#0f766e;margin-top:4px">Pago por sesión: <strong>${fmtPeso(p.valorPorSesion || 0)}</strong> · sin saldo global</div>` : valorPaquete > 0 ? `<div style="font-size:.75rem;color:${pagoColor};margin-top:4px">Pagado: <strong>${fmtPeso(abonado)}</strong> · Debe: <strong>${fmtPeso(saldo)}</strong></div>` : ''}
         </div>
       </div>
       <div style="margin:10px 0 4px;background:var(--s2);border-radius:99px;height:8px;overflow:hidden"><div style="width:${pct}%;height:100%;background:${barC};border-radius:99px;transition:width .5s"></div></div>
       ${alerta}
       <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
-        <button class="btn btn-teal btn-sm" onclick="usarSesion(${i})" ${agotado?'disabled':''}>➕ Usar sesión</button>
-        ${valorPaquete > 0 && saldo > 0 ? `<button class="btn btn-ghost btn-sm" onclick="PanelPackages.registrarAbonoPaquete(${i})">💳 Registrar abono</button>` : ''}
+        ${pagoPorSesion ? '<span class="btn btn-ghost btn-sm" style="pointer-events:none;opacity:.7">Se descuenta al marcar atendida</span>' : `<button class="btn btn-teal btn-sm" onclick="usarSesion(${i})" ${agotado?'disabled':''}>➕ Usar sesión</button>`}
+        ${!pagoPorSesion && valorPaquete > 0 && saldo > 0 ? `<button class="btn btn-ghost btn-sm" onclick="PanelPackages.registrarAbonoPaquete(${i})">💳 Registrar abono</button>` : ''}
         <button class="btn btn-ghost btn-sm" onclick="ajustarSesiones(${i})">✏️ Ajustar sesiones</button>
         <button class="btn btn-ghost btn-sm" onclick="borrarPaqueteAsignado(${i})">🗑️ Eliminar</button>
       </div>
@@ -298,6 +302,15 @@ function getAppointmentFinancialSummary(cita) {
   const packageBalance = Math.max(0, packageTotal - packagePaid);
 
   if (started) return {kind:'started', label:'Sesión en curso o finalizada', price, appointmentState};
+  if (underReview) return {kind:'under-review', label:'Comprobante en revisión', price};
+  if (packageRecord?.modalidadPago === 'PAGO_POR_SESION') {
+    const session = used?.record?.sesion || Math.min(Number(packageRecord.sesiones || 0), Number(packageRecord.consumidas || 0) + 1);
+    const specialPrice = Number(packageRecord.valorPorSesion || price || 0);
+    const sessionPaid = paid || (specialPrice > 0 && paidAmount >= specialPrice);
+    return sessionPaid
+      ? {kind:'package-session-paid', label:`Paquete pago por sesión · sesión ${session} de ${packageRecord.sesiones || 0} pagada`, price:specialPrice, packageRecord}
+      : {kind:'package-session-due', label:`Paquete pago por sesión · sesión ${session} de ${packageRecord.sesiones || 0} · cobrar hoy ${_formatMoney(specialPrice)}`, price:specialPrice, packageRecord, appointmentBalance:Math.max(0, specialPrice - paidAmount), paidAmount};
+  }
   if (packageRecord && packageBalance <= 0) {
     const session = used?.record?.sesion || Math.min(Number(packageRecord.sesiones || 0), Number(packageRecord.consumidas || 0) + 1);
     return {kind:'package-covered', label:`Cubierta por ${packageRecord.tipo || 'paquete'} · sesión ${session} de ${packageRecord.sesiones || 0}`, price, packageRecord, packageBalance};
@@ -305,18 +318,17 @@ function getAppointmentFinancialSummary(cita) {
   if (packageRecord && packageBalance > 0) return {kind:'package-balance', label:`Saldo de ${packageRecord.tipo || 'paquete'}: ${_formatMoney(packageBalance)}`, price, packageRecord, packageBalance};
   if (paid) return {kind:'paid', label:'Pago confirmado', price, paidAmount: paidAmount || price, appointmentBalance: 0};
   if (paidAmount > 0) return {kind:'appointment-partial', label:`Abonó ${_formatMoney(paidAmount)} · saldo ${_formatMoney(appointmentBalance)}`, price, paidAmount, appointmentBalance};
-  if (underReview) return {kind:'under-review', label:'Comprobante en revisión', price};
   return {kind:'appointment-balance', label:`Pendiente: ${_formatMoney(price)}`, price, paidAmount:0, appointmentBalance:price};
 }
 
 function getAppointmentFinancialSummaryHtml(cita) {
   const summary = getAppointmentFinancialSummary(cita);
   const colors = {
-    started:'#2563eb', paid:'#059669', 'package-covered':'#047857', 'package-balance':'#c2410c', 'under-review':'#a16207', 'appointment-partial':'#c2410c', 'appointment-balance':'#b45309'
+    started:'#2563eb', paid:'#059669', 'package-covered':'#047857', 'package-balance':'#c2410c', 'package-session-paid':'#047857', 'package-session-due':'#b45309', 'under-review':'#a16207', 'appointment-partial':'#c2410c', 'appointment-balance':'#b45309'
   };
   const title = summary.kind === 'package-balance' ? 'Saldo pendiente del paquete' : 'Estado financiero';
   const base = summary.price ? `Valor acordado: <strong>${_formatMoney(summary.price)}</strong>` : 'Sin valor registrado';
-  const packageLine = summary.packageRecord
+  const packageLine = summary.packageRecord && !['package-session-due', 'package-session-paid'].includes(summary.kind)
     ? ` · Abonado: <strong>${_formatMoney(summary.packageRecord.abonado || 0)}</strong> · Saldo: <strong>${_formatMoney(summary.packageBalance)}</strong>`
     : summary.kind === 'appointment-partial' ? ` · Abonado: <strong>${_formatMoney(summary.paidAmount)}</strong> · Saldo: <strong>${_formatMoney(summary.appointmentBalance)}</strong>` : '';
   return `<div style="margin-top:10px;padding:10px 12px;border:1px solid ${colors[summary.kind] || '#64748b'}33;background:${colors[summary.kind] || '#64748b'}0d;border-radius:9px;font-size:.82rem;line-height:1.55"><strong style="color:${colors[summary.kind] || '#64748b'}">💳 ${title}: ${summary.label}</strong><br>${base}${packageLine}</div>`;
@@ -324,7 +336,7 @@ function getAppointmentFinancialSummaryHtml(cita) {
 
 function appointmentPaymentWhatsAppUrl(cita) {
   const summary = getAppointmentFinancialSummary(cita);
-  if (['started', 'paid', 'package-covered', 'under-review'].includes(summary.kind)) return null;
+  if (['started', 'paid', 'package-covered', 'package-session-paid', 'under-review'].includes(summary.kind)) return null;
   const phone = _telefonoComparable(cita?.telefono);
   if (!phone) return null;
   const patient = String(cita?.nombre || '').trim().split(/\s+/)[0] || '😊';
@@ -348,6 +360,16 @@ function _paqueteParaCita(cita, paquetes = _getPkAsignados()) {
       return (coincideTelefono || coincideNombre) && Number(p.sesiones || 0) > Number(p.consumidas || 0);
     })
     .sort((a, b) => String(b.p.fechaCompra || '').localeCompare(String(a.p.fechaCompra || '')))[0];
+}
+
+function getPaymentPerSessionPackage(cita) {
+  const found = _paqueteParaCita(cita);
+  return found?.p?.modalidadPago === 'PAGO_POR_SESION' ? found.p : null;
+}
+
+function getSpecialSessionPrice(cita) {
+  const paquete = getPaymentPerSessionPackage(cita);
+  return paquete && Number(paquete.valorPorSesion || 0) > 0 ? Number(paquete.valorPorSesion) : 0;
 }
 
 function consumeSessionForAppointment(cita) {
@@ -414,6 +436,8 @@ function getAppointmentPackageBadge(cita) {
     getAppointmentPackageBadge,
     getAppointmentFinancialSummary,
     getAppointmentFinancialSummaryHtml,
-    appointmentPaymentWhatsAppUrl
+    appointmentPaymentWhatsAppUrl,
+    getPaymentPerSessionPackage,
+    getSpecialSessionPrice
   });
 })(window);
