@@ -2,11 +2,69 @@
 (function (global) {
   'use strict';
 
+let _packageSyncTimer = null;
+let _packageSyncPending = null;
+let _packageDeletedIds = new Set();
+
 function _getPkAsignados()  { try { return JSON.parse(kvGet('pk_asignados') ||'[]'); } catch(e){ return []; } }
 
 function _getPkPlantillas() { try { return JSON.parse(kvGet('pk_plantillas')||'[]'); } catch(e){ return []; } }
 
-function _savePkAsignados(a)  { kvSet('pk_asignados',  JSON.stringify(a)); }
+function _queuePackageDatabaseSync(records, deletedIds) {
+  _packageSyncPending = records.map(record => ({...record, consumoCitas: Array.isArray(record.consumoCitas) ? [...record.consumoCitas] : []}));
+  (deletedIds || []).forEach(id => { if (id) _packageDeletedIds.add(String(id)); });
+  clearTimeout(_packageSyncTimer);
+  _packageSyncTimer = setTimeout(_syncPackagesToDatabase, 350);
+}
+
+async function _syncPackagesToDatabase() {
+  _packageSyncTimer = null;
+  const records = _packageSyncPending;
+  const deletedIds = [..._packageDeletedIds];
+  if (!records) return;
+  _packageSyncPending = null;
+  _packageDeletedIds.clear();
+  try {
+    const response = await global.PanelApi.fetchJsonWithTimeout(APPS_SCRIPT_URL, {
+      method: 'POST',
+      headers: {'Content-Type': 'text/plain;charset=utf-8'},
+      body: JSON.stringify({action:'savePackageMemberships', token:TOKEN, data:{records, deletedIds}})
+    }, 20000);
+    if (!response?.ok) throw new Error(response?.error || 'No fue posible guardar en la base de datos');
+  } catch (error) {
+    // Conserva los cambios localmente y reintenta; nunca se descarta información clínica/financiera.
+    _packageSyncPending = records;
+    deletedIds.forEach(id => _packageDeletedIds.add(id));
+    clearTimeout(_packageSyncTimer);
+    _packageSyncTimer = setTimeout(_syncPackagesToDatabase, 5000);
+    if (typeof toast === 'function') toast('Paquetes: guardado localmente; reintentando sincronizar con la base', 'err');
+  }
+}
+
+async function loadPackageMembershipsFromDatabase() {
+  try {
+    const response = await global.PanelApi.fetchJsonWithTimeout(
+      `${APPS_SCRIPT_URL}?action=packageMembershipData&token=${encodeURIComponent(TOKEN)}`,
+      {}, 20000
+    );
+    if (!response?.ok || !Array.isArray(response.records)) return;
+    const localRecords = _getPkAsignados();
+    const migrated = kvGet('pk_db_migrated_v1') === '1';
+    if (response.records.length) {
+      kvSet('pk_asignados', JSON.stringify(response.records));
+    } else if (!migrated && localRecords.length) {
+      _queuePackageDatabaseSync(localRecords);
+    }
+    kvSet('pk_db_migrated_v1', '1');
+  } catch (error) {
+    // El módulo conserva el respaldo local si la red no está disponible.
+  }
+}
+
+function _savePkAsignados(a, deletedIds)  {
+  kvSet('pk_asignados', JSON.stringify(a));
+  _queuePackageDatabaseSync(a, deletedIds);
+}
 
 function _savePkPlantillas(a) { kvSet('pk_plantillas', JSON.stringify(a)); }
 
@@ -59,7 +117,8 @@ function ajustarSesiones(idx) {
 
 function borrarPaqueteAsignado(idx) {
   if (!confirm('¿Eliminar este paquete?')) return;
-  const a = _getPkAsignados(); a.splice(idx,1); _savePkAsignados(a); renderPaquetes();
+  const a = _getPkAsignados(); const deleted = a.splice(idx,1)[0];
+  _savePkAsignados(a, deleted?.id ? [deleted.id] : []); renderPaquetes();
 }
 
 function borrarPlantillaPaquete(idx) {
@@ -267,6 +326,7 @@ function getAppointmentPackageBadge(cita) {
     _getPkPlantillas,
     _savePkAsignados,
     _savePkPlantillas,
+    loadPackageMembershipsFromDatabase,
     abrirModalPaquete,
     autocompletarPaqueteDesdePlantilla,
     abrirModalPlantillaPaquete,
