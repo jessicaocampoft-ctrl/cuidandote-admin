@@ -138,7 +138,7 @@ function renderAgenda(keepPage = false) {
       </td>
       <td style="font-size:.82rem">${esc(c.servicio)}${sesionBadge(c)}<br><span class="health-badge ${h.tone}">${esc(h.badge)}</span></td>
       <td><span class="chip ${c.modalidad==='Domicilio'?'chip-info':c.modalidad==='Virtual'?'chip-warn':'chip-ok'}" style="font-size:.7rem">${esc(c.modalidad)}</span></td>
-      <td style="font-family:var(--font-m);color:var(--primary);font-size:.82rem">${esc(c.precio)}<br>${pagoBadge(c.id)}</td>
+      <td style="font-family:var(--font-m);color:var(--primary);font-size:.82rem">${esc(c.precio)}<br><span style="font-family:var(--font-b);font-size:.7rem;color:var(--muted)">${esc(global.PanelPackages?.getAppointmentFinancialSummary?.(c)?.label || '')}</span><br>${pagoBadge(c.id)}</td>
       <td>
         <select class="btn btn-ghost btn-sm" onchange="changeStatus('${esc(c.id)}',this.value)" style="cursor:pointer">
           ${APPOINTMENT_STATUSES.map(st => `<option ${c.estado===st?'selected':''}>${esc(st)}</option>`).join('')}
@@ -150,7 +150,7 @@ function renderAgenda(keepPage = false) {
           <button class="btn btn-ghost btn-sm" onclick="abrirAsignarPro('${esc(c.id)}')">Equipo</button>
           <button class="btn btn-ghost btn-sm" onclick="abrirPagoCita('${esc(c.id)}')">Pago</button>
           ${(()=>{const u=waLink(c.telefono,c.nombre,c.fecha,c.hora,c.servicio,c.precio,c.modalidad);const s=wasWaSent(c.id,'conf');return u?`<a href="${u}" target="_blank" class="btn btn-wa btn-sm" title="${s?'Ya enviado':'Confirmación'}" onclick="markWaSent('${esc(c.id)}','conf');this.textContent=this.textContent.includes('✓')?this.textContent:'Conf.✓'" style="${s?'opacity:.5':''}">${s?'Conf.✓':'Conf.'}</a>`:'';})()}
-          ${(()=>{const u=waLinkPago(c.telefono,c.nombre,c.fecha,c.hora,c.servicio,c.precio,c.modalidad);return u?`<a href="${u}" target="_blank" class="btn btn-ghost btn-sm" title="Enviar solicitud de pago anticipado">💳 Cobro</a>`:'';})()}
+          ${(()=>{const s=global.PanelPackages?.getAppointmentFinancialSummary?.(c);const u=global.PanelPackages?.appointmentPaymentWhatsAppUrl?.(c);if(!u)return `<span class="btn btn-ghost btn-sm" title="${esc(s?.label || 'Sin cobro pendiente')}" style="pointer-events:none;opacity:.55">${s?.kind==='package-covered'?'📦 Cubierta':s?.kind==='under-review'?'🟡 En revisión':'💳 Sin cobro'}</span>`;return `<a href="${u}" target="_blank" class="btn btn-ghost btn-sm" title="${esc(s?.label || 'Solicitar pago')}">${s?.kind==='package-balance'?'💳 Saldo plan':'💳 Cobro'}</a>`;})()}
           ${(()=>{const u=waLinkRec(c.telefono,c.nombre,c.fecha,c.hora,c.servicio);const s=wasWaSent(c.id,'rec');return u?`<a href="${u}" target="_blank" class="btn btn-wa-rec btn-sm" title="${s?'Ya enviado':'Recordatorio'}" onclick="markWaSent('${esc(c.id)}','rec');this.textContent=this.textContent.includes('✓')?this.textContent:'Rec.✓'" style="${s?'opacity:.5':''}">${s?'Rec.✓':'Rec.'}</a>`:'';})()}
           ${(()=>{const u=waLinkSeg(c.telefono,c.nombre,c.servicio,c.notaAdmin);const s=wasWaSent(c.id,'seg');return u?`<a href="${u}" target="_blank" class="btn btn-wa-seg btn-sm" title="${s?'Ya enviado':'Seguimiento'}" onclick="markWaSent('${esc(c.id)}','seg');this.textContent=this.textContent.includes('✓')?this.textContent:'Seg.✓'" style="${s?'opacity:.5':''}">${s?'Seg.✓':'Seg.'}</a>`:'';})()}
           ${waBtnPasaporte(c.telefono,c.nombre)}

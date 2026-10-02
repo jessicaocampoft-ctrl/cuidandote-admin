@@ -146,6 +146,11 @@ function verDetalle(id) {
   const c = allData.citas.find(x => x.id === id);
   if (!c) return;
   const esCancelada = c.estado === 'Cancelada';
+  const packageTools = global.PanelPackages;
+  const financialSummary = packageTools?.getAppointmentFinancialSummary?.(c);
+  const financialHtml = packageTools?.getAppointmentFinancialSummaryHtml?.(c) || '';
+  const paymentUrl = packageTools?.appointmentPaymentWhatsAppUrl?.(c) || null;
+  const canConfirmAttendance = financialSummary?.kind !== 'started';
   // La asignación desde el calendario se habilita únicamente después de que
   // pagos haya verificado la cita. Conservamos el mismo modal y validaciones
   // de Colaboradores para no duplicar la lógica de asignación.
@@ -161,6 +166,7 @@ function verDetalle(id) {
         ${c.notas ? row('Notas del paciente', esc(c.notas), true) : ''}
         ${row('ID cita', esc(c.id))}
       </div>
+      ${financialHtml}
       ${patientInsightHtml(c)}
       <!-- Notas internas editables -->
       <div style="margin-top:10px;padding:10px 12px;background:rgba(251,191,36,.07);border:1px solid rgba(251,191,36,.25);border-radius:8px">
@@ -192,8 +198,8 @@ function verDetalle(id) {
         </div>`;
       })()}
       <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
-        ${waBtn(c.telefono,c.nombre,c.fecha,c.hora,c.servicio,'WhatsApp confirmación',c.precio,c.modalidad)}
-        ${waBtnPago(c.telefono,c.nombre,c.fecha,c.hora,c.servicio,c.precio,c.modalidad)}
+        ${canConfirmAttendance ? waBtn(c.telefono,c.nombre,c.fecha,c.hora,c.servicio,'WhatsApp confirmación',c.precio,c.modalidad) : '<span class="btn btn-ghost btn-sm" style="pointer-events:none;opacity:.65">No requiere confirmación</span>'}
+        ${paymentUrl ? `<a href="${paymentUrl}" target="_blank" class="btn btn-ghost btn-sm">💳 ${financialSummary?.kind === 'package-balance' ? 'Cobrar saldo del paquete' : 'Solicitar pago de cita'}</a>` : '<span class="btn btn-ghost btn-sm" style="pointer-events:none;opacity:.65">💳 Sin cobro pendiente</span>'}
         <button class="btn btn-ghost btn-sm" onclick="(function(){ const p=(document.getElementById('notaParaQuienInput').value||'').trim(); const nota=p?'[PARA: '+p+']':''; seguimientoWA('${esc(c.telefono||'')}','${esc(c.nombre)}','${esc(c.servicio)}',nota); })()">💬 Seguimiento</button>
         ${puedeAsignarEquipo ? `<button class="btn btn-teal btn-sm" onclick="closeModal('modalDetalle');abrirAsignarPro('${esc(c.id)}')">👥 Asignar colaborador</button>` : ''}
         ${waBtnPasaporte(c.telefono,c.nombre)}

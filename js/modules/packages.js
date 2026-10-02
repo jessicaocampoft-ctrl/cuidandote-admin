@@ -264,6 +264,67 @@ function _telefonoComparable(value) {
   return digits.length >= 7 ? digits.slice(-10) : '';
 }
 
+function _formatMoney(value) {
+  return '$' + Math.max(0, Number(value || 0)).toLocaleString('es-CO');
+}
+
+// Resumen único para que agenda, detalle y WhatsApp tomen la misma decisión.
+// El precio de la cita es siempre el valor acordado para ese paciente, incluso
+// cuando sea diferente a la tarifa usual del servicio.
+function getAppointmentFinancialSummary(cita) {
+  const price = Number(parsePrecio(cita?.precio || 0));
+  const paymentState = String(cita?.estadoPago || '');
+  const appointmentState = String(cita?.estadoCita || cita?.estado || '');
+  const paid = ['PAGO_APROBADO', 'NO_REQUIERE_PAGO'].includes(paymentState) || !!cita?.pago;
+  const underReview = ['COMPROBANTE_RECIBIDO', 'Pago por verificar'].includes(paymentState) || appointmentState === 'Pago por verificar';
+  const started = ['Sesión iniciada', 'Sesión atendida', 'Atendida', 'Cerrada'].includes(appointmentState);
+  const paquetes = _getPkAsignados();
+  const used = paquetes.map(p => ({p, record:(p.consumoCitas || []).find(item => String(item.id) === String(cita?.id))})).find(item => item.record);
+  const available = used || _paqueteParaCita(cita, paquetes);
+  const packageRecord = available?.p || null;
+  const packageTotal = Number(packageRecord?.valorTotal ?? parsePrecio(packageRecord?.precio || 0));
+  const packagePaid = Number(packageRecord?.abonado || 0);
+  const packageBalance = Math.max(0, packageTotal - packagePaid);
+
+  if (started) return {kind:'started', label:'Sesión en curso o finalizada', price, appointmentState};
+  if (packageRecord && packageBalance <= 0) {
+    const session = used?.record?.sesion || Math.min(Number(packageRecord.sesiones || 0), Number(packageRecord.consumidas || 0) + 1);
+    return {kind:'package-covered', label:`Cubierta por ${packageRecord.tipo || 'paquete'} · sesión ${session} de ${packageRecord.sesiones || 0}`, price, packageRecord, packageBalance};
+  }
+  if (packageRecord && packageBalance > 0) return {kind:'package-balance', label:`Saldo de ${packageRecord.tipo || 'paquete'}: ${_formatMoney(packageBalance)}`, price, packageRecord, packageBalance};
+  if (paid) return {kind:'paid', label:'Pago confirmado', price};
+  if (underReview) return {kind:'under-review', label:'Comprobante en revisión', price};
+  return {kind:'appointment-balance', label:`Pendiente: ${_formatMoney(price)}`, price};
+}
+
+function getAppointmentFinancialSummaryHtml(cita) {
+  const summary = getAppointmentFinancialSummary(cita);
+  const colors = {
+    started:'#2563eb', paid:'#059669', 'package-covered':'#047857', 'package-balance':'#c2410c', 'under-review':'#a16207', 'appointment-balance':'#b45309'
+  };
+  const title = summary.kind === 'package-balance' ? 'Saldo pendiente del paquete' : 'Estado financiero';
+  const base = summary.price ? `Valor acordado: <strong>${_formatMoney(summary.price)}</strong>` : 'Sin valor registrado';
+  const packageLine = summary.packageRecord
+    ? ` · Abonado: <strong>${_formatMoney(summary.packageRecord.abonado || 0)}</strong> · Saldo: <strong>${_formatMoney(summary.packageBalance)}</strong>`
+    : '';
+  return `<div style="margin-top:10px;padding:10px 12px;border:1px solid ${colors[summary.kind] || '#64748b'}33;background:${colors[summary.kind] || '#64748b'}0d;border-radius:9px;font-size:.82rem;line-height:1.55"><strong style="color:${colors[summary.kind] || '#64748b'}">💳 ${title}: ${summary.label}</strong><br>${base}${packageLine}</div>`;
+}
+
+function appointmentPaymentWhatsAppUrl(cita) {
+  const summary = getAppointmentFinancialSummary(cita);
+  if (['started', 'paid', 'package-covered', 'under-review'].includes(summary.kind)) return null;
+  const phone = _telefonoComparable(cita?.telefono);
+  if (!phone) return null;
+  const patient = String(cita?.nombre || '').trim().split(/\s+/)[0] || '😊';
+  const amount = summary.kind === 'package-balance' ? summary.packageBalance : summary.price;
+  const concept = summary.kind === 'package-balance'
+    ? `el saldo pendiente de tu ${summary.packageRecord?.tipo || 'paquete'} *${summary.packageRecord?.nombre || ''}*`
+    : `tu cita de *${cita?.servicio || 'fisioterapia'}*`;
+  const msg = `Hola ${patient}! 😊 Te compartimos el valor pendiente de ${concept}: *${_formatMoney(amount)}*.`
+    + '\n\nCuando realices el pago, por favor envíanos el comprobante. ¡Gracias! — Cuidándote Fisioterapia';
+  return `https://wa.me/57${phone}?text=${encodeURIComponent(msg)}`;
+}
+
 function _paqueteParaCita(cita, paquetes = _getPkAsignados()) {
   const nombre = _normalizarPaciente(cita?.nombre);
   const tel = _telefonoComparable(cita?.telefono);
@@ -338,6 +399,9 @@ function getAppointmentPackageBadge(cita) {
     registrarAbonoPaquete,
     consumeSessionForAppointment,
     releaseSessionForAppointment,
-    getAppointmentPackageBadge
+    getAppointmentPackageBadge,
+    getAppointmentFinancialSummary,
+    getAppointmentFinancialSummaryHtml,
+    appointmentPaymentWhatsAppUrl
   });
 })(window);
