@@ -275,7 +275,18 @@ function getAppointmentFinancialSummary(cita) {
   const price = Number(parsePrecio(cita?.precio || 0));
   const paymentState = String(cita?.estadoPago || '');
   const appointmentState = String(cita?.estadoCita || cita?.estado || '');
-  const paid = ['PAGO_APROBADO', 'NO_REQUIERE_PAGO'].includes(paymentState) || !!cita?.pago;
+  const paymentRows = (typeof operationsData !== 'undefined' && Array.isArray(operationsData?.pagos)) ? operationsData.pagos : [];
+  const paymentIds = new Set();
+  const appointmentPayments = paymentRows.filter(payment => {
+    if (String(payment.CitaID || '') !== String(cita?.id || '')) return false;
+    const key = String(payment.ID || `${payment.FechaPago || ''}-${payment.ValorRecibido || ''}`);
+    if (paymentIds.has(key)) return false;
+    paymentIds.add(key);
+    return !['RECHAZADO', 'Rechazado'].includes(String(payment.EstadoPago || ''));
+  });
+  const paidAmount = appointmentPayments.reduce((sum, payment) => sum + Number(parsePrecio(payment.ValorRecibido || 0)), 0);
+  const appointmentBalance = Math.max(0, price - paidAmount);
+  const paid = ['PAGO_APROBADO', 'NO_REQUIERE_PAGO'].includes(paymentState) || !!cita?.pago || (price > 0 && paidAmount >= price);
   const underReview = ['COMPROBANTE_RECIBIDO', 'Pago por verificar'].includes(paymentState) || appointmentState === 'Pago por verificar';
   const started = ['Sesión iniciada', 'Sesión atendida', 'Atendida', 'Cerrada'].includes(appointmentState);
   const paquetes = _getPkAsignados();
@@ -292,21 +303,22 @@ function getAppointmentFinancialSummary(cita) {
     return {kind:'package-covered', label:`Cubierta por ${packageRecord.tipo || 'paquete'} · sesión ${session} de ${packageRecord.sesiones || 0}`, price, packageRecord, packageBalance};
   }
   if (packageRecord && packageBalance > 0) return {kind:'package-balance', label:`Saldo de ${packageRecord.tipo || 'paquete'}: ${_formatMoney(packageBalance)}`, price, packageRecord, packageBalance};
-  if (paid) return {kind:'paid', label:'Pago confirmado', price};
+  if (paid) return {kind:'paid', label:'Pago confirmado', price, paidAmount: paidAmount || price, appointmentBalance: 0};
+  if (paidAmount > 0) return {kind:'appointment-partial', label:`Abonó ${_formatMoney(paidAmount)} · saldo ${_formatMoney(appointmentBalance)}`, price, paidAmount, appointmentBalance};
   if (underReview) return {kind:'under-review', label:'Comprobante en revisión', price};
-  return {kind:'appointment-balance', label:`Pendiente: ${_formatMoney(price)}`, price};
+  return {kind:'appointment-balance', label:`Pendiente: ${_formatMoney(price)}`, price, paidAmount:0, appointmentBalance:price};
 }
 
 function getAppointmentFinancialSummaryHtml(cita) {
   const summary = getAppointmentFinancialSummary(cita);
   const colors = {
-    started:'#2563eb', paid:'#059669', 'package-covered':'#047857', 'package-balance':'#c2410c', 'under-review':'#a16207', 'appointment-balance':'#b45309'
+    started:'#2563eb', paid:'#059669', 'package-covered':'#047857', 'package-balance':'#c2410c', 'under-review':'#a16207', 'appointment-partial':'#c2410c', 'appointment-balance':'#b45309'
   };
   const title = summary.kind === 'package-balance' ? 'Saldo pendiente del paquete' : 'Estado financiero';
   const base = summary.price ? `Valor acordado: <strong>${_formatMoney(summary.price)}</strong>` : 'Sin valor registrado';
   const packageLine = summary.packageRecord
     ? ` · Abonado: <strong>${_formatMoney(summary.packageRecord.abonado || 0)}</strong> · Saldo: <strong>${_formatMoney(summary.packageBalance)}</strong>`
-    : '';
+    : summary.kind === 'appointment-partial' ? ` · Abonado: <strong>${_formatMoney(summary.paidAmount)}</strong> · Saldo: <strong>${_formatMoney(summary.appointmentBalance)}</strong>` : '';
   return `<div style="margin-top:10px;padding:10px 12px;border:1px solid ${colors[summary.kind] || '#64748b'}33;background:${colors[summary.kind] || '#64748b'}0d;border-radius:9px;font-size:.82rem;line-height:1.55"><strong style="color:${colors[summary.kind] || '#64748b'}">💳 ${title}: ${summary.label}</strong><br>${base}${packageLine}</div>`;
 }
 
@@ -316,7 +328,7 @@ function appointmentPaymentWhatsAppUrl(cita) {
   const phone = _telefonoComparable(cita?.telefono);
   if (!phone) return null;
   const patient = String(cita?.nombre || '').trim().split(/\s+/)[0] || '😊';
-  const amount = summary.kind === 'package-balance' ? summary.packageBalance : summary.price;
+  const amount = summary.kind === 'package-balance' ? summary.packageBalance : (summary.appointmentBalance ?? summary.price);
   const concept = summary.kind === 'package-balance'
     ? `el saldo pendiente de tu ${summary.packageRecord?.tipo || 'paquete'} *${summary.packageRecord?.nombre || ''}*`
     : `tu cita de *${cita?.servicio || 'fisioterapia'}*`;

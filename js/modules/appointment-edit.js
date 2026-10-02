@@ -199,7 +199,7 @@ function verDetalle(id) {
       })()}
       <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
         ${canConfirmAttendance ? waBtn(c.telefono,c.nombre,c.fecha,c.hora,c.servicio,'WhatsApp confirmación',c.precio,c.modalidad) : '<span class="btn btn-ghost btn-sm" style="pointer-events:none;opacity:.65">No requiere confirmación</span>'}
-        ${paymentUrl ? `<a href="${paymentUrl}" target="_blank" class="btn btn-ghost btn-sm">💳 ${financialSummary?.kind === 'package-balance' ? 'Cobrar saldo del paquete' : 'Solicitar pago de cita'}</a>` : '<span class="btn btn-ghost btn-sm" style="pointer-events:none;opacity:.65">💳 Sin cobro pendiente</span>'}
+        ${paymentUrl ? `<a href="${paymentUrl}" target="_blank" class="btn btn-ghost btn-sm">💳 ${financialSummary?.kind === 'package-balance' ? 'Cobrar saldo del paquete' : financialSummary?.kind === 'appointment-partial' ? 'Cobrar saldo de cita' : 'Solicitar pago de cita'}</a>` : '<span class="btn btn-ghost btn-sm" style="pointer-events:none;opacity:.65">💳 Sin cobro pendiente</span>'}
         <button class="btn btn-ghost btn-sm" onclick="(function(){ const p=(document.getElementById('notaParaQuienInput').value||'').trim(); const nota=p?'[PARA: '+p+']':''; seguimientoWA('${esc(c.telefono||'')}','${esc(c.nombre)}','${esc(c.servicio)}',nota); })()">💬 Seguimiento</button>
         ${puedeAsignarEquipo ? `<button class="btn btn-teal btn-sm" onclick="closeModal('modalDetalle');abrirAsignarPro('${esc(c.id)}')">👥 Asignar colaborador</button>` : ''}
         ${waBtnPasaporte(c.telefono,c.nombre)}
