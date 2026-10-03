@@ -14,7 +14,11 @@
       try {
         const response = await fetch(url, { ...options, cache: 'no-store', signal: controller.signal });
         const raw = (await response.text()).replace(/^\uFEFF/, '').trim();
-        if (!response.ok) throw new Error(`El servidor respondió ${response.status}. Intenta nuevamente.`);
+        if (!response.ok) {
+          const error = new Error(`El servidor respondió ${response.status}. Intenta nuevamente.`);
+          error.status = response.status;
+          throw error;
+        }
         if (!raw) throw new Error('El servidor respondió vacío. Intenta nuevamente.');
         try {
           return JSON.parse(raw);

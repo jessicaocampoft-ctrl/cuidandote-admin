@@ -90,6 +90,50 @@
     });
   }
 
+  function adminEndpoints(ctx) {
+    return [ctx.apiUrl, ctx.backupApiUrl]
+      .filter((value, index, list) => value && list.indexOf(value) === index);
+  }
+
+  function wait(ctx, milliseconds) {
+    return new Promise(resolve => ctx.setTimeout(resolve, milliseconds));
+  }
+
+  async function authenticateAdmin(ctx, credentials) {
+    const endpoints = adminEndpoints(ctx);
+    if (!endpoints.length) throw new Error('No hay una ruta disponible para iniciar sesión.');
+
+    // Apps Script puede devolver un 404 breve al reanudar una instancia. Cada
+    // intento alterna entre dos despliegues actuales del mismo backend: no se
+    // depende de una única URL ni se obliga al equipo a recargar la página.
+    let lastError = null;
+    for (let round = 0; round < 3; round += 1) {
+      for (const endpoint of endpoints) {
+        try {
+          const data = await ctx.fetchJsonWithTimeout(endpoint, {
+            method: 'POST',
+            // URLSearchParams usa un formulario CORS-simple. Apps Script lo
+            // recibe en `payload` sin forzar una solicitud OPTIONS adicional.
+            body: new URLSearchParams({ payload: JSON.stringify(credentials) })
+          }, 30000, false);
+
+          // Una respuesta del servidor, incluso si las credenciales no son
+          // válidas, ya no debe repetirse en la otra ruta.
+          return data;
+        } catch (error) {
+          lastError = error;
+        }
+      }
+      if (round < 2) await wait(ctx, 700 * (round + 1));
+    }
+
+    const status = lastError && lastError.status;
+    if (status === 404 || status === 429 || (status && status >= 500)) {
+      throw new Error('El servidor está reanudando sus conexiones. Intenta nuevamente en unos segundos.');
+    }
+    throw new Error('No pudimos conectar con el servidor. Revisa tu internet e inténtalo nuevamente.');
+  }
+
   async function doAdminLogin(ctx) {
     const now = Date.now();
     if (runtime.loginLockedUntil > now) {
@@ -112,20 +156,7 @@
     }, 8000);
 
     try {
-      const data = await ctx.fetchJsonWithTimeout(ctx.apiUrl, {
-        method: 'POST',
-        // URLSearchParams usa un formulario CORS-simple. Apps Script lo
-        // recibe en `payload` sin forzar una solicitud OPTIONS adicional.
-        body: new URLSearchParams({
-          payload: JSON.stringify({ action: 'adminLogin', user, password })
-        })
-      // Apps Script puede demorar al despertar después de un periodo sin uso.
-      // Una sola petición con margen suficiente evita duplicar el inicio de
-      // sesión y que el panel corte un acceso válido durante ese arranque.
-      // Si Apps Script devuelve un 404 transitorio mientras reanuda una
-      // instancia, repetimos una vez la misma autenticación. Así el equipo
-      // no tiene que cerrar sesión ni volver a abrir la página.
-      }, 70000, true);
+      const data = await authenticateAdmin(ctx, { action: 'adminLogin', user, password });
 
       if (!data.ok) {
         runtime.loginAttempts += 1;
@@ -387,8 +418,10 @@
     // consulta pública de salud; no incluye credenciales ni datos del negocio.
     // Así, al pulsar «Ingresar» normalmente el servidor ya está listo.
     try {
-      const separator = ctx.apiUrl.includes('?') ? '&' : '?';
-      fetch(`${ctx.apiUrl}${separator}test=1&_=${Date.now()}`, { cache: 'no-store' }).catch(() => {});
+      adminEndpoints(ctx).forEach(endpoint => {
+        const separator = endpoint.includes('?') ? '&' : '?';
+        fetch(`${endpoint}${separator}test=1&_=${Date.now()}`, { cache: 'no-store' }).catch(() => {});
+      });
     } catch (_) {}
 
     if (ctx.location.hash.startsWith('#/profesionales') || ctx.location.hash.startsWith('#profesionales')) {
