@@ -6,7 +6,8 @@
     loginLockedUntil: 0,
     lastActivity: Date.now(),
     guardsInstalled: false,
-    inactivityTimer: null
+    inactivityTimer: null,
+    keepAliveTimer: null
   };
 
   function doc(ctx) {
@@ -367,6 +368,9 @@
 
   function checkInactivity(ctx, now = Date.now()) {
     if (!ctx.getAdminToken()) return false;
+    // La administradora decide cuándo cerrar la sesión. Un valor cero desactiva
+    // por completo el cierre automático por tiempo sin usar el panel.
+    if (!ctx.inactivityMs || ctx.inactivityMs <= 0) return false;
     if (now - runtime.lastActivity <= ctx.inactivityMs) return false;
     ctx.toast('Sesión cerrada por inactividad (30 min).', 'warn');
     ctx.setTimeout(() => ctx.logoutAdmin(), 1500);
@@ -400,9 +404,19 @@
       doc(ctx).addEventListener(eventName, () => resetActivity(), { passive: true });
     });
 
-    runtime.inactivityTimer = ctx.setInterval(
-      () => checkInactivity(ctx),
-      60000
+    if (ctx.inactivityMs > 0) {
+      runtime.inactivityTimer = ctx.setInterval(
+        () => checkInactivity(ctx),
+        60000
+      );
+    }
+
+    // Mantiene renovada la ventana del servidor aunque la administradora no
+    // toque el panel durante varias horas. Si no hay conexión, verifyAdminSession
+    // no cierra la sesión: se recupera en la siguiente comprobación disponible.
+    runtime.keepAliveTimer = ctx.setInterval(
+      () => { if (ctx.getAdminToken()) verifyAdminSession(ctx); },
+      10 * 60 * 1000
     );
 
     doc(ctx).addEventListener('visibilitychange', async () => {

@@ -6239,7 +6239,7 @@ Acción: enviar mensaje de reenganche a los 14 pacientes que solo vinieron una v
 
 <script src="js/core/config.js?v=20261003-login-failover"></script>
 <script src="js/core/api.js?v=20261003-login-failover"></script>
-<script src="js/core/session.js?v=20261003-login-failover"></script>
+<script src="js/core/session.js?v=20261005-persistent-admin-session"></script>
 <script src="js/core/navigation.js"></script>
 <script>
 // ══════════════════════════════════════════════════════════════
@@ -6348,7 +6348,8 @@ function _sessionBridge() {
     sessionStorage,
     setTimeout: window.setTimeout.bind(window),
     setInterval: window.setInterval.bind(window),
-    inactivityMs: 30 * 60 * 1000,
+    // La sesión administrativa se cierra únicamente con «Cerrar sesión».
+    inactivityMs: 0,
     fetchJsonWithTimeout,
     toast,
     today,

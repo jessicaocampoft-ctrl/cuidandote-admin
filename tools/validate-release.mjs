@@ -47,7 +47,7 @@ if (!payments.includes("'tomorrow'")) fail('falta el filtro de cobros de mañana
 if (!payments.includes('planPersonalizado')) fail('falta el soporte de planes con valor libre');
 if (!team.includes('teamLoadPromise')) fail('falta el control de carga de colaboradores');
 if (!html.includes('js/modules/payments.js') || !html.includes('js/modules/team.js')) fail('faltan módulos críticos en el panel');
-if (!html.includes('session.js?v=20261003-login-failover')) fail('la sesión no tiene una versión actualizada para evitar caché antiguo');
+if (!html.includes('session.js?v=20261005-persistent-admin-session')) fail('la sesión no tiene una versión actualizada para evitar caché antiguo');
 if (!html.includes('payments.js?v=20260929-payment-custom-plan')) fail('pagos no tiene una versión actualizada para evitar caché antiguo');
 if (!html.includes('message-library.js?v=20261001-persistent-delete') || !messages.includes('_mensajesDisponibles')) fail('falta la biblioteca de atención al cliente');
 
