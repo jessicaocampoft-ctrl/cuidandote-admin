@@ -45,6 +45,8 @@ function waLink(tel, nombre, fecha, hora, serv, precio, modalidad) {
   const t = String(tel||'').replace(/\D/g,'');
   if (!t || t.length < 7) return null;
   const phone = t.length <= 10 ? '57'+t : t;
+  const esDomicilio = String(modalidad || '').trim().toLowerCase() === 'domicilio';
+  const direccionSede = 'Cra. 19A, Av. Sta. Mónica #17-24, Dosquebradas, Risaralda';
   const infoSes  = getInfoSesion(nombre, serv, fecha);
   const servLine = infoSes
     ? '*' + serv + '* — ' + ordinalES(infoSes.numero) + ' sesion de ' + infoSes.total
@@ -54,7 +56,9 @@ function waLink(tel, nombre, fecha, hora, serv, precio, modalidad) {
     '',
     servLine,
     '' + waFechaES(fecha) + ' · ' + waAmPm(hora),
-    String.fromCodePoint(0x1F4CD) + ' ' + (modalidad === 'Domicilio' ? 'A domicilio' : 'En sitio'),
+    // La dirección se comparte únicamente para citas en sede. En domicilio
+    // se conserva la modalidad sin exponer una dirección que no corresponde.
+    String.fromCodePoint(0x1F4CD) + ' ' + (esDomicilio ? 'A domicilio' : direccionSede),
   ];
   lines.push(
     '',
