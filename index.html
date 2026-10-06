@@ -1571,6 +1571,34 @@ button:disabled{cursor:not-allowed;opacity:.58}
 <script src="vendor/qrcode.min.js"></script>
 </head>
 <body>
+<div id="panelRecovery" role="alert" style="display:none;position:fixed;inset:0;z-index:99999;align-items:center;justify-content:center;padding:24px;background:#f8fafc;color:#172033;font-family:system-ui,sans-serif">
+  <div style="max-width:430px;width:100%;padding:28px;border:1px solid #bdebea;border-radius:18px;background:#fff;box-shadow:0 18px 55px rgba(15,118,110,.16);text-align:center">
+    <img src="LogoCuidandote/logo-apilado.png" alt="Cuidándote Fisioterapia" style="height:62px;max-width:100%;object-fit:contain">
+    <h1 style="font-size:1.25rem;margin:18px 0 8px">Estamos recuperando el panel</h1>
+    <p style="margin:0 0 18px;line-height:1.5;color:#52606d">La pantalla no se cargó correctamente. Tus datos no se han modificado.</p>
+    <button type="button" onclick="location.reload()" style="border:0;border-radius:10px;padding:11px 18px;background:#14b8a6;color:#062f2d;font-weight:700;cursor:pointer">Recargar panel</button>
+  </div>
+</div>
+<script>
+// Última barrera de seguridad: un fallo de JavaScript nunca debe dejar una
+// pantalla en blanco. Solo se muestra si no quedó visible ninguna pantalla.
+(function () {
+  function visible(id) {
+    var el = document.getElementById(id);
+    return !!el && getComputedStyle(el).display !== 'none';
+  }
+  function recover() {
+    setTimeout(function () {
+      if (visible('loginScreen') || visible('adminApp') || visible('proLoginScreen') || visible('proApp')) return;
+      var recovery = document.getElementById('panelRecovery');
+      if (recovery) recovery.style.display = 'flex';
+    }, 0);
+  }
+  window.addEventListener('error', recover);
+  window.addEventListener('unhandledrejection', recover);
+  window.addEventListener('DOMContentLoaded', function () { setTimeout(recover, 8000); });
+})();
+</script>
 
 <!-- ── TOAST ── -->
 <div id="toast"></div>
@@ -6238,7 +6266,7 @@ Acción: enviar mensaje de reenganche a los 14 pacientes que solo vinieron una v
 </div>
 
 <script src="js/core/config.js?v=20261003-login-failover"></script>
-<script src="js/core/api.js?v=20261003-login-failover"></script>
+<script src="js/core/api.js?v=20261006-global-api-failover"></script>
 <script src="js/core/session.js?v=20261005-persistent-admin-session"></script>
 <script src="js/core/navigation.js"></script>
 <script>
