@@ -446,15 +446,22 @@ function releaseSessionForAppointment(cita) {
 
 function getAppointmentPackageBadge(cita) {
   const paquetes = _getPkAsignados();
-  const found = paquetes.map(p => ({p, record:(p.consumoCitas || []).find(item => String(item.id) === String(cita?.id)) || (p.reservasCitas || []).find(item => String(item.id) === String(cita?.id))}))
+  const found = paquetes.map(p => {
+    const consumo = (p.consumoCitas || []).find(item => String(item.id) === String(cita?.id));
+    const reserva = (p.reservasCitas || []).find(item => String(item.id) === String(cita?.id));
+    return {p, record:consumo || reserva, realizada:!!consumo};
+  })
     .find(item => item.record) || _paqueteParaCita(cita, paquetes);
   if (!found) return '';
   const p = found.p;
   const sesion = found.record ? Number(found.record.sesion) : Math.min(Number(p.sesiones || 0), Number(p.consumidas || 0) + 1);
   const total = Number(p.sesiones || 0);
   if (!sesion || !total) return '';
-  const estado = found.record ? 'registrada' : 'próxima';
-  return `<br><span style="font-size:.72rem;color:var(--primary);font-weight:700">📦 ${esc(p.nombre || 'Paquete')} · Sesión ${sesion} de ${total} (${estado})</span>`;
+  const realizada = found.realizada || String(cita?.estado || '') === 'Atendida';
+  const cancelada = String(cita?.estado || '') === 'Cancelada';
+  const estado = realizada ? 'realizada' : (cancelada ? 'cancelada' : 'próxima');
+  const color = realizada ? '#059669' : (cancelada ? '#dc2626' : 'var(--primary)');
+  return `<br><span style="font-size:.72rem;color:${color};font-weight:700">📦 ${esc(p.nombre || 'Paquete')} · Cita ${sesion} de ${total} — ${estado}</span>`;
 }
 
   global.PanelPackages = Object.freeze({
