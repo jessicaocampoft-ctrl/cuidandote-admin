@@ -54,5 +54,6 @@ if (!html.includes('payments.js?v=20260929-payment-custom-plan')) fail('pagos no
 if (!html.includes('message-library.js?v=20261001-persistent-delete') || !messages.includes('_mensajesDisponibles')) fail('falta la biblioteca de atención al cliente');
 if (!packages.includes('reserveSessionForAppointment') || !packages.includes('reservasCitas')) fail('falta el consecutivo de sesiones reservadas para paquetes');
 if (!fs.readFileSync(`${root}/js/modules/agenda.js`, 'utf8').includes('Citas canceladas')) fail('falta la sección separada para citas canceladas');
+if (!html.includes('packages.js?v=20261007-package-session-sequence') || !html.includes('agenda.js?v=20261007-cancelled-section')) fail('falta la versión de caché para agenda y paquetes');
 
 console.log(`VALIDACIÓN APROBADA: ${files.length} archivos críticos, acceso, agenda, pagos, planes y colaboradores presentes.`);
