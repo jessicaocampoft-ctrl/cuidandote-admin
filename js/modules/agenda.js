@@ -94,6 +94,12 @@ function renderAgenda(keepPage = false) {
 
   citas.sort((a,b) => (normDate(b.fecha)+b.hora).localeCompare(normDate(a.fecha)+a.hora));
 
+  // Las canceladas se conservan para el historial, pero no ocupan la vista
+  // principal de trabajo. Si se filtra explícitamente por estado, sí se ven
+  // como resultados normales para poder revisarlas.
+  const citasCanceladas = !fSt ? citas.filter(c => !c._esEvento && c.estado === 'Cancelada') : [];
+  if (!fSt) citas = citas.filter(c => c._esEvento || c.estado !== 'Cancelada');
+
   const total      = citas.length;
   const totalPages = Math.max(1, Math.ceil(total / AGENDA_PER_PAGE));
   if (_agendaPage >= totalPages) _agendaPage = totalPages - 1;
@@ -102,9 +108,20 @@ function renderAgenda(keepPage = false) {
 
   const tbody = document.getElementById('agendaTbody');
   const pag   = document.getElementById('agendaPagination');
+  const canceladasApartadas = citasCanceladas.length ? `<tr class="agenda-cancelled-group"><td colspan="7" style="padding:10px 12px;background:rgba(239,68,68,.035)">
+    <details>
+      <summary style="cursor:pointer;color:#b91c1c;font-weight:700;font-size:.82rem">🚫 Citas canceladas (${citasCanceladas.length}) — ver solo si las necesitas</summary>
+      <div style="display:grid;gap:5px;margin-top:9px">
+        ${citasCanceladas.map(c => `<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:7px 9px;border:1px solid rgba(239,68,68,.18);border-radius:7px;background:var(--s1);font-size:.78rem">
+          <span><strong>${esc(fmtDate(c.fecha))} · ${esc(c.hora)}</strong> · ${esc(c.nombre)} · ${esc(c.servicio)}</span>
+          <button class="btn btn-ghost btn-sm" onclick="verDetalle('${esc(c.id)}')">Ver</button>
+        </div>`).join('')}
+      </div>
+    </details>
+  </td></tr>` : '';
 
   if (total === 0) {
-    tbody.innerHTML = '<tr><td colspan="7"><div class="empty"><p>No se encontraron citas</p></div></td></tr>';
+    tbody.innerHTML = (citasCanceladas.length ? '<tr><td colspan="7"><div class="empty"><p>No hay citas activas con estos filtros.</p></div></td></tr>' + canceladasApartadas : '<tr><td colspan="7"><div class="empty"><p>No se encontraron citas</p></div></td></tr>');
     if (pag) pag.innerHTML = '';
     return;
   }
@@ -159,12 +176,13 @@ function renderAgenda(keepPage = false) {
         </div>
       </td>
     </tr>`;
-  }).join('');
+  }).join('') + canceladasApartadas;
 
   // Paginación
   if (pag) {
     const nEvts = pageCitas.filter(c=>c._esEvento).length;
-    const totalLabel = nEvts ? `${total} registros (${nEvts} evento(s))` : `${total} cita(s)`;
+    const totalLabelBase = nEvts ? `${total} registros (${nEvts} evento(s))` : `${total} cita(s)`;
+    const totalLabel = citasCanceladas.length ? `${totalLabelBase} · ${citasCanceladas.length} cancelada(s) aparte` : totalLabelBase;
     if (total <= AGENDA_PER_PAGE) {
       pag.innerHTML = `<span>${totalLabel}</span>`;
     } else {

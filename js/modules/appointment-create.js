@@ -446,6 +446,7 @@ async function submitAdminBooking() {
 
   const isRecurring   = document.getElementById('ncRecurring').checked;
   const totalSessions = isRecurring ? (parseInt(document.getElementById('ncSessions').value) || 1) : 1;
+  const scheduledSlots = [{date, time}];
 
   try {
     const r = await fetch(`${APPS_SCRIPT_URL}?action=adminBook&token=${encodeURIComponent(TOKEN)}&data=${encodeURIComponent(JSON.stringify(data))}`);
@@ -461,6 +462,7 @@ async function submitAdminBooking() {
       for (let s = 1; s < totalSessions; s++) {
         baseDate.setDate(baseDate.getDate() + 7);
         const nextData = { ...data, date: toDateStr(baseDate) };
+        scheduledSlots.push({date: nextData.date, time});
         try {
           const rr = await fetch(`${APPS_SCRIPT_URL}?action=adminBook&token=${encodeURIComponent(TOKEN)}&data=${encodeURIComponent(JSON.stringify(nextData))}`);
           const dd = await rr.json();
@@ -477,6 +479,19 @@ async function submitAdminBooking() {
 
     clearNuevaCita();
     await reload();
+    // El paquete conserva el consecutivo desde el momento de agendar. Esto no
+    // descuenta la sesión todavía: solo evita que varias citas pendientes se
+    // muestren con el mismo “5 de 11”.
+    const reservas = scheduledSlots.map(slot => (allData.citas || []).find(c =>
+      String(c.nombre || '').trim().toLocaleLowerCase('es-CO') === name.toLocaleLowerCase('es-CO') &&
+      c.servicio === serv && normDate(c.fecha) === slot.date && String(c.hora || '').slice(0, 5) === String(slot.time || '').slice(0, 5)
+    )).filter(Boolean);
+    let sesionesReservadas = 0;
+    reservas.forEach(cita => {
+      const reserva = global.PanelPackages?.reserveSessionForAppointment?.(cita);
+      if (reserva?.ok && !reserva.already) sesionesReservadas++;
+    });
+    if (sesionesReservadas && document.getElementById('pkLista')) global.PanelPackages?.renderPaquetes?.();
     initDashboard();
     // Ir a la agenda filtrada por el paciente para que la cita recién creada sea visible
     document.getElementById('fSearch').value = name;

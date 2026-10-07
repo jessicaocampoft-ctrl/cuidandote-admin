@@ -132,6 +132,9 @@ async function changeStatus(id, status) {
         const reverso = global.PanelPackages.releaseSessionForAppointment(cita);
         if (reverso.ok) paqueteMsg = ' · Sesión devuelta al paquete';
       }
+      if (cita && status === 'Cancelada' && global.PanelPackages?.releaseReservedSessionForAppointment) {
+        global.PanelPackages.releaseReservedSessionForAppointment(cita);
+      }
       toast('Estado actualizado: ' + status + paqueteMsg);
       if (status === 'No asistió' && cita) {
         const t = String(cita.telefono||'').replace(/\D/g,'');
@@ -268,6 +271,7 @@ async function confirmarCancelacion() {
     if (d.ok) {
       const cita = allData.citas.find(c => c.id === id);
       if (cita) { cita.estado = 'Cancelada'; cita.motivoCancelacion = motivo; }
+      if (cita && global.PanelPackages?.releaseReservedSessionForAppointment) global.PanelPackages.releaseReservedSessionForAppointment(cita);
       saveCancelMotivo(id, motivo);
       if (cita) logChange('Cita cancelada', `${cita.nombre} · ${cita.fecha} ${cita.hora} · ${motivo}`);
       toast(esCancelExcluida(motivo) ? `🧪 Cita cancelada (${motivo} — no afecta KPIs)` : `Cita cancelada: ${motivo}`, 'ok');

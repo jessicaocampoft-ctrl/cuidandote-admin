@@ -11671,7 +11671,7 @@ function guardarPaqueteAsignado() {
   const vigD = new Date(fechaC+'T12:00:00');
   vigD.setDate(vigD.getDate() + (+(pl?.vigencia)||60));
   const asignados = _getPkAsignados();
-  asignados.push({ id:'pk_'+Date.now(), paciente, telefono:tel, nombre, sesiones, consumidas, consumoCitas:[], precio:pl?.precio||'', valorTotal: modalidadPago === 'PAGO_POR_SESION' ? valorPorSesion * sesiones : valorTotal, abonado: modalidadPago === 'PAGO_POR_SESION' ? 0 : abonado, modalidadPago, valorPorSesion, fechaCompra:fechaC, vencimiento:vigD.toLocalDateStr(), notas });
+  asignados.push({ id:'pk_'+Date.now(), paciente, telefono:tel, nombre, sesiones, consumidas, sesionesIniciales:consumidas, consumoCitas:[], reservasCitas:[], precio:pl?.precio||'', valorTotal: modalidadPago === 'PAGO_POR_SESION' ? valorPorSesion * sesiones : valorTotal, abonado: modalidadPago === 'PAGO_POR_SESION' ? 0 : abonado, modalidadPago, valorPorSesion, fechaCompra:fechaC, vencimiento:vigD.toLocalDateStr(), notas });
   _savePkAsignados(asignados);
   document.getElementById('modalPaquete').style.display='none';
   renderPaquetes(); toast('Paquete asignado ✓');

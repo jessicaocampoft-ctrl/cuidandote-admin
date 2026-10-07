@@ -294,7 +294,7 @@ function getAppointmentFinancialSummary(cita) {
   const underReview = ['COMPROBANTE_RECIBIDO', 'Pago por verificar'].includes(paymentState) || appointmentState === 'Pago por verificar';
   const started = ['Sesión iniciada', 'Sesión atendida', 'Atendida', 'Cerrada'].includes(appointmentState);
   const paquetes = _getPkAsignados();
-  const used = paquetes.map(p => ({p, record:(p.consumoCitas || []).find(item => String(item.id) === String(cita?.id))})).find(item => item.record);
+  const used = paquetes.map(p => ({p, record:(p.consumoCitas || []).find(item => String(item.id) === String(cita?.id)) || (p.reservasCitas || []).find(item => String(item.id) === String(cita?.id))})).find(item => item.record);
   const available = used || _paqueteParaCita(cita, paquetes);
   const packageRecord = available?.p || null;
   const packageTotal = Number(packageRecord?.valorTotal ?? parsePrecio(packageRecord?.precio || 0));
@@ -372,20 +372,61 @@ function getSpecialSessionPrice(cita) {
   return paquete && Number(paquete.valorPorSesion || 0) > 0 ? Number(paquete.valorPorSesion) : 0;
 }
 
+// Reservar el consecutivo cuando se agenda, no cuando se marca como atendida.
+// Así, si el paquete empezó en 5/11, las nuevas citas quedan 6/11, 7/11…
+// sin que varias citas pendientes muestren el mismo número.
+function reserveSessionForAppointment(cita) {
+  if (!cita?.id) return {ok:false};
+  const paquetes = _getPkAsignados();
+  const linked = paquetes.map(p => ({p, record:(p.consumoCitas || []).find(item => String(item.id) === String(cita.id)) || (p.reservasCitas || []).find(item => String(item.id) === String(cita.id))}))
+    .find(item => item.record);
+  if (linked) return {ok:true, already:true, paquete:linked.p, sesion:Number(linked.record.sesion)};
+
+  const found = _paqueteParaCita(cita, paquetes);
+  if (!found) return {ok:false};
+  const {p} = found;
+  p.reservasCitas = Array.isArray(p.reservasCitas) ? p.reservasCitas : [];
+  const usedNumbers = new Set([
+    ...(p.consumoCitas || []),
+    ...p.reservasCitas
+  ].map(item => Number(item.sesion)).filter(Number.isFinite));
+  let sesion = Math.max(1, Number(p.consumidas || 0) + 1);
+  while (usedNumbers.has(sesion) && sesion <= Number(p.sesiones || 0)) sesion++;
+  if (sesion > Number(p.sesiones || 0)) return {ok:false, agotado:true, paquete:p};
+
+  p.reservasCitas.push({id:String(cita.id), sesion});
+  _savePkAsignados(paquetes);
+  return {ok:true, paquete:p, sesion};
+}
+
+function releaseReservedSessionForAppointment(cita) {
+  if (!cita?.id) return {ok:false};
+  const paquetes = _getPkAsignados();
+  const found = paquetes.find(p => Array.isArray(p.reservasCitas) && p.reservasCitas.some(item => String(item.id) === String(cita.id)));
+  if (!found) return {ok:false};
+  found.reservasCitas = found.reservasCitas.filter(item => String(item.id) !== String(cita.id));
+  _savePkAsignados(paquetes);
+  if (document.getElementById('pkLista')) renderPaquetes();
+  return {ok:true, paquete:found};
+}
+
 function consumeSessionForAppointment(cita) {
   if (!cita?.id) return {ok:false};
   const paquetes = _getPkAsignados();
-  const found = _paqueteParaCita(cita, paquetes);
+  const linked = paquetes.map(p => ({p, record:(p.consumoCitas || []).find(item => String(item.id) === String(cita.id)) || (p.reservasCitas || []).find(item => String(item.id) === String(cita.id))}))
+    .find(item => item.record);
+  const found = linked || _paqueteParaCita(cita, paquetes);
   if (!found) return {ok:false};
   const {p} = found;
   p.consumoCitas = Array.isArray(p.consumoCitas) ? p.consumoCitas : [];
   const existing = p.consumoCitas.find(item => String(item.id) === String(cita.id));
   if (existing) return {ok:true, already:true, paquete:p, sesion:Number(existing.sesion || p.consumidas)};
+  const reservada = (p.reservasCitas || []).find(item => String(item.id) === String(cita.id));
   p.consumidas = Number(p.consumidas || 0) + 1;
-  p.consumoCitas.push({id:String(cita.id), sesion:p.consumidas});
+  p.consumoCitas.push({id:String(cita.id), sesion:Number(reservada?.sesion || p.consumidas)});
   _savePkAsignados(paquetes);
   if (document.getElementById('pkLista')) renderPaquetes();
-  return {ok:true, paquete:p, sesion:p.consumidas};
+  return {ok:true, paquete:p, sesion:Number(reservada?.sesion || p.consumidas)};
 }
 
 function releaseSessionForAppointment(cita) {
@@ -405,7 +446,7 @@ function releaseSessionForAppointment(cita) {
 
 function getAppointmentPackageBadge(cita) {
   const paquetes = _getPkAsignados();
-  const found = paquetes.map(p => ({p, record:(p.consumoCitas || []).find(item => String(item.id) === String(cita?.id))}))
+  const found = paquetes.map(p => ({p, record:(p.consumoCitas || []).find(item => String(item.id) === String(cita?.id)) || (p.reservasCitas || []).find(item => String(item.id) === String(cita?.id))}))
     .find(item => item.record) || _paqueteParaCita(cita, paquetes);
   if (!found) return '';
   const p = found.p;
@@ -431,6 +472,8 @@ function getAppointmentPackageBadge(cita) {
     renderPaquetes,
     usarSesion,
     registrarAbonoPaquete,
+    reserveSessionForAppointment,
+    releaseReservedSessionForAppointment,
     consumeSessionForAppointment,
     releaseSessionForAppointment,
     getAppointmentPackageBadge,

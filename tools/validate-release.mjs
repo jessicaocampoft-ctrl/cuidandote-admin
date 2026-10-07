@@ -11,7 +11,8 @@ const files = [
   'js/modules/team.js',
   'js/modules/agenda.js',
   'js/modules/appointment-create.js',
-  'js/modules/appointment-edit.js'
+  'js/modules/appointment-edit.js',
+  'js/modules/packages.js'
 ];
 
 function fail(message) {
@@ -33,6 +34,7 @@ const session = fs.readFileSync(`${root}/js/core/session.js`, 'utf8');
 const payments = fs.readFileSync(`${root}/js/modules/payments.js`, 'utf8');
 const team = fs.readFileSync(`${root}/js/modules/team.js`, 'utf8');
 const messages = fs.readFileSync(`${root}/js/modules/message-library.js`, 'utf8');
+const packages = fs.readFileSync(`${root}/js/modules/packages.js`, 'utf8');
 
 if (!config.includes('APPS_SCRIPT_URL')) fail('falta la conexión principal del servidor');
 if (!config.includes('ADMIN_DATA_FALLBACK_URL')) fail('falta la ruta de respaldo de lectura');
@@ -50,5 +52,7 @@ if (!html.includes('js/modules/payments.js') || !html.includes('js/modules/team.
 if (!html.includes('session.js?v=20261005-persistent-admin-session')) fail('la sesión no tiene una versión actualizada para evitar caché antiguo');
 if (!html.includes('payments.js?v=20260929-payment-custom-plan')) fail('pagos no tiene una versión actualizada para evitar caché antiguo');
 if (!html.includes('message-library.js?v=20261001-persistent-delete') || !messages.includes('_mensajesDisponibles')) fail('falta la biblioteca de atención al cliente');
+if (!packages.includes('reserveSessionForAppointment') || !packages.includes('reservasCitas')) fail('falta el consecutivo de sesiones reservadas para paquetes');
+if (!fs.readFileSync(`${root}/js/modules/agenda.js`, 'utf8').includes('Citas canceladas')) fail('falta la sección separada para citas canceladas');
 
 console.log(`VALIDACIÓN APROBADA: ${files.length} archivos críticos, acceso, agenda, pagos, planes y colaboradores presentes.`);
