@@ -217,8 +217,8 @@ function renderPaquetes() {
           <div style="font-size:.8rem;color:var(--muted)">${p.nombre||'—'} · Comprado: ${fmtDate(p.fechaCompra)} · Vence: ${p.vencimiento?fmtDate(p.vencimiento):'—'}</div>
         </div>
         <div style="text-align:right">
-          <div style="font-family:var(--font-m);font-size:.82rem;color:var(--primary)">Sesión ${agotado ? p.sesiones : (p.consumidas||0)+1} de ${p.sesiones||0}</div>
-          <div style="font-size:.75rem;color:var(--muted)">Realizadas: <strong>${p.consumidas||0}</strong> · Restantes: <strong>${rest}</strong></div>
+          <div style="font-family:var(--font-m);font-size:.82rem;color:var(--primary)">Realizadas: ${p.consumidas||0} de ${p.sesiones||0}</div>
+          <div style="font-size:.75rem;color:var(--muted)">Restantes: <strong>${rest}</strong></div>
           ${pagoPorSesion ? `<div style="font-size:.75rem;color:#0f766e;margin-top:4px">Pago por sesión: <strong>${fmtPeso(p.valorPorSesion || 0)}</strong> · sin saldo global</div>` : valorPaquete > 0 ? `<div style="font-size:.75rem;color:${pagoColor};margin-top:4px">Pagado: <strong>${fmtPeso(abonado)}</strong> · Debe: <strong>${fmtPeso(saldo)}</strong></div>` : ''}
         </div>
       </div>
