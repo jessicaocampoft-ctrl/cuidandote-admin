@@ -55,8 +55,35 @@ function _addOptimisticAppointment(data, result) {
     notas: data.notes || '',
     notaAdmin: data.notaAdmin || '',
     estado: 'Confirmada',
-    pago: ''
+    pago: '',
+    packageId: data.packageId || ''
   });
+}
+
+function refreshPackageLinkForPatient() {
+  const wrap = document.getElementById('ncPackageWrap');
+  const select = document.getElementById('ncPackageLink');
+  if (!wrap || !select) return;
+  const paciente = {nombre:(document.getElementById('ncName')?.value || '').trim(), telefono:(document.getElementById('ncPhone')?.value || '').trim()};
+  const paquetes = global.PanelPackages?.getActivePackagesForPatient?.(paciente) || [];
+  select.innerHTML = '<option value="">Sin paquete para esta cita</option>' + paquetes.map(p => {
+    const restantes = Math.max(0, Number(p.sesiones || 0) - Number(p.consumidas || 0));
+    const pago = p.modalidadPago === 'PAGO_POR_SESION' ? ` · ${fmtPeso(p.valorPorSesion || 0)} por sesión` : '';
+    return `<option value="${esc(p.id)}">${esc(p.nombre || 'Paquete')} · ${restantes} sesiones restantes${pago}</option>`;
+  }).join('');
+  wrap.style.display = paquetes.length ? 'block' : 'none';
+}
+
+function applySelectedPackage() {
+  const id = document.getElementById('ncPackageLink')?.value;
+  const help = document.getElementById('ncPackageHelp');
+  const paquete = id ? global.PanelPackages?.getPackageById?.(id) : null;
+  if (!paquete) { if (help) help.textContent = 'Elige el paquete que deseas usar para esta cita.'; return; }
+  const restantes = Math.max(0, Number(paquete.sesiones || 0) - Number(paquete.consumidas || 0));
+  if (paquete.modalidadPago === 'PAGO_POR_SESION' && Number(paquete.valorPorSesion || 0) > 0) {
+    document.getElementById('ncPrice').value = '$' + Number(paquete.valorPorSesion).toLocaleString('es-CO');
+  }
+  if (help) help.textContent = `Vinculada a ${paquete.nombre || 'paquete'} · ${restantes} sesiones disponibles${paquete.modalidadPago === 'PAGO_POR_SESION' ? ' · pago por sesión' : ''}.`;
 }
 
 function _refreshPanelAfterBooking() {
@@ -137,6 +164,7 @@ async function submitAdminBookingMulti() {
     notes:     document.getElementById('ncNotes').value.trim(),
     notaAdmin: (() => { const p=(document.getElementById('ncParaQuien').value||'').trim(); const ab=getAbonoNota(); return [p?'[PARA: '+p+']':'',ab].filter(Boolean).join(' '); })(),
     canal:     document.getElementById('nuevaCitaCanal').value || 'Directo',
+    packageId: document.getElementById('ncPackageLink')?.value || '',
     ...gimnasioData
   };
 
@@ -178,6 +206,8 @@ async function submitAdminBookingMulti() {
       if (d.ok) {
         creadas++;
         _addOptimisticAppointment(data, d);
+        const creada = (allData.citas || []).find(c => String(c.id) === String(d.id));
+        if (data.packageId && creada) global.PanelPackages?.reserveSessionForAppointment?.(creada);
       } else {
         errores++;
         erroresDetalle.push(d.error || 'El servidor rechazó la cita.');
@@ -516,6 +546,7 @@ function fillPatient(p) {
   if (p.ultimaDir) document.getElementById('ncAddress').value = p.ultimaDir;
   document.getElementById('pacSearch').value = p.nombre + ' — ' + (p.telefono||'');
   document.getElementById('pacDropdown').style.display = 'none';
+  refreshPackageLinkForPatient();
   const packagePrice = global.PanelPackages?.getSpecialSessionPrice?.({nombre:p.nombre, telefono:p.telefono}) || 0;
   if (packagePrice) {
     document.getElementById('ncPrice').value = '$' + packagePrice.toLocaleString('es-CO');
@@ -542,6 +573,10 @@ function clearNuevaCita() {
   document.getElementById('abonoResumen').style.display = 'none';
   const planSel = document.getElementById('ncServicePlan');
   planSel.selectedIndex=0; planSel.style.display='none';
+  const packageWrap = document.getElementById('ncPackageWrap');
+  const packageLink = document.getElementById('ncPackageLink');
+  if (packageWrap) packageWrap.style.display = 'none';
+  if (packageLink) packageLink.innerHTML = '<option value="">Sin paquete para esta cita</option>';
   document.getElementById('ncMod').value='Presencial';
   _cobrarDesplazamiento = true;
   const _dWrap = document.getElementById('ncDesplazamientoWrap');
@@ -661,6 +696,8 @@ function agendarDesdeSeg(encNombre, encTel, encEmail) {
     autoFillPrice,
     submitAdminBooking,
     fillPatient,
+    refreshPackageLinkForPatient,
+    applySelectedPackage,
     clearNuevaCita,
     checkTimeConflict,
     openNuevaCitaFromCal,

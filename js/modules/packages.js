@@ -368,8 +368,24 @@ function getPaymentPerSessionPackage(cita) {
 }
 
 function getSpecialSessionPrice(cita) {
-  const paquete = getPaymentPerSessionPackage(cita);
+  const paquete = cita?.packageId ? _getPkAsignados().find(p => String(p.id) === String(cita.packageId)) : getPaymentPerSessionPackage(cita);
   return paquete && Number(paquete.valorPorSesion || 0) > 0 ? Number(paquete.valorPorSesion) : 0;
+}
+
+function getActivePackagesForPatient(cita) {
+  const nombre = _normalizarPaciente(cita?.nombre);
+  const tel = _telefonoComparable(cita?.telefono);
+  const hoy = typeof today === 'function' ? today() : '';
+  return _getPkAsignados().filter(p => {
+    const coincideTelefono = tel && _telefonoComparable(p.telefono) === tel;
+    const coincideNombre = nombre && _normalizarPaciente(p.paciente) === nombre;
+    const activo = Number(p.sesiones || 0) > Number(p.consumidas || 0) && (!p.vencimiento || !hoy || p.vencimiento >= hoy);
+    return activo && (coincideTelefono || coincideNombre);
+  });
+}
+
+function getPackageById(id) {
+  return _getPkAsignados().find(p => String(p.id) === String(id)) || null;
 }
 
 // Reservar el consecutivo cuando se agenda, no cuando se marca como atendida.
@@ -382,7 +398,8 @@ function reserveSessionForAppointment(cita) {
     .find(item => item.record);
   if (linked) return {ok:true, already:true, paquete:linked.p, sesion:Number(linked.record.sesion)};
 
-  const found = _paqueteParaCita(cita, paquetes);
+  const explicit = cita?.packageId ? paquetes.find(p => String(p.id) === String(cita.packageId)) : null;
+  const found = explicit ? {p:explicit} : _paqueteParaCita(cita, paquetes);
   if (!found) return {ok:false};
   const {p} = found;
   p.reservasCitas = Array.isArray(p.reservasCitas) ? p.reservasCitas : [];
@@ -488,6 +505,8 @@ function getAppointmentPackageBadge(cita) {
     getAppointmentFinancialSummaryHtml,
     appointmentPaymentWhatsAppUrl,
     getPaymentPerSessionPackage,
-    getSpecialSessionPrice
+    getSpecialSessionPrice,
+    getActivePackagesForPatient,
+    getPackageById
   });
 })(window);
