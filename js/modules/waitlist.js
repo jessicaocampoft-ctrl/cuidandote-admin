@@ -33,7 +33,7 @@ async function addWaitPatient() {
   } catch(e) { toast('Guardado localmente; se sincronizará cuando actualices el servidor','warn'); }
   const list = _getWaitList(); list.unshift(item); _saveWaitList(list); _waitLoaded = true;
   ['waitNombre','waitTelefono','waitServicio','waitPreferencia'].forEach(id => document.getElementById(id).value='');
-  renderWaitList(); toast('Paciente agregado a la lista de espera');
+  renderWaitList(); toast('Paciente agregado a Pendientes por agendar');
 }
 
 async function removeWaitPatient(id) {
@@ -49,12 +49,12 @@ async function renderWaitList(force=false) {
   const all = _getWaitList();
   const list = all.filter(p => !q || _normStr(`${p.nombre} ${p.servicio} ${p.preferencia}`).includes(q));
   document.getElementById('waitCount').textContent = all.length;
-  if (!list.length) { el.innerHTML = '<div class="empty-compact">No hay pacientes en espera. Agrega el primero cuando alguien solicite un horario ocupado.</div>'; return; }
+  if (!list.length) { el.innerHTML = '<div class="empty-compact">No hay pendientes por agendar. Agrega el primero cuando un paciente solicite una cita.</div>'; return; }
   el.innerHTML = list.map(p => {
     const phone = String(p.telefono||'').replace(/\D/g,'');
     const wa = `https://wa.me/57${phone.replace(/^57/,'')}?text=${encodeURIComponent(`Hola ${p.nombre}, se liberó un horario en nuestra agenda. ¿Te gustaría tomarlo?`)}`;
     const fecha = new Date(p.creado).toLocaleDateString('es-CO',{day:'numeric',month:'short'});
-    return `<div class="wait-card"><div class="wait-avatar">${esc((p.nombre||'?').charAt(0).toUpperCase())}</div><div class="wait-info"><div class="wait-name">${esc(p.nombre)}</div><div class="wait-meta">${esc(p.servicio||'Cualquier servicio')} · ${esc(p.preferencia||'Sin preferencia')} · desde ${fecha}</div></div><div class="ops-actions"><a class="btn btn-wa btn-sm" href="${wa}" target="_blank" rel="noopener">WhatsApp</a><button class="btn btn-teal btn-sm" onclick="bookWaitPatient('${p.id}')">Agendar</button><button class="btn btn-err btn-sm" onclick="removeWaitPatient('${p.id}')" aria-label="Retirar a ${esc(p.nombre)}">Retirar</button></div></div>`;
+    return `<div class="wait-card"><div class="wait-avatar">${esc((p.nombre||'?').charAt(0).toUpperCase())}</div><div class="wait-info"><div class="wait-name">${esc(p.nombre)}</div><div class="wait-meta">${esc(p.servicio||'Cualquier servicio')} · ${esc(p.preferencia||'Sin preferencia')} · pendiente desde ${fecha}</div></div><div class="ops-actions"><a class="btn btn-wa btn-sm" href="${wa}" target="_blank" rel="noopener">WhatsApp</a><button class="btn btn-teal btn-sm" onclick="bookWaitPatient('${p.id}')">Agendar cita</button><button class="btn btn-err btn-sm" onclick="removeWaitPatient('${p.id}')" aria-label="Retirar a ${esc(p.nombre)}">Retirar</button></div></div>`;
   }).join('');
 }
 

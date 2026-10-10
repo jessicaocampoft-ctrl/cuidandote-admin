@@ -7046,7 +7046,7 @@ function initFunctionalModules2026() {
   const iconWait = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a6 6 0 0 1 12 0v2"/><path d="M19 8v6M16 11h6"/></svg>';
   const iconAuto = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/><circle cx="12" cy="12" r="3"/></svg>';
   const accionesLink = makeLink('acciones','Centro de acciones',iconActions);
-  const esperaLink = makeLink('espera','Lista de espera',iconWait);
+  const esperaLink = makeLink('espera','Pendientes por agendar',iconWait);
   const autoLink = makeLink('automatizaciones','Automatizaciones',iconAuto);
   accionesLink.classList.remove('sb-secondary');
   toolsToggle.insertAdjacentElement('afterend', esperaLink);
@@ -7074,9 +7074,9 @@ function initFunctionalModules2026() {
   const espera = document.createElement('section');
   espera.id = 'vEspera'; espera.style.display = 'none';
   espera.innerHTML = `
-    <div class="page-header"><h1 class="page-title">Lista de <em>espera</em></h1><p class="page-sub">Pacientes disponibles para cubrir cancelaciones y horarios libres</p></div>
+    <div class="page-header"><h1 class="page-title">Pendientes por <em>agendar</em></h1><p class="page-sub">Solicitudes listas para que tu auxiliar programe la cita</p></div>
     <div class="card" style="margin-bottom:20px">
-      <div class="card-title">Agregar paciente</div>
+      <div class="card-title">Agregar pendiente</div>
       <div class="wait-form">
         <div><label for="waitNombre">Nombre *</label><input id="waitNombre" autocomplete="off" placeholder="Nombre del paciente"></div>
         <div><label for="waitTelefono">Teléfono *</label><input id="waitTelefono" inputmode="tel" placeholder="300 000 0000"></div>
@@ -7086,7 +7086,7 @@ function initFunctionalModules2026() {
       </div>
     </div>
     <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap">
-      <div class="card-title" style="margin:0">Pacientes esperando <span class="chip chip-info" id="waitCount">0</span></div>
+      <div class="card-title" style="margin:0">Por agendar <span class="chip chip-info" id="waitCount">0</span></div>
       <input id="waitSearch" oninput="renderWaitList()" placeholder="Buscar..." style="background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:8px 12px;font-family:var(--font-b)">
     </div>
     <div class="ops-list" id="waitList"></div>`;
@@ -12958,7 +12958,7 @@ document.addEventListener('DOMContentLoaded', () => {
 <script src="js/modules/message-library.js?v=20261001-persistent-delete"></script>
 <script src="js/modules/voice-assistant.js"></script>
 <script src="js/modules/reminders.js"></script>
-<script src="js/modules/waitlist.js"></script>
+<script src="js/modules/waitlist.js?v=20261010-pending-scheduling"></script>
 <script src="js/modules/schedule-operations.js?v=20260922-quick-block-tab"></script>
 <script src="js/modules/events-agreements.js?v=20260922-quick-block-tab"></script>
 <script src="js/modules/commissions.js"></script>

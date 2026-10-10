@@ -4,11 +4,12 @@
 
 function bookWaitPatient(id) {
   const p = _getWaitList().find(x => x.id === id); if (!p) return;
+  global._bookingWaitlistId = id;
   showView('nueva');
   document.getElementById('ncName').value = p.nombre;
   document.getElementById('ncPhone').value = p.telefono;
   if (p.servicio) document.getElementById('ncService').value = p.servicio;
-  toast('Datos cargados. Completa fecha, hora y servicio.');
+  toast('Pendiente cargado. Completa fecha, hora y servicio para agendarlo.');
 }
 
 function agendarHoy() { showView('nueva'); document.getElementById('ncDate').value = today(); }
@@ -258,6 +259,11 @@ async function submitAdminBookingMulti() {
     // La cita aparece de inmediato. La actualización completa se hace en
     // segundo plano para no detener el flujo por Google Calendar/Sheets.
     renderAgenda(); initDashboard();
+    if (creadas > 0 && global._bookingWaitlistId) {
+      const pendingId = global._bookingWaitlistId;
+      global._bookingWaitlistId = '';
+      global.PanelWaitlist?.removeWaitPatient?.(pendingId);
+    }
     _calGCeventsWeek = '';
     _refreshPanelAfterBooking();
     if (_scheduleMode !== 'unica') { _multiDates = []; _renderMultiChips(); }
