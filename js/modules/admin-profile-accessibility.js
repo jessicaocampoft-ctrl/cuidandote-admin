@@ -108,7 +108,7 @@ function _initDailyControlModule() {
   const script = document.createElement('script');
     // Cambiar la versión cuando se ajuste el control diario: se carga de forma
     // dinámica y una URL fija puede dejar la interfaz anterior en caché.
-    script.src = 'js/modules/daily-control.js?v=20261001-whatsapp-confirmation-action';
+    script.src = 'js/modules/daily-control.js?v=20261010-pending-scheduling-action';
   script.dataset.panelDailyControl = '1';
   script.addEventListener('load', start, { once:true });
   script.addEventListener('error', () => console.warn('No se pudo cargar Control Diario'), { once:true });

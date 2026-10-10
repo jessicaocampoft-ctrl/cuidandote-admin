@@ -13,7 +13,8 @@ const files = [
   'js/modules/appointment-create.js',
   'js/modules/appointment-edit.js',
   'js/modules/packages.js',
-  'js/modules/waitlist.js'
+  'js/modules/waitlist.js',
+  'js/modules/daily-control.js'
 ];
 
 function fail(message) {
@@ -37,6 +38,7 @@ const team = fs.readFileSync(`${root}/js/modules/team.js`, 'utf8');
 const messages = fs.readFileSync(`${root}/js/modules/message-library.js`, 'utf8');
 const packages = fs.readFileSync(`${root}/js/modules/packages.js`, 'utf8');
 const waitlist = fs.readFileSync(`${root}/js/modules/waitlist.js`, 'utf8');
+const dailyControl = fs.readFileSync(`${root}/js/modules/daily-control.js`, 'utf8');
 
 if (!config.includes('APPS_SCRIPT_URL')) fail('falta la conexión principal del servidor');
 if (!config.includes('ADMIN_DATA_FALLBACK_URL')) fail('falta la ruta de respaldo de lectura');
@@ -58,5 +60,6 @@ if (!packages.includes('reserveSessionForAppointment') || !packages.includes('re
 if (!fs.readFileSync(`${root}/js/modules/agenda.js`, 'utf8').includes('Citas canceladas')) fail('falta la sección separada para citas canceladas');
 if (!html.includes('packages.js?v=20261008-explicit-package-link') || !html.includes('appointment-create.js?v=20261008-explicit-package-link')) fail('falta la versión de caché para vincular paquetes');
 if (!html.includes('waitlist.js?v=20261010-pending-scheduling') || !waitlist.includes('Pendientes por agendar')) fail('falta la lista de pendientes por agendar');
+if (!dailyControl.includes("showView('espera')")) fail('falta el acceso rápido a pendientes por agendar');
 
 console.log(`VALIDACIÓN APROBADA: ${files.length} archivos críticos, acceso, agenda, pagos, planes y colaboradores presentes.`);
