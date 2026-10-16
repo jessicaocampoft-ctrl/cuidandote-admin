@@ -295,7 +295,11 @@ function getAppointmentFinancialSummary(cita) {
   const started = ['Sesión iniciada', 'Sesión atendida', 'Atendida', 'Cerrada'].includes(appointmentState);
   const paquetes = _getPkAsignados();
   const used = paquetes.map(p => ({p, record:(p.consumoCitas || []).find(item => String(item.id) === String(cita?.id)) || (p.reservasCitas || []).find(item => String(item.id) === String(cita?.id))})).find(item => item.record);
-  const available = used || _paqueteParaCita(cita, paquetes);
+  // Un paquete solo aplica si la cita se vinculó expresamente al agendarla
+  // (o si ya tiene una reserva/consumo persistido). No basta coincidir por
+  // nombre o teléfono: eso podría descontar una sesión no elegida.
+  const explicit = cita?.packageId ? paquetes.find(p => String(p.id) === String(cita.packageId)) : null;
+  const available = used || (explicit ? {p:explicit} : null);
   const packageRecord = available?.p || null;
   const packageTotal = Number(packageRecord?.valorTotal ?? parsePrecio(packageRecord?.precio || 0));
   const packagePaid = Number(packageRecord?.abonado || 0);
@@ -363,8 +367,14 @@ function _paqueteParaCita(cita, paquetes = _getPkAsignados()) {
 }
 
 function getPaymentPerSessionPackage(cita) {
-  const found = _paqueteParaCita(cita);
-  return found?.p?.modalidadPago === 'PAGO_POR_SESION' ? found.p : null;
+  const paquetes = _getPkAsignados();
+  const linked = paquetes.find(p =>
+    (p.consumoCitas || []).some(item => String(item.id) === String(cita?.id)) ||
+    (p.reservasCitas || []).some(item => String(item.id) === String(cita?.id))
+  );
+  const explicit = cita?.packageId ? paquetes.find(p => String(p.id) === String(cita.packageId)) : null;
+  const paquete = linked || explicit;
+  return paquete?.modalidadPago === 'PAGO_POR_SESION' ? paquete : null;
 }
 
 function getSpecialSessionPrice(cita) {
@@ -399,7 +409,7 @@ function reserveSessionForAppointment(cita) {
   if (linked) return {ok:true, already:true, paquete:linked.p, sesion:Number(linked.record.sesion)};
 
   const explicit = cita?.packageId ? paquetes.find(p => String(p.id) === String(cita.packageId)) : null;
-  const found = explicit ? {p:explicit} : _paqueteParaCita(cita, paquetes);
+  const found = explicit ? {p:explicit} : null;
   if (!found) return {ok:false};
   const {p} = found;
   p.reservasCitas = Array.isArray(p.reservasCitas) ? p.reservasCitas : [];
@@ -432,7 +442,8 @@ function consumeSessionForAppointment(cita) {
   const paquetes = _getPkAsignados();
   const linked = paquetes.map(p => ({p, record:(p.consumoCitas || []).find(item => String(item.id) === String(cita.id)) || (p.reservasCitas || []).find(item => String(item.id) === String(cita.id))}))
     .find(item => item.record);
-  const found = linked || _paqueteParaCita(cita, paquetes);
+  const explicit = cita?.packageId ? paquetes.find(p => String(p.id) === String(cita.packageId)) : null;
+  const found = linked || (explicit ? {p:explicit} : null);
   if (!found) return {ok:false};
   const {p} = found;
   p.consumoCitas = Array.isArray(p.consumoCitas) ? p.consumoCitas : [];
@@ -468,8 +479,8 @@ function getAppointmentPackageBadge(cita) {
     const reserva = (p.reservasCitas || []).find(item => String(item.id) === String(cita?.id));
     return {p, record:consumo || reserva, realizada:!!consumo};
   })
-    .find(item => item.record) || _paqueteParaCita(cita, paquetes);
-  if (!found) return '';
+    .find(item => item.record) || (cita?.packageId ? {p:paquetes.find(p => String(p.id) === String(cita.packageId))} : null);
+  if (!found?.p) return '';
   const p = found.p;
   const sesion = found.record ? Number(found.record.sesion) : Math.min(Number(p.sesiones || 0), Number(p.consumidas || 0) + 1);
   const total = Number(p.sesiones || 0);

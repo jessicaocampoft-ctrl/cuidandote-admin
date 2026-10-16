@@ -2918,9 +2918,8 @@ Primero evaluamos cómo está el cuerpo ahora, luego tratamos, luego te enseñam
           </div>
           <div class="field" id="ncPackageWrap" style="display:none">
             <label>📦 Vincular a paquete</label>
-            <select id="ncPackageLink" onchange="PanelAppointmentCreate.applySelectedPackage()">
-              <option value="">Sin paquete para esta cita</option>
-            </select>
+            <input type="hidden" id="ncPackageLink" value="">
+            <div id="ncPackageChoices" style="display:grid;gap:7px"></div>
             <p id="ncPackageHelp" style="font-size:.74rem;color:var(--muted);margin-top:5px">Elige el paquete que deseas usar para esta cita.</p>
           </div>
           <div class="field">

@@ -63,16 +63,23 @@ function _addOptimisticAppointment(data, result) {
 
 function refreshPackageLinkForPatient() {
   const wrap = document.getElementById('ncPackageWrap');
-  const select = document.getElementById('ncPackageLink');
-  if (!wrap || !select) return;
+  const link = document.getElementById('ncPackageLink');
+  const choices = document.getElementById('ncPackageChoices');
+  if (!wrap || !link || !choices) return;
   const paciente = {nombre:(document.getElementById('ncName')?.value || '').trim(), telefono:(document.getElementById('ncPhone')?.value || '').trim()};
   const paquetes = global.PanelPackages?.getActivePackagesForPatient?.(paciente) || [];
-  select.innerHTML = '<option value="">Sin paquete para esta cita</option>' + paquetes.map(p => {
+  link.value = '';
+  choices.innerHTML = paquetes.map(p => {
     const restantes = Math.max(0, Number(p.sesiones || 0) - Number(p.consumidas || 0));
     const pago = p.modalidadPago === 'PAGO_POR_SESION' ? ` · ${fmtPeso(p.valorPorSesion || 0)} por sesión` : '';
-    return `<option value="${esc(p.id)}">${esc(p.nombre || 'Paquete')} · ${restantes} sesiones restantes${pago}</option>`;
+    return `<button type="button" class="package-link-option" data-package-id="${esc(p.id)}" onclick="PanelAppointmentCreate.selectPackageForAppointment(this.dataset.packageId)" style="text-align:left;padding:10px 12px;border:1px solid rgba(27,191,176,.42);border-radius:9px;background:#f0faf9;color:var(--ink);cursor:pointer">
+      <strong>📦 Tiene ${restantes} ${restantes === 1 ? 'sesión pendiente' : 'sesiones pendientes'}</strong>
+      <span>${esc(p.nombre || 'Paquete')}${pago} · Clic para usar este paquete</span>
+    </button>`;
   }).join('');
   wrap.style.display = paquetes.length ? 'block' : 'none';
+  const help = document.getElementById('ncPackageHelp');
+  if (help) help.textContent = paquetes.length ? 'Elige el paquete que deseas usar para esta cita.' : '';
 }
 
 function applySelectedPackage() {
@@ -85,6 +92,19 @@ function applySelectedPackage() {
     document.getElementById('ncPrice').value = '$' + Number(paquete.valorPorSesion).toLocaleString('es-CO');
   }
   if (help) help.textContent = `Vinculada a ${paquete.nombre || 'paquete'} · ${restantes} sesiones disponibles${paquete.modalidadPago === 'PAGO_POR_SESION' ? ' · pago por sesión' : ''}.`;
+}
+
+function selectPackageForAppointment(id) {
+  const link = document.getElementById('ncPackageLink');
+  if (!link) return;
+  link.value = id || '';
+  document.querySelectorAll('#ncPackageChoices .package-link-option').forEach(button => {
+    const selected = button.dataset.packageId === link.value;
+    button.classList.toggle('selected', selected);
+    button.style.background = selected ? '#d8f7f2' : '#f0faf9';
+    button.style.borderColor = selected ? 'var(--primary)' : 'rgba(27,191,176,.42)';
+  });
+  applySelectedPackage();
 }
 
 function _refreshPanelAfterBooking() {
@@ -281,6 +301,7 @@ function agendarDesdePaciente(encNombre, encTel, encEmail) {
   document.getElementById('ncPhone').value = telefono;
   document.getElementById('ncEmail').value = email;
   document.getElementById('pacSearch').value = nombre + (telefono ? ' — ' + telefono : '');
+  refreshPackageLinkForPatient();
   toast('Datos de ' + nombre.split(' ')[0] + ' cargados. Completa fecha, hora y servicio.');
 }
 
@@ -581,8 +602,10 @@ function clearNuevaCita() {
   planSel.selectedIndex=0; planSel.style.display='none';
   const packageWrap = document.getElementById('ncPackageWrap');
   const packageLink = document.getElementById('ncPackageLink');
+  const packageChoices = document.getElementById('ncPackageChoices');
   if (packageWrap) packageWrap.style.display = 'none';
-  if (packageLink) packageLink.innerHTML = '<option value="">Sin paquete para esta cita</option>';
+  if (packageLink) packageLink.value = '';
+  if (packageChoices) packageChoices.innerHTML = '';
   document.getElementById('ncMod').value='Presencial';
   _cobrarDesplazamiento = true;
   const _dWrap = document.getElementById('ncDesplazamientoWrap');
@@ -704,6 +727,7 @@ function agendarDesdeSeg(encNombre, encTel, encEmail) {
     fillPatient,
     refreshPackageLinkForPatient,
     applySelectedPackage,
+    selectPackageForAppointment,
     clearNuevaCita,
     checkTimeConflict,
     openNuevaCitaFromCal,
