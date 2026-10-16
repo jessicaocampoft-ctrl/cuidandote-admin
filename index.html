@@ -149,6 +149,16 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-b);min-height
 .team-card-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
 .team-card h3{font-size:1rem;margin-bottom:4px}
 .team-muted{color:var(--muted);font-size:.84rem;line-height:1.45}
+.work-hours-day small{display:block;margin-top:5px;color:var(--muted);font-size:.76rem}
+.work-hours-summary{grid-column:1/-1;margin-top:6px;padding:16px;border:1px solid #bcebed;border-radius:14px;background:#f5fcfc;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.work-hours-summary .work-hours-notes{grid-column:1/-1}
+.work-hours-summary small{display:block;margin-top:5px;color:var(--muted);font-size:.76rem}
+.work-hours-totals{grid-column:1/-1;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;padding-top:4px}
+.work-hours-totals>div{background:#fff;border:1px solid #d8eeee;border-radius:10px;padding:10px}
+.work-hours-totals span{display:block;color:var(--muted);font-size:.7rem;text-transform:uppercase;letter-spacing:.04em}
+.work-hours-totals strong{display:block;margin-top:3px;color:var(--teal);font-size:1.05rem}
+.work-hours-total.is-negative{color:#dc5d32}.work-hours-total.is-positive{color:#10916f}
+@media(max-width:620px){.work-hours-summary{grid-template-columns:1fr}.work-hours-totals{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .team-pill{display:inline-flex;align-items:center;border-radius:999px;background:var(--s2);border:1px solid var(--border);padding:4px 9px;font-size:.72rem;color:var(--muted);font-weight:700}
 .team-pill.ok{background:rgba(22,163,74,.09);color:var(--ok);border-color:rgba(22,163,74,.22)}
 .team-pill.warn{background:rgba(217,119,6,.10);color:var(--warn);border-color:rgba(217,119,6,.22)}
@@ -6623,6 +6633,12 @@ async function loadProfessionalWorkHours(...args) {
     throw new Error('El módulo Equipo clínico no está disponible: horario semanal');
   }
   return await module.loadProfessionalWorkHours(...args);
+}
+
+function updateProfessionalWorkHoursSummary(...args) {
+  const module = window.PanelTeam;
+  if (!module || typeof module.updateProfessionalWorkHoursSummary !== 'function') return;
+  return module.updateProfessionalWorkHoursSummary(...args);
 }
 
 async function saveProfessionalWorkHours(...args) {

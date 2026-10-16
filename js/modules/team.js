@@ -335,6 +335,72 @@ function workHoursValue(id) {
   return (document.getElementById(id)?.value || '').trim();
 }
 
+function workHoursNumber(value) {
+  const normalized = String(value ?? '').trim().replace(',', '.');
+  if (!normalized) return 0;
+  const amount = Number(normalized);
+  return Number.isFinite(amount) && amount >= 0 ? amount : 0;
+}
+
+function formatWorkHours(value) {
+  const amount = Math.round((Number(value) || 0) * 100) / 100;
+  return `${amount.toLocaleString('es-CO', { maximumFractionDigits: 2 })} h`;
+}
+
+function timeToMinutes(raw) {
+  const text = String(raw || '').toLowerCase().replace(/\s+/g, ' ').trim();
+  const match = text.match(/(\d{1,2})(?::(\d{2}))?\s*(a\.?\s*m\.?|p\.?\s*m\.?|m\.?|mediod[ií]a)?/i);
+  if (!match) return null;
+  let hour = Number(match[1]);
+  const minute = Number(match[2] || 0);
+  const period = (match[3] || '').replace(/\s|\./g, '').toLowerCase();
+  if (minute > 59 || hour > 23) return null;
+  if (period === 'am' && hour === 12) hour = 0;
+  if (period === 'pm' && hour < 12) hour += 12;
+  if ((period === 'm' || period === 'mediodia') && hour === 12) hour = 12;
+  return hour * 60 + minute;
+}
+
+function scheduledHoursForDay(value) {
+  const text = String(value || '').replace(/[–—]/g, '-');
+  const pattern = /(\d{1,2}(?::\d{2})?\s*(?:a\.?\s*m\.?|p\.?\s*m\.?|m\.?|mediod[ií]a)?)\s*(?:-|\ba\b|\bhasta\b)\s*(\d{1,2}(?::\d{2})?\s*(?:a\.?\s*m\.?|p\.?\s*m\.?|m\.?|mediod[ií]a)?)/gi;
+  let match;
+  let total = 0;
+  while ((match = pattern.exec(text))) {
+    const start = timeToMinutes(match[1]);
+    let end = timeToMinutes(match[2]);
+    if (start === null || end === null) continue;
+    if (end <= start) end += 12 * 60;
+    const duration = end - start;
+    if (duration > 0 && duration <= 16 * 60) total += duration / 60;
+  }
+  return total;
+}
+
+function updateProfessionalWorkHoursSummary() {
+  let scheduled = 0;
+  WORK_WEEK_DAYS.forEach(([key]) => {
+    const dayHours = scheduledHoursForDay(workHoursValue(`workHours_${key}`));
+    scheduled += dayHours;
+    const result = document.getElementById(`workHours_${key}_total`);
+    if (result) result.textContent = dayHours ? `${formatWorkHours(dayHours)} programadas` : 'Sin horario';
+  });
+  const agreed = workHoursNumber(workHoursValue('workHoursAgreed'));
+  const worked = workHoursNumber(workHoursValue('workHoursWorked'));
+  const scheduledResult = document.getElementById('workHoursScheduledTotal');
+  const agreedResult = document.getElementById('workHoursAgreedTotal');
+  const workedResult = document.getElementById('workHoursWorkedTotal');
+  const differenceResult = document.getElementById('workHoursDifferenceTotal');
+  if (scheduledResult) scheduledResult.textContent = formatWorkHours(scheduled);
+  if (agreedResult) agreedResult.textContent = formatWorkHours(agreed);
+  if (workedResult) workedResult.textContent = formatWorkHours(worked);
+  if (differenceResult) {
+    const difference = worked - agreed;
+    differenceResult.textContent = `${difference > 0 ? '+' : ''}${formatWorkHours(difference)}`;
+    differenceResult.className = `work-hours-total ${difference < 0 ? 'is-negative' : difference > 0 ? 'is-positive' : ''}`;
+  }
+}
+
 async function loadProfessionalWorkHours() {
   const professionalId = workHoursValue('workHoursProfessionalId');
   const week = mondayForWorkHours(document.getElementById('workHoursWeekStart')?.value);
@@ -348,7 +414,19 @@ async function loadProfessionalWorkHours() {
     if (!response.ok) throw new Error(response.error || 'No se pudo consultar el horario');
     const item = response.item || {};
     fields.innerHTML = WORK_WEEK_DAYS.map(([key, label]) => `
-      <div class="field"><label>${label}</label><input id="workHours_${key}" maxlength="120" placeholder="Ej.: 8:00 a. m.–12:00 m. · 2:00–6:00 p. m." value="${esc(item[key] || '')}"></div>`).join('');
+      <div class="field work-hours-day"><label>${label}</label><input id="workHours_${key}" maxlength="120" oninput="updateProfessionalWorkHoursSummary()" placeholder="Ej.: 8:00 a. m.–12:00 m. · 2:00–6:00 p. m." value="${esc(item[key] || '')}"><small id="workHours_${key}_total">Sin horario</small></div>`).join('') + `
+      <section class="work-hours-summary" aria-label="Resumen semanal de horas">
+        <div class="field"><label>Horas acordadas esta semana</label><input id="workHoursAgreed" type="number" min="0" max="168" step="0.25" oninput="updateProfessionalWorkHoursSummary()" placeholder="Ej.: 40" value="${esc(item.horasAcordadas ?? '')}"><small>Lo pactado con el colaborador.</small></div>
+        <div class="field"><label>Horas trabajadas</label><input id="workHoursWorked" type="number" min="0" max="168" step="0.25" oninput="updateProfessionalWorkHoursSummary()" placeholder="Ej.: 38" value="${esc(item.horasTrabajadas ?? '')}"><small>Registra el total real al cerrar la semana.</small></div>
+        <div class="field work-hours-notes"><label>Observación</label><input id="workHoursNotes" maxlength="220" placeholder="Ej.: salió antes el jueves" value="${esc(item.observacion || '')}"></div>
+        <div class="work-hours-totals">
+          <div><span>Horas acordadas</span><strong id="workHoursAgreedTotal">0 h</strong></div>
+          <div><span>Horas programadas</span><strong id="workHoursScheduledTotal">0 h</strong></div>
+          <div><span>Horas trabajadas</span><strong id="workHoursWorkedTotal">0 h</strong></div>
+          <div><span>Diferencia</span><strong id="workHoursDifferenceTotal" class="work-hours-total">0 h</strong></div>
+        </div>
+      </section>`;
+    updateProfessionalWorkHoursSummary();
   } catch (error) {
     fields.innerHTML = '<div class="team-alert warn"><strong>No se pudo cargar el horario</strong>Intenta actualizarlo de nuevo.</div>';
     toast(error?.message || 'No se pudo cargar el horario', 'err');
@@ -370,9 +448,12 @@ async function saveProfessionalWorkHours() {
   const semanaInicio = mondayForWorkHours(document.getElementById('workHoursWeekStart')?.value);
   const values = {};
   WORK_WEEK_DAYS.forEach(([key]) => { values[key] = workHoursValue(`workHours_${key}`); });
-  if (!Object.values(values).some(Boolean)) return toast('Escribe al menos un horario de trabajo', 'err');
+  const horasAcordadas = workHoursNumber(workHoursValue('workHoursAgreed'));
+  const horasTrabajadas = workHoursNumber(workHoursValue('workHoursWorked'));
+  const observacion = workHoursValue('workHoursNotes');
+  if (!Object.values(values).some(Boolean) && !horasAcordadas && !horasTrabajadas) return toast('Escribe un horario o registra las horas acordadas', 'err');
   try {
-    const data = encodeURIComponent(JSON.stringify({ professionalId, semanaInicio, ...values }));
+    const data = encodeURIComponent(JSON.stringify({ professionalId, semanaInicio, ...values, horasAcordadas, horasTrabajadas, observacion }));
     const response = await fetch(`${APPS_SCRIPT_URL}?action=saveTeamWorkSchedule&token=${encodeURIComponent(TOKEN)}&data=${data}`).then(r => r.json());
     if (!response.ok) throw new Error(response.error || 'No se pudo guardar el horario');
     toast('Horario semanal guardado');
@@ -701,6 +782,7 @@ async function sendProfessionalIssue() {
     openProfessionalSchedule,
     openProfessionalWorkHours,
     loadProfessionalWorkHours,
+    updateProfessionalWorkHoursSummary,
     saveProfessionalWorkHours,
     openProfessionalForm,
     showTemporaryPassword,
