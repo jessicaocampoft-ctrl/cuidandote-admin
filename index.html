@@ -1735,6 +1735,11 @@ button:disabled{cursor:not-allowed;opacity:.58}
       <input class="team-input" style="width:auto;min-width:165px" id="proDate" type="date" onchange="setProfessionalMode('fecha')">
       <button class="btn btn-ghost" onclick="loadProfessionalAgenda()">Actualizar</button>
     </div>
+    <section class="team-panel" style="margin:0 0 18px;padding:16px">
+      <h2 style="margin:0;font-size:1rem">Mi horario de trabajo</h2>
+      <small class="team-muted" id="proWorkWeekLabel">Semana actual</small>
+      <div id="proWorkSchedule" class="team-ops-list" style="margin-top:10px"><div class="team-muted">Cargando horario...</div></div>
+    </section>
     <div id="proSummary" class="pro-summary" aria-live="polite"></div>
     <div class="pro-help">Aquí verás solo tu agenda asignada. Marca una sesión como atendida al terminarla, o usa <strong>Reportar novedad</strong> si necesitas que administración intervenga.</div>
     <div id="proAgendaList" class="pro-grid"></div>
@@ -6329,7 +6334,14 @@ let teamData = {profesionales: [], asignaciones: [], novedades: [], auditoria: [
 let PROFESSIONAL_TOKEN = sessionStorage.getItem('professionalToken') || '';
 let professionalSession = null;
 let professionalAgenda = [];
+let professionalWorkSchedule = null;
 let professionalMode = 'hoy';
+window.PanelWorkHoursContext = {
+  apiUrl: () => APPS_SCRIPT_URL,
+  token: () => TOKEN,
+  teamData: () => teamData,
+  loadTeamData: () => loadTeamData()
+};
  // {m, y} o null = mes actual
 
 
@@ -7043,15 +7055,19 @@ function initFunctionalModules2026() {
     return b;
   };
   const iconActions = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>';
+  const iconWorkHours = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>';
   const iconWait = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a6 6 0 0 1 12 0v2"/><path d="M19 8v6M16 11h6"/></svg>';
   const iconAuto = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/><circle cx="12" cy="12" r="3"/></svg>';
   const accionesLink = makeLink('acciones','Centro de acciones',iconActions);
+  const workHoursLink = makeLink('horariosEquipo','Horas del equipo',iconWorkHours);
   const esperaLink = makeLink('espera','Pendientes por agendar',iconWait);
   const autoLink = makeLink('automatizaciones','Automatizaciones',iconAuto);
   accionesLink.classList.remove('sb-secondary');
+  workHoursLink.classList.remove('sb-secondary');
   toolsToggle.insertAdjacentElement('afterend', esperaLink);
   toolsToggle.insertAdjacentElement('afterend', autoLink);
   document.getElementById('sb-calendario').insertAdjacentElement('afterend', accionesLink);
+  document.getElementById('sb-equipo').insertAdjacentElement('afterend', workHoursLink);
 
   const main = document.getElementById('mainContent');
   const acciones = document.createElement('section');
@@ -7070,6 +7086,14 @@ function initFunctionalModules2026() {
     </div>
     <div class="ops-list" id="opsList"></div>`;
   main.appendChild(acciones);
+
+  const horariosEquipo = document.createElement('section');
+  horariosEquipo.id = 'vHorariosEquipo'; horariosEquipo.style.display = 'none';
+  horariosEquipo.innerHTML = `
+    <div class="page-header"><h1 class="page-title">Horas del <em>equipo</em></h1><p class="page-sub">Registra el horario semanal de cada colaborador. Cada persona verá únicamente el suyo.</p></div>
+    <div class="card" style="margin-bottom:18px"><div class="card-title">Semana de trabajo</div><div class="wait-form" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr))"><div><label>Colaborador *</label><select id="workHoursProfessional" onchange="renderTeamWorkHours()"></select></div><div><label>Semana que inicia el</label><input id="workHoursWeek" type="date" onchange="renderTeamWorkHours()"></div><button class="btn btn-ghost" onclick="renderTeamWorkHours(true)">Actualizar</button></div></div>
+    <div class="card"><div class="card-title">Horario semanal</div><p class="team-muted" style="margin:4px 0 14px">Deja vacío el día que no trabaja.</p><div id="workHoursFields" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px"></div><div style="display:flex;justify-content:flex-end;margin-top:18px"><button class="btn btn-teal" onclick="saveTeamWorkHours()">Guardar horario semanal</button></div></div>`;
+  main.appendChild(horariosEquipo);
 
   const espera = document.createElement('section');
   espera.id = 'vEspera'; espera.style.display = 'none';
@@ -12942,6 +12966,7 @@ document.addEventListener('DOMContentLoaded', () => {
   <script src="js/modules/appointment-create.js?v=20261008-explicit-package-link"></script>
   <script src="js/modules/appointment-edit.js?v=20261007-package-session-sequence"></script>
 <script src="js/modules/team.js?v=20260928-team-retry"></script>
+<script src="js/modules/work-hours.js?v=20261015"></script>
   <script src="js/modules/database.js"></script>
   <script src="js/modules/referrals.js"></script>
 <script src="js/modules/packages.js?v=20261008-explicit-package-link"></script>

@@ -346,6 +346,7 @@
           : 'Mi espacio de trabajo';
       }
       ctx.setProfessionalAgenda(data.citas || []);
+      global.renderProfessionalWorkSchedule?.(data.workSchedule || null);
       ctx.renderProfessionalAgenda();
       return data;
     } catch (error) {
