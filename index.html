@@ -5881,6 +5881,23 @@ Acción: enviar mensaje de reenganche a los 14 pacientes que solo vinieron una v
       </div>
     </div>
 
+    <div id="modalWorkHours" class="modal-bg" onclick="if(event.target===this)closeModal('modalWorkHours')">
+      <div class="modal" style="max-width:720px">
+        <h2 class="modal-title" id="workHoursTitle">Horario semanal</h2>
+        <p class="team-muted" style="margin:-4px 0 16px">Registra las horas programadas para esta semana. Deja vacío el día que no trabaja.</p>
+        <input type="hidden" id="workHoursProfessionalId">
+        <div class="field" style="max-width:250px;margin-bottom:14px">
+          <label>Semana que inicia el</label>
+          <input id="workHoursWeekStart" type="date" onchange="loadProfessionalWorkHours()">
+        </div>
+        <div id="workHoursFields" class="form-grid g2" style="gap:12px"></div>
+        <div class="modal-actions">
+          <button class="btn btn-ghost" onclick="closeModal('modalWorkHours')">Cancelar</button>
+          <button class="btn btn-teal" onclick="saveProfessionalWorkHours()">Guardar horario semanal</button>
+        </div>
+      </div>
+    </div>
+
     <div id="modalProIssue" class="modal-bg" onclick="if(event.target===this)closeModal('modalProIssue')">
       <div class="modal">
         <h2 class="modal-title">Reportar novedad</h2>
@@ -6590,6 +6607,30 @@ function openProfessionalSchedule(...args) {
     throw new Error('El módulo Equipo clínico no está disponible: openProfessionalSchedule');
   }
   return module.openProfessionalSchedule(...args);
+}
+
+function openProfessionalWorkHours(...args) {
+  const module = window.PanelTeam;
+  if (!module || typeof module.openProfessionalWorkHours !== 'function') {
+    throw new Error('El módulo Equipo clínico no está disponible: horario semanal');
+  }
+  return module.openProfessionalWorkHours(...args);
+}
+
+async function loadProfessionalWorkHours(...args) {
+  const module = window.PanelTeam;
+  if (!module || typeof module.loadProfessionalWorkHours !== 'function') {
+    throw new Error('El módulo Equipo clínico no está disponible: horario semanal');
+  }
+  return await module.loadProfessionalWorkHours(...args);
+}
+
+async function saveProfessionalWorkHours(...args) {
+  const module = window.PanelTeam;
+  if (!module || typeof module.saveProfessionalWorkHours !== 'function') {
+    throw new Error('El módulo Equipo clínico no está disponible: horario semanal');
+  }
+  return await module.saveProfessionalWorkHours(...args);
 }
 
 function openProfessionalForm(...args) {

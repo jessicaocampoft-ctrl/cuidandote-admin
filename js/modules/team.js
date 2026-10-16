@@ -238,6 +238,7 @@ function renderEquipo() {
       <div class="team-card-hint">Ver agenda asignada · ${esc(citasAsignadas)} cita${citasAsignadas === 1 ? '' : 's'}</div>
       <div class="team-card-actions">
         <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openProfessionalForm('${esc(p.id)}')">Editar</button>
+        <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openProfessionalWorkHours('${esc(p.id)}')">Horario semanal</button>
         <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();resetProPassword('${esc(p.id)}')">Reset clave</button>
         <button class="btn ${(p.estado || '') === 'Activo' ? 'btn-danger' : 'btn-teal'} btn-sm" onclick="event.stopPropagation();togglePro('${esc(p.id)}','${(p.estado || '') === 'Activo' ? 'Inactivo' : 'Activo'}')">${(p.estado || '') === 'Activo' ? 'Desactivar' : 'Activar'}</button>
         <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deletePro('${esc(p.id)}','${esc(p.nombre)}')">Eliminar</button>
@@ -316,6 +317,69 @@ function openProfessionalSchedule(id) {
       </div>`;
   }).join('') : '<div class="empty"><p>No hay citas asignadas para mostrar.</p></div>';
   openModal('modalProAgendaAdmin');
+}
+
+const WORK_WEEK_DAYS = [
+  ['lunes', 'Lunes'], ['martes', 'Martes'], ['miercoles', 'Miércoles'],
+  ['jueves', 'Jueves'], ['viernes', 'Viernes'], ['sabado', 'Sábado'], ['domingo', 'Domingo']
+];
+
+function mondayForWorkHours(value) {
+  const date = value ? new Date(`${value}T12:00:00`) : new Date();
+  const day = date.getDay() || 7;
+  date.setDate(date.getDate() - day + 1);
+  return date.toISOString().slice(0, 10);
+}
+
+function workHoursValue(id) {
+  return (document.getElementById(id)?.value || '').trim();
+}
+
+async function loadProfessionalWorkHours() {
+  const professionalId = workHoursValue('workHoursProfessionalId');
+  const week = mondayForWorkHours(document.getElementById('workHoursWeekStart')?.value);
+  const fields = document.getElementById('workHoursFields');
+  if (!professionalId || !fields) return;
+  const weekInput = document.getElementById('workHoursWeekStart');
+  if (weekInput) weekInput.value = week;
+  fields.innerHTML = '<div class="team-muted">Cargando horario...</div>';
+  try {
+    const response = await fetch(`${APPS_SCRIPT_URL}?action=getTeamWorkSchedule&token=${encodeURIComponent(TOKEN)}&professionalId=${encodeURIComponent(professionalId)}&week=${encodeURIComponent(week)}`).then(r => r.json());
+    if (!response.ok) throw new Error(response.error || 'No se pudo consultar el horario');
+    const item = response.item || {};
+    fields.innerHTML = WORK_WEEK_DAYS.map(([key, label]) => `
+      <div class="field"><label>${label}</label><input id="workHours_${key}" maxlength="120" placeholder="Ej.: 8:00 a. m.–12:00 m. · 2:00–6:00 p. m." value="${esc(item[key] || '')}"></div>`).join('');
+  } catch (error) {
+    fields.innerHTML = '<div class="team-alert warn"><strong>No se pudo cargar el horario</strong>Intenta actualizarlo de nuevo.</div>';
+    toast(error?.message || 'No se pudo cargar el horario', 'err');
+  }
+}
+
+async function openProfessionalWorkHours(id) {
+  const pro = byIdFrom(teamData.profesionales, 'id', id) || byIdFrom(teamData.profesionales, 'ID', id);
+  if (!pro) return toast('No encontré el colaborador', 'err');
+  document.getElementById('workHoursProfessionalId').value = pro.id || pro.ID || id;
+  document.getElementById('workHoursTitle').textContent = `Horario semanal · ${pro.nombre || pro.Nombre || 'Colaborador'}`;
+  document.getElementById('workHoursWeekStart').value = mondayForWorkHours();
+  openModal('modalWorkHours');
+  await loadProfessionalWorkHours();
+}
+
+async function saveProfessionalWorkHours() {
+  const professionalId = workHoursValue('workHoursProfessionalId');
+  const semanaInicio = mondayForWorkHours(document.getElementById('workHoursWeekStart')?.value);
+  const values = {};
+  WORK_WEEK_DAYS.forEach(([key]) => { values[key] = workHoursValue(`workHours_${key}`); });
+  if (!Object.values(values).some(Boolean)) return toast('Escribe al menos un horario de trabajo', 'err');
+  try {
+    const data = encodeURIComponent(JSON.stringify({ professionalId, semanaInicio, ...values }));
+    const response = await fetch(`${APPS_SCRIPT_URL}?action=saveTeamWorkSchedule&token=${encodeURIComponent(TOKEN)}&data=${data}`).then(r => r.json());
+    if (!response.ok) throw new Error(response.error || 'No se pudo guardar el horario');
+    toast('Horario semanal guardado');
+    closeModal('modalWorkHours');
+  } catch (error) {
+    toast(error?.message || 'No se pudo guardar el horario', 'err');
+  }
 }
 
 function openProfessionalForm(id='') {
@@ -635,6 +699,9 @@ async function sendProfessionalIssue() {
     renderTeamOperations,
     renderEquipo,
     openProfessionalSchedule,
+    openProfessionalWorkHours,
+    loadProfessionalWorkHours,
+    saveProfessionalWorkHours,
     openProfessionalForm,
     showTemporaryPassword,
     copyTempPassword,
