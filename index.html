@@ -12966,7 +12966,57 @@ document.addEventListener('DOMContentLoaded', () => {
   <script src="js/modules/appointment-create.js?v=20261008-explicit-package-link"></script>
   <script src="js/modules/appointment-edit.js?v=20261007-package-session-sequence"></script>
 <script src="js/modules/team.js?v=20260928-team-retry"></script>
-<script src="js/modules/work-hours.js?v=20261015"></script>
+<script>
+/* Horarios semanales del equipo: se incluye aquí para que esté disponible
+   junto con la navegación del panel, incluso si falla la carga de un módulo. */
+(function (global) {
+  'use strict';
+  const DAYS = [['lunes','Lunes'],['martes','Martes'],['miercoles','Miércoles'],['jueves','Jueves'],['viernes','Viernes'],['sabado','Sábado'],['domingo','Domingo']];
+  let current = null;
+  const monday = value => { const d = value ? new Date(`${value}T12:00:00`) : new Date(); const day = d.getDay() || 7; d.setDate(d.getDate() - day + 1); return d.toISOString().slice(0, 10); };
+  const safe = value => global.esc ? global.esc(value || '') : String(value || '');
+  const notify = (message, type) => global.toast?.(message, type);
+  global.renderProfessionalWorkSchedule = schedule => {
+    const el = document.getElementById('proWorkSchedule'), label = document.getElementById('proWorkWeekLabel');
+    if (!el) return;
+    if (label) label.textContent = schedule?.semanaInicio ? `Semana del ${global.fmtDate ? global.fmtDate(schedule.semanaInicio) : schedule.semanaInicio}` : 'Semana actual';
+    if (!schedule) { el.innerHTML = '<div class="team-muted">Aún no hay un horario registrado para esta semana.</div>'; return; }
+    const rows = DAYS.filter(([key]) => String(schedule[key] || '').trim());
+    el.innerHTML = rows.length ? rows.map(([key, name]) => `<div class="team-ops-row"><strong>${name}</strong><span>${safe(schedule[key])}</span></div>`).join('') : '<div class="team-muted">No tienes horas asignadas para esta semana.</div>';
+  };
+  global.renderTeamWorkHours = async force => {
+    const professional = document.getElementById('workHoursProfessional'), week = document.getElementById('workHoursWeek'), fields = document.getElementById('workHoursFields');
+    if (!professional || !week || !fields) return;
+    const ctx = global.PanelWorkHoursContext;
+    if (!ctx) return;
+    if (!ctx.teamData()?.profesionales?.length || force) await ctx.loadTeamData();
+    const active = (ctx.teamData()?.profesionales || []).filter(p => (p.estado || p.Estado || 'Activo') === 'Activo');
+    const remembered = professional.value;
+    professional.innerHTML = `<option value="">Selecciona un colaborador</option>${active.map(p => `<option value="${safe(p.id || p.ID)}">${safe(p.nombre || p.Nombre)} · ${safe(p.rol || p.Rol || 'Colaborador')}</option>`).join('')}`;
+    professional.value = active.some(p => String(p.id || p.ID) === remembered) ? remembered : String(active[0]?.id || active[0]?.ID || '');
+    if (!week.value) week.value = monday();
+    week.value = monday(week.value); current = null;
+    if (professional.value) try {
+      const r = await fetch(`${ctx.apiUrl()}?action=getTeamWorkSchedule&token=${encodeURIComponent(ctx.token())}&professionalId=${encodeURIComponent(professional.value)}&week=${encodeURIComponent(week.value)}`).then(x => x.json());
+      if (!r.ok) throw new Error(r.error || 'No se pudo consultar el horario'); current = r.item || null;
+    } catch (error) { notify(error.message, 'err'); }
+    fields.innerHTML = DAYS.map(([key, name]) => `<div><label for="workHour_${key}">${name}</label><input id="workHour_${key}" maxlength="120" placeholder="Ej.: 8:00 a. m.–12:00 m. · 2:00–6:00 p. m." value="${safe(current?.[key] || '')}"></div>`).join('');
+  };
+  global.saveTeamWorkHours = async () => {
+    const ctx = global.PanelWorkHoursContext, professionalId = document.getElementById('workHoursProfessional')?.value || '';
+    if (!ctx) return;
+    const semanaInicio = monday(document.getElementById('workHoursWeek')?.value), values = {};
+    DAYS.forEach(([key]) => values[key] = (document.getElementById(`workHour_${key}`)?.value || '').trim());
+    if (!professionalId) return notify('Selecciona un colaborador', 'err');
+    if (!Object.values(values).some(Boolean)) return notify('Escribe al menos un horario de trabajo', 'err');
+    try {
+      const data = encodeURIComponent(JSON.stringify({ professionalId, semanaInicio, ...values }));
+      const r = await fetch(`${ctx.apiUrl()}?action=saveTeamWorkSchedule&token=${encodeURIComponent(ctx.token())}&data=${data}`).then(x => x.json());
+      if (!r.ok) throw new Error(r.error || 'No se pudo guardar'); notify('Horario semanal guardado. El colaborador ya puede verlo.');
+    } catch (error) { notify(error.message, 'err'); }
+  };
+})(window);
+</script>
   <script src="js/modules/database.js"></script>
   <script src="js/modules/referrals.js"></script>
 <script src="js/modules/packages.js?v=20261008-explicit-package-link"></script>
