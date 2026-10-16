@@ -13,7 +13,7 @@
   ];
   const GROUPS = [
     { id:'daily', label:'Operación diaria', items:['sb-seguimiento','sb-pagos','sb-pacientes','sb-nueva','sb-agenda','sb-tareas'] },
-    { id:'operations', label:'Agenda y disponibilidad', items:['sb-bloquear','sb-horariospublicos','sb-espera','sb-horariosEquipo'] },
+    { id:'operations', label:'Agenda y disponibilidad', items:['sb-bloquear','sb-horariospublicos','sb-espera'] },
     { id:'followup', label:'Seguimiento y comunicación', items:['sb-guioneswa','sb-recuperacion'] },
     { id:'finance', label:'Finanzas y resultados', items:['sb-finanzas','sb-guiakpis','sb-presupuesto','sb-comisiones'] },
     { id:'commercial', label:'Comercial', items:['sb-paquetes','sb-empresas','sb-codigos'] },

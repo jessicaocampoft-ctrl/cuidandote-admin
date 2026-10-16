@@ -9,7 +9,7 @@
   function showView(v) {
     const viewAliases = { citas: 'agenda' };
       v = viewAliases[v] || v;
-      ['dashboard','acciones','espera','automatizaciones','horariosEquipo','tareas','tareasConfig','agenda','nueva','calendario','bloquear','pacientes','equipo','basedatos','codigos','paquetes','recordatorios','finanzas','pagos','guiakpis','presupuesto','seguimiento','mensajes','empresas','pasaporte','comisiones','guioneswa','recuperacion'].forEach(id => {
+      ['dashboard','acciones','espera','automatizaciones','tareas','tareasConfig','agenda','nueva','calendario','bloquear','pacientes','equipo','basedatos','codigos','paquetes','recordatorios','finanzas','pagos','guiakpis','presupuesto','seguimiento','mensajes','empresas','pasaporte','comisiones','guioneswa','recuperacion'].forEach(id => {
         const sec = document.getElementById('v' + id.charAt(0).toUpperCase() + id.slice(1));
         const sb  = document.getElementById('sb-' + id);
         if (sec) sec.style.display = 'none';
@@ -84,7 +84,6 @@
       if (v === 'acciones')       renderCentroAcciones();
       if (v === 'espera')         renderWaitList();
       if (v === 'automatizaciones') loadAutomationCenter();
-      if (v === 'horariosEquipo') global.renderTeamWorkHours?.();
       if (v === 'dashboard')      actualizarContadorLeads();
   }
 
