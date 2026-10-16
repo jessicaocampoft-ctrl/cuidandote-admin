@@ -84,7 +84,7 @@
       if (v === 'acciones')       renderCentroAcciones();
       if (v === 'espera')         renderWaitList();
       if (v === 'automatizaciones') loadAutomationCenter();
-      if (v === 'horariosEquipo') global.renderTeamWorkHours?.();
+      if (v === 'horariosEquipo') window.renderTeamWorkHours?.();
       if (v === 'dashboard')      actualizarContadorLeads();
   }
 
