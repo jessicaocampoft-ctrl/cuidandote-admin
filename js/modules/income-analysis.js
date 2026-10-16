@@ -19,6 +19,46 @@ function _ingFmtLabel(d) { return d.toLocaleDateString('es-CO',{day:'2-digit',mo
 
 function _ingFmtMes(d) { return d.toLocaleDateString('es-CO',{month:'long',year:'numeric'}); }
 
+// Eventos de Google Calendar con un valor escrito como "$150000" en el título
+// o la descripción. Se consultan únicamente para este resumen de ingresos.
+let _ingGoogleCalendarCache = { key: '', events: [] };
+let _ingGoogleCalendarLoading = '';
+
+function _ingDateStr(d) {
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
+function _ingLoadGoogleCalendarEvents(from, to) {
+  const key = from + ':' + to;
+  if (_ingGoogleCalendarCache.key === key) return _ingGoogleCalendarCache.events;
+  if (_ingGoogleCalendarLoading !== key) {
+    _ingGoogleCalendarLoading = key;
+    fetch(`${APPS_SCRIPT_URL}?action=getCalEvents&token=${encodeURIComponent(TOKEN)}&from=${from}&to=${to}`)
+      .then(r => r.json())
+      .then(data => {
+        if (!data.ok) return;
+        _ingGoogleCalendarCache = { key, events: (data.events || []).filter(e => Number(e.valor) > 0) };
+        renderIngresosDetalle();
+      })
+      .catch(() => {})
+      .finally(() => { if (_ingGoogleCalendarLoading === key) _ingGoogleCalendarLoading = ''; });
+  }
+  return [];
+}
+
+function _ingEventosConIngresosGoogle(from, to) {
+  const internos = allData.eventos || [];
+  const google = _ingLoadGoogleCalendarEvents(from, to).map(e => ({
+    fecha: e.fecha,
+    horaInicio: e.allDay ? '' : e.hora,
+    titulo: e.title,
+    tipo: 'Google Calendar',
+    cobro: Number(e.valor) || 0,
+    esGoogleCalendar: true
+  }));
+  return internos.concat(google);
+}
+
 function renderCitasResumen() {
   try {
     const el = document.getElementById('citasResumenStats');
@@ -125,11 +165,23 @@ function renderIngresosDetalle() {
   const citas = citasReales();
   const DIAS_NOM = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
   const MESES_NOM = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  const refRango = new Date(fechaSel+'T12:00:00');
+  let desdeEventos = fechaSel, hastaEventos = fechaSel;
+  if (_modoIngresos === 'semana') {
+    const lunes = new Date(refRango); lunes.setDate(refRango.getDate() - (refRango.getDay() === 0 ? 6 : refRango.getDay() - 1) - 7);
+    const domingo = new Date(lunes); domingo.setDate(lunes.getDate() + 13);
+    desdeEventos = _ingDateStr(lunes); hastaEventos = _ingDateStr(domingo);
+  } else if (_modoIngresos === 'mes') {
+    const inicioAnterior = new Date(refRango.getFullYear(), refRango.getMonth() - 1, 1);
+    const finActual = new Date(refRango.getFullYear(), refRango.getMonth() + 1, 0);
+    desdeEventos = _ingDateStr(inicioAnterior); hastaEventos = _ingDateStr(finActual);
+  }
+  const eventos = _ingEventosConIngresosGoogle(desdeEventos, hastaEventos);
 
   // ── MODO DÍA ──
   if (_modoIngresos === 'dia') {
     const citasDia  = citas.filter(c => normDate(c.fecha) === fechaSel);
-    const evtsDia   = (allData.eventos||[]).filter(e => normDate(e.fecha) === fechaSel);
+    const evtsDia   = eventos.filter(e => normDate(e.fecha) === fechaSel);
     const total     = citasDia.reduce((s,c) => s + parsePrecio(c.precio), 0)
                     + evtsDia.reduce((s,e) => s + parsePrecio(e.cobro), 0);
     const dObj = new Date(fechaSel+'T12:00:00');
@@ -182,7 +234,7 @@ function renderIngresosDetalle() {
       const d = new Date(lunes); d.setDate(lunes.getDate()+i);
       const fStr = _ingFmt(d);
       const cs = citas.filter(c => normDate(c.fecha)===fStr);
-      const es = (allData.eventos||[]).filter(e => normDate(e.fecha)===fStr);
+      const es = eventos.filter(e => normDate(e.fecha)===fStr);
       const totalEvts = es.reduce((s,e)=>s+parsePrecio(e.cobro),0);
       dias.push({ fecha:fStr, dia:DIAS_NOM[d.getDay()], citas:cs, eventos:es, total:cs.reduce((s,c)=>s+parsePrecio(c.precio),0)+totalEvts });
     }
@@ -200,7 +252,7 @@ function renderIngresosDetalle() {
       const d = new Date(lunesAnt); d.setDate(lunesAnt.getDate()+i);
       const fAnt = _ingFmt(d);
       const cs = citas.filter(c => normDate(c.fecha)===fAnt);
-      const es = (allData.eventos||[]).filter(e => normDate(e.fecha)===fAnt);
+      const es = eventos.filter(e => normDate(e.fecha)===fAnt);
       totalAnt += cs.reduce((s,c)=>s+parsePrecio(c.precio),0) + es.reduce((s,e)=>s+parsePrecio(e.cobro),0);
       nCitasAnt += cs.length;
     }
@@ -247,9 +299,9 @@ function renderIngresosDetalle() {
           const esHoy = d.fecha===today();
           return `<div style="padding:8px 0">
             <div style="display:flex;justify-content:space-between;font-size:.82rem;margin-bottom:4px">
-              <span style="font-weight:${d.citas.length?'600':'400'};color:${esHoy?'var(--primary)':d.citas.length?'var(--text)':'var(--muted)'}">${d.dia}${esHoy?' (hoy)':''}</span>
+              <span style="font-weight:${d.citas.length||d.eventos.length?'600':'400'};color:${esHoy?'var(--primary)':d.citas.length||d.eventos.length?'var(--text)':'var(--muted)'}">${d.dia}${esHoy?' (hoy)':''}</span>
               <span style="font-family:var(--font-m);color:${d.total>0?'var(--primary)':'var(--muted)'}">
-                ${d.total>0?'$'+d.total.toLocaleString('es-CO'):'—'} <span style="color:var(--muted);font-size:.72rem">${d.citas.length?d.citas.length+' cita'+(d.citas.length!==1?'s':''):''}</span>
+                ${d.total>0?'$'+d.total.toLocaleString('es-CO'):'—'} <span style="color:var(--muted);font-size:.72rem">${d.citas.length?d.citas.length+' cita'+(d.citas.length!==1?'s':''):''}${d.eventos.length?(d.citas.length?' + ':'')+d.eventos.length+' evento'+(d.eventos.length!==1?'s':''):''}</span>
               </span>
             </div>
             <div class="metric-bar-bg"><div class="metric-bar-fill" style="width:${pct}%;background:${esHoy?'var(--primary)':'#6366f1'}"></div></div>
@@ -275,7 +327,7 @@ function renderIngresosDetalle() {
     for (let i=1;i<=diasMes;i++) {
       const fStr = yearN+'-'+String(mesN+1).padStart(2,'0')+'-'+String(i).padStart(2,'0');
       const cs = citas.filter(c => normDate(c.fecha)===fStr);
-      const es = (allData.eventos||[]).filter(e => normDate(e.fecha)===fStr);
+      const es = eventos.filter(e => normDate(e.fecha)===fStr);
       const totalEvts = es.reduce((s,e)=>s+parsePrecio(e.cobro),0);
       diasData.push({ fecha:fStr, num:i, dia:DIAS_NOM[new Date(fStr+'T12:00:00').getDay()], citas:cs, eventos:es, total:cs.reduce((s,c)=>s+parsePrecio(c.precio),0)+totalEvts, esFuturo: fStr > hoyStr });
     }
@@ -295,7 +347,7 @@ function renderIngresosDetalle() {
     for (let i=1;i<=diasMesAnt;i++) {
       const fStr = yearAntN+'-'+String(mesAntN+1).padStart(2,'0')+'-'+String(i).padStart(2,'0');
       const cs = citas.filter(c=>normDate(c.fecha)===fStr);
-      const es = (allData.eventos||[]).filter(e=>normDate(e.fecha)===fStr);
+      const es = eventos.filter(e=>normDate(e.fecha)===fStr);
       totalMesAnt += cs.reduce((s,c)=>s+parsePrecio(c.precio),0) + es.reduce((s,e)=>s+parsePrecio(e.cobro),0);
       nCitasMesAnt += cs.length;
     }
@@ -396,11 +448,11 @@ function renderIngresosDetalle() {
       <div>
         <div style="font-size:.78rem;color:var(--muted);font-family:var(--font-m);margin-bottom:10px;text-transform:uppercase;letter-spacing:.06em">Detalle día a día</div>
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:6px">
-          ${diasData.filter(d=>d.citas.length>0).map(d => `
+          ${diasData.filter(d=>d.citas.length>0 || d.eventos.length>0).map(d => `
             <div style="padding:8px 12px;background:var(--s2);border-radius:8px;display:flex;justify-content:space-between;align-items:center;${d.esFuturo?'opacity:.65':''}">
               <div>
                 <span style="font-size:.8rem;font-weight:600">${d.dia} ${d.num}</span>
-                <span style="font-size:.73rem;color:var(--muted);margin-left:6px">${d.citas.length} cita${d.citas.length!==1?'s':''}</span>
+                <span style="font-size:.73rem;color:var(--muted);margin-left:6px">${d.citas.length?d.citas.length+' cita'+(d.citas.length!==1?'s':''):''}${d.eventos.length?(d.citas.length?' + ':'')+d.eventos.length+' evento'+(d.eventos.length!==1?'s':''):''}</span>
                 ${d.esFuturo?'<span style="font-size:.68rem;color:var(--warn);margin-left:4px">· programada</span>':''}
               </div>
               <span style="font-family:var(--font-m);font-size:.85rem;color:var(--primary)">$${d.total.toLocaleString('es-CO')}</span>
