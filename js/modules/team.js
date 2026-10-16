@@ -361,15 +361,25 @@ function timeToMinutes(raw) {
   return hour * 60 + minute;
 }
 
+function timePeriod(raw) {
+  const text = String(raw || '').toLowerCase();
+  if (/p\.?\s*m\.?/.test(text)) return 'pm';
+  if (/a\.?\s*m\.?/.test(text)) return 'am';
+  return '';
+}
+
 function scheduledHoursForDay(value) {
   const text = String(value || '').replace(/[–—]/g, '-');
   const pattern = /(\d{1,2}(?::\d{2})?\s*(?:a\.?\s*m\.?|p\.?\s*m\.?|m\.?|mediod[ií]a)?)\s*(?:-|\ba\b|\bhasta\b)\s*(\d{1,2}(?::\d{2})?\s*(?:a\.?\s*m\.?|p\.?\s*m\.?|m\.?|mediod[ií]a)?)/gi;
   let match;
   let total = 0;
   while ((match = pattern.exec(text))) {
-    const start = timeToMinutes(match[1]);
+    let start = timeToMinutes(match[1]);
     let end = timeToMinutes(match[2]);
     if (start === null || end === null) continue;
+    // "3:30-8:00pm" significa 3:30 p. m.–8:00 p. m., no 3:30 a. m.
+    // Solo inferimos p. m. cuando dejar el inicio en a. m. daría una jornada irreal.
+    if (!timePeriod(match[1]) && timePeriod(match[2]) === 'pm' && end - start > 12 * 60) start += 12 * 60;
     if (end <= start) end += 12 * 60;
     const duration = end - start;
     if (duration > 0 && duration <= 16 * 60) total += duration / 60;
@@ -386,7 +396,8 @@ function updateProfessionalWorkHoursSummary() {
     if (result) result.textContent = dayHours ? `${formatWorkHours(dayHours)} programadas` : 'Sin horario';
   });
   const agreed = workHoursNumber(workHoursValue('workHoursAgreed'));
-  const worked = workHoursNumber(workHoursValue('workHoursWorked'));
+  const enteredWorked = workHoursValue('workHoursWorked');
+  const worked = enteredWorked ? workHoursNumber(enteredWorked) : scheduled;
   const scheduledResult = document.getElementById('workHoursScheduledTotal');
   const agreedResult = document.getElementById('workHoursAgreedTotal');
   const workedResult = document.getElementById('workHoursWorkedTotal');
@@ -417,7 +428,7 @@ async function loadProfessionalWorkHours() {
       <div class="field work-hours-day"><label>${label}</label><input id="workHours_${key}" maxlength="120" oninput="updateProfessionalWorkHoursSummary()" placeholder="Ej.: 8:00 a. m.–12:00 m. · 2:00–6:00 p. m." value="${esc(item[key] || '')}"><small id="workHours_${key}_total">Sin horario</small></div>`).join('') + `
       <section class="work-hours-summary" aria-label="Resumen semanal de horas">
         <div class="field"><label>Horas acordadas esta semana</label><input id="workHoursAgreed" type="number" min="0" max="168" step="0.25" oninput="updateProfessionalWorkHoursSummary()" placeholder="Ej.: 40" value="${esc(item.horasAcordadas ?? '')}"><small>Lo pactado con el colaborador.</small></div>
-        <div class="field"><label>Horas trabajadas</label><input id="workHoursWorked" type="number" min="0" max="168" step="0.25" oninput="updateProfessionalWorkHoursSummary()" placeholder="Ej.: 38" value="${esc(item.horasTrabajadas ?? '')}"><small>Registra el total real al cerrar la semana.</small></div>
+        <div class="field"><label>Horas trabajadas (opcional)</label><input id="workHoursWorked" type="number" min="0" max="168" step="0.25" oninput="updateProfessionalWorkHoursSummary()" placeholder="Se calcula desde los horarios" value="${esc(item.horasTrabajadas ?? '')}"><small>Si lo dejas vacío, se calculan desde los horarios de arriba.</small></div>
         <div class="field work-hours-notes"><label>Observación</label><input id="workHoursNotes" maxlength="220" placeholder="Ej.: salió antes el jueves" value="${esc(item.observacion || '')}"></div>
         <div class="work-hours-totals">
           <div><span>Horas acordadas</span><strong id="workHoursAgreedTotal">0 h</strong></div>
@@ -449,7 +460,9 @@ async function saveProfessionalWorkHours() {
   const values = {};
   WORK_WEEK_DAYS.forEach(([key]) => { values[key] = workHoursValue(`workHours_${key}`); });
   const horasAcordadas = workHoursNumber(workHoursValue('workHoursAgreed'));
-  const horasTrabajadas = workHoursNumber(workHoursValue('workHoursWorked'));
+  const enteredWorked = workHoursValue('workHoursWorked');
+  const calculatedWorked = WORK_WEEK_DAYS.reduce((sum, [key]) => sum + scheduledHoursForDay(values[key]), 0);
+  const horasTrabajadas = enteredWorked ? workHoursNumber(enteredWorked) : calculatedWorked;
   const observacion = workHoursValue('workHoursNotes');
   if (!Object.values(values).some(Boolean) && !horasAcordadas && !horasTrabajadas) return toast('Escribe un horario o registra las horas acordadas', 'err');
   try {
