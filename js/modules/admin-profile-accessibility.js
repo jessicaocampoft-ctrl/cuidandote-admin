@@ -165,7 +165,7 @@ function _initSidebarManagementModule() {
   const existing = document.querySelector('script[data-panel-sidebar-management]');
   if (existing) { existing.addEventListener('load', start, { once:true }); return; }
   const script = document.createElement('script');
-  script.src = 'js/modules/sidebar-management.js?v=20260930-primary-profile-menu';
+  script.src = 'js/modules/sidebar-management.js?v=20261017-tablet-agenda-link';
   script.dataset.panelSidebarManagement = '1';
   script.addEventListener('load', start, { once:true });
   script.addEventListener('error', () => console.warn('No se pudo cargar la navegación organizada'), { once:true });
@@ -177,7 +177,7 @@ function initAdminUX2026() {
   if (!sidebar || sidebar.dataset.uxReady) return;
   sidebar.dataset.uxReady = '1';
 
-  const principales = new Set(['sb-dashboard','sb-agenda','sb-pacientes','sb-pagos','sb-seguimiento','sb-pasaporte']);
+  const principales = new Set(['sb-dashboard','sb-calendario','sb-mensajes','sb-equipo','sb-agenda-tablet','sb-agenda','sb-pacientes','sb-pagos','sb-seguimiento','sb-pasaporte']);
   sidebar.querySelectorAll(':scope > .sb-link').forEach(link => {
     if (!principales.has(link.id) && link.id !== 'darkModeBtn' && !link.classList.contains('sb-signout')) {
       link.classList.add('sb-secondary');
