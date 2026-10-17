@@ -4,7 +4,7 @@
 
   // Este primer nivel queda reservado para las cuatro entradas que Jessica
   // usa durante la jornada. El resto se organiza debajo de Gestión avanzada.
-  const PRIMARY_IDS = ['sb-dashboard','sb-calendario','sb-mensajes','sb-equipo'];
+  const PRIMARY_IDS = ['sb-dashboard','sb-calendario','sb-mensajes','sb-equipo','sb-agenda-tablet'];
   const LEGACY_HIDDEN_IDS = [
     // Recordatorios ya vive dentro de Seguimiento. Centro de acciones es una
     // versión anterior del control diario y se conserva oculto para evitar
