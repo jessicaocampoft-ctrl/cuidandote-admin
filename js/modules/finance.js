@@ -2,23 +2,59 @@
 (function (global) {
   'use strict';
 
-const CONCEPTOS_EGRESO = {
-  'Costos Fijos': ['Honorarios Fisio','Seguridad Social','Asistente Fisio','Auxiliar Administrativa'],
-  'Costos Operativos': ['Arriendo','Servicios públicos','Suscripción IA','Suscripción CapCut','Asesorías AP x4/Mes'],
-  'Costos Variables': ['Redes Sociales Contenido','Activación marca-Eventos','Pautas Redes','Mantenimiento y compras','Insumos'],
+const ESTRUCTURA_COSTOS_REFERENCIA = Object.freeze([
+  {
+    categoria: 'Costos Fijos', titulo: 'Costos fijos', color: '#ef4444',
+    items: [
+      ['Honorarios Jessica', 4000000],
+      ['Seguridad Social', 500000],
+      ['Fisioterapeuta de apoyo', 1500000],
+      ['Auxiliar Administrativa', 500000]
+    ]
+  },
+  {
+    categoria: 'Costos Operativos', titulo: 'Costos operativos', color: '#f59e0b',
+    items: [
+      ['Arriendo', 600000],
+      ['Servicios públicos', 70000],
+      ['Suscripción de IA', 70000],
+      ['CapCut', 12000],
+      ['Asesorías AP', 450000]
+    ]
+  },
+  {
+    categoria: 'Costos Variables', titulo: 'Contenido e insumos', color: '#6366f1',
+    items: [
+      ['Contenido para redes sociales', 300000],
+      ['Mantenimiento y compras', 200000],
+      ['Insumos', 100000]
+    ]
+  }
+]);
+
+const CONCEPTOS_EGRESO = Object.freeze({
+  ...Object.fromEntries(ESTRUCTURA_COSTOS_REFERENCIA.map(({categoria, items}) => [categoria, items.map(([concepto]) => concepto)])),
   'Otro': ['Otro']
-};
+});
 
-const COSTOS_REFERENCIA = {
-  'Honorarios Fisio': 4000000, 'Seguridad Social': 500000,
-  'Asistente Fisio': 1200000, 'Auxiliar Administrativa': 500000,
-  'Arriendo': 450000, 'Servicios públicos': 50000,
-  'Suscripción IA': 80000, 'Suscripción CapCut': 12000, 'Asesorías AP x4/Mes': 480000,
-  'Redes Sociales Contenido': 240000, 'Activación marca-Eventos': 300000,
-  'Pautas Redes': 100000, 'Mantenimiento y compras': 200000, 'Insumos': 100000
-};
+const COSTOS_REFERENCIA = Object.freeze(Object.fromEntries(
+  ESTRUCTURA_COSTOS_REFERENCIA.flatMap(({items}) => items)
+));
 
-const COSTO_BASE = 8212000, COSTO_PE = 8622600, COSTO_META = 10265000;
+const COSTO_BASE = Object.values(COSTOS_REFERENCIA).reduce((total, valor) => total + valor, 0);
+const COSTO_PE = Math.round(COSTO_BASE * 1.05);
+const COSTO_META = Math.round(COSTO_BASE * 1.25);
+const CAPACIDAD_OPERATIVA_HORAS = 208;
+const COSTO_HORA_OPERATIVA = Math.round(COSTO_META / CAPACIDAD_OPERATIVA_HORAS);
+const TICKET_PROMEDIO_REFERENCIA = 83000;
+const SESIONES_META_REFERENCIA = Math.ceil(COSTO_META / TICKET_PROMEDIO_REFERENCIA);
+const SESIONES_SEMANA_REFERENCIA = Math.ceil(SESIONES_META_REFERENCIA / 4.3);
+const SERVICIOS_RENTABILIDAD = Object.freeze([
+  { nombre: 'Corporativo', minutos: 60, precio: 120000, color: 'var(--ok)' },
+  { nombre: 'Descarga Express', minutos: 50, precio: 75000, color: '#10b981' },
+  { nombre: 'Readaptación', minutos: 50, precio: 70000, color: '#6366f1' },
+  { nombre: 'Descarga Full ⚠️', minutos: 90, precio: 110000, color: '#f59e0b' }
+]);
 
 function renderFinanzas() {
   const now = new Date();
@@ -381,7 +417,7 @@ function renderEstructuraFinanciera() {
     <!-- Costo por hora -->
     <div class="card">
       <div class="card-title" style="margin-bottom:16px">⏱️ Análisis de rentabilidad por servicio</div>
-      <div style="font-size:.78rem;color:var(--muted);margin-bottom:12px">Capacidad: 208h/mes (Jessica 40h/sem + Asistente 20h/sem)</div>
+      <div style="font-size:.78rem;color:var(--muted);margin-bottom:12px">Capacidad de referencia: ${CAPACIDAD_OPERATIVA_HORAS} h/mes</div>
       <div class="tbl-wrap"><table style="width:100%;border-collapse:collapse;font-size:.82rem">
         <thead><tr style="background:var(--s2)">
           <th style="padding:7px 10px;text-align:left;font-family:var(--font-m)">Servicio</th>
@@ -390,66 +426,41 @@ function renderEstructuraFinanciera() {
           <th style="padding:7px 10px;text-align:right;font-family:var(--font-m)">Ingreso/h</th>
           <th style="padding:7px 10px;text-align:right;font-family:var(--font-m)">Margen/h</th>
         </tr></thead>
-        <tbody>
-          <tr style="border-bottom:1px solid var(--border)">
-            <td style="padding:7px 10px;font-weight:600">Corporativo</td>
-            <td style="padding:7px 10px;text-align:center;color:var(--muted)">60 min</td>
-            <td style="padding:7px 10px;text-align:right">${fmtPeso(120000)}</td>
-            <td style="padding:7px 10px;text-align:right;font-weight:700;color:var(--ok)">${fmtPeso(120000)}</td>
-            <td style="padding:7px 10px;text-align:right;color:var(--ok)">+${fmtPeso(70649)}</td>
-          </tr>
-          <tr style="border-bottom:1px solid var(--border)">
-            <td style="padding:7px 10px;font-weight:600">Descarga Express</td>
-            <td style="padding:7px 10px;text-align:center;color:var(--muted)">50 min</td>
-            <td style="padding:7px 10px;text-align:right">${fmtPeso(75000)}</td>
-            <td style="padding:7px 10px;text-align:right;font-weight:700;color:#10b981">${fmtPeso(90000)}</td>
-            <td style="padding:7px 10px;text-align:right;color:#10b981">+${fmtPeso(40649)}</td>
-          </tr>
-          <tr style="border-bottom:1px solid var(--border)">
-            <td style="padding:7px 10px;font-weight:600">Readaptación</td>
-            <td style="padding:7px 10px;text-align:center;color:var(--muted)">50 min</td>
-            <td style="padding:7px 10px;text-align:right">${fmtPeso(70000)}</td>
-            <td style="padding:7px 10px;text-align:right;font-weight:700;color:#6366f1">${fmtPeso(84000)}</td>
-            <td style="padding:7px 10px;text-align:right;color:#6366f1">+${fmtPeso(34649)}</td>
-          </tr>
-          <tr>
-            <td style="padding:7px 10px;font-weight:600">Descarga Full ⚠️</td>
-            <td style="padding:7px 10px;text-align:center;color:var(--muted)">90 min</td>
-            <td style="padding:7px 10px;text-align:right">${fmtPeso(110000)}</td>
-            <td style="padding:7px 10px;text-align:right;font-weight:700;color:#f59e0b">${fmtPeso(73333)}</td>
-            <td style="padding:7px 10px;text-align:right;color:#f59e0b">+${fmtPeso(23982)}</td>
-          </tr>
-        </tbody>
+        <tbody>${SERVICIOS_RENTABILIDAD.map((servicio, indice) => {
+          const ingresoHora = Math.round(servicio.precio * 60 / servicio.minutos);
+          const margenHora = ingresoHora - COSTO_HORA_OPERATIVA;
+          return `<tr style="${indice < SERVICIOS_RENTABILIDAD.length - 1 ? 'border-bottom:1px solid var(--border)' : ''}">
+            <td style="padding:7px 10px;font-weight:600">${servicio.nombre}</td>
+            <td style="padding:7px 10px;text-align:center;color:var(--muted)">${servicio.minutos} min</td>
+            <td style="padding:7px 10px;text-align:right">${fmtPeso(servicio.precio)}</td>
+            <td style="padding:7px 10px;text-align:right;font-weight:700;color:${servicio.color}">${fmtPeso(ingresoHora)}</td>
+            <td style="padding:7px 10px;text-align:right;color:${servicio.color}">${margenHora >= 0 ? '+' : ''}${fmtPeso(margenHora)}</td>
+          </tr>`;
+        }).join('')}</tbody>
       </table></div>
       <div style="margin-top:10px;padding:9px 12px;background:rgba(245,158,11,.08);border-radius:8px;font-size:.78rem;color:#f59e0b">
-        ⚠️ Costo/hora operativa: <strong>${fmtPeso(49351)}/h</strong> (meta utilidad). 2 Express = ${fmtPeso(150000)} en 100 min vs 1 Full = ${fmtPeso(110000)} en 90 min.
+        ⚠️ Costo/hora operativo: <strong>${fmtPeso(COSTO_HORA_OPERATIVA)}/h</strong> (incluye la meta de utilidad). 2 Express = ${fmtPeso(150000)} en 100 min vs 1 Full = ${fmtPeso(110000)} en 90 min.
       </div>
     </div>
   </div>
 
   <!-- Estructura de costos -->
   <div class="card">
-    <div class="card-title" style="margin-bottom:16px">📋 Estructura de costos de referencia</div>
+    <div class="card-title" style="margin-bottom:4px">📋 Estructura mensual de costos</div>
+    <div style="font-size:.78rem;color:var(--muted);margin-bottom:16px">Valores de referencia actuales · no incluye gastos ocasionales</div>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px">
-      <div>
-        <div style="font-size:.78rem;font-weight:700;color:#ef4444;font-family:var(--font-m);margin-bottom:8px;text-transform:uppercase">Costos Fijos</div>
-        ${[['Honorarios Fisio','$4.000.000'],['Seguridad Social','$500.000'],['Asistente Fisio','$1.200.000'],['Auxiliar Administrativa','$500.000']].map(([c,v]) => `<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:.82rem"><span style="color:var(--muted)">${c}</span><span style="font-weight:600">${v}</span></div>`).join('')}
-        <div style="display:flex;justify-content:space-between;padding:7px 0;font-size:.82rem;font-weight:700"><span>Subtotal</span><span>$6.200.000</span></div>
-      </div>
-      <div>
-        <div style="font-size:.78rem;font-weight:700;color:#f59e0b;font-family:var(--font-m);margin-bottom:8px;text-transform:uppercase">Costos Operativos</div>
-        ${[['Arriendo','$450.000'],['Servicios públicos','$50.000'],['Suscripción IA','$80.000'],['Suscripción CapCut','$12.000'],['Asesorías AP x4','$480.000']].map(([c,v]) => `<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:.82rem"><span style="color:var(--muted)">${c}</span><span style="font-weight:600">${v}</span></div>`).join('')}
-        <div style="display:flex;justify-content:space-between;padding:7px 0;font-size:.82rem;font-weight:700"><span>Subtotal</span><span>$1.072.000</span></div>
-      </div>
-      <div>
-        <div style="font-size:.78rem;font-weight:700;color:#6366f1;font-family:var(--font-m);margin-bottom:8px;text-transform:uppercase">Costos Variables</div>
-        ${[['Redes Sociales','$240.000'],['Activación marca','$300.000'],['Pautas Redes','$100.000'],['Mantenimiento','$200.000'],['Insumos','$100.000']].map(([c,v]) => `<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:.82rem"><span style="color:var(--muted)">${c}</span><span style="font-weight:600">${v}</span></div>`).join('')}
-        <div style="display:flex;justify-content:space-between;padding:7px 0;font-size:.82rem;font-weight:700"><span>Subtotal</span><span>$940.000</span></div>
-      </div>
+      ${ESTRUCTURA_COSTOS_REFERENCIA.map(({titulo, color, items}) => {
+        const subtotal = items.reduce((total, [, valor]) => total + valor, 0);
+        return `<div>
+          <div style="font-size:.78rem;font-weight:700;color:${color};font-family:var(--font-m);margin-bottom:8px;text-transform:uppercase">${titulo}</div>
+          ${items.map(([concepto, valor]) => `<div style="display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:.82rem"><span style="color:var(--muted)">${concepto}</span><span style="font-weight:600;white-space:nowrap">${fmtPeso(valor)}</span></div>`).join('')}
+          <div style="display:flex;justify-content:space-between;padding:7px 0;font-size:.82rem;font-weight:700"><span>Subtotal</span><span>${fmtPeso(subtotal)}</span></div>
+        </div>`;
+      }).join('')}
     </div>
     <div style="margin-top:14px;display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px">
       <div style="padding:12px;background:var(--s2);border-radius:10px;border-left:3px solid #ef4444">
-        <div style="font-size:.72rem;color:var(--muted);font-family:var(--font-m)">Costos base totales</div>
+        <div style="font-size:.72rem;color:var(--muted);font-family:var(--font-m)">Total mensual sin gastos ocasionales</div>
         <div style="font-size:1.1rem;font-weight:700;font-family:var(--font-h);color:#ef4444">${fmtPeso(COSTO_BASE)}</div>
       </div>
       <div style="padding:12px;background:var(--s2);border-radius:10px;border-left:3px solid #f59e0b">
@@ -461,9 +472,9 @@ function renderEstructuraFinanciera() {
         <div style="font-size:1.1rem;font-weight:700;font-family:var(--font-h);color:var(--ok)">${fmtPeso(COSTO_META)}</div>
       </div>
       <div style="padding:12px;background:var(--s2);border-radius:10px">
-        <div style="font-size:.72rem;color:var(--muted);font-family:var(--font-m)">Punto equilibrio en sesiones</div>
-        <div style="font-size:1.1rem;font-weight:700;font-family:var(--font-h)">129 sesiones/mes</div>
-        <div style="font-size:.72rem;color:var(--muted)">~30/sem · Ticket prom. $83.000</div>
+        <div style="font-size:.72rem;color:var(--muted);font-family:var(--font-m)">Sesiones estimadas para la meta</div>
+        <div style="font-size:1.1rem;font-weight:700;font-family:var(--font-h)">${SESIONES_META_REFERENCIA} sesiones/mes</div>
+        <div style="font-size:.72rem;color:var(--muted)">~${SESIONES_SEMANA_REFERENCIA}/sem · Ticket prom. ${fmtPeso(TICKET_PROMEDIO_REFERENCIA)}</div>
       </div>
     </div>
   </div>`;

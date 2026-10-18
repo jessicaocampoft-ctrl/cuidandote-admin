@@ -2,22 +2,25 @@
 (function (global) {
   'use strict';
 
+const COSTOS_MODELO_VERSION = 2;
+
 const COSTOS_DEFAULTS = {
+  modelo_version:       COSTOS_MODELO_VERSION,
   // Costos Fijos
   honorarios_fisio:   4000000,
   seguridad_social:    500000,
-  asistente_fisio:    1200000,
+  asistente_fisio:    1500000,
   auxiliar_admin:      500000,
   // Costos Operativos
-  arriendo:            450000,
-  servicios_publicos:   50000,
-  suscripcion_ia:       80000,
+  arriendo:            600000,
+  servicios_publicos:   70000,
+  suscripcion_ia:       70000,
   suscripcion_capcut:   12000,
-  asesorias_ap:        480000,
+  asesorias_ap:        450000,
   // Costos Variables
-  redes_contenido:     240000,
-  activacion_eventos:  300000,
-  pautas_redes:        100000,
+  redes_contenido:     300000,
+  activacion_eventos:       0,
+  pautas_redes:             0,
   mantenimiento:       200000,
   insumos:             100000,
   // Porcentajes adicionales
@@ -30,14 +33,13 @@ function getCostosEstructura() {
     const s = kvGet('costosEstructura');
     if (!s) return {...COSTOS_DEFAULTS};
     const stored = JSON.parse(s);
-    // Migración: corregir valores desactualizados
-    if (stored.asesorias_ap    === 790000) stored.asesorias_ap    = 480000;
-    if (stored.redes_contenido === 150000) stored.redes_contenido = 240000;
-    // Agregar campos nuevos si faltan
-    if (!stored.asistente_fisio)    stored.asistente_fisio    = 1200000;
-    if (!stored.arriendo)           stored.arriendo            = 450000;
-    if (!stored.servicios_publicos) stored.servicios_publicos  = 50000;
-    if (!stored.activacion_eventos) stored.activacion_eventos  = 300000;
+    // Esta versión reemplaza la estructura anterior completa con la aprobada.
+    // Así no quedan montos viejos sincronizados desde AdminKV.
+    if (stored.modelo_version !== COSTOS_MODELO_VERSION) {
+      const actualizados = {...COSTOS_DEFAULTS};
+      saveCostosEstructura(actualizados);
+      return actualizados;
+    }
     return {...COSTOS_DEFAULTS, ...stored};
   } catch(e) { return {...COSTOS_DEFAULTS}; }
 }
@@ -103,9 +105,9 @@ function renderPresupuestoMetas() {
         <div class="card">
           <div class="card-title" style="margin-bottom:14px">💼 Costos Fijos</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-            ${inp('honorarios_fisio',  'Honorarios Fisio',       costos.honorarios_fisio)}
+            ${inp('honorarios_fisio',  'Honorarios Jessica',     costos.honorarios_fisio)}
             ${inp('seguridad_social',  'Seguridad Social',       costos.seguridad_social)}
-            ${inp('asistente_fisio',   'Asistente Fisio',        costos.asistente_fisio)}
+            ${inp('asistente_fisio',   'Fisioterapeuta de apoyo',costos.asistente_fisio)}
             ${inp('auxiliar_admin',    'Auxiliar Administrativa', costos.auxiliar_admin)}
           </div>
         </div>
@@ -116,17 +118,15 @@ function renderPresupuestoMetas() {
             ${inp('arriendo',           'Arriendo',            costos.arriendo)}
             ${inp('servicios_publicos', 'Servicios públicos',  costos.servicios_publicos)}
             ${inp('suscripcion_ia',     'Suscripción IA',      costos.suscripcion_ia)}
-            ${inp('suscripcion_capcut', 'Suscripción CapCut',  costos.suscripcion_capcut)}
-            ${inp('asesorias_ap',       'Asesorías AP x4/Mes', costos.asesorias_ap)}
+            ${inp('suscripcion_capcut', 'CapCut',              costos.suscripcion_capcut)}
+            ${inp('asesorias_ap',       'Asesorías AP',        costos.asesorias_ap)}
           </div>
         </div>
 
         <div class="card">
-          <div class="card-title" style="margin-bottom:14px">📣 Costos Variables</div>
+          <div class="card-title" style="margin-bottom:14px">📣 Contenido e insumos</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-            ${inp('redes_contenido',    'Redes Sociales Contenido',  costos.redes_contenido)}
-            ${inp('activacion_eventos', 'Activación marca-Eventos',  costos.activacion_eventos)}
-            ${inp('pautas_redes',       'Pautas Redes',              costos.pautas_redes)}
+            ${inp('redes_contenido',    'Contenido para redes sociales', costos.redes_contenido)}
             ${inp('mantenimiento',      'Mantenimiento y compras',   costos.mantenimiento)}
             ${inp('insumos',            'Insumos',                   costos.insumos)}
           </div>
@@ -145,7 +145,7 @@ function renderPresupuestoMetas() {
           <div class="card-title" style="margin-bottom:12px">🧮 Resultado calculado</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
             <div style="padding:10px 14px;background:var(--s2);border-radius:8px">
-              <div style="font-size:.7rem;color:var(--muted);font-family:var(--font-m);margin-bottom:3px">SUBTOTAL COSTOS</div>
+              <div style="font-size:.7rem;color:var(--muted);font-family:var(--font-m);margin-bottom:3px">TOTAL MENSUAL BASE</div>
               <div id="pm_res_subtotal" style="font-family:var(--font-h);font-size:1.1rem;font-weight:700">$${fmtN(calc.subtotal)}</div>
             </div>
             <div style="padding:10px 14px;background:var(--s2);border-radius:8px">
@@ -282,6 +282,7 @@ function pmRecalc() {
 function pmGuardarCostos() {
   const g = id => parseFloat(document.getElementById('pm_' + id)?.value) || 0;
   const costos = {
+    modelo_version: COSTOS_MODELO_VERSION,
     honorarios_fisio: g('honorarios_fisio'), seguridad_social: g('seguridad_social'),
     asistente_fisio: g('asistente_fisio'),   auxiliar_admin: g('auxiliar_admin'),
     arriendo: g('arriendo'),                 servicios_publicos: g('servicios_publicos'),
@@ -293,16 +294,12 @@ function pmGuardarCostos() {
   };
   const calc = calcTotalCostos(costos);
   saveCostosEstructura(costos);
-  // Solo actualiza meta de ventas si el campo kpi_ventas_mes fue editado manualmente en este guardado
   const cfg = getKPIConfig();
-  const inputMeta = parseInt(document.getElementById('pm_kpi_ventas_mes')?.value) || 0;
-  if (inputMeta && inputMeta !== cfg.meta_ventas_mes) {
-    cfg.meta_ventas_mes = inputMeta;
-    kvSet('kpiConfig', JSON.stringify(cfg));
-    META_VENTAS_MES    = inputMeta;
-    META_VENTAS_SEMANA = Math.round(inputMeta / 4);
-    kvSet('metaMensual', inputMeta);
-  }
+  cfg.meta_ventas_mes = calc.total;
+  kvSet('kpiConfig', JSON.stringify(cfg));
+  META_VENTAS_MES    = calc.total;
+  META_VENTAS_SEMANA = Math.round(calc.total / 4);
+  kvSet('metaMensual', calc.total);
   reloadMetas();
   applyKPIRefSpans();
   toast('✅ Presupuesto guardado — meta actualizada a $' + Number(calc.total).toLocaleString('es-CO'), 'ok');
@@ -373,8 +370,8 @@ function pmGuardarKPIs() {
 function getMeta() {
   // Limpiar metaMensual si tiene valor viejo
   const stored = parseInt(kvGet('metaMensual')||'0', 10);
-  if (stored === 8000000 || stored === 8040000) { kvSet('metaMensual', 10265000); }
-  return getKPIConfig().meta_ventas_mes || 10265000;
+  if (stored === 8000000 || stored === 8040000 || stored === 10265000) { kvSet('metaMensual', 10377500); }
+  return getKPIConfig().meta_ventas_mes || 10377500;
 }
 
 function actualizarMetaBarra(cobrado) {

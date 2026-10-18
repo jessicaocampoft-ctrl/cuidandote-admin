@@ -388,22 +388,20 @@ function _buildReporteMes() {
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
         <div>
           <div style="font-size:.7rem;font-family:var(--font-m);color:var(--primary);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;font-weight:700">Costos Fijos</div>
-          ${filaC('Honorarios Fisio','honorarios_fisio',costos.honorarios_fisio)}
+          ${filaC('Honorarios Jessica','honorarios_fisio',costos.honorarios_fisio)}
           ${filaC('Seguridad Social','seguridad_social',costos.seguridad_social)}
-          ${filaC('Asistente Fisio','asistente_fisio',costos.asistente_fisio)}
+          ${filaC('Fisioterapeuta de apoyo','asistente_fisio',costos.asistente_fisio)}
           ${filaC('Auxiliar Administrativa','auxiliar_admin',costos.auxiliar_admin)}
           <div style="font-size:.7rem;font-family:var(--font-m);color:var(--primary);text-transform:uppercase;letter-spacing:.05em;margin:12px 0 8px;font-weight:700">Costos Operativos</div>
           ${filaC('Arriendo','arriendo',costos.arriendo)}
           ${filaC('Servicios públicos','servicios_publicos',costos.servicios_publicos)}
           ${filaC('Suscripción IA','suscripcion_ia',costos.suscripcion_ia)}
-          ${filaC('Suscripción CapCut','suscripcion_capcut',costos.suscripcion_capcut)}
-          ${filaC('Asesorías AP x4/Mes','asesorias_ap',costos.asesorias_ap)}
+          ${filaC('CapCut','suscripcion_capcut',costos.suscripcion_capcut)}
+          ${filaC('Asesorías AP','asesorias_ap',costos.asesorias_ap)}
         </div>
         <div>
-          <div style="font-size:.7rem;font-family:var(--font-m);color:var(--primary);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;font-weight:700">Costos Variables</div>
-          ${filaC('Redes Sociales Contenido','redes_contenido',costos.redes_contenido)}
-          ${filaC('Activación marca-Eventos','activacion_eventos',costos.activacion_eventos)}
-          ${filaC('Pautas Redes','pautas_redes',costos.pautas_redes)}
+          <div style="font-size:.7rem;font-family:var(--font-m);color:var(--primary);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;font-weight:700">Contenido e insumos</div>
+          ${filaC('Contenido para redes sociales','redes_contenido',costos.redes_contenido)}
           ${filaC('Mantenimiento y compras','mantenimiento',costos.mantenimiento)}
           ${filaC('Insumos','insumos',costos.insumos)}
           <div style="font-size:.7rem;font-family:var(--font-m);color:var(--primary);text-transform:uppercase;letter-spacing:.05em;margin:12px 0 8px;font-weight:700">Porcentajes</div>

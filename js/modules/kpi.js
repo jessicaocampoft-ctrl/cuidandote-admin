@@ -23,7 +23,7 @@ let _activeKPIExplorer = null;
 
 const KPI_CONFIG_DEFAULTS = {
   meta_sesiones_semana: 30,
-  meta_ventas_mes:      10265000,
+  meta_ventas_mes:      10377500,
   meta_leads_min:       40,
   meta_leads_max:       50,
   meta_conv_min:        25,
@@ -220,7 +220,7 @@ function getKPIConfig() {
     const parsed = JSON.parse(stored);
     // Migración: si el usuario tiene los valores viejos, actualizarlos y guardar en KV
     let migrated = false;
-    if (parsed.meta_ventas_mes === 8040000 || parsed.meta_ventas_mes === 8000000) { parsed.meta_ventas_mes = 10265000; migrated = true; }
+    if (parsed.meta_ventas_mes === 8040000 || parsed.meta_ventas_mes === 8000000 || parsed.meta_ventas_mes === 10265000) { parsed.meta_ventas_mes = 10377500; migrated = true; }
     if (parsed.meta_sesiones_semana === 24) { parsed.meta_sesiones_semana = 30; migrated = true; }
     if (migrated) { try { kvSet('kpiConfig', JSON.stringify(parsed)); } catch(e) {} }
     return {...KPI_CONFIG_DEFAULTS, ...parsed};
