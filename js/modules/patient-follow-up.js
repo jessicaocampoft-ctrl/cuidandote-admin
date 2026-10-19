@@ -426,12 +426,14 @@ function _segCard(p) {
   const sujeto3 = paraQuien ? `la última sesión de descarga muscular ${zonaDesc} de ${paraQuien}` : `tu última sesión de descarga muscular ${zonaDesc}`;
   const sujeto4 = paraQuien ? `la última descarga muscular ${zonaDesc} de ${paraQuien}` : `tu última descarga muscular ${zonaDesc}`;
   const sujeto5 = paraQuien ? `la última sesión de descarga muscular ${zonaDesc} de ${paraQuien}` : `tu última sesión de descarga muscular ${zonaDesc}`;
+  const semanas = Math.floor(Number(p.dias || 0) / 7);
+  const semanasTexto = `${semanas} semana${semanas === 1 ? '' : 's'}`;
   const cierre3 = paraQuien ? '¿Reagendamos?' : '¿Te agendo?';
   const cierre4 = paraQuien ? '¿Reagendamos esta semana?' : '¿Te agendo esta semana?';
   const cierre5 = paraQuien ? '¿Cuando les viene bien retomar? Cuentame y coordinamos. \uD83D\uDCAA' : '¿Cuando te viene bien retomar? Cuentame y coordinamos. \uD83D\uDCAA';
-  const msg3 = `Hola ${primero}! \uD83D\uDC4B Te escribimos de Cuidándote Fisioterapia. Ya van 5 semanas desde ${sujeto3}. Si has vuelto a sentir tensión, la próxima semana puede ser un buen momento para reagendar. ${cierre3}`;
-  const msg4 = `Hola ${primero}! \uD83D\uDC4B Te escribimos de Cuidándote Fisioterapia. Ya se cumplieron 6 semanas desde ${sujeto4}. Si sientes que la tensión ha vuelto, podemos buscarte un espacio esta semana. ${cierre4}`;
-  const msg5 = `Hola ${primero}! \uD83D\uDC4B Te escribimos de Cuidándote Fisioterapia. Hace mas de un mes desde ${sujeto5}. El cuerpo ya empieza a acumular tension de nuevo. ${cierre5}`;
+  const msg3 = `Hola ${primero}! \uD83D\uDC4B Te escribimos de Cuidándote Fisioterapia. Ya van ${semanasTexto} desde ${sujeto3}. Si has vuelto a sentir tensión, la próxima semana puede ser un buen momento para reagendar. ${cierre3}`;
+  const msg4 = `Hola ${primero}! \uD83D\uDC4B Te escribimos de Cuidándote Fisioterapia. Ya se cumplieron ${semanasTexto} desde ${sujeto4}. Si sientes que la tensión ha vuelto, podemos buscarte un espacio esta semana. ${cierre4}`;
+  const msg5 = `Hola ${primero}! \uD83D\uDC4B Te escribimos de Cuidándote Fisioterapia. Ya van ${semanasTexto} desde ${sujeto5}. El cuerpo puede volver a acumular tensión; podemos ayudarte a retomar tu bienestar. ${cierre5}`;
 
   const wa3 = hasWA ? `https://wa.me/${phone}?text=${encodeURIComponent(msg3)}` : null;
   const wa4 = hasWA ? `https://wa.me/${phone}?text=${encodeURIComponent(msg4)}` : null;
@@ -456,9 +458,9 @@ function _segCard(p) {
       ${reagendado ? `
         <button class="btn btn-ghost btn-sm" onclick="segToggleR('${p.nombre.replace(/'/g,"\\'")}')">↩ Desmarcar</button>
       ` : `
-        ${p.semana==='sem3' && wa3 ? `<a href="${wa3}" target="_blank" class="btn btn-sm btn-purple" onclick="segMarkWa('${p.nombre.replace(/'/g,"\\'")}','sem3',${p.dias})" style="${waSent3?'opacity:.55':''}">💬 WA ${waSent3?'(enviado)':'Sem 3'}</a>` : ''}
-        ${(p.semana==='sem4'||p.semana==='sem3') && wa4 ? `<a href="${wa4}" target="_blank" class="btn btn-wa btn-sm" onclick="segMarkWa('${p.nombre.replace(/'/g,"\\'")}','sem4',${p.dias})" style="${waSent4?'opacity:.55':''}">💬 WA ${waSent4?'(enviado)':'Sem 4'}</a>` : ''}
-        ${p.semana==='sem5' && wa5 ? `<a href="${wa5}" target="_blank" class="btn btn-err btn-sm" onclick="segMarkWa('${p.nombre.replace(/'/g,"\\'")}','sem5',${p.dias})" style="${waSent5?'opacity:.55':''}">💬 WA ${waSent5?'(enviado)':'Sem 5+'}</a>` : ''}
+        ${p.semana==='sem3' && wa3 ? `<a href="${wa3}" target="_blank" class="btn btn-sm btn-purple" onclick="segMarkWa('${p.nombre.replace(/'/g,"\\'")}','sem3',${p.dias})" style="${waSent3?'opacity:.55':''}">💬 WA ${waSent3?'(enviado)':'Semana 5'}</a>` : ''}
+        ${p.semana==='sem4' && wa4 ? `<a href="${wa4}" target="_blank" class="btn btn-wa btn-sm" onclick="segMarkWa('${p.nombre.replace(/'/g,"\\'")}','sem4',${p.dias})" style="${waSent4?'opacity:.55':''}">💬 WA ${waSent4?'(enviado)':'Semana 6'}</a>` : ''}
+        ${p.semana==='sem5' && wa5 ? `<a href="${wa5}" target="_blank" class="btn btn-err btn-sm" onclick="segMarkWa('${p.nombre.replace(/'/g,"\\'")}','sem5',${p.dias})" style="${waSent5?'opacity:.55':''}">💬 WA ${waSent5?'(enviado)':'Semana 7+'}</a>` : ''}
         ${p.email && p.email.includes('@') ? `<a href="mailto:${p.email}" class="btn btn-ghost btn-sm">📧</a>` : ''}
         <button class="btn btn-ghost btn-sm" onclick="agendarDesdeSeg('${encodeURIComponent(p.nombre)}','${encodeURIComponent(p.telefono)}','${encodeURIComponent(p.email)}')">+ Agendar</button>
         <button class="btn btn-ghost btn-sm" style="color:var(--err);border-color:rgba(220,38,38,.35)" onclick="segToggleNoContact(decodeURIComponent('${encodeURIComponent(p.nombre)}'))">No contactar</button>
