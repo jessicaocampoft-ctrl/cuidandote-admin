@@ -35,19 +35,24 @@ function updateProfileCard() {
     return +cm === pm && +cy === py && +cd <= todayDay;
   }).length;
 
-  function setDelta(el, curr, prev) {
+  function setDelta(el, curr, prev, periodo) {
     if (!el) return;
     const diff = curr - prev;
     el.className = 'sb-stat-delta ' + (diff > 0 ? 'up' : diff < 0 ? 'down' : 'eq');
-    el.textContent = diff > 0 ? `↑${diff} vs ant.` : diff < 0 ? `↓${Math.abs(diff)} vs ant.` : '= vs ant.';
+    if (periodo === 'mes') {
+      const citas = `${Math.abs(diff)} cita${Math.abs(diff) === 1 ? '' : 's'}`;
+      el.textContent = diff > 0 ? `↑ ${citas} más vs mes ant.` : diff < 0 ? `↓ ${citas} menos vs mes ant.` : '= mismas citas vs mes ant.';
+      return;
+    }
+    el.textContent = diff > 0 ? `↑${diff} vs sem. ant.` : diff < 0 ? `↓${Math.abs(diff)} vs sem. ant.` : '= vs sem. ant.';
   }
 
   const sbW = document.getElementById('sbStSemana');
   const sbM = document.getElementById('sbStMes');
   if (sbW) sbW.textContent = semana;
   if (sbM) sbM.textContent = mes;
-  setDelta(document.getElementById('sbDeltaSemana'), semana, semanaPrev);
-  setDelta(document.getElementById('sbDeltaMes'), mes, mesPrev);
+  setDelta(document.getElementById('sbDeltaSemana'), semana, semanaPrev, 'semana');
+  setDelta(document.getElementById('sbDeltaMes'), mes, mesPrev, 'mes');
 
   if (_loginTime) {
     const mins = Math.round((Date.now() - _loginTime) / 60000);
