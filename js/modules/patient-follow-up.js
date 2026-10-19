@@ -71,9 +71,27 @@ function segWaSent(nombre, tipo){ return !!kvGet('seg_wa_'+tipo+'_'+nombre); }
 
 function segMarkWa(nombre, tipo, dias) {
   kvSet('seg_wa_'+tipo+'_'+nombre, Date.now());
-  const label = tipo==='sem3' ? 'WA semana 5' : tipo==='sem4' ? 'WA semana 6' : 'WA semana 7+';
+  const label = tipo==='sem3' ? 'WA semana 5'
+    : tipo==='sem4' ? 'WA semana 6'
+    : tipo==='sem5' ? 'WA semana 7+'
+    : 'WA seguimiento readaptación';
   segLogAction(nombre, tipo, label + ' enviado (' + dias + ' días sin descarga)');
   renderSeguimiento();
+}
+
+function abrirWhatsAppSeguimiento(nombreCodificado, mensajeCodificado, tipo, dias) {
+  const nombre = decodeURIComponent(String(nombreCodificado || ''));
+  const mensaje = decodeURIComponent(String(mensajeCodificado || ''));
+  const escrito = window.prompt(`No hay un WhatsApp registrado para ${nombre}. Escribe el número para enviar este mensaje:`);
+  if (escrito === null) return;
+  const telefono = String(escrito || '').replace(/\D/g, '');
+  if (telefono.length < 7) {
+    toast('Escribe un número de WhatsApp válido', 'err');
+    return;
+  }
+  const destino = telefono.length <= 10 ? `57${telefono}` : telefono;
+  window.open(`https://wa.me/${destino}?text=${encodeURIComponent(mensaje)}`, '_blank', 'noopener');
+  segMarkWa(nombre, tipo, dias);
 }
 
 function segLogAction(nombre, tipo, accion) {
@@ -279,6 +297,23 @@ function renderSeguimiento() {
 
   const now = new Date(); now.setHours(0,0,0,0);
 
+  // Algunas citas antiguas no guardaron teléfono. Recuperarlo de la ficha
+  // del paciente o de otra cita evita ocultar el botón de WhatsApp.
+  const contactos = {};
+  const claveContacto = nombre => String(nombre || '').trim().toLocaleLowerCase('es')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const registrarContacto = registro => {
+    const clave = claveContacto(registro?.nombre || registro?.nombres);
+    if (!clave) return;
+    const previo = contactos[clave] || {};
+    contactos[clave] = {
+      telefono: registro?.telefono || previo.telefono || '',
+      email: registro?.email || previo.email || ''
+    };
+  };
+  (allData.citas || []).forEach(registrarContacto);
+  (allData.pacientes || []).forEach(registrarContacto);
+
   // Mapa: última descarga por paciente
   const map = {};
   allData.citas
@@ -288,7 +323,8 @@ function renderSeguimiento() {
       const fecha  = normDate(c.fecha);
       if (!nombre || !fecha) return;
       if (!map[nombre] || fecha > map[nombre].fecha) {
-        map[nombre] = { nombre, telefono: c.telefono||'', email: c.email||'', fecha, servicio: c.servicio, notaAdmin: c.notaAdmin||'' };
+        const contacto = contactos[claveContacto(nombre)] || {};
+        map[nombre] = { nombre, telefono: c.telefono||contacto.telefono||'', email: c.email||contacto.email||'', fecha, servicio: c.servicio, notaAdmin: c.notaAdmin||'' };
       }
     });
 
@@ -313,7 +349,8 @@ function renderSeguimiento() {
       const fecha  = normDate(c.fecha);
       if (!nombre || !fecha) return;
       if (!mapR[nombre] || fecha > mapR[nombre].fecha) {
-        mapR[nombre] = { nombre, telefono: c.telefono||'', email: c.email||'', fecha, servicio: c.servicio, notaAdmin: c.notaAdmin||'' };
+        const contacto = contactos[claveContacto(nombre)] || {};
+        mapR[nombre] = { nombre, telefono: c.telefono||contacto.telefono||'', email: c.email||contacto.email||'', fecha, servicio: c.servicio, notaAdmin: c.notaAdmin||'' };
       }
     });
 
@@ -438,6 +475,10 @@ function _segCard(p) {
   const wa3 = hasWA ? `https://wa.me/${phone}?text=${encodeURIComponent(msg3)}` : null;
   const wa4 = hasWA ? `https://wa.me/${phone}?text=${encodeURIComponent(msg4)}` : null;
   const wa5 = hasWA ? `https://wa.me/${phone}?text=${encodeURIComponent(msg5)}` : null;
+  const nombreWa = encodeURIComponent(p.nombre).replace(/'/g, '%27');
+  const msg3Wa = encodeURIComponent(msg3).replace(/'/g, '%27');
+  const msg4Wa = encodeURIComponent(msg4).replace(/'/g, '%27');
+  const msg5Wa = encodeURIComponent(msg5).replace(/'/g, '%27');
 
   return `<div class="seg-card ${reagendado?'reagendado':''}">
     <div class="pac-badge" style="flex-shrink:0;background:rgba(27,191,176,.08);border-color:${reagendado?'var(--ok)':color}">${initials}</div>
@@ -458,9 +499,9 @@ function _segCard(p) {
       ${reagendado ? `
         <button class="btn btn-ghost btn-sm" onclick="segToggleR('${p.nombre.replace(/'/g,"\\'")}')">↩ Desmarcar</button>
       ` : `
-        ${p.semana==='sem3' && wa3 ? `<a href="${wa3}" target="_blank" class="btn btn-sm btn-purple" onclick="segMarkWa('${p.nombre.replace(/'/g,"\\'")}','sem3',${p.dias})" style="${waSent3?'opacity:.55':''}">💬 WA ${waSent3?'(enviado)':'Semana 5'}</a>` : ''}
-        ${p.semana==='sem4' && wa4 ? `<a href="${wa4}" target="_blank" class="btn btn-wa btn-sm" onclick="segMarkWa('${p.nombre.replace(/'/g,"\\'")}','sem4',${p.dias})" style="${waSent4?'opacity:.55':''}">💬 WA ${waSent4?'(enviado)':'Semana 6'}</a>` : ''}
-        ${p.semana==='sem5' && wa5 ? `<a href="${wa5}" target="_blank" class="btn btn-err btn-sm" onclick="segMarkWa('${p.nombre.replace(/'/g,"\\'")}','sem5',${p.dias})" style="${waSent5?'opacity:.55':''}">💬 WA ${waSent5?'(enviado)':'Semana 7+'}</a>` : ''}
+        ${p.semana==='sem3' && wa3 ? `<a href="${wa3}" target="_blank" class="btn btn-sm btn-purple" onclick="segMarkWa('${p.nombre.replace(/'/g,"\\'")}','sem3',${p.dias})" style="${waSent3?'opacity:.55':''}">💬 WA ${waSent3?'(enviado)':'Semana 5'}</a>` : `<button class="btn btn-sm btn-purple" onclick="PanelPatientFollowUp.abrirWhatsAppSeguimiento('${nombreWa}','${msg3Wa}','sem3',${p.dias})">💬 WA Semana 5</button>`}
+        ${p.semana==='sem4' && wa4 ? `<a href="${wa4}" target="_blank" class="btn btn-wa btn-sm" onclick="segMarkWa('${p.nombre.replace(/'/g,"\\'")}','sem4',${p.dias})" style="${waSent4?'opacity:.55':''}">💬 WA ${waSent4?'(enviado)':'Semana 6'}</a>` : `<button class="btn btn-wa btn-sm" onclick="PanelPatientFollowUp.abrirWhatsAppSeguimiento('${nombreWa}','${msg4Wa}','sem4',${p.dias})">💬 WA Semana 6</button>`}
+        ${p.semana==='sem5' && wa5 ? `<a href="${wa5}" target="_blank" class="btn btn-err btn-sm" onclick="segMarkWa('${p.nombre.replace(/'/g,"\\'")}','sem5',${p.dias})" style="${waSent5?'opacity:.55':''}">💬 WA ${waSent5?'(enviado)':'Semana 7+'}</a>` : `<button class="btn btn-err btn-sm" onclick="PanelPatientFollowUp.abrirWhatsAppSeguimiento('${nombreWa}','${msg5Wa}','sem5',${p.dias})">💬 WA Semana 7+</button>`}
         ${p.email && p.email.includes('@') ? `<a href="mailto:${p.email}" class="btn btn-ghost btn-sm">📧</a>` : ''}
         <button class="btn btn-ghost btn-sm" onclick="agendarDesdeSeg('${encodeURIComponent(p.nombre)}','${encodeURIComponent(p.telefono)}','${encodeURIComponent(p.email)}')">+ Agendar</button>
         <button class="btn btn-ghost btn-sm" style="color:var(--err);border-color:rgba(220,38,38,.35)" onclick="segToggleNoContact(decodeURIComponent('${encodeURIComponent(p.nombre)}'))">No contactar</button>
@@ -487,8 +528,10 @@ function _segCardReadap(p) {
     ? paraQuienR
       ? `Hola ${primero}! \uD83D\uDC4B Te escribimos de Cuidándote Fisioterapia. ¿Como ha estado ${paraQuienR} con el proceso de readaptacion funcional de ${zona}? Queria saber como se siente y si quieren continuar con el plan. ¿Me cuentas como va? \uD83D\uDCAA`
       : `Hola ${primero}! \uD83D\uDC4B Te escribimos de Cuidándote Fisioterapia. ¿Como has estado con tu proceso de readaptacion funcional de ${zona}? Queria saber como te sientes y si quieres continuar con tu plan. ¿Me cuentas como vas? \uD83D\uDCAA`
-    : null;
+    : `Hola ${primero}! \uD83D\uDC4B Te escribimos de Cuidándote Fisioterapia. Queríamos saber cómo vas con tu proceso de readaptación funcional y si deseas continuar con tu plan. ¿Me cuentas cómo vas? \uD83D\uDCAA`;
   const waReadap = (hasWA && msgReadap) ? `https://wa.me/${phone}?text=${encodeURIComponent(msgReadap)}` : null;
+  const nombreWa = encodeURIComponent(p.nombre).replace(/'/g, '%27');
+  const msgReadapWa = encodeURIComponent(msgReadap).replace(/'/g, '%27');
 
   return `<div class="seg-card ${reagendado?'reagendado':''}" style="border-left:3px solid #0369a1">
     <div class="pac-badge" style="flex-shrink:0;background:rgba(3,105,161,.08);border-color:${reagendado?'var(--ok)':'#0369a1'}">${initials}</div>
@@ -522,7 +565,7 @@ function _segCardReadap(p) {
       ` : `
         ${waReadap
           ? `<a href="${waReadap}" target="_blank" class="btn btn-sm" style="background:#0369a1;color:#fff" onclick="segMarkWa('${p.nombre.replace(/'/g,"\\'")}','readap',${p.dias})" ${waSent?'style="opacity:.55"':''}>💬 WA ${waSent?'(enviado)':'Seguimiento'}</a>`
-          : `<span style="font-size:.75rem;color:var(--muted);padding:5px 8px">${hasWA?'Llena la zona primero':'Sin teléfono'}</span>`}
+          : `<button class="btn btn-sm" style="background:#0369a1;color:#fff" onclick="PanelPatientFollowUp.abrirWhatsAppSeguimiento('${nombreWa}','${msgReadapWa}','readap',${p.dias})">💬 WA Seguimiento</button>`}
         ${p.email && p.email.includes('@') ? `<a href="mailto:${p.email}" class="btn btn-ghost btn-sm">📧</a>` : ''}
         <button class="btn btn-ghost btn-sm" onclick="agendarDesdeSeg('${encodeURIComponent(p.nombre)}','${encodeURIComponent(p.telefono)}','${encodeURIComponent(p.email)}')">+ Agendar</button>
         <button class="btn btn-ghost btn-sm" style="color:var(--err);border-color:rgba(220,38,38,.35)" onclick="segToggleNoContact(decodeURIComponent('${encodeURIComponent(p.nombre)}'))">No contactar</button>
@@ -582,6 +625,7 @@ function exportarSeguimientoCSV() {
     segToggleNoContact,
     segWaSent,
     segMarkWa,
+    abrirWhatsAppSeguimiento,
     segLogAction,
     limpiarLogSeguimiento,
     openLogPatient,
