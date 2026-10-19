@@ -160,6 +160,8 @@ function verDetalle(id) {
   const financialHtml = packageTools?.getAppointmentFinancialSummaryHtml?.(c) || '';
   const paymentUrl = packageTools?.appointmentPaymentWhatsAppUrl?.(c) || null;
   const canConfirmAttendance = financialSummary?.kind !== 'started';
+  const reminderTomorrowUrl = !esCancelada ? global.PanelWhatsAppTools?.waLinkReminder?.(c.telefono, c.nombre, c.fecha, c.hora, c.servicio, 'tomorrow') : null;
+  const reminderTodayUrl = !esCancelada ? global.PanelWhatsAppTools?.waLinkReminder?.(c.telefono, c.nombre, c.fecha, c.hora, c.servicio, 'today') : null;
   // La asignación desde el calendario se habilita únicamente después de que
   // pagos haya verificado la cita. Conservamos el mismo modal y validaciones
   // de Colaboradores para no duplicar la lógica de asignación.
@@ -208,6 +210,8 @@ function verDetalle(id) {
       })()}
       <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
         ${canConfirmAttendance ? waBtn(c.telefono,c.nombre,c.fecha,c.hora,c.servicio,'WhatsApp confirmación',c.precio,c.modalidad) : '<span class="btn btn-ghost btn-sm" style="pointer-events:none;opacity:.65">No requiere confirmación</span>'}
+        ${reminderTomorrowUrl ? `<a href="${reminderTomorrowUrl}" target="_blank" class="btn btn-ghost btn-sm" title="Enviar el recordatorio del día anterior" onclick="markWaSent('${esc(c.id)}','reminder-tomorrow');this.style.opacity='.55'">📅 Recordatorio mañana</a>` : ''}
+        ${reminderTodayUrl ? `<a href="${reminderTodayUrl}" target="_blank" class="btn btn-ghost btn-sm" title="Enviar el recordatorio del mismo día" onclick="markWaSent('${esc(c.id)}','reminder-today');this.style.opacity='.55'">⏰ Recordatorio hoy</a>` : ''}
         ${paymentUrl ? `<a href="${paymentUrl}" target="_blank" class="btn btn-ghost btn-sm">💳 ${financialSummary?.kind === 'package-balance' ? 'Cobrar saldo del paquete' : financialSummary?.kind === 'appointment-partial' ? 'Cobrar saldo de cita' : 'Solicitar pago de cita'}</a>` : '<span class="btn btn-ghost btn-sm" style="pointer-events:none;opacity:.65">💳 Sin cobro pendiente</span>'}
         <button class="btn btn-ghost btn-sm" onclick="(function(){ const p=(document.getElementById('notaParaQuienInput').value||'').trim(); const nota=p?'[PARA: '+p+']':''; seguimientoWA('${esc(c.telefono||'')}','${esc(c.nombre)}','${esc(c.servicio)}',nota); })()">💬 Seguimiento</button>
         ${puedeAsignarEquipo ? `<button class="btn btn-teal btn-sm" onclick="closeModal('modalDetalle');abrirAsignarPro('${esc(c.id)}')">👥 Asignar colaborador</button>` : ''}

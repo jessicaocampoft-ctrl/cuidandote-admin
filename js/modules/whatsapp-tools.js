@@ -98,6 +98,22 @@ function waLinkRec(tel, nombre, fecha, hora, serv) {
   return 'https://wa.me/' + phone + '?text=' + encodeURIComponent(msg);
 }
 
+// Recordatorios manuales para la misma cita: uno para enviar el día anterior
+// y otro para enviar el mismo día. Se mantienen separados de la confirmación.
+function waLinkReminder(tel, nombre, fecha, hora, serv, timing) {
+  const t = String(tel || '').replace(/\D/g, '');
+  if (!t || t.length < 7) return null;
+  const phone = t.length <= 10 ? '57' + t : t;
+  const infoSes = getInfoSesion(nombre, serv, fecha);
+  const sesion = infoSes
+    ? 'tu ' + ordinalES(infoSes.numero) + ' sesión de ' + infoSes.total + ' de *' + serv + '*'
+    : 'tu cita de *' + serv + '*';
+  const esMismoDia = timing === 'today';
+  const cuando = esMismoDia ? 'hoy' : 'mañana';
+  const msg = 'Hola ' + waNombre(nombre) + '! 👋 Te recordamos que ' + cuando + ' tienes ' + sesion + ' el ' + waFechaES(fecha) + ' a las ' + waAmPm(hora) + '.\n\n' + (esMismoDia ? 'Te esperamos. Recuerda llegar unos minutos antes y venir con ropa cómoda. 💪' : 'Por favor confirma si podrás asistir. Si necesitas cambiar el horario, avísanos con tiempo. 😊') + '\n\n— Cuidándote Fisioterapia';
+  return 'https://wa.me/' + phone + '?text=' + encodeURIComponent(msg);
+}
+
 function waLinkSeg(tel, nombre, serv, notaAdmin) {
   const t = String(tel||'').replace(/\D/g,'');
   if (!t || t.length < 7) return null;
@@ -575,6 +591,7 @@ function copiarMsgWA() {
     waLink,
     waLinkPago,
     waLinkRec,
+    waLinkReminder,
     waLinkSeg,
     _copyGestionMesKey,
     _copyGestionPeriodo,
