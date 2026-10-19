@@ -1,7 +1,7 @@
 (function(global) {
   'use strict';
 
-let _segFiltros = new Set(['sem3','sem4','sem5','reagendo','readap']);
+let _segFiltros = new Set(['sem3','sem4','sem5','reagendo']);
 const MANUAL_REMINDERS_KEY = 'daily_manual_discharge_reminders_v1';
 
 // Regla clínica-operativa única para los seguimientos post-sesión. Mantenerla
@@ -71,11 +71,11 @@ function segWaSent(nombre, tipo){ return !!kvGet('seg_wa_'+tipo+'_'+nombre); }
 
 function segMarkWa(nombre, tipo, dias) {
   kvSet('seg_wa_'+tipo+'_'+nombre, Date.now());
-  const label = tipo==='sem3' ? 'WA semana 5'
-    : tipo==='sem4' ? 'WA semana 6'
-    : tipo==='sem5' ? 'WA semana 7+'
-    : 'WA seguimiento readaptación';
-  segLogAction(nombre, tipo, label + ' enviado (' + dias + ' días sin descarga)');
+  const label = tipo==='sem3' ? 'WA primer mes'
+    : tipo==='sem4' ? 'WA segundo mes'
+    : tipo==='sem5' ? 'WA tres meses o más'
+    : 'WA seguimiento';
+  segLogAction(nombre, tipo, label + ' enviado (' + dias + ' días sin agendar)');
   renderSeguimiento();
 }
 
@@ -290,6 +290,70 @@ function setReadapZona(nombre, zona) {
   else kvRemove('seg_readap_zona_'+nombre);
 }
 
+function _followUpPatientKey(nombre) {
+  return String(nombre || '').trim().toLocaleLowerCase('es')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
+function _followUpDate(value) {
+  const normalized = normDate(value);
+  if (!normalized) return null;
+  const [year, month, day] = normalized.split('-').map(Number);
+  const date = new Date(year, month - 1, day);
+  return Number.isNaN(date.getTime()) ? null : { normalized, date };
+}
+
+function _followUpBucket(days) {
+  if (days < 30) return null;
+  if (days < 60) return 'sem3';
+  if (days < 90) return 'sem4';
+  return 'sem5';
+}
+
+// La reactivación usa la última cita válida de cada paciente. Una cita futura
+// lo excluye y una sesión posterior reemplaza la anterior, evitando duplicados.
+function buildReactivationPatients(citas, now, contactos) {
+  const todayDate = new Date(now); todayDate.setHours(0, 0, 0, 0);
+  const patients = new Map();
+  const contactBook = contactos || {};
+
+  (citas || []).forEach(cita => {
+    if (!cita || esRegistroServ(cita.servicio) || isExcludedFollowUpSession(cita.estado)) return;
+    const nombre = String(cita.nombre || '').trim();
+    const parsed = _followUpDate(cita.fecha);
+    if (!nombre || !parsed) return;
+    const key = _followUpPatientKey(nombre);
+    const current = patients.get(key) || { nombre, fecha: '', proximaCita: '' };
+    const contact = contactBook[key] || {};
+
+    if (parsed.date > todayDate) {
+      if (!current.proximaCita || parsed.normalized < current.proximaCita) current.proximaCita = parsed.normalized;
+      patients.set(key, current);
+      return;
+    }
+
+    if (!current.fecha || parsed.normalized > current.fecha) {
+      Object.assign(current, {
+        nombre: current.nombre || nombre,
+        telefono: cita.telefono || current.telefono || contact.telefono || '',
+        email: cita.email || current.email || contact.email || '',
+        fecha: parsed.normalized,
+        servicio: cita.servicio || '',
+        notaAdmin: cita.notaAdmin || ''
+      });
+    }
+    patients.set(key, current);
+  });
+
+  return Array.from(patients.values()).map(patient => {
+    if (!patient.fecha || patient.proximaCita) return null;
+    const last = _followUpDate(patient.fecha);
+    const dias = Math.floor((todayDate - last.date) / 86400000);
+    const semana = _followUpBucket(dias);
+    return semana ? { ...patient, dias, semana } : null;
+  }).filter(Boolean);
+}
+
 function renderSeguimiento() {
   const lista = document.getElementById('segLista');
   if (!lista) return;
@@ -300,8 +364,7 @@ function renderSeguimiento() {
   // Algunas citas antiguas no guardaron teléfono. Recuperarlo de la ficha
   // del paciente o de otra cita evita ocultar el botón de WhatsApp.
   const contactos = {};
-  const claveContacto = nombre => String(nombre || '').trim().toLocaleLowerCase('es')
-    .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const claveContacto = _followUpPatientKey;
   const registrarContacto = registro => {
     const clave = claveContacto(registro?.nombre || registro?.nombres);
     if (!clave) return;
@@ -314,91 +377,36 @@ function renderSeguimiento() {
   (allData.citas || []).forEach(registrarContacto);
   (allData.pacientes || []).forEach(registrarContacto);
 
-  // Mapa: última descarga por paciente
-  const map = {};
-  allData.citas
-    .filter(c => c.estado !== 'Cancelada' && !esRegistroServ(c.servicio) && esDescargaMusc(c.servicio))
-    .forEach(c => {
-      const nombre = (c.nombre||'').trim();
-      const fecha  = normDate(c.fecha);
-      if (!nombre || !fecha) return;
-      if (!map[nombre] || fecha > map[nombre].fecha) {
-        const contacto = contactos[claveContacto(nombre)] || {};
-        map[nombre] = { nombre, telefono: c.telefono||contacto.telefono||'', email: c.email||contacto.email||'', fecha, servicio: c.servicio, notaAdmin: c.notaAdmin||'' };
-      }
-    });
-
-  // Calcular días y semana — descargas
-  const pacientes = Object.values(map).map(p => {
-    const [y,m,d] = p.fecha.split('-');
-    const last = new Date(+y,+m-1,+d);
-    const dias = Math.floor((now - last) / 86400000);
-    let semana = null;
-    if      (dias >= 35 && dias < 42) semana = 'sem3';
-    else if (dias >= 42 && dias < 49) semana = 'sem4';
-    else if (dias >= 49)              semana = 'sem5';
-    return { ...p, dias, semana };
-  }).filter(p => p.semana !== null);
-
-  // Mapa: última readaptación por paciente
-  const mapR = {};
-  allData.citas
-    .filter(c => c.estado !== 'Cancelada' && !esRegistroServ(c.servicio) && esReadaptacion(c.servicio))
-    .forEach(c => {
-      const nombre = (c.nombre||'').trim();
-      const fecha  = normDate(c.fecha);
-      if (!nombre || !fecha) return;
-      if (!mapR[nombre] || fecha > mapR[nombre].fecha) {
-        const contacto = contactos[claveContacto(nombre)] || {};
-        mapR[nombre] = { nombre, telefono: c.telefono||contacto.telefono||'', email: c.email||contacto.email||'', fecha, servicio: c.servicio, notaAdmin: c.notaAdmin||'' };
-      }
-    });
-
-  const readapPacs = Object.values(mapR).map(p => {
-    const [y,m,d] = p.fecha.split('-');
-    const last = new Date(+y,+m-1,+d);
-    const dias = Math.floor((now - last) / 86400000);
-    return { ...p, dias };
-  });
+  const pacientes = buildReactivationPatients(allData.citas || [], now, contactos);
 
   // Contar
   const c3 = pacientes.filter(p=>p.semana==='sem3').length;
   const c4 = pacientes.filter(p=>p.semana==='sem4').length;
   const c5 = pacientes.filter(p=>p.semana==='sem5').length;
   const cR = pacientes.filter(p=>segReagendo(p.nombre)).length;
-  const cReadap = readapPacs.filter(p=>!segReagendo(p.nombre)).length;
 
   ['3','4','5','R'].forEach(k => {
     const el = document.getElementById('segCount'+k);
     if (el) el.textContent = k==='3'?c3:k==='4'?c4:k==='5'?c5:cR;
   });
-  const elReadap = document.getElementById('segCountReadap');
-  if (elReadap) elReadap.textContent = cReadap;
-
   // Badge sidebar
-  const pendientes = c3 + c4 + c5 + cReadap;
+  const pendientes = c3 + c4 + c5;
   const badge = document.getElementById('badgeSeguimiento');
   if (badge) { badge.textContent = pendientes; badge.style.display = pendientes > 0 ? 'inline':'none'; }
 
   window._segData = pacientes;
-  window._segReadapData = readapPacs;
-  _renderSegLista(pacientes, readapPacs);
+  window._segReadapData = [];
+  _renderSegLista(pacientes);
   _renderSegLog();
 }
 
-function _renderSegLista(pacientes, readapPacs) {
+function _renderSegLista(pacientes) {
   const lista = document.getElementById('segLista');
   if (!lista) return;
 
-  readapPacs = readapPacs || window._segReadapData || [];
-
-  // Descargas: separar reagendados
+  // Una única campaña para todos los servicios, sin repetir pacientes.
   const activos    = pacientes.filter(p => !segReagendo(p.nombre) && !segNoContact(p.nombre));
   const reagendados = pacientes.filter(p =>  segReagendo(p.nombre) && !segNoContact(p.nombre));
-
-  // Readaptación: separar reagendados
-  const readapActivos    = readapPacs.filter(p => !segReagendo(p.nombre) && !segNoContact(p.nombre));
-  const readapReagendados = readapPacs.filter(p =>  segReagendo(p.nombre) && !segNoContact(p.nombre));
 
   const descargaCards = [
     ...(_segFiltros.has('sem3') ? activos.filter(p=>p.semana==='sem3').sort((a,b)=>a.dias-b.dias) : []),
@@ -407,31 +415,18 @@ function _renderSegLista(pacientes, readapPacs) {
     ...(_segFiltros.has('reagendo') ? reagendados : []),
   ];
 
-  const readapCards = [
-    ...(_segFiltros.has('readap') ? readapActivos.sort((a,b)=>b.dias-a.dias) : []),
-    ...(_segFiltros.has('reagendo') ? readapReagendados : []),
-  ];
-
-  if (!descargaCards.length && !readapCards.length) {
+  if (!descargaCards.length) {
     lista.innerHTML = '<div class="empty" style="padding:50px 20px"><p>No hay pacientes en estas categorías</p></div>';
     return;
   }
 
-  let html = '';
-  if (descargaCards.length) {
-    html += descargaCards.map(p => _segCard(p)).join('');
-  }
-  if (readapCards.length) {
-    if (descargaCards.length) html += `<div style="margin:18px 0 10px;font-size:.78rem;font-weight:700;color:#0369a1;letter-spacing:.04em;text-transform:uppercase">Readaptación Funcional</div>`;
-    html += readapCards.map(p => _segCardReadap(p)).join('');
-  }
-  lista.innerHTML = html;
+  lista.innerHTML = descargaCards.map(p => _segCard(p)).join('');
 }
 
 function _segCard(p) {
   const reagendado = segReagendo(p.nombre);
   const initials   = p.nombre.split(' ').map(x=>x[0]).join('').toUpperCase().slice(0,2);
-  const pct        = Math.min(Math.round(p.dias / 35 * 100), 100);
+  const pct        = Math.min(Math.round(p.dias / 30 * 100), 100);
   const waSent3    = segWaSent(p.nombre,'sem3');
   const waSent4    = segWaSent(p.nombre,'sem4');
   const waSent5    = segWaSent(p.nombre,'sem5');
@@ -441,36 +436,22 @@ function _segCard(p) {
   const color      = colorMap[p.semana] || 'var(--primary)';
   const fillColor  = fillMap[p.semana]  || 'var(--primary)';
 
-  const labelMap   = { sem3:'Semana 5 — aviso previo', sem4:'Semana 6 — momento ideal', sem5:'Semana 7+ — urgente' };
+  const labelMap   = { sem3:'1 mes — seguimiento', sem4:'2 meses — seguimiento prioritario', sem5:'3+ meses — reactivación urgente' };
   const label      = labelMap[p.semana] || '';
 
   const tel   = String(p.telefono||'').replace(/\D/g,'');
   const phone = tel.length<=10 ? '57'+tel : tel;
   const hasWA = tel.length >= 7;
-  const semanasSinDescarga = Math.floor(Number(p.dias || 0) / 7);
-  const tiempoSinDescarga = semanasSinDescarga >= 1
-    ? `${semanasSinDescarga} semana${semanasSinDescarga === 1 ? '' : 's'} sin descarga muscular`
-    : `${p.dias} día${p.dias === 1 ? '' : 's'} sin descarga muscular`;
+  const mesesSinAgendar = Math.max(1, Math.floor(Number(p.dias || 0) / 30));
+  const tiempoSinAgendar = `${mesesSinAgendar} mes${mesesSinAgendar === 1 ? '' : 'es'} sin agendar`;
 
-  // Mensajes WA — personalizados según tipo de descarga y nota de relación
+  // Mensajes coherentes con cualquier servicio y con el tiempo real sin agenda.
   const primero = p.nombre.split(' ')[0];
-  const sn = (p.servicio||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
-  const zonaDesc = sn.includes('cuello') || sn.includes('espalda') ? 'de cuello y espalda'
-    : sn.includes('pierna') ? 'de piernas'
-    : 'completa';
-  const _paraM = (p.notaAdmin||'').match(/\[PARA:\s*([^\]]+)\]/i);
-  const paraQuien = _paraM ? _paraM[1].trim() : null;
-  const sujeto3 = paraQuien ? `la última sesión de descarga muscular ${zonaDesc} de ${paraQuien}` : `tu última sesión de descarga muscular ${zonaDesc}`;
-  const sujeto4 = paraQuien ? `la última descarga muscular ${zonaDesc} de ${paraQuien}` : `tu última descarga muscular ${zonaDesc}`;
-  const sujeto5 = paraQuien ? `la última sesión de descarga muscular ${zonaDesc} de ${paraQuien}` : `tu última sesión de descarga muscular ${zonaDesc}`;
-  const semanas = Math.floor(Number(p.dias || 0) / 7);
-  const semanasTexto = `${semanas} semana${semanas === 1 ? '' : 's'}`;
-  const cierre3 = paraQuien ? '¿Reagendamos?' : '¿Te agendo?';
-  const cierre4 = paraQuien ? '¿Reagendamos esta semana?' : '¿Te agendo esta semana?';
-  const cierre5 = paraQuien ? '¿Cuando les viene bien retomar? Cuentame y coordinamos. \uD83D\uDCAA' : '¿Cuando te viene bien retomar? Cuentame y coordinamos. \uD83D\uDCAA';
-  const msg3 = `Hola ${primero}! \uD83D\uDC4B Te escribimos de Cuidándote Fisioterapia. Ya van ${semanasTexto} desde ${sujeto3}. Si has vuelto a sentir tensión, la próxima semana puede ser un buen momento para reagendar. ${cierre3}`;
-  const msg4 = `Hola ${primero}! \uD83D\uDC4B Te escribimos de Cuidándote Fisioterapia. Ya se cumplieron ${semanasTexto} desde ${sujeto4}. Si sientes que la tensión ha vuelto, podemos buscarte un espacio esta semana. ${cierre4}`;
-  const msg5 = `Hola ${primero}! \uD83D\uDC4B Te escribimos de Cuidándote Fisioterapia. Ya van ${semanasTexto} desde ${sujeto5}. El cuerpo puede volver a acumular tensión; podemos ayudarte a retomar tu bienestar. ${cierre5}`;
+  const mesesTexto = `${mesesSinAgendar} mes${mesesSinAgendar === 1 ? '' : 'es'}`;
+  const servicio = p.servicio || 'tu proceso de fisioterapia';
+  const msg3 = `Hola ${primero}! 👋 Te escribimos de Cuidándote Fisioterapia. Ya pasó ${mesesTexto} desde tu última cita de ${servicio}. Queríamos saber cómo te has sentido y si deseas retomar tu proceso. ¿Te agendo?`;
+  const msg4 = `Hola ${primero}! 👋 Te escribimos de Cuidándote Fisioterapia. Han pasado ${mesesTexto} desde tu última cita de ${servicio}. Si deseas continuar tu proceso, con gusto buscamos un espacio para ti esta semana. ¿Te agendo?`;
+  const msg5 = `Hola ${primero}! 👋 Te escribimos de Cuidándote Fisioterapia. Ya van ${mesesTexto} desde tu última cita de ${servicio}. Queremos acompañarte a retomar tu proceso cuando estés listo(a). ¿Te gustaría agendar?`;
 
   const wa3 = hasWA ? `https://wa.me/${phone}?text=${encodeURIComponent(msg3)}` : null;
   const wa4 = hasWA ? `https://wa.me/${phone}?text=${encodeURIComponent(msg4)}` : null;
@@ -493,15 +474,15 @@ function _segCard(p) {
       <div class="seg-days-bar" style="width:180px">
         <div class="seg-days-fill" style="width:${pct}%;background:${reagendado?'var(--ok)':fillColor}"></div>
       </div>
-      <div style="font-family:var(--font-m);font-size:.7rem;color:${reagendado?'var(--ok)':color};margin-top:2px;font-weight:600">${tiempoSinDescarga}</div>
+      <div style="font-family:var(--font-m);font-size:.7rem;color:${reagendado?'var(--ok)':color};margin-top:2px;font-weight:600">${tiempoSinAgendar}</div>
     </div>
     <div style="display:flex;gap:6px;flex-wrap:wrap;flex-shrink:0">
       ${reagendado ? `
         <button class="btn btn-ghost btn-sm" onclick="segToggleR('${p.nombre.replace(/'/g,"\\'")}')">↩ Desmarcar</button>
       ` : `
-        ${p.semana==='sem3' ? (wa3 ? `<a href="${wa3}" target="_blank" class="btn btn-sm btn-purple" onclick="segMarkWa('${p.nombre.replace(/'/g,"\\'")}','sem3',${p.dias})" style="${waSent3?'opacity:.55':''}">💬 WA ${waSent3?'(enviado)':'Semana 5'}</a>` : `<button class="btn btn-sm btn-purple" onclick="PanelPatientFollowUp.abrirWhatsAppSeguimiento('${nombreWa}','${msg3Wa}','sem3',${p.dias})">💬 WA Semana 5</button>`) : ''}
-        ${p.semana==='sem4' ? (wa4 ? `<a href="${wa4}" target="_blank" class="btn btn-wa btn-sm" onclick="segMarkWa('${p.nombre.replace(/'/g,"\\'")}','sem4',${p.dias})" style="${waSent4?'opacity:.55':''}">💬 WA ${waSent4?'(enviado)':'Semana 6'}</a>` : `<button class="btn btn-wa btn-sm" onclick="PanelPatientFollowUp.abrirWhatsAppSeguimiento('${nombreWa}','${msg4Wa}','sem4',${p.dias})">💬 WA Semana 6</button>`) : ''}
-        ${p.semana==='sem5' ? (wa5 ? `<a href="${wa5}" target="_blank" class="btn btn-err btn-sm" onclick="segMarkWa('${p.nombre.replace(/'/g,"\\'")}','sem5',${p.dias})" style="${waSent5?'opacity:.55':''}">💬 WA ${waSent5?'(enviado)':'Semana 7+'}</a>` : `<button class="btn btn-err btn-sm" onclick="PanelPatientFollowUp.abrirWhatsAppSeguimiento('${nombreWa}','${msg5Wa}','sem5',${p.dias})">💬 WA Semana 7+</button>`) : ''}
+        ${p.semana==='sem3' ? (wa3 ? `<a href="${wa3}" target="_blank" class="btn btn-sm btn-purple" onclick="segMarkWa('${p.nombre.replace(/'/g,"\\'")}','sem3',${p.dias})" style="${waSent3?'opacity:.55':''}">💬 WA ${waSent3?'(enviado)':'Mes 1'}</a>` : `<button class="btn btn-sm btn-purple" onclick="PanelPatientFollowUp.abrirWhatsAppSeguimiento('${nombreWa}','${msg3Wa}','sem3',${p.dias})">💬 WA Mes 1</button>`) : ''}
+        ${p.semana==='sem4' ? (wa4 ? `<a href="${wa4}" target="_blank" class="btn btn-wa btn-sm" onclick="segMarkWa('${p.nombre.replace(/'/g,"\\'")}','sem4',${p.dias})" style="${waSent4?'opacity:.55':''}">💬 WA ${waSent4?'(enviado)':'Mes 2'}</a>` : `<button class="btn btn-wa btn-sm" onclick="PanelPatientFollowUp.abrirWhatsAppSeguimiento('${nombreWa}','${msg4Wa}','sem4',${p.dias})">💬 WA Mes 2</button>`) : ''}
+        ${p.semana==='sem5' ? (wa5 ? `<a href="${wa5}" target="_blank" class="btn btn-err btn-sm" onclick="segMarkWa('${p.nombre.replace(/'/g,"\\'")}','sem5',${p.dias})" style="${waSent5?'opacity:.55':''}">💬 WA ${waSent5?'(enviado)':'Mes 3+'}</a>` : `<button class="btn btn-err btn-sm" onclick="PanelPatientFollowUp.abrirWhatsAppSeguimiento('${nombreWa}','${msg5Wa}','sem5',${p.dias})">💬 WA Mes 3+</button>`) : ''}
         ${p.email && p.email.includes('@') ? `<a href="mailto:${p.email}" class="btn btn-ghost btn-sm">📧</a>` : ''}
         <button class="btn btn-ghost btn-sm" onclick="agendarDesdeSeg('${encodeURIComponent(p.nombre)}','${encodeURIComponent(p.telefono)}','${encodeURIComponent(p.email)}')">+ Agendar</button>
         <button class="btn btn-ghost btn-sm" style="color:var(--err);border-color:rgba(220,38,38,.35)" onclick="segToggleNoContact(decodeURIComponent('${encodeURIComponent(p.nombre)}'))">No contactar</button>
@@ -595,22 +576,15 @@ function _renderSegLog() {
 
 function exportarSeguimientoCSV() {
   const data  = window._segData || [];
-  const dataR = window._segReadapData || [];
-  if (!data.length && !dataR.length) { toast('No hay datos para exportar', 'err'); return; }
+  if (!data.length) { toast('No hay datos para exportar', 'err'); return; }
   const header = ['Nombre','Teléfono','Email','Tipo','Servicio','Última sesión','Días','Semana/Zona','Reagendó','No contactar','WA Enviado'];
   const rowsD = data.map(p => [
-    p.nombre, p.telefono, p.email, 'Descarga muscular', p.servicio, p.fecha, p.dias,
-    p.semana==='sem3'?'Semana 3':p.semana==='sem4'?'Semana 4':'Semana 5+',
+    p.nombre, p.telefono, p.email, 'Reactivación', p.servicio, p.fecha, p.dias,
+    p.semana==='sem3'?'Mes 1':p.semana==='sem4'?'Mes 2':'Mes 3+',
     segReagendo(p.nombre)?'Sí':'No', segNoContact(p.nombre)?'Sí':'No',
     (segWaSent(p.nombre,'sem3')||segWaSent(p.nombre,'sem4')||segWaSent(p.nombre,'sem5'))?'Sí':'No'
   ]);
-  const rowsR = dataR.map(p => [
-    p.nombre, p.telefono, p.email, 'Readaptación Funcional', p.servicio, p.fecha, p.dias,
-    readapZona(p.nombre)||'—',
-    segReagendo(p.nombre)?'Sí':'No', segNoContact(p.nombre)?'Sí':'No',
-    segWaSent(p.nombre,'readap')?'Sí':'No'
-  ]);
-  const csv = [header,...rowsD,...rowsR].map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');
+  const csv = [header,...rowsD].map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');
   const blob = new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'});
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
   a.download = 'seguimiento_'+today()+'.csv'; a.click();
@@ -638,6 +612,7 @@ function exportarSeguimientoCSV() {
     esReadaptacion,
     readapZona,
     setReadapZona,
+    buildReactivationPatients,
     renderSeguimiento,
     _renderSegLista,
     _segCard,
