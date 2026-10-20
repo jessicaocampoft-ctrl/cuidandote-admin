@@ -58,7 +58,7 @@ if (!html.includes('payments.js?v=20260929-payment-custom-plan')) fail('pagos no
 if (!html.includes('message-library.js?v=20261001-persistent-delete') || !messages.includes('_mensajesDisponibles')) fail('falta la biblioteca de atención al cliente');
 if (!packages.includes('reserveSessionForAppointment') || !packages.includes('reservasCitas')) fail('falta el consecutivo de sesiones reservadas para paquetes');
 if (!fs.readFileSync(`${root}/js/modules/agenda.js`, 'utf8').includes('Citas canceladas')) fail('falta la sección separada para citas canceladas');
-if (!html.includes('packages.js?v=20261008-explicit-package-link') || !html.includes('appointment-create.js?v=20261008-explicit-package-link')) fail('falta la versión de caché para vincular paquetes');
+if (!html.includes('packages.js?v=20261008-explicit-package-link') || !html.includes('appointment-create.js?v=20261020-package-price-default')) fail('falta la versión de caché para vincular paquetes');
 if (!html.includes('waitlist.js?v=20261010-pending-scheduling') || !waitlist.includes('Pendientes por agendar')) fail('falta la lista de pendientes por agendar');
 if (!dailyControl.includes("showView('espera')")) fail('falta el acceso rápido a pendientes por agendar');
 
