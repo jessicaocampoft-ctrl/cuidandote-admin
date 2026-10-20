@@ -482,6 +482,152 @@ function renderEstructuraFinanciera() {
   el.innerHTML = html;
 }
 
+const CHATGPT_STRATEGY_OPTIONS = Object.freeze({
+  completo: {
+    icon: '🧭', title: 'Diagnóstico completo',
+    description: 'Ingresos, agenda, servicios, paquetes y marketing.',
+    question: 'Haz un diagnóstico integral y prioriza las 3 decisiones que más pueden mejorar el negocio este mes.'
+  },
+  ingresos: {
+    icon: '📈', title: 'Crecer ingresos',
+    description: 'Meta, ticket promedio, cobros y oportunidades de venta.',
+    question: 'Propón acciones concretas para aumentar los ingresos y cerrar la diferencia con la meta mensual.'
+  },
+  agenda: {
+    icon: '🗓️', title: 'Llenar la agenda',
+    description: 'Ocupación, horarios fuertes y franjas que necesitan movimiento.',
+    question: 'Propón cómo llenar horarios de menor ocupación sin saturar al equipo ni bajar el valor del servicio.'
+  },
+  paquetes: {
+    icon: '🎁', title: 'Paquetes y reactivación',
+    description: 'Pacientes por reactivar y oportunidades de continuidad.',
+    question: 'Diseña una estrategia de reactivación y paquetes con mensajes cercanos, segmentados y sin descuentos innecesarios.'
+  },
+  marketing: {
+    icon: '📣', title: 'Servicios y marketing',
+    description: 'Qué servicio impulsar y qué contenido o campaña probar.',
+    question: 'Recomienda qué servicios priorizar en marketing, con una campaña pequeña, medible y coherente con la capacidad disponible.'
+  }
+});
+
+function _chatGPTStrategyModal() {
+  let modal = document.getElementById('chatGPTStrategyModal');
+  if (modal) return modal;
+  modal = document.createElement('div');
+  modal.id = 'chatGPTStrategyModal';
+  modal.className = 'modal-bg';
+  modal.style.cssText = 'display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1300;align-items:center;justify-content:center;padding:18px';
+  const options = Object.entries(CHATGPT_STRATEGY_OPTIONS).map(([key, option]) => `
+    <button type="button" onclick="PanelFinance.copyChatGPTStrategy('${key}')" style="text-align:left;background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:13px 14px;color:var(--text);cursor:pointer;font-family:var(--font-b);transition:.15s" onmouseenter="this.style.borderColor='var(--primary)'" onmouseleave="this.style.borderColor='var(--border)'">
+      <strong style="display:block;font-size:.9rem;margin-bottom:3px">${option.icon} ${option.title}</strong>
+      <span style="display:block;color:var(--muted);font-size:.78rem;line-height:1.4">${option.description}</span>
+    </button>`).join('');
+  modal.innerHTML = `<div class="modal" role="dialog" aria-modal="true" aria-labelledby="chatGPTStrategyTitle" style="max-width:640px;width:100%">
+    <div class="modal-title" id="chatGPTStrategyTitle">Estrategia con ChatGPT</div>
+    <p style="font-size:.86rem;color:var(--muted);line-height:1.5;margin:0 0 14px">Elige qué quieres mejorar. Se copiará un prompt con datos agregados reales de la plataforma, sin nombres, teléfonos ni notas de pacientes.</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px">${options}</div>
+    <div style="padding:10px 12px;border:1px solid rgba(20,184,166,.28);background:rgba(20,184,166,.07);border-radius:9px;font-size:.78rem;color:var(--muted);line-height:1.45;margin-top:14px">Después de copiarlo, abre ChatGPT y pégalo. La plataforma no envía información automáticamente ni comparte datos identificables.</div>
+    <div style="display:flex;justify-content:flex-end;margin-top:16px"><button class="btn btn-ghost" onclick="PanelFinance.closeChatGPTStrategy()">Cerrar</button></div>
+  </div>`;
+  modal.addEventListener('click', event => { if (event.target === modal) closeChatGPTStrategy(); });
+  document.body.appendChild(modal);
+  return modal;
+}
+
+function openChatGPTStrategy() {
+  _chatGPTStrategyModal().style.display = 'flex';
+}
+
+function closeChatGPTStrategy() {
+  const modal = document.getElementById('chatGPTStrategyModal');
+  if (modal) modal.style.display = 'none';
+}
+
+function _chatGPTMoney(value) {
+  return '$' + Math.round(Number(value) || 0).toLocaleString('es-CO');
+}
+
+function _chatGPTKnownServices() {
+  return [...new Set((global.allData?.citas || [])
+    .filter(cita => cita && !global.esRegistroServ?.(cita.servicio))
+    .map(cita => String(cita.servicio || '').trim())
+    .filter(Boolean))].sort((left, right) => left.localeCompare(right, 'es'));
+}
+
+function buildChatGPTStrategyPrompt(focus = 'completo', data, serviceNames) {
+  const option = CHATGPT_STRATEGY_OPTIONS[focus] || CHATGPT_STRATEGY_OPTIONS.completo;
+  const d = data || global.PanelWhatsAppTools?._copyGestionData?.();
+  if (!d) throw new Error('No se pudieron cargar los indicadores para el análisis');
+  const services = Array.isArray(serviceNames) ? serviceNames : _chatGPTKnownServices();
+  return [
+    'Actúa como asesora estratégica de Cuidándote Fisioterapia, un consultorio de fisioterapia en Colombia.',
+    '',
+    `OBJETIVO DEL ANÁLISIS: ${option.title.toUpperCase()}`,
+    option.question,
+    '',
+    'REGLAS IMPORTANTES',
+    '- Usa únicamente los datos entregados. Si falta un dato, dilo y formula una pregunta; no lo inventes.',
+    '- No propongas descuentos automáticos ni acciones que reduzcan el valor del servicio sin justificarlo.',
+    '- Prioriza acciones realistas, de bajo costo y medibles para los próximos 7 y 30 días.',
+    '- No necesito teoría general: necesito decisiones y mensajes aplicables a este consultorio.',
+    '',
+    `PERIODO: ${d.periodo || 'Mes actual'}`,
+    '',
+    'DATOS FINANCIEROS AGREGADOS',
+    `- Ingresos cobrados: ${_chatGPTMoney(d.ingresosCobrados)}`,
+    `- Ventas generadas: ${_chatGPTMoney(d.ventasGeneradas)}`,
+    `- Pendiente por cobrar: ${_chatGPTMoney(d.pendienteCobrar)}`,
+    `- Gastos registrados: ${_chatGPTMoney(d.egresosMes)}`,
+    `- Ganancia estimada: ${_chatGPTMoney(d.ganancia)}`,
+    `- Meta mensual: ${_chatGPTMoney(d.metaMensual)}`,
+    `- Cumplimiento de la meta: ${Number(d.cumplimiento) || 0}%`,
+    `- Faltante para la meta: ${_chatGPTMoney(d.faltante)}`,
+    `- Costos mensuales de referencia sin gastos ocasionales: ${_chatGPTMoney(COSTO_BASE)}`,
+    '',
+    'OPERACIÓN Y VENTAS',
+    `- Citas programadas: ${Number(d.citasProgramadas) || 0}`,
+    `- Sesiones atendidas: ${Number(d.sesionesAtendidas) || 0}`,
+    `- Ocupación estimada: ${d.ocupacion || 'Sin dato'}`,
+    `- Cancelaciones: ${Number(d.cancelaciones) || 0}`,
+    `- No asistencias: ${Number(d.noAsistencias) || 0}`,
+    `- Ticket promedio: ${_chatGPTMoney(d.ticketPromedio)}`,
+    `- Personas nuevas: ${Number(d.personasNuevas) || 0}`,
+    `- Personas recurrentes: ${Number(d.personasRecurrentes) || 0}`,
+    `- Paquetes vendidos: ${Number(d.paquetesVendidos) || 0}`,
+    `- Personas candidatas a paquetes (dato agregado): ${(d.candidatosPaquete || []).length}`,
+    `- Personas para reactivar (dato agregado): ${(d.reactivar || []).length}`,
+    '',
+    'SERVICIOS Y AGENDA',
+    `- Servicios registrados en la plataforma: ${services.length ? services.join(' · ') : 'Sin servicios registrados'}`,
+    `- Servicios más vendidos este mes:\n${d.serviciosMasVendidos || 'Sin datos'}`,
+    `- Servicios menos vendidos este mes:\n${d.serviciosMenosVendidos || 'Sin datos'}`,
+    `- Horarios con mayor ocupación:\n${d.horariosMayorOcupacion || 'Sin datos'}`,
+    `- Horarios con menor ocupación:\n${d.horariosMenorOcupacion || 'Sin datos'}`,
+    '',
+    'ENTRÉGAME',
+    '1. Un diagnóstico breve basado explícitamente en estos números.',
+    '2. Las 3 oportunidades con mayor impacto, ordenadas por prioridad.',
+    '3. Un plan de 7 días: acción, responsable, indicador que debo mirar y resultado esperado.',
+    '4. Una idea de campaña o contenido para el servicio prioritario, sin prometer resultados clínicos.',
+    '5. Las preguntas que debería responder para mejorar el siguiente análisis.',
+    '',
+    'Estos datos son agregados y no contienen nombres, teléfonos ni información clínica de pacientes.'
+  ].join('\n');
+}
+
+async function copyChatGPTStrategy(focus) {
+  try {
+    if (!global.PanelWhatsAppTools?._copyPlainText) throw new Error('La herramienta de copiado no está disponible');
+    const text = buildChatGPTStrategyPrompt(focus);
+    const copied = await global.PanelWhatsAppTools._copyPlainText(text);
+    closeChatGPTStrategy();
+    if (copied) toast('Estrategia copiada. Ahora pégala en ChatGPT.', 'ok');
+  } catch (error) {
+    console.error('No se pudo preparar el análisis para ChatGPT', error);
+    toast('No se pudo preparar el análisis. Intenta actualizar la página.', 'err');
+  }
+}
+
 function _analysisExportModal() {
   let modal = document.getElementById('analysisExportModal');
   if (modal) return modal;
@@ -619,6 +765,10 @@ function resRow(label, val, style='') {
     openAnalysisExport,
     closeAnalysisExport,
     downloadAnalysisExport,
+    openChatGPTStrategy,
+    closeChatGPTStrategy,
+    buildChatGPTStrategyPrompt,
+    copyChatGPTStrategy,
     resRow
   });
 })(window);
