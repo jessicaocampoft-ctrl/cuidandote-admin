@@ -71,7 +71,14 @@ function segWaSent(nombre, tipo){ return !!kvGet('seg_wa_'+tipo+'_'+nombre); }
 
 function segMarkWa(nombre, tipo, dias) {
   kvSet('seg_wa_'+tipo+'_'+nombre, Date.now());
-  const label = tipo==='sem3' ? 'WA primer mes'
+  const [periodo, enfoque] = String(tipo || '').split('-');
+  const nombreEnfoque = { general:'General', oficina:'Oficina', gimnasio:'Gimnasio' }[enfoque];
+  const nombrePeriodo = periodo==='sem3' ? 'primer mes'
+    : periodo==='sem4' ? 'segundo mes'
+    : periodo==='sem5' ? 'tres meses o más'
+    : '';
+  const label = nombreEnfoque ? `WA ${nombreEnfoque} · ${nombrePeriodo}`
+    : tipo==='sem3' ? 'WA primer mes'
     : tipo==='sem4' ? 'WA segundo mes'
     : tipo==='sem5' ? 'WA tres meses o más'
     : 'WA seguimiento';
@@ -423,13 +430,23 @@ function _renderSegLista(pacientes) {
   lista.innerHTML = descargaCards.map(p => _segCard(p)).join('');
 }
 
+function reactivationMessage(p, enfoque) {
+  const primero = String(p.nombre || '').split(' ')[0] || 'hola';
+  const semanas = Math.max(1, Math.floor(Number(p.dias || 0) / 7));
+  const semanasTexto = `${semanas} semana${semanas === 1 ? '' : 's'}`;
+  const servicio = p.servicio || 'fisioterapia';
+  const referencia = esDescargaMusc(servicio) ? 'tu descarga muscular' : `tu última cita de ${servicio}`;
+  const inicio = `Hola, ${primero} ¿Cómo has estado? Ya han pasado ${semanasTexto} desde ${referencia}`;
+
+  if (enfoque === 'oficina') return `${inicio}. Si has sentido otra vez tensión en cuello, espalda o cansancio por tantas horas sentado(a), me escribes y miramos un espacio ⭐`;
+  if (enfoque === 'gimnasio') return `${inicio}. Si has sentido tensión, sobrecarga o quieres recuperarte mejor para seguir entrenando, me escribes y miramos un espacio ⭐`;
+  return `${inicio} y quería saber cómo te has sentido. Si necesitas retomar, me escribes y miramos un espacio ⭐`;
+}
+
 function _segCard(p) {
   const reagendado = segReagendo(p.nombre);
   const initials   = p.nombre.split(' ').map(x=>x[0]).join('').toUpperCase().slice(0,2);
   const pct        = Math.min(Math.round(p.dias / 30 * 100), 100);
-  const waSent3    = segWaSent(p.nombre,'sem3');
-  const waSent4    = segWaSent(p.nombre,'sem4');
-  const waSent5    = segWaSent(p.nombre,'sem5');
 
   const colorMap   = { sem3:'#7c3aed', sem4:'var(--warn)', sem5:'var(--err)' };
   const fillMap    = { sem3:'rgba(124,58,237,.5)', sem4:'#d97706', sem5:'#dc2626' };
@@ -445,21 +462,22 @@ function _segCard(p) {
   const mesesSinAgendar = Math.max(1, Math.floor(Number(p.dias || 0) / 30));
   const tiempoSinAgendar = `${mesesSinAgendar} mes${mesesSinAgendar === 1 ? '' : 'es'} sin agendar`;
 
-  // Mensajes coherentes con cualquier servicio y con el tiempo real sin agenda.
-  const primero = p.nombre.split(' ')[0];
-  const mesesTexto = `${mesesSinAgendar} mes${mesesSinAgendar === 1 ? '' : 'es'}`;
-  const servicio = p.servicio || 'tu proceso de fisioterapia';
-  const msg3 = `Hola ${primero}! 👋 Te escribimos de Cuidándote Fisioterapia. Ya pasó ${mesesTexto} desde tu última cita de ${servicio}. Queríamos saber cómo te has sentido y si deseas retomar tu proceso. ¿Te agendo?`;
-  const msg4 = `Hola ${primero}! 👋 Te escribimos de Cuidándote Fisioterapia. Han pasado ${mesesTexto} desde tu última cita de ${servicio}. Si deseas continuar tu proceso, con gusto buscamos un espacio para ti esta semana. ¿Te agendo?`;
-  const msg5 = `Hola ${primero}! 👋 Te escribimos de Cuidándote Fisioterapia. Ya van ${mesesTexto} desde tu última cita de ${servicio}. Queremos acompañarte a retomar tu proceso cuando estés listo(a). ¿Te gustaría agendar?`;
-
-  const wa3 = hasWA ? `https://wa.me/${phone}?text=${encodeURIComponent(msg3)}` : null;
-  const wa4 = hasWA ? `https://wa.me/${phone}?text=${encodeURIComponent(msg4)}` : null;
-  const wa5 = hasWA ? `https://wa.me/${phone}?text=${encodeURIComponent(msg5)}` : null;
   const nombreWa = encodeURIComponent(p.nombre).replace(/'/g, '%27');
-  const msg3Wa = encodeURIComponent(msg3).replace(/'/g, '%27');
-  const msg4Wa = encodeURIComponent(msg4).replace(/'/g, '%27');
-  const msg5Wa = encodeURIComponent(msg5).replace(/'/g, '%27');
+  const opcionesWa = [
+    { key:'general', label:'⭐ General', className:'btn-purple' },
+    { key:'oficina', label:'💻 Oficina', className:'btn-wa' },
+    { key:'gimnasio', label:'🏋️ Gimnasio', className:'btn-err' }
+  ].map(opcion => {
+    const tipo = `${p.semana}-${opcion.key}`;
+    const mensaje = reactivationMessage(p, opcion.key);
+    const enviado = segWaSent(p.nombre, tipo);
+    const url = hasWA ? `https://wa.me/${phone}?text=${encodeURIComponent(mensaje)}` : null;
+    const mensajeWa = encodeURIComponent(mensaje).replace(/'/g, '%27');
+    const nombreSeguro = p.nombre.replace(/'/g,"\\'");
+    return url
+      ? `<a href="${url}" target="_blank" class="btn btn-sm ${opcion.className}" onclick="segMarkWa('${nombreSeguro}','${tipo}',${p.dias})" style="${enviado?'opacity:.55':''}">💬 ${enviado ? '(enviado) ' : ''}${opcion.label}</a>`
+      : `<button class="btn btn-sm ${opcion.className}" onclick="PanelPatientFollowUp.abrirWhatsAppSeguimiento('${nombreWa}','${mensajeWa}','${tipo}',${p.dias})">💬 ${opcion.label}</button>`;
+  }).join('');
 
   return `<div class="seg-card ${reagendado?'reagendado':''}">
     <div class="pac-badge" style="flex-shrink:0;background:rgba(27,191,176,.08);border-color:${reagendado?'var(--ok)':color}">${initials}</div>
@@ -480,9 +498,7 @@ function _segCard(p) {
       ${reagendado ? `
         <button class="btn btn-ghost btn-sm" onclick="segToggleR('${p.nombre.replace(/'/g,"\\'")}')">↩ Desmarcar</button>
       ` : `
-        ${p.semana==='sem3' ? (wa3 ? `<a href="${wa3}" target="_blank" class="btn btn-sm btn-purple" onclick="segMarkWa('${p.nombre.replace(/'/g,"\\'")}','sem3',${p.dias})" style="${waSent3?'opacity:.55':''}">💬 WA ${waSent3?'(enviado)':'Mes 1'}</a>` : `<button class="btn btn-sm btn-purple" onclick="PanelPatientFollowUp.abrirWhatsAppSeguimiento('${nombreWa}','${msg3Wa}','sem3',${p.dias})">💬 WA Mes 1</button>`) : ''}
-        ${p.semana==='sem4' ? (wa4 ? `<a href="${wa4}" target="_blank" class="btn btn-wa btn-sm" onclick="segMarkWa('${p.nombre.replace(/'/g,"\\'")}','sem4',${p.dias})" style="${waSent4?'opacity:.55':''}">💬 WA ${waSent4?'(enviado)':'Mes 2'}</a>` : `<button class="btn btn-wa btn-sm" onclick="PanelPatientFollowUp.abrirWhatsAppSeguimiento('${nombreWa}','${msg4Wa}','sem4',${p.dias})">💬 WA Mes 2</button>`) : ''}
-        ${p.semana==='sem5' ? (wa5 ? `<a href="${wa5}" target="_blank" class="btn btn-err btn-sm" onclick="segMarkWa('${p.nombre.replace(/'/g,"\\'")}','sem5',${p.dias})" style="${waSent5?'opacity:.55':''}">💬 WA ${waSent5?'(enviado)':'Mes 3+'}</a>` : `<button class="btn btn-err btn-sm" onclick="PanelPatientFollowUp.abrirWhatsAppSeguimiento('${nombreWa}','${msg5Wa}','sem5',${p.dias})">💬 WA Mes 3+</button>`) : ''}
+        ${opcionesWa}
         ${p.email && p.email.includes('@') ? `<a href="mailto:${p.email}" class="btn btn-ghost btn-sm">📧</a>` : ''}
         <button class="btn btn-ghost btn-sm" onclick="agendarDesdeSeg('${encodeURIComponent(p.nombre)}','${encodeURIComponent(p.telefono)}','${encodeURIComponent(p.email)}')">+ Agendar</button>
         <button class="btn btn-ghost btn-sm" style="color:var(--err);border-color:rgba(220,38,38,.35)" onclick="segToggleNoContact(decodeURIComponent('${encodeURIComponent(p.nombre)}'))">No contactar</button>
@@ -613,6 +629,7 @@ function exportarSeguimientoCSV() {
     readapZona,
     setReadapZona,
     buildReactivationPatients,
+    reactivationMessage,
     renderSeguimiento,
     _renderSegLista,
     _segCard,
