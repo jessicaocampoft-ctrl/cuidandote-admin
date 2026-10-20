@@ -587,6 +587,7 @@ function clearNuevaCita() {
   ['ncName','ncPhone','ncEmail','ncPrice','ncAddress','ncNotes','ncParaQuien','pacSearch'].forEach(id => {
     const el = document.getElementById(id); if(el) el.value='';
   });
+  document.getElementById('ncPrice').value = '$50.000';
   document.getElementById('ncService').value='';
   document.getElementById('ncServiceMain').selectedIndex=0;
   _selectedServices = [];
