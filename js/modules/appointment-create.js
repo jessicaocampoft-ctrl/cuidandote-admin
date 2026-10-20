@@ -428,7 +428,11 @@ function autoFillPrice() {
   const servs = _selectedServices.length > 0 ? _selectedServices : [document.getElementById('ncService').value];
   if (!servs[0]) return;
 
-  if (_selectedServices.length > 1) {
+  // Los paquetes se registran con el valor acordado por sesión. No deben
+  // heredar el precio total del catálogo cuando se agregan al formulario.
+  if (servs.length === 1 && /^paquete\b/i.test(String(servs[0]).trim())) {
+    document.getElementById('ncPrice').value = '$50.000';
+  } else if (_selectedServices.length > 1) {
     // Sumar precios de todos los servicios
     const total = servs.reduce((sum, s) => sum + _getPrecioServicio(s, mod), 0);
     if (total > 0) {
