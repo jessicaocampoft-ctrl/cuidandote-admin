@@ -94,6 +94,13 @@ function applySelectedPackage() {
   if (help) help.textContent = `Vinculada a ${paquete.nombre || 'paquete'} · ${restantes} sesiones disponibles${paquete.modalidadPago === 'PAGO_POR_SESION' ? ' · pago por sesión' : ''}.`;
 }
 
+function aplicarPrecioPaquete() {
+  const precio = document.getElementById('ncPrice');
+  if (!precio) return;
+  precio.value = '$50.000';
+  calcDescuento();
+}
+
 function selectPackageForAppointment(id) {
   const link = document.getElementById('ncPackageLink');
   if (!link) return;
@@ -732,6 +739,7 @@ function agendarDesdeSeg(encNombre, encTel, encEmail) {
     fillPatient,
     refreshPackageLinkForPatient,
     applySelectedPackage,
+    aplicarPrecioPaquete,
     selectPackageForAppointment,
     clearNuevaCita,
     checkTimeConflict,

@@ -3108,6 +3108,10 @@ Primero evaluamos cómo está el cuerpo ahora, luego tratamos, luego te enseñam
               </datalist>
               <button type="button" onclick="toggleDescuento()" style="white-space:nowrap;padding:8px 12px;background:var(--s2);border:1px solid var(--teal);border-radius:8px;color:var(--teal);font-family:var(--font-b);font-size:.82rem;cursor:pointer">🏷️ Descuento</button>
             </div>
+            <button type="button" onclick="PanelAppointmentCreate.aplicarPrecioPaquete()" style="display:flex;align-items:center;gap:8px;width:100%;margin-top:10px;padding:10px 12px;background:#faf9ff;border:1px solid #d8d2ff;border-radius:9px;color:#5b4bd8;font-family:var(--font-b);font-size:.84rem;font-weight:700;cursor:pointer;text-align:left">
+              <span aria-hidden="true" style="width:15px;height:15px;border:1px solid currentColor;border-radius:3px;display:inline-block;box-sizing:border-box"></span>
+              💰 Usar precio de paquete: $50.000
+            </button>
             <div id="descuentoPanel" style="display:none;margin-top:10px;background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:12px">
               <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
                 <label style="font-size:.82rem;color:var(--muted);margin:0;white-space:nowrap">Descuento:</label>
@@ -13003,7 +13007,7 @@ document.addEventListener('DOMContentLoaded', () => {
 <script src="js/modules/payments.js?v=20260929-payment-custom-plan"></script>
   <script src="js/modules/passport.js"></script>
   <script src="js/modules/agenda.js?v=20261007-cancelled-section"></script>
-  <script src="js/modules/appointment-create.js?v=20261020-package-price-50000"></script>
+  <script src="js/modules/appointment-create.js?v=20261020-package-price-option"></script>
   <script src="js/modules/appointment-edit.js?v=20261019-appointment-reminders"></script>
 <script src="js/modules/team.js?v=20261015-work-hours-card"></script>
   <script src="js/modules/database.js"></script>
