@@ -252,7 +252,7 @@ function renderIngresosDetalle() {
     if (labelEl) labelEl.textContent = DIAS_NOM[dObj.getDay()] + ' ' + dObj.toLocaleDateString('es-CO',{day:'2-digit',month:'long',year:'numeric'});
     if (!citasDia.length && !evtsDia.length) {
       resultEl.innerHTML = '<div style="color:var(--muted);font-size:.85rem;padding:16px 0">Sin citas registradas para este día.</div>';
-      if (analEl) analEl.innerHTML = '';
+      if (analEl) analEl.innerHTML = _analisisDia({ fechaSel, citasDia, evtsDia, total:0, topSrvDia:null, citas });
       return;
     }
     // Servicio más frecuente del día
@@ -283,7 +283,7 @@ function renderIngresosDetalle() {
             <span style="font-family:var(--font-m);color:#7c3aed">$${parsePrecio(e.cobro).toLocaleString('es-CO')}</span>
           </div>`).join('')}
       </div>`;
-    if (analEl) analEl.innerHTML = '';
+    if (analEl) analEl.innerHTML = _analisisDia({ fechaSel, citasDia, evtsDia, total, topSrvDia, citas });
 
   // ── MODO SEMANA ──
   } else if (_modoIngresos === 'semana') {
@@ -375,7 +375,7 @@ function renderIngresosDetalle() {
       </div>`;
 
     // Análisis semanal
-    if (analEl) analEl.innerHTML = _analisisSemana({ totalSem, nCitas, ticketProm, diffSem, pctDiff, mejorDia, topSrvSem, nuevosSem, recSem, totalAnt, nCitasAnt, dias, lunes });
+    if (analEl) analEl.innerHTML = _rankingMesesFacturacion() + _analisisSemana({ totalSem, nCitas, ticketProm, diffSem, pctDiff, mejorDia, topSrvSem, nuevosSem, recSem, totalAnt, nCitasAnt, dias, lunes });
 
   // ── MODO MES ──
   } else {
@@ -524,8 +524,73 @@ function renderIngresosDetalle() {
         </div>
       </div>`;
 
-    if (analEl) analEl.innerHTML = _analisisMes({ totalMes, nCitasMes, ticketM, diffMes, pctDiffM, mejorDiaMes, peorDiaMes, topSrvMes, nuevosMes, recMes, totalMesAnt, nCitasMesAnt, semanas, meta, diasMes, mesNombre: MESES_NOM[mesN] });
+    if (analEl) analEl.innerHTML = _rankingMesesFacturacion() + _analisisMes({ totalMes, nCitasMes, ticketM, diffMes, pctDiffM, mejorDiaMes, peorDiaMes, topSrvMes, nuevosMes, recMes, totalMesAnt, nCitasMesAnt, semanas, meta, diasMes, mesNombre: MESES_NOM[mesN] });
   }
+}
+
+function _analisisDia({ fechaSel, citasDia, evtsDia, total, topSrvDia, citas }) {
+  const fecha = new Date(fechaSel+'T12:00:00');
+  const dow = fecha.getDay();
+  const DIAS = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+  const desde = new Date(fecha); desde.setDate(desde.getDate()-84);
+  const historico = citas.filter(c => {
+    const f = normDate(c.fecha); if (!f || f >= fechaSel) return false;
+    const d = new Date(f+'T12:00:00');
+    return d >= desde && d.getDay() === dow;
+  });
+  const semanas = new Set(historico.map(c => {
+    const d = new Date(normDate(c.fecha)+'T12:00:00');
+    const lunes = new Date(d); lunes.setDate(d.getDate()-(d.getDay()===0?6:d.getDay()-1));
+    return _ingDateStr(lunes);
+  }));
+  const muestras = semanas.size;
+  const citasProm = muestras ? historico.length / muestras : 0;
+  const factProm = muestras ? historico.reduce((s,c)=>s+parsePrecio(c.precio),0) / muestras : 0;
+  const ticket = citasDia.length ? Math.round(total / (citasDia.length + evtsDia.length)) : 0;
+  const citasExactas = citasProm.toFixed(1).replace('.', ',');
+  const diffCitas = citasDia.length - citasProm;
+  const diffFact = total - factProm;
+  const signo = n => n > 0 ? '+' : n < 0 ? '−' : '';
+  const clase = n => n > 0 ? '#047857' : n < 0 ? '#b91c1c' : 'var(--muted)';
+  const positivos = [];
+  const alertas = [];
+  const recs = [];
+
+  if (muestras) {
+    const estado = diffCitas >= 1 ? 'por encima' : diffCitas <= -1 ? 'por debajo' : 'en línea con';
+    const texto = `Hoy tienes <strong>${citasDia.length} cita${citasDia.length===1?'':'s'}</strong>; estás ${estado} de tu promedio de ${DIAS[dow]} (<strong>${citasExactas}</strong> citas en ${muestras} ${muestras===1?'semana comparable':'semanas comparables'}).`;
+    (diffCitas >= 0 ? positivos : alertas).push(texto);
+    if (diffCitas <= -1) recs.push(`Abre los horarios libres de <strong>${DIAS[dow]}</strong> a pacientes pendientes por agendar y a seguimientos. Te faltan aproximadamente <strong>${Math.ceil(Math.abs(diffCitas))} cita${Math.ceil(Math.abs(diffCitas))===1?'':'s'}</strong> para alcanzar tu promedio.`);
+    else if (diffCitas >= 1) recs.push(`El volumen de <strong>${DIAS[dow]}</strong> está fuerte. Prioriza confirmar las citas pendientes y conserva espacios para reprogramaciones de última hora.`);
+    else recs.push(`El volumen de <strong>${DIAS[dow]}</strong> está estable. Mantén las confirmaciones y ofrece los espacios libres antes de que empiece el día.`);
+  } else {
+    recs.push(`Aún no hay suficientes ${DIAS[dow]} anteriores para calcular un promedio confiable. El sistema irá construyendo esta referencia con las próximas semanas.`);
+  }
+  if (topSrvDia) recs.push(`Servicio más frecuente hoy: <strong>${topSrvDia[0]}</strong> (${topSrvDia[1]} cita${topSrvDia[1]===1?'':'s'}).`);
+
+  const card = (titulo, valor, sub, color='var(--primary)') => `<div style="padding:12px 14px;background:var(--s2);border-radius:10px;border-left:3px solid ${color}"><div style="font-size:.7rem;color:var(--muted);font-family:var(--font-m);margin-bottom:3px">${titulo}</div><div style="font-family:var(--font-h);font-size:1.15rem;font-weight:700;color:${color}">${valor}</div><div style="font-size:.73rem;color:var(--muted);margin-top:3px">${sub}</div></div>`;
+  const promedio = muestras
+    ? `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin:0 0 14px">${card('Promedio de '+DIAS[dow], citasExactas+' citas', 'Promedio exacto · '+muestras+' semanas', '#6366f1')}${card('Facturación promedio', '$'+Math.round(factProm).toLocaleString('es-CO'), `${signo(diffFact)}$${Math.abs(Math.round(diffFact)).toLocaleString('es-CO')} vs. promedio`, clase(diffFact))}${card('Ticket de hoy', ticket?'$'+ticket.toLocaleString('es-CO'):'—', citasDia.length?'Por cita / evento':'Sin citas registradas')}</div>`
+    : '';
+  return `<div style="border-top:1px solid var(--border);padding-top:20px">${promedio}${_renderAnalisis('📍 Análisis del día', positivos, alertas, recs)}</div>${_rankingMesesFacturacion()}`;
+}
+
+function _rankingMesesFacturacion() {
+  const meses = {};
+  const agregar = (fecha, valor) => {
+    const f = normDate(fecha); if (!f) return;
+    const clave = f.slice(0,7); if (!meses[clave]) meses[clave] = { total:0, citas:0, eventos:0, paquetes:0 };
+    meses[clave].total += parsePrecio(valor);
+  };
+  citasReales().forEach(c => { agregar(c.fecha, c.precio); const f=normDate(c.fecha); if(f) meses[f.slice(0,7)].citas++; });
+  (allData.eventos||[]).forEach(e => { agregar(e.fecha, e.cobro); const f=normDate(e.fecha); if(f && meses[f.slice(0,7)]) meses[f.slice(0,7)].eventos++; });
+  _getPkAsignados().forEach(p => { agregar(p.fechaCompra, p.precio); const f=normDate(p.fechaCompra); if(f && meses[f.slice(0,7)]) meses[f.slice(0,7)].paquetes++; });
+  const filas = Object.entries(meses).filter(([,v])=>v.total>0).sort((a,b)=>b[1].total-a[1].total).slice(0,18);
+  if (!filas.length) return '';
+  const max = filas[0][1].total || 1;
+  const actual = today().slice(0,7);
+  const nombre = k => new Date(k+'-01T12:00:00').toLocaleDateString('es-CO',{month:'long',year:'numeric'});
+  return `<div style="margin:0 0 20px;padding:16px;border:1px solid rgba(99,102,241,.22);background:rgba(99,102,241,.035);border-radius:12px"><div style="font-family:var(--font-h);font-size:1rem;font-weight:700;margin-bottom:4px">🏆 Meses: de mayor a menor facturación registrada</div><div style="font-size:.76rem;color:var(--muted);margin-bottom:12px">Incluye citas no canceladas, eventos cobrados y paquetes vendidos. El mes en curso puede cambiar.</div>${filas.map(([k,v],i)=>`<div style="padding:6px 0"><div style="display:flex;justify-content:space-between;gap:10px;font-size:.8rem;margin-bottom:4px"><span style="font-weight:${i===0?'700':'500'}">${i===0?'🥇 ':''}${nombre(k)}${k===actual?' <span style="font-size:.68rem;color:var(--warn)">· en curso</span>':''}</span><span style="font-family:var(--font-m);color:${i===0?'var(--primary)':'#6366f1'}">$${Math.round(v.total).toLocaleString('es-CO')}</span></div><div class="metric-bar-bg"><div class="metric-bar-fill" style="width:${Math.max(3,Math.round(v.total/max*100))}%;background:${i===0?'var(--primary)':'#6366f1'}"></div></div></div>`).join('')}</div>`;
 }
 
 function _analisisSemana({ totalSem, nCitas, ticketProm, diffSem, pctDiff, mejorDia, topSrvSem, nuevosSem, recSem, totalAnt, nCitasAnt, dias, lunes }) {
