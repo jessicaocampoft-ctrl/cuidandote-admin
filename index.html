@@ -3881,6 +3881,30 @@ Primero evaluamos cómo está el cuerpo ahora, luego tratamos, luego te enseñam
             <input type="date" id="ingresosFechaInput" style="background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font-b);font-size:.85rem;padding:6px 10px;outline:none" oninput="renderCitasResumen();renderIngresosDetalle()">
             <span style="font-size:.78rem;color:var(--muted)" id="ingresosRangoLabel"></span>
           </div>
+          <div style="margin-bottom:18px;padding:14px;border:1px solid rgba(27,191,176,.28);background:rgba(27,191,176,.035);border-radius:12px">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+              <div>
+                <div style="font-family:var(--font-m);font-size:.78rem;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)">Comparar facturación entre períodos</div>
+                <div style="font-size:.78rem;color:var(--muted);margin-top:3px">Meses, semanas o dos rangos de fechas que tú elijas.</div>
+              </div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap">
+                <button class="btn btn-ghost btn-sm" onclick="presetComparacionFacturacion('mes')">Mes vs. mes anterior</button>
+                <button class="btn btn-ghost btn-sm" onclick="presetComparacionFacturacion('semana')">Semana vs. semana anterior</button>
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:12px;align-items:end">
+              <div style="padding:10px 12px;background:var(--s2);border-radius:9px">
+                <div style="font-size:.72rem;font-family:var(--font-m);color:var(--primary);margin-bottom:7px">PERÍODO A</div>
+                <div style="display:flex;gap:7px;align-items:center"><input type="date" id="compDesdeA" aria-label="Inicio período A" style="min-width:0;flex:1"><span style="font-size:.76rem;color:var(--muted)">a</span><input type="date" id="compHastaA" aria-label="Fin período A" style="min-width:0;flex:1"></div>
+              </div>
+              <div style="padding:10px 12px;background:var(--s2);border-radius:9px">
+                <div style="font-size:.72rem;font-family:var(--font-m);color:#6366f1;margin-bottom:7px">PERÍODO B</div>
+                <div style="display:flex;gap:7px;align-items:center"><input type="date" id="compDesdeB" aria-label="Inicio período B" style="min-width:0;flex:1"><span style="font-size:.76rem;color:var(--muted)">a</span><input type="date" id="compHastaB" aria-label="Fin período B" style="min-width:0;flex:1"></div>
+              </div>
+              <button class="btn btn-teal" onclick="renderComparacionFacturacion()" style="white-space:nowrap">Comparar</button>
+            </div>
+            <div id="comparacionFacturacionResult" style="margin-top:14px"></div>
+          </div>
           <div id="citasResumenStats" style="margin-bottom:20px"></div>
           <div id="ingresosDetalleResult"></div>
           <div id="ingresosAnalisis" style="margin-top:20px"></div>
@@ -11502,6 +11526,22 @@ function setModoIngresos(...args) {
     throw new Error('El módulo Ingresos y análisis no está disponible: setModoIngresos');
   }
   return module.setModoIngresos(...args);
+}
+
+function presetComparacionFacturacion(...args) {
+  const module = window.PanelIncomeAnalysis;
+  if (!module || typeof module.presetComparacionFacturacion !== 'function') {
+    throw new Error('El módulo Ingresos y análisis no está disponible: comparación');
+  }
+  return module.presetComparacionFacturacion(...args);
+}
+
+function renderComparacionFacturacion(...args) {
+  const module = window.PanelIncomeAnalysis;
+  if (!module || typeof module.renderComparacionFacturacion !== 'function') {
+    throw new Error('El módulo Ingresos y análisis no está disponible: comparación');
+  }
+  return module.renderComparacionFacturacion(...args);
 }
 
 function _ingFmt(...args) {

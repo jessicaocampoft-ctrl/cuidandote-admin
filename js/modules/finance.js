@@ -231,6 +231,8 @@ function renderFinanzas() {
   renderEgresosList();
   renderKPITablero();
   renderEstructuraFinanciera();
+  global.PanelIncomeAnalysis?.initComparacionFacturacion?.();
+  global.PanelIncomeAnalysis?.renderComparacionFacturacion?.();
 }
 
 function calcCobradoMes(mesParam, anyoParam) {
