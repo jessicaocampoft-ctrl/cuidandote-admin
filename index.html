@@ -3779,6 +3779,18 @@ Primero evaluamos cómo está el cuerpo ahora, luego tratamos, luego te enseñam
         <div id="finProyeccionExt"></div>
       </div>
 
+      <!-- Cobros pendientes del mes -->
+      <div class="card" style="margin-bottom:20px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:6px">
+          <div>
+            <div class="card-title" style="margin-bottom:3px">💳 Cobros pendientes del mes</div>
+            <div style="font-size:.76rem;color:var(--muted)">Citas y saldos de planes marcados para cobro. Registra el pago para sacarlos de esta lista.</div>
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="renderFinanzas()">↻ Actualizar</button>
+        </div>
+        <div id="finCobrosPendientesMes"></div>
+      </div>
+
       <!-- Breakdown por servicio (mes actual) -->
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
         <div class="card">

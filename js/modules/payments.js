@@ -414,12 +414,14 @@ async function saveManualPayment(mode = 'verify') {
     // La confirmación ya fue recibida: libera a la auxiliar enseguida. La
     // sincronización completa ocurre en segundo plano para no congelar la vista.
     c.estado = mode === 'approve' ? 'Autorizada para atender' : 'Pago por verificar';
+    if (typeof global.renderFinanzas === 'function') global.renderFinanzas();
     clearPaymentForm();
     setTimeout(async () => {
       try {
         await Promise.all([reload(), loadOperationsData({force:true})]);
         renderPagos();
         renderAgenda(true);
+        if (typeof global.renderFinanzas === 'function') global.renderFinanzas();
       } catch (_) {}
     }, 0);
   } catch (error) {

@@ -188,6 +188,8 @@ function renderFinanzas() {
       </div>`;
   }
 
+  renderCobrosPendientesMes(citas, m, y);
+
   // ── Alerta semana floja ──
   _checkAlertaSemanFloja(citas);
 
@@ -233,6 +235,48 @@ function renderFinanzas() {
   renderEstructuraFinanciera();
   global.PanelIncomeAnalysis?.initComparacionFacturacion?.();
   global.PanelIncomeAnalysis?.renderComparacionFacturacion?.();
+}
+
+function renderCobrosPendientesMes(citas, mes, anyo) {
+  const el = document.getElementById('finCobrosPendientesMes');
+  if (!el) return;
+  const pendingKinds = new Set(['appointment-balance','appointment-partial','package-balance','package-session-due']);
+  const seen = new Set();
+  const cobros = [];
+
+  citas
+    .filter(c => {
+      const f = normDate(c.fecha);
+      if (!f) return false;
+      const [cy, cm] = f.split('-').map(Number);
+      return cy === anyo && cm === mes;
+    })
+    .forEach(c => {
+      const summary = global.PanelPackages?.getAppointmentFinancialSummary?.(c);
+      if (!summary || !pendingKinds.has(summary.kind)) return;
+      const isPlan = summary.kind === 'package-balance';
+      const key = isPlan ? `plan:${summary.packageRecord?.id || summary.packageRecord?.ID || c.id}` : `cita:${c.id}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+      const amount = isPlan ? Number(summary.packageBalance || 0) : Number(summary.appointmentBalance ?? summary.price ?? 0);
+      if (amount <= 0) return;
+      cobros.push({ cita:c, summary, amount, isPlan });
+    });
+
+  cobros.sort((a,b) => `${normDate(a.cita.fecha)} ${a.cita.hora || ''}`.localeCompare(`${normDate(b.cita.fecha)} ${b.cita.hora || ''}`));
+  const total = cobros.reduce((sum, item) => sum + item.amount, 0);
+  if (!cobros.length) {
+    el.innerHTML = '<div class="empty" style="padding:22px 0"><p>✅ No hay cobros pendientes registrados para este mes.</p></div>';
+    return;
+  }
+  el.innerHTML = `<div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap;padding:10px 12px;margin-bottom:10px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25);border-radius:10px"><strong style="color:#92400e">${cobros.length} cobro${cobros.length===1?'':'s'} pendiente${cobros.length===1?'':'s'}</strong><span style="color:var(--muted)">·</span><strong style="font-family:var(--font-m);color:#b45309">$${Math.round(total).toLocaleString('es-CO')}</strong><span style="font-size:.75rem;color:var(--muted)">El pago se registra con fecha, valor y medio de pago.</span></div><div style="display:flex;flex-direction:column;gap:8px">${cobros.map(({cita, summary, amount, isPlan}) => {
+    const detail = isPlan
+      ? `Saldo del plan: ${summary.packageRecord?.nombre || summary.packageRecord?.tipo || 'Paquete'}`
+      : summary.kind === 'package-session-due'
+        ? summary.label
+        : `${cita.servicio || 'Servicio'} · ${cita.modalidad || '—'}`;
+    return `<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:11px 12px;background:var(--s2);border:1px solid var(--border);border-radius:10px"><div style="min-width:190px;flex:1"><div style="font-weight:700;font-size:.88rem">${esc(cita.nombre || 'Paciente')}</div><div style="font-size:.76rem;color:var(--muted);margin-top:3px">${esc(fmtDate(cita.fecha))} · ${esc(cita.hora || '—')} · ${esc(detail)}</div></div><div style="font-family:var(--font-m);font-weight:700;color:#b45309">$${Math.round(amount).toLocaleString('es-CO')}</div><div style="display:flex;gap:7px;flex-wrap:wrap"><button class="btn btn-ghost btn-sm" onclick="verDetalle('${esc(cita.id)}')">Ver cita</button><button class="btn btn-teal btn-sm" onclick="openPago('${esc(cita.id)}')">💳 Registrar pago</button></div></div>`;
+  }).join('')}</div>`;
 }
 
 function calcCobradoMes(mesParam, anyoParam) {
