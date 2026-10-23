@@ -151,6 +151,26 @@ async function changeStatus(id, status) {
   } catch(e) { toast('Error de conexión', 'err'); }
 }
 
+// Marca una cita para gestión de cobro sin registrar dinero ni modificar los
+// pagos reales. Así la cita entra a la lista de Pagos pendientes y puede ser
+// revisada por la auxiliar.
+async function marcarPagoPendiente(id) {
+  const cita = allData.citas.find(c => String(c.id) === String(id));
+  if (!cita) { toast('No encontré la cita. Actualiza e inténtalo de nuevo.', 'err'); return; }
+  if (cita.estado === 'Pendiente de pago') { toast('Esta cita ya está marcada como pago pendiente.'); return; }
+  try {
+    const r = await saveEditWithRetry(`${APPS_SCRIPT_URL}?action=updateStatus&token=${encodeURIComponent(TOKEN)}&id=${encodeURIComponent(id)}&status=${encodeURIComponent('Pendiente de pago')}`);
+    if (!r?.ok) throw new Error(r?.error || 'El servidor no confirmó el cambio.');
+    cita.estado = 'Pendiente de pago';
+    logChange('Pago pendiente marcado', `${cita.nombre} · ${cita.servicio} · ${cita.fecha} ${cita.hora}`);
+    toast('Pago pendiente marcado. Ya aparece en la gestión de pagos.', 'ok');
+    verDetalle(id);
+    _refreshAfterAppointmentChange();
+  } catch (error) {
+    toast('No se pudo marcar el pago pendiente: ' + (error.message || 'intenta de nuevo.'), 'err');
+  }
+}
+
 function verDetalle(id) {
   const c = allData.citas.find(x => x.id === id);
   if (!c) return;
@@ -159,6 +179,8 @@ function verDetalle(id) {
   const financialSummary = packageTools?.getAppointmentFinancialSummary?.(c);
   const financialHtml = packageTools?.getAppointmentFinancialSummaryHtml?.(c) || '';
   const paymentUrl = packageTools?.appointmentPaymentWhatsAppUrl?.(c) || null;
+  const paymentIsPending = ['appointment-balance','appointment-partial','package-balance','package-session-due'].includes(financialSummary?.kind);
+  const canMarkPaymentPending = !esCancelada && paymentIsPending && c.estado !== 'Pendiente de pago';
   const canConfirmAttendance = financialSummary?.kind !== 'started';
   const reminderTomorrowUrl = !esCancelada ? global.PanelWhatsAppTools?.waLinkReminder?.(c.telefono, c.nombre, c.fecha, c.hora, c.servicio, 'tomorrow') : null;
   const reminderTodayUrl = !esCancelada ? global.PanelWhatsAppTools?.waLinkReminder?.(c.telefono, c.nombre, c.fecha, c.hora, c.servicio, 'today') : null;
@@ -212,7 +234,8 @@ function verDetalle(id) {
         ${canConfirmAttendance ? waBtn(c.telefono,c.nombre,c.fecha,c.hora,c.servicio,'WhatsApp confirmación',c.precio,c.modalidad) : '<span class="btn btn-ghost btn-sm" style="pointer-events:none;opacity:.65">No requiere confirmación</span>'}
         ${reminderTomorrowUrl ? `<a href="${reminderTomorrowUrl}" target="_blank" class="btn btn-ghost btn-sm" title="Enviar el recordatorio del día anterior" onclick="markWaSent('${esc(c.id)}','reminder-tomorrow');this.style.opacity='.55'">📅 Recordatorio mañana</a>` : ''}
         ${reminderTodayUrl ? `<a href="${reminderTodayUrl}" target="_blank" class="btn btn-ghost btn-sm" title="Enviar el recordatorio del mismo día" onclick="markWaSent('${esc(c.id)}','reminder-today');this.style.opacity='.55'">⏰ Recordatorio hoy</a>` : ''}
-        ${paymentUrl ? `<a href="${paymentUrl}" target="_blank" class="btn btn-ghost btn-sm">💳 ${financialSummary?.kind === 'package-balance' ? 'Cobrar saldo del paquete' : financialSummary?.kind === 'appointment-partial' ? 'Cobrar saldo de cita' : 'Solicitar pago de cita'}</a>` : '<span class="btn btn-ghost btn-sm" style="pointer-events:none;opacity:.65">💳 Sin cobro pendiente</span>'}
+        ${paymentUrl ? `<a href="${paymentUrl}" target="_blank" class="btn btn-ghost btn-sm">💳 ${financialSummary?.kind === 'package-balance' ? 'Cobrar saldo del paquete' : financialSummary?.kind === 'appointment-partial' ? 'Cobrar saldo de cita' : 'Solicitar pago de cita'}</a>` : paymentIsPending ? '<span class="btn btn-ghost btn-sm" style="pointer-events:none;opacity:.65">📵 Sin teléfono para cobrar</span>' : '<span class="btn btn-ghost btn-sm" style="pointer-events:none;opacity:.65">💳 Sin cobro pendiente</span>'}
+        ${canMarkPaymentPending ? `<button class="btn btn-ghost btn-sm" onclick="marcarPagoPendiente('${esc(c.id)}')">⏳ Marcar pago pendiente</button>` : c.estado === 'Pendiente de pago' ? '<span class="btn btn-ghost btn-sm" style="pointer-events:none;opacity:.7">⏳ Pago pendiente</span>' : ''}
         <button class="btn btn-ghost btn-sm" onclick="(function(){ const p=(document.getElementById('notaParaQuienInput').value||'').trim(); const nota=p?'[PARA: '+p+']':''; seguimientoWA('${esc(c.telefono||'')}','${esc(c.nombre)}','${esc(c.servicio)}',nota); })()">💬 Seguimiento</button>
         ${puedeAsignarEquipo ? `<button class="btn btn-teal btn-sm" onclick="closeModal('modalDetalle');abrirAsignarPro('${esc(c.id)}')">👥 Asignar colaborador</button>` : ''}
         ${waBtnPasaporte(c.telefono,c.nombre)}
@@ -449,6 +472,7 @@ async function guardarEdicion() {
     confirmarReagendar,
     guardarNotaAdmin,
     changeStatus,
+    marcarPagoPendiente,
     verDetalle,
     cancelarCita,
     confirmarCancelacion,

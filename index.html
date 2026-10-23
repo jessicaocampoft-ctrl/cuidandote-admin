@@ -8834,6 +8834,14 @@ async function changeStatus(...args) {
   return await module.changeStatus(...args);
 }
 
+async function marcarPagoPendiente(...args) {
+  const module = window.PanelAppointmentEdit;
+  if (!module || typeof module.marcarPagoPendiente !== 'function') {
+    throw new Error('El módulo de edición de citas no está disponible: marcarPagoPendiente');
+  }
+  return await module.marcarPagoPendiente(...args);
+}
+
 function verDetalle(...args) {
   const module = window.PanelAppointmentEdit;
   if (!module || typeof module.verDetalle !== 'function') {
