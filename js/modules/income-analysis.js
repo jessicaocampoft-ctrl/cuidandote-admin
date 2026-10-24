@@ -19,6 +19,14 @@ function _setComparacionFechas(aDesde, aHasta, bDesde, bHasta) {
   Object.entries(values).forEach(([id,value]) => { const el=document.getElementById(id); if(el) el.value=value; });
 }
 function initComparacionFacturacion() {
+  // La comparación se consulta después del detalle del período, justo antes
+  // del análisis con recomendaciones. Así se leen juntos los números y su
+  // interpretación sin separar la vista semanal.
+  const panel = document.getElementById('comparacionFacturacionPanel');
+  const analysis = document.getElementById('ingresosAnalisis');
+  if (panel && analysis && panel.parentElement === analysis.parentElement) {
+    analysis.parentElement.insertBefore(panel, analysis);
+  }
   const first = document.getElementById('compDesdeA');
   if (!first || first.value) return;
   presetComparacionFacturacion('mes', false);
