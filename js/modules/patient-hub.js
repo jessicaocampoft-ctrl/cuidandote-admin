@@ -66,6 +66,7 @@
     const originalPatientChildren = Array.from(pacientes.children).filter(el => el !== header);
     const registerCard = document.getElementById('dbNombre')?.closest('.card') || null;
     const reactivationCard = document.getElementById('cardReactivacion');
+    const cancelledWithoutNewCard = document.getElementById('cardCanceladosSinNuevaCita');
 
     if (!registerCard || !reactivationCard) {
       console.warn('No se pudo consolidar Pacientes: faltan los bloques de registro o reactivación.');
@@ -123,7 +124,9 @@
     const reactNote = document.createElement('div');
     reactNote.className = 'patient-hub-note';
     reactNote.textContent = 'Aquí aparecen pacientes sin visita reciente y sin una próxima cita agendada.';
-    reactPanel.append(reactNote, reactivationCard);
+    reactPanel.append(reactNote);
+    if (cancelledWithoutNewCard) reactPanel.append(cancelledWithoutNewCard);
+    reactPanel.append(reactivationCard);
 
     if (header) header.insertAdjacentElement('afterend', tabs);
     else pacientes.prepend(tabs);

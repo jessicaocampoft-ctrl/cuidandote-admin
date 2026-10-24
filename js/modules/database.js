@@ -73,6 +73,7 @@ function renderBasedatos() {
 }
 
 function renderReactivacion() {
+  renderCanceladosSinNuevaCita();
   const el = document.getElementById('reactivacionResult');
   if (!el) return;
 
@@ -193,6 +194,74 @@ function renderReactivacion() {
 
   html += `</div>`;
   el.innerHTML = html;
+}
+
+/*
+ * Personas que cancelaron en el mes seleccionado y no registran una cita
+ * posterior que siga activa. Es una cola comercial, no modifica ninguna cita.
+ */
+function renderCanceladosSinNuevaCita() {
+  const el = document.getElementById('canceladosSinNuevaCitaResult');
+  const monthInput = document.getElementById('canceladosSinNuevaCitaMes');
+  if (!el || !monthInput) return;
+
+  const currentMonth = today().slice(0, 7);
+  if (!monthInput.value) monthInput.value = currentMonth;
+  const selectedMonth = monthInput.value;
+  const citas = (allData.citas || []).filter(c => c && c.nombre && normDate(c.fecha));
+
+  const patientKey = c => {
+    const phone = String(c.telefono || '').replace(/\D/g, '').slice(-10);
+    return phone.length >= 7 ? 'p:' + phone : 'n:' + String(c.nombre || '').trim().toLowerCase();
+  };
+  const status = c => String(c.estado || '').trim().toLowerCase();
+  const isCancelled = c => status(c).includes('cancel');
+  const isActiveAppointment = c => {
+    const st = status(c);
+    return !isCancelled(c) && !['reprogramada', 'no asistió', 'reserva vencida', 'reembolsada'].includes(st);
+  };
+  const dateTimeKey = c => {
+    const date = normDate(c.fecha);
+    const raw = String(c.hora || '').toLowerCase();
+    const match = raw.match(/(\d{1,2}):(\d{2})/);
+    let hour = match ? Number(match[1]) : 0;
+    const min = match ? Number(match[2]) : 0;
+    if (/p\.?\s*m\.?/.test(raw) && hour < 12) hour += 12;
+    if (/a\.?\s*m\.?/.test(raw) && hour === 12) hour = 0;
+    return date + ' ' + String(hour).padStart(2, '0') + ':' + String(min).padStart(2, '0');
+  };
+
+  // Se conserva solo la última cancelación del mes para cada persona.
+  const latestCancelled = new Map();
+  citas.filter(c => isCancelled(c) && normDate(c.fecha).slice(0, 7) === selectedMonth).forEach(c => {
+    const key = patientKey(c);
+    const prior = latestCancelled.get(key);
+    if (!prior || dateTimeKey(c) > dateTimeKey(prior)) latestCancelled.set(key, c);
+  });
+
+  const pendientes = Array.from(latestCancelled.values()).filter(cancelled => {
+    const key = patientKey(cancelled);
+    const cancelledAt = dateTimeKey(cancelled);
+    // Una sola nueva cita activa, posterior a la cancelación, ya resuelve el pendiente.
+    return !citas.some(candidate =>
+      patientKey(candidate) === key && isActiveAppointment(candidate) && dateTimeKey(candidate) > cancelledAt
+    );
+  }).sort((a, b) => dateTimeKey(b).localeCompare(dateTimeKey(a)));
+
+  if (!pendientes.length) {
+    el.innerHTML = `<div style="padding:16px;text-align:center;color:var(--ok);font-size:.86rem;border:1px dashed var(--border);border-radius:10px">🟢 No hay cancelados sin una nueva cita registrada para ${selectedMonth}.</div>`;
+    return;
+  }
+
+  const msgFor = nombre => `Hola, ${nombre} 🩵 vimos que quedó pendiente reprogramar tu sesión. Tenemos algunos espacios disponibles esta semana. ¿Te reviso horarios?`;
+  el.innerHTML = `<div style="margin-bottom:10px;font-size:.82rem;color:var(--muted)"><strong style="color:var(--warn)">${pendientes.length}</strong> persona${pendientes.length === 1 ? '' : 's'} por contactar antes de reactivar pacientes antiguos.</div><div style="display:flex;flex-direction:column;gap:8px">${pendientes.map(c => {
+    const phone = String(c.telefono || '').replace(/\D/g, '');
+    const whatsapp = phone.length >= 7 ? `https://wa.me/${phone.length <= 10 ? '57' + phone : phone}?text=${encodeURIComponent(msgFor(c.nombre))}` : '';
+    const nameEnc = encodeURIComponent(c.nombre || '');
+    const telEnc = encodeURIComponent(c.telefono || '');
+    const emailEnc = encodeURIComponent(c.email || '');
+    return `<div style="padding:12px 14px;background:var(--s2);border-radius:10px;border-left:3px solid var(--warn);display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap"><div><div style="font-size:.88rem;font-weight:650">${c.nombre}</div><div style="font-size:.74rem;color:var(--muted);margin-top:3px">Canceló: ${fmtDate(normDate(c.fecha))}${c.hora ? ' · ' + c.hora : ''} · ${c.servicio || 'Sin servicio registrado'}${phone ? ' · 📞 ' + phone : ''}</div></div><div style="display:flex;gap:7px;flex-wrap:wrap">${whatsapp ? `<a href="${whatsapp}" target="_blank" rel="noopener" class="btn btn-wa btn-sm">WhatsApp</a>` : '<span style="font-size:.72rem;color:var(--muted);padding:6px">Sin teléfono</span>'}<button type="button" class="btn btn-teal btn-sm" onclick="agendarDesdePaciente('${nameEnc}','${telEnc}','${emailEnc}')">Agendar</button></div></div>`;
+  }).join('')}</div>`;
 }
 
 function limpiarFormDB() {
@@ -490,6 +559,7 @@ function waRecordatorio(tel, nombre, semanas) {
     initFormDB,
     renderBasedatos,
     renderReactivacion,
+    renderCanceladosSinNuevaCita,
     limpiarFormDB,
     agregarPacienteDB,
     checkDupDB,

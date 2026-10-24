@@ -5249,6 +5249,22 @@ Acción: enviar mensaje de reenganche a los 14 pacientes que solo vinieron una v
         <p class="page-sub">Agrega y gestiona pacientes directamente desde aquí</p>
       </div>
 
+      <!-- Cancelados pendientes de reprogramar: prioridad antes de reactivación antigua -->
+      <div class="card" style="margin-bottom:18px;border-color:rgba(245,158,11,.38)" id="cardCanceladosSinNuevaCita">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:4px">
+          <div>
+            <div class="card-title" style="margin-bottom:0">🗓️ Cancelados sin nueva cita</div>
+            <div style="font-size:.75rem;color:var(--muted);margin-top:3px">Prioridad para Mónica: personas que cancelaron y todavía no tienen una cita posterior registrada.</div>
+          </div>
+          <label style="font-size:.78rem;color:var(--muted);display:flex;align-items:center;gap:7px">Mes
+            <input type="month" id="canceladosSinNuevaCitaMes" onchange="renderCanceladosSinNuevaCita()"
+              style="font-size:.8rem;padding:6px 9px;background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font-b);outline:none">
+          </label>
+        </div>
+        <div style="margin-top:10px;padding:9px 11px;border-radius:8px;background:rgba(245,158,11,.08);color:#9a5b00;font-size:.78rem;line-height:1.45">Contacta primero para reprogramar. No ofrece descuentos: revisa horarios disponibles y agenda su nueva cita.</div>
+        <div id="canceladosSinNuevaCitaResult" style="margin-top:14px"></div>
+      </div>
+
       <!-- Reactivación de pacientes -->
       <div class="card" style="margin-bottom:24px" id="cardReactivacion">
         <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:4px">
@@ -9695,6 +9711,14 @@ function renderReactivacion(...args) {
     throw new Error('El módulo Base de datos no está disponible: renderReactivacion');
   }
   return module.renderReactivacion(...args);
+}
+
+function renderCanceladosSinNuevaCita(...args) {
+  const module = window.PanelDatabase;
+  if (!module || typeof module.renderCanceladosSinNuevaCita !== 'function') {
+    throw new Error('El módulo Base de datos no está disponible: renderCanceladosSinNuevaCita');
+  }
+  return module.renderCanceladosSinNuevaCita(...args);
 }
 
 function _updateReacBtn(...args) {
