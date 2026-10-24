@@ -253,12 +253,18 @@ function renderCobrosPendientesMes(citas, mes, anyo) {
     })
     .forEach(c => {
       const summary = global.PanelPackages?.getAppointmentFinancialSummary?.(c);
-      if (!summary || !pendingKinds.has(summary.kind)) return;
-      const isPlan = summary.kind === 'package-balance';
+      const markedManually = c.estado === 'Pendiente de pago';
+      if (!summary || (!pendingKinds.has(summary.kind) && !markedManually)) return;
+      // Si administración la marcó manualmente, se prioriza esa tarea incluso
+      // cuando antes figuraba como pagada. Conserva el pago histórico y deja
+      // visible el valor de la cita para revisar o registrar el ajuste.
+      const isPlan = summary.kind === 'package-balance' && !markedManually;
       const key = isPlan ? `plan:${summary.packageRecord?.id || summary.packageRecord?.ID || c.id}` : `cita:${c.id}`;
       if (seen.has(key)) return;
       seen.add(key);
-      const amount = isPlan ? Number(summary.packageBalance || 0) : Number(summary.appointmentBalance ?? summary.price ?? 0);
+      const amount = isPlan
+        ? Number(summary.packageBalance || 0)
+        : markedManually ? Number(parsePrecio(c.precio || summary.price || 0)) : Number(summary.appointmentBalance ?? summary.price ?? 0);
       if (amount <= 0) return;
       cobros.push({ cita:c, summary, amount, isPlan });
     });

@@ -180,7 +180,10 @@ function verDetalle(id) {
   const financialHtml = packageTools?.getAppointmentFinancialSummaryHtml?.(c) || '';
   const paymentUrl = packageTools?.appointmentPaymentWhatsAppUrl?.(c) || null;
   const paymentIsPending = ['appointment-balance','appointment-partial','package-balance','package-session-due'].includes(financialSummary?.kind);
-  const canMarkPaymentPending = !esCancelada && paymentIsPending && c.estado !== 'Pendiente de pago';
+  // La administración puede volver a enviar una cita a cobro aunque antes se
+  // hubiera marcado como pagada. Esto no borra comprobantes ni pagos: solo
+  // crea la tarea de revisión/cobro pendiente.
+  const canMarkPaymentPending = !esCancelada && c.estado !== 'Pendiente de pago';
   const canConfirmAttendance = financialSummary?.kind !== 'started';
   const reminderTomorrowUrl = !esCancelada ? global.PanelWhatsAppTools?.waLinkReminder?.(c.telefono, c.nombre, c.fecha, c.hora, c.servicio, 'tomorrow') : null;
   const reminderTodayUrl = !esCancelada ? global.PanelWhatsAppTools?.waLinkReminder?.(c.telefono, c.nombre, c.fecha, c.hora, c.servicio, 'today') : null;
