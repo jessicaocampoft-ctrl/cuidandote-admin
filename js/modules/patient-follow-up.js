@@ -432,11 +432,15 @@ function _renderSegLista(pacientes) {
 
 function reactivationMessage(p, enfoque) {
   const primero = String(p.nombre || '').split(' ')[0] || 'hola';
-  const semanas = Math.max(1, Math.floor(Number(p.dias || 0) / 7));
-  const semanasTexto = `${semanas} semana${semanas === 1 ? '' : 's'}`;
+  const dias = Math.max(0, Number(p.dias || 0));
+  // Mantiene semanas solo durante el primer mes. A partir del día 29 se
+  // expresa en meses para evitar mensajes poco naturales como “28 semanas”.
+  const tiempoTexto = dias <= 28
+    ? `${Math.max(1, Math.floor(dias / 7))} semana${Math.max(1, Math.floor(dias / 7)) === 1 ? '' : 's'}`
+    : `${Math.max(1, Math.floor(dias / 30))} mes${Math.max(1, Math.floor(dias / 30)) === 1 ? '' : 'es'}`;
   const servicio = p.servicio || 'fisioterapia';
   const referencia = esDescargaMusc(servicio) ? 'tu descarga muscular' : `tu última cita de ${servicio}`;
-  const inicio = `Hola, ${primero} ¿Cómo has estado? Ya han pasado ${semanasTexto} desde ${referencia}`;
+  const inicio = `Hola, ${primero} ¿Cómo has estado? Ya han pasado ${tiempoTexto} desde ${referencia}`;
 
   if (enfoque === 'oficina') return `${inicio}. Si has sentido otra vez tensión en cuello, espalda o cansancio por tantas horas sentado(a), me escribes y miramos un espacio ⭐`;
   if (enfoque === 'gimnasio') return `${inicio}. Si has sentido tensión, sobrecarga o quieres recuperarte mejor para seguir entrenando, me escribes y miramos un espacio ⭐`;
