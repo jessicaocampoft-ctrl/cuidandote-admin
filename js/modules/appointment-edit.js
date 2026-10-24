@@ -158,12 +158,18 @@ async function marcarPagoPendiente(id) {
   const cita = allData.citas.find(c => String(c.id) === String(id));
   if (!cita) { toast('No encontré la cita. Actualiza e inténtalo de nuevo.', 'err'); return; }
   if (cita.estado === 'Pendiente de pago') { toast('Esta cita ya está marcada como pago pendiente.'); return; }
+  const confirmar = confirm(
+    `¿Marcar como pago pendiente la cita de ${cita.nombre}?\n\n` +
+    'La cita quedará en la lista de cobros pendientes para revisarla después. ' +
+    'No se registrará ningún pago ni se borrará información existente.'
+  );
+  if (!confirmar) return;
   try {
     const r = await saveEditWithRetry(`${APPS_SCRIPT_URL}?action=updateStatus&token=${encodeURIComponent(TOKEN)}&id=${encodeURIComponent(id)}&status=${encodeURIComponent('Pendiente de pago')}`);
     if (!r?.ok) throw new Error(r?.error || 'El servidor no confirmó el cambio.');
     cita.estado = 'Pendiente de pago';
     logChange('Pago pendiente marcado', `${cita.nombre} · ${cita.servicio} · ${cita.fecha} ${cita.hora}`);
-    toast('Pago pendiente marcado. Ya aparece en la gestión de pagos.', 'ok');
+    toast('✓ Pago pendiente marcado. Ya aparece en la gestión de pagos.', 'ok');
     verDetalle(id);
     _refreshAfterAppointmentChange();
   } catch (error) {
