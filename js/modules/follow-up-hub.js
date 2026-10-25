@@ -37,13 +37,17 @@
       if (global.PanelPatientFollowUp && typeof global.PanelPatientFollowUp.renderTeamFollowUpTasks === 'function') global.PanelPatientFollowUp.renderTeamFollowUpTasks();
       return;
     }
+    if (tab === 'cancelled') {
+      if (typeof global.renderCanceladosSinNuevaCita === 'function') global.renderCanceladosSinNuevaCita();
+      return;
+    }
     if (tab === 'results') {
       if (global.PanelPatientFollowUp && typeof global.PanelPatientFollowUp.renderFollowUpResults === 'function') global.PanelPatientFollowUp.renderFollowUpResults();
     }
   }
 
   function setTab(tab) {
-    if (!['today', 'reactivation', 'team', 'results'].includes(tab)) tab = 'today';
+    if (!['today', 'reactivation', 'team', 'cancelled', 'results'].includes(tab)) tab = 'today';
     _activeTab = tab;
     document.querySelectorAll('[data-follow-hub-tab]').forEach(btn => {
       const active = btn.dataset.followHubTab === tab;
@@ -62,6 +66,7 @@
   function _buildHub() {
     const seguimiento = document.getElementById('vSeguimiento');
     const recordatorios = document.getElementById('vRecordatorios');
+    const cancelledWithoutNewCard = document.getElementById('cardCanceladosSinNuevaCita');
     if (!seguimiento || !recordatorios) return false;
     if (seguimiento.dataset.followHubReady === '1') return true;
 
@@ -95,6 +100,7 @@
       makeTab('today', 'Seguimientos de hoy', 'segTodayCount'),
       makeTab('reactivation', 'Reactivación de pacientes'),
       makeTab('team', 'Pendientes del equipo', 'segTeamCount'),
+      makeTab('cancelled', 'Cancelados sin nueva cita', 'segCancelledCount'),
       makeTab('results', 'Resultados')
     );
 
@@ -112,13 +118,23 @@
     teamPanel.className = 'follow-hub-panel'; teamPanel.dataset.followHubPanel = 'team'; teamPanel.setAttribute('role', 'tabpanel');
     teamPanel.innerHTML = '<div class="follow-hub-intro"><strong>Lo que tú le dejas a la auxiliar</strong><span>Usa “Recordatorio” desde Hoy después de una sesión para indicar a quién escribir, cuándo y con qué contexto.</span></div><div id="segTeamTasks" style="display:flex;flex-direction:column;gap:10px"></div>';
 
+    const cancelledPanel = document.createElement('div');
+    cancelledPanel.className = 'follow-hub-panel'; cancelledPanel.dataset.followHubPanel = 'cancelled'; cancelledPanel.setAttribute('role', 'tabpanel');
+    if (cancelledWithoutNewCard) {
+      cancelledPanel.appendChild(cancelledWithoutNewCard);
+    } else {
+      cancelledPanel.innerHTML = '<div class="empty"><p>No se pudo cargar la lista de cancelados.</p></div>';
+    }
+
     const resultsPanel = document.createElement('div');
     resultsPanel.className = 'follow-hub-panel'; resultsPanel.dataset.followHubPanel = 'results'; resultsPanel.setAttribute('role', 'tabpanel');
     resultsPanel.innerHTML = '<div class="follow-hub-intro"><strong>Resultados de seguimiento</strong><span>Mide qué conversaciones se convirtieron en citas. Marca cada resultado para que esta vista te ayude a decidir qué campaña repetir.</span></div><div id="segResults"></div>';
 
     if (segHeader) segHeader.insertAdjacentElement('afterend', tabs);
     else seguimiento.prepend(tabs);
-    seguimiento.append(todayPanel, segPanel, teamPanel, resultsPanel);
+    seguimiento.append(todayPanel, segPanel, teamPanel, cancelledPanel, resultsPanel);
+
+    if (typeof global.renderCanceladosSinNuevaCita === 'function') global.renderCanceladosSinNuevaCita();
 
     const oldSidebar = document.getElementById('sb-recordatorios');
     if (oldSidebar) {

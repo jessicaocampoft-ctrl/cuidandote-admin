@@ -73,7 +73,6 @@ function renderBasedatos() {
 }
 
 function renderReactivacion() {
-  renderCanceladosSinNuevaCita();
   const el = document.getElementById('reactivacionResult');
   if (!el) return;
 
@@ -247,6 +246,8 @@ function renderCanceladosSinNuevaCita() {
       patientKey(candidate) === key && isActiveAppointment(candidate) && dateTimeKey(candidate) > cancelledAt
     );
   }).sort((a, b) => dateTimeKey(b).localeCompare(dateTimeKey(a)));
+  const count = document.getElementById('segCancelledCount');
+  if (count) count.textContent = String(pendientes.length);
 
   if (!pendientes.length) {
     el.innerHTML = `<div style="padding:16px;text-align:center;color:var(--ok);font-size:.86rem;border:1px dashed var(--border);border-radius:10px">🟢 No hay cancelados sin una nueva cita registrada para ${selectedMonth}.</div>`;
