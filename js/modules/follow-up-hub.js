@@ -63,6 +63,13 @@
     _renderForTab(tab);
   }
 
+  function openCancelledWithoutNewAppointment() {
+    if (typeof global.showView === 'function') global.showView('seguimiento');
+    // showView abre la pestaña principal por defecto; esta orden se ejecuta
+    // después para llevar directamente a la cola de cancelados.
+    setTimeout(() => setTab('cancelled'), 0);
+  }
+
   function _buildHub() {
     const seguimiento = document.getElementById('vSeguimiento');
     const recordatorios = document.getElementById('vRecordatorios');
@@ -193,6 +200,7 @@
 
   global.PanelFollowUpHub = Object.freeze({
     initFollowUpHub,
-    setTab
+    setTab,
+    openCancelledWithoutNewAppointment
   });
 })(typeof window !== 'undefined' ? window : globalThis);

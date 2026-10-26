@@ -363,6 +363,7 @@ function _quickActions() {
     <button class="daily-quick" type="button" onclick="showView('pagos')"><span>⌁</span>Pagos</button>
     <button class="daily-quick" type="button" onclick="showView('agenda')" title="Abrir la agenda para enviar las confirmaciones por WhatsApp"><span>💬</span>WhatsApp confirmación</button>
     <button class="daily-quick" type="button" onclick="showView('espera')" title="Abrir las solicitudes que tu auxiliar debe convertir en citas"><span>📋</span>Pendientes por agendar</button>
+    <button class="daily-quick" type="button" onclick="openCanceladosSinNuevaCita()" title="Contactar cancelados que aún no tienen una nueva cita"><span>🗓️</span>Cancelados sin nueva cita</button>
   </nav>`;
 }
 

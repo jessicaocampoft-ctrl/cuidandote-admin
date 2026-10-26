@@ -9721,6 +9721,14 @@ function renderCanceladosSinNuevaCita(...args) {
   return module.renderCanceladosSinNuevaCita(...args);
 }
 
+function openCanceladosSinNuevaCita(...args) {
+  const module = window.PanelFollowUpHub;
+  if (!module || typeof module.openCancelledWithoutNewAppointment !== 'function') {
+    throw new Error('El módulo de seguimiento no está disponible: openCancelledWithoutNewAppointment');
+  }
+  return module.openCancelledWithoutNewAppointment(...args);
+}
+
 function _updateReacBtn(...args) {
   const module = window.PanelDatabase;
   if (!module || typeof module._updateReacBtn !== 'function') {
