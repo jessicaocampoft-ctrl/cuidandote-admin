@@ -108,7 +108,7 @@ function _initDailyControlModule() {
   const script = document.createElement('script');
     // Cambiar la versión cuando se ajuste el control diario: se carga de forma
     // dinámica y una URL fija puede dejar la interfaz anterior en caché.
-    script.src = 'js/modules/daily-control.js?v=20261010-pending-scheduling-action';
+    script.src = 'js/modules/daily-control.js?v=20261026-cancelled-omit';
   script.dataset.panelDailyControl = '1';
   script.addEventListener('load', start, { once:true });
   script.addEventListener('error', () => console.warn('No se pudo cargar Control Diario'), { once:true });
@@ -124,7 +124,7 @@ function _initPatientHubModule() {
   const existing = document.querySelector('script[data-panel-patient-hub]');
   if (existing) { existing.addEventListener('load', start, { once:true }); return; }
   const script = document.createElement('script');
-  script.src = 'js/modules/patient-hub.js?v=20260915-followup-results';
+  script.src = 'js/modules/patient-hub.js?v=20261026-cancelled-omit';
   script.dataset.panelPatientHub = '1';
   script.addEventListener('load', start, { once:true });
   script.addEventListener('error', () => console.warn('No se pudo cargar Pacientes unificado'), { once:true });
