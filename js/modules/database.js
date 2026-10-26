@@ -229,6 +229,10 @@ function renderCanceladosSinNuevaCita() {
     if (/a\.?\s*m\.?/.test(raw) && hour === 12) hour = 0;
     return date + ' ' + String(hour).padStart(2, '0') + ':' + String(min).padStart(2, '0');
   };
+  const skipKey = c => {
+    const id = String(c.id || c.ID || `${patientKey(c)}_${normDate(c.fecha)}_${c.hora || ''}`);
+    return 'cancelled_without_new_skip_' + id;
+  };
 
   // Se conserva solo la última cancelación del mes para cada persona.
   const latestCancelled = new Map();
@@ -242,7 +246,7 @@ function renderCanceladosSinNuevaCita() {
     const key = patientKey(cancelled);
     const cancelledAt = dateTimeKey(cancelled);
     // Una sola nueva cita activa, posterior a la cancelación, ya resuelve el pendiente.
-    return !citas.some(candidate =>
+    return !kvGet(skipKey(cancelled)) && !citas.some(candidate =>
       patientKey(candidate) === key && isActiveAppointment(candidate) && dateTimeKey(candidate) > cancelledAt
     );
   }).sort((a, b) => dateTimeKey(b).localeCompare(dateTimeKey(a)));
@@ -261,8 +265,18 @@ function renderCanceladosSinNuevaCita() {
     const nameEnc = encodeURIComponent(c.nombre || '');
     const telEnc = encodeURIComponent(c.telefono || '');
     const emailEnc = encodeURIComponent(c.email || '');
-    return `<div style="padding:12px 14px;background:var(--s2);border-radius:10px;border-left:3px solid var(--warn);display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap"><div><div style="font-size:.88rem;font-weight:650">${c.nombre}</div><div style="font-size:.74rem;color:var(--muted);margin-top:3px">Canceló: ${fmtDate(normDate(c.fecha))}${c.hora ? ' · ' + c.hora : ''} · ${c.servicio || 'Sin servicio registrado'}${phone ? ' · 📞 ' + phone : ''}</div></div><div style="display:flex;gap:7px;flex-wrap:wrap">${whatsapp ? `<a href="${whatsapp}" target="_blank" rel="noopener" class="btn btn-wa btn-sm">WhatsApp</a>` : '<span style="font-size:.72rem;color:var(--muted);padding:6px">Sin teléfono</span>'}<button type="button" class="btn btn-teal btn-sm" onclick="agendarDesdePaciente('${nameEnc}','${telEnc}','${emailEnc}')">Agendar</button></div></div>`;
+    const skipEnc = encodeURIComponent(skipKey(c));
+    return `<div style="padding:12px 14px;background:var(--s2);border-radius:10px;border-left:3px solid var(--warn);display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap"><div><div style="font-size:.88rem;font-weight:650">${c.nombre}</div><div style="font-size:.74rem;color:var(--muted);margin-top:3px">Canceló: ${fmtDate(normDate(c.fecha))}${c.hora ? ' · ' + c.hora : ''} · ${c.servicio || 'Sin servicio registrado'}${phone ? ' · 📞 ' + phone : ''}</div></div><div style="display:flex;gap:7px;flex-wrap:wrap">${whatsapp ? `<a href="${whatsapp}" target="_blank" rel="noopener" class="btn btn-wa btn-sm">WhatsApp</a>` : '<span style="font-size:.72rem;color:var(--muted);padding:6px">Sin teléfono</span>'}<button type="button" class="btn btn-teal btn-sm" onclick="agendarDesdePaciente('${nameEnc}','${telEnc}','${emailEnc}')">Agendar</button><button type="button" class="btn btn-ghost btn-sm" onclick="omitirCanceladoSinNuevaCita('${skipEnc}')">Omitir</button></div></div>`;
   }).join('')}</div>`;
+}
+
+function omitirCanceladoSinNuevaCita(encodedKey) {
+  const key = decodeURIComponent(encodedKey || '');
+  if (!key) return;
+  if (!confirm('¿Omitir a esta persona de la lista? La cita cancelada no se borrará.')) return;
+  kvSet(key, JSON.stringify({ omittedAt: new Date().toISOString() }));
+  renderCanceladosSinNuevaCita();
+  toast('Persona omitida de esta lista. La cita cancelada se conserva.', 'ok');
 }
 
 function limpiarFormDB() {
@@ -561,6 +575,7 @@ function waRecordatorio(tel, nombre, semanas) {
     renderBasedatos,
     renderReactivacion,
     renderCanceladosSinNuevaCita,
+    omitirCanceladoSinNuevaCita,
     limpiarFormDB,
     agregarPacienteDB,
     checkDupDB,

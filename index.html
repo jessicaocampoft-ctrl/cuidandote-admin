@@ -9729,6 +9729,14 @@ function openCanceladosSinNuevaCita(...args) {
   return module.openCancelledWithoutNewAppointment(...args);
 }
 
+function omitirCanceladoSinNuevaCita(...args) {
+  const module = window.PanelDatabase;
+  if (!module || typeof module.omitirCanceladoSinNuevaCita !== 'function') {
+    throw new Error('El módulo Base de datos no está disponible: omitirCanceladoSinNuevaCita');
+  }
+  return module.omitirCanceladoSinNuevaCita(...args);
+}
+
 function _updateReacBtn(...args) {
   const module = window.PanelDatabase;
   if (!module || typeof module._updateReacBtn !== 'function') {
