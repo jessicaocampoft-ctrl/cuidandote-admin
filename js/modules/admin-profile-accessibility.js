@@ -165,7 +165,7 @@ function _initSidebarManagementModule() {
   const existing = document.querySelector('script[data-panel-sidebar-management]');
   if (existing) { existing.addEventListener('load', start, { once:true }); return; }
   const script = document.createElement('script');
-  script.src = 'js/modules/sidebar-management.js?v=20261017-tablet-agenda-link';
+  script.src = 'js/modules/sidebar-management.js?v=20261030-functional-training-primary';
   script.dataset.panelSidebarManagement = '1';
   script.addEventListener('load', start, { once:true });
   script.addEventListener('error', () => console.warn('No se pudo cargar la navegación organizada'), { once:true });

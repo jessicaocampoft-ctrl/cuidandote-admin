@@ -41,6 +41,7 @@ const packages = fs.readFileSync(`${root}/js/modules/packages.js`, 'utf8');
 const waitlist = fs.readFileSync(`${root}/js/modules/waitlist.js`, 'utf8');
 const dailyControl = fs.readFileSync(`${root}/js/modules/daily-control.js`, 'utf8');
 const functionalTraining = fs.readFileSync(`${root}/js/modules/functional-training.js`, 'utf8');
+const adminProfile = fs.readFileSync(`${root}/js/modules/admin-profile-accessibility.js`, 'utf8');
 
 if (!config.includes('APPS_SCRIPT_URL')) fail('falta la conexión principal del servidor');
 if (!config.includes('ADMIN_DATA_FALLBACK_URL')) fail('falta la ruta de respaldo de lectura');
@@ -66,5 +67,6 @@ if (!dailyControl.includes("showView('espera')")) fail('falta el acceso rápido 
 if (!functionalTraining.includes('CAPACITY = 4') || !functionalTraining.includes("'05:00'")) fail('falta la capacidad u horario del entrenamiento funcional');
 if (!functionalTraining.includes('plan3') || !functionalTraining.includes('185000') || !functionalTraining.includes('215000') || !functionalTraining.includes('240000')) fail('faltan los planes de entrenamiento funcional');
 if (!html.includes('vEntrenamiento') || !html.includes('functional-training.js?v=20261030-initial')) fail('falta el módulo de entrenamiento funcional en el panel');
+if (!adminProfile.includes('sidebar-management.js?v=20261030-functional-training-primary')) fail('el menú puede conservar una versión anterior en caché');
 
 console.log(`VALIDACIÓN APROBADA: ${files.length} archivos críticos, acceso, agenda, pagos, planes y colaboradores presentes.`);
