@@ -158,7 +158,7 @@ function renderFinanzas() {
         <div class="serv-row">
           <div class="serv-name" title="${s}">${s}</div>
           <div class="serv-bar-bg"><div class="serv-bar-fill" style="width:${Math.round(v/maxServ*100)}%"></div></div>
-          <div class="serv-val">$${Math.round(v/1000)}k</div>
+          <div class="serv-val">$${Math.round(v).toLocaleString('es-CO')}</div>
         </div>`).join('');
     }
   }
