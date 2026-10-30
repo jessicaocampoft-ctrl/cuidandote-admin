@@ -10458,6 +10458,14 @@ function renderFinanzas(...args) {
   return module.renderFinanzas(...args);
 }
 
+async function confirmarCobroRapido(...args) {
+  const module = window.PanelFinance;
+  if (!module || typeof module.confirmarCobroRapido !== 'function') {
+    throw new Error('El módulo Finanzas no está disponible: confirmarCobroRapido');
+  }
+  return module.confirmarCobroRapido(...args);
+}
+
 // ══════════════════════════════════════════════════════════════
 // ── EGRESOS ──
 // ══════════════════════════════════════════════════════════════
@@ -13175,7 +13183,7 @@ document.addEventListener('DOMContentLoaded', () => {
   <script src="js/modules/database.js?v=20261026-cancelled-omit"></script>
   <script src="js/modules/referrals.js"></script>
 <script src="js/modules/packages.js?v=20261008-explicit-package-link"></script>
-  <script src="js/modules/finance.js?v=20261020-chatgpt-strategy"></script>
+  <script src="js/modules/finance.js?v=20261030-quick-paid"></script>
   <script src="js/modules/kpi.js?v=20261018-reference-costs"></script>
   <script src="js/modules/budget.js?v=20261018-reference-costs"></script>
   <script src="js/modules/monthly-report.js?v=20261018-reference-costs"></script>

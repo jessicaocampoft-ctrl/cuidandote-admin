@@ -281,14 +281,70 @@ function renderCobrosPendientesMes(citas, mes, anyo) {
     el.innerHTML = '<div class="empty" style="padding:22px 0"><p>✅ No hay cobros pendientes registrados para este mes.</p></div>';
     return;
   }
-  el.innerHTML = `<div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap;padding:10px 12px;margin-bottom:10px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25);border-radius:10px"><strong style="color:#92400e">${cobros.length} cobro${cobros.length===1?'':'s'} pendiente${cobros.length===1?'':'s'}</strong><span style="color:var(--muted)">·</span><strong style="font-family:var(--font-m);color:#b45309">$${Math.round(total).toLocaleString('es-CO')}</strong><span style="font-size:.75rem;color:var(--muted)">El pago se registra con fecha, valor y medio de pago.</span></div><div style="display:flex;flex-direction:column;gap:8px">${cobros.map(({cita, summary, amount, isPlan}) => {
+  el.innerHTML = `<div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap;padding:10px 12px;margin-bottom:10px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25);border-radius:10px"><strong style="color:#92400e">${cobros.length} cobro${cobros.length===1?'':'s'} pendiente${cobros.length===1?'':'s'}</strong><span style="color:var(--muted)">·</span><strong style="font-family:var(--font-m);color:#b45309">$${Math.round(total).toLocaleString('es-CO')}</strong><span style="font-size:.75rem;color:var(--muted)">Usa <b>Pago listo</b> si recibiste el valor completo; para abonos, planes o comprobantes usa <b>Registrar pago</b>.</span></div><div style="display:flex;flex-direction:column;gap:8px">${cobros.map(({cita, summary, amount, isPlan}) => {
     const detail = isPlan
       ? `Saldo del plan: ${summary.packageRecord?.nombre || summary.packageRecord?.tipo || 'Paquete'}`
       : summary.kind === 'package-session-due'
         ? summary.label
         : `${cita.servicio || 'Servicio'} · ${cita.modalidad || '—'}`;
-    return `<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:11px 12px;background:var(--s2);border:1px solid var(--border);border-radius:10px"><div style="min-width:190px;flex:1"><div style="font-weight:700;font-size:.88rem">${esc(cita.nombre || 'Paciente')}</div><div style="font-size:.76rem;color:var(--muted);margin-top:3px">${esc(fmtDate(cita.fecha))} · ${esc(cita.hora || '—')} · ${esc(detail)}</div></div><div style="font-family:var(--font-m);font-weight:700;color:#b45309">$${Math.round(amount).toLocaleString('es-CO')}</div><div style="display:flex;gap:7px;flex-wrap:wrap"><button class="btn btn-ghost btn-sm" onclick="verDetalle('${esc(cita.id)}')">Ver cita</button><button class="btn btn-teal btn-sm" onclick="openPago('${esc(cita.id)}')">💳 Registrar pago</button></div></div>`;
+    // Los planes y los cobros por sesión de un paquete requieren el flujo
+    // detallado: allí puede haber abonos, saldo previo y sesiones pendientes.
+    const canQuickConfirm = !isPlan && !['package-balance', 'package-session-due'].includes(summary.kind);
+    const citaToken = encodeURIComponent(String(cita.id || '')).replace(/'/g, '%27');
+    const quickAction = canQuickConfirm
+      ? `<button class="btn btn-teal btn-sm" onclick="confirmarCobroRapido('${citaToken}','${Math.round(amount)}')" title="Confirma que recibiste el valor completo">✓ Pago listo</button>`
+      : '';
+    return `<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:11px 12px;background:var(--s2);border:1px solid var(--border);border-radius:10px"><div style="min-width:190px;flex:1"><div style="font-weight:700;font-size:.88rem">${esc(cita.nombre || 'Paciente')}</div><div style="font-size:.76rem;color:var(--muted);margin-top:3px">${esc(fmtDate(cita.fecha))} · ${esc(cita.hora || '—')} · ${esc(detail)}</div></div><div style="font-family:var(--font-m);font-weight:700;color:#b45309">$${Math.round(amount).toLocaleString('es-CO')}</div><div style="display:flex;gap:7px;flex-wrap:wrap"><button class="btn btn-ghost btn-sm" onclick="verDetalle('${esc(cita.id)}')">Ver cita</button>${quickAction}<button class="btn btn-ghost btn-sm" onclick="openPago('${esc(cita.id)}')">💳 Registrar pago</button></div></div>`;
   }).join('')}</div>`;
+}
+
+const _cobrosRapidosEnProceso = new Set();
+
+async function confirmarCobroRapido(citaToken, amountValue) {
+  const citaId = decodeURIComponent(String(citaToken || ''));
+  const amount = Number(amountValue || 0);
+  const cita = (allData?.citas || []).find(item => String(item.id) === citaId);
+  if (!cita || amount <= 0) {
+    toast('No se encontró un cobro válido. Actualiza la lista e inténtalo de nuevo.', 'err');
+    return;
+  }
+  if (_cobrosRapidosEnProceso.has(citaId)) return;
+  const formattedAmount = '$' + Math.round(amount).toLocaleString('es-CO');
+  const accepted = confirm(`¿Confirmas que recibiste ${formattedAmount} de ${cita.nombre || 'este paciente'}?\n\nSe guardará como pago confirmado con la fecha de hoy y sin medio de pago especificado. Para registrar un abono, comprobante o medio de pago usa “Registrar pago”.`);
+  if (!accepted) return;
+
+  _cobrosRapidosEnProceso.add(citaId);
+  try {
+    const payload = {
+      citaId,
+      cliente: cita.nombre || '',
+      servicioPlan: cita.servicio || '',
+      valorEsperado: String(amount),
+      valorRecibido: String(amount),
+      medioPago: 'Sin especificar (confirmado rápido)',
+      cuentaReceptora: '',
+      fechaPago: today(),
+      comprobante: '',
+      estadoPago: 'PAGO_APROBADO',
+      observaciones: 'Pago confirmado directamente desde Cobros pendientes.',
+      approveNow: true
+    };
+    const response = await global.PanelApi.fetchJsonWithTimeout(APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'savePaymentAndApprove', token: TOKEN, data: payload })
+    }, 70000, true);
+    if (!response?.ok) throw new Error(response?.error || 'El servidor no confirmó el pago.');
+    toast(`Pago de ${formattedAmount} confirmado y cita habilitada.`, 'ok');
+    await reload();
+    await global.PanelPayments?.loadOperationsData?.({ force: true });
+    const now = new Date();
+    renderCobrosPendientesMes(citasReales(), now.getMonth() + 1, now.getFullYear());
+  } catch (error) {
+    console.error('No se pudo confirmar el cobro rápido', error);
+    toast(error?.message || 'No se pudo confirmar el pago. Intenta de nuevo.', 'err');
+  } finally {
+    _cobrosRapidosEnProceso.delete(citaId);
+  }
 }
 
 function calcCobradoMes(mesParam, anyoParam) {
@@ -824,6 +880,7 @@ function resRow(label, val, style='') {
     eliminarEgreso,
     actualizarConceptosEgreso,
     renderEstructuraFinanciera,
+    confirmarCobroRapido,
     openAnalysisExport,
     closeAnalysisExport,
     downloadAnalysisExport,
