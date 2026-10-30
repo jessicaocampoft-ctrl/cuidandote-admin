@@ -100,6 +100,7 @@ function renderFinanzas() {
       .filter(c => { const [cy,cm]=normDate(c.fecha).split('-'); return +cm===mes.m && +cy===mes.y; })
       .reduce((s,c) => s + parsePrecio(c.precio), 0)
       + calcIngresoPaquetesMes(mes.m, mes.y)
+      + calcIngresoEntrenamientoMes(mes.m, mes.y)
       + (allData.eventos || [])
           .filter(e => { const [cy,cm]=normDate(e.fecha).split('-'); return +cm===mes.m && +cy===mes.y; })
           .reduce((s,e) => s + parsePrecio(e.cobro), 0)
@@ -142,6 +143,10 @@ function renderFinanzas() {
       const s = p.nombre || 'Paquete';
       servMap[s] = (servMap[s] || 0) + parsePrecio(p.precio);
     });
+  const ingresoEntrenamientoMes = calcIngresoEntrenamientoMes(m, y);
+  if (ingresoEntrenamientoMes > 0) {
+    servMap['Entrenamiento funcional'] = (servMap['Entrenamiento funcional'] || 0) + ingresoEntrenamientoMes;
+  }
   const servArr = Object.entries(servMap).sort((a,b) => b[1]-a[1]);
   const maxServ = servArr[0] ? servArr[0][1] : 1;
   const servEl = document.getElementById('finServiciosMes');
@@ -182,6 +187,7 @@ function renderFinanzas() {
         <div style="height:1px;background:var(--border);margin:4px 0"></div>
         ${resRow('Total cobrado', '$' + cobradoMes.toLocaleString('es-CO'), 'color:var(--primary);font-weight:700')}
         ${ingresoPaquetesMes > 0 ? resRow('  · Planes/paquetes', '$' + ingresoPaquetesMes.toLocaleString('es-CO'), 'color:var(--teal)') : ''}
+        ${ingresoEntrenamientoMes > 0 ? resRow('  · Entrenamiento funcional', '$' + ingresoEntrenamientoMes.toLocaleString('es-CO'), 'color:var(--teal)') : ''}
         ${resRow('Por cobrar (futuras)', futurasVal > 0 ? '$' + futurasVal.toLocaleString('es-CO') : '—', 'color:var(--warn)')}
         ${resRow('Ticket promedio', ticketProm > 0 ? '$' + ticketProm.toLocaleString('es-CO') : '—', '')}
         ${meta ? resRow('Meta cumplida', Math.min(Math.round(cobradoMes/meta*100),100) + '%', cobradoMes >= meta ? 'color:var(--ok);font-weight:700' : 'color:var(--warn)') : ''}
@@ -297,13 +303,17 @@ function calcCobradoMes(mesParam, anyoParam) {
   const eventosTotal = (allData.eventos || [])
     .filter(e => { const [cy,cm]=normDate(e.fecha).split('-'); return +cm===m && +cy===y && (esPasado || normDate(e.fecha) <= todayStr); })
     .reduce((s,e) => s + parsePrecio(e.cobro), 0);
-  return citasTotal + calcIngresoPaquetesMes(m, y) + eventosTotal;
+  return citasTotal + calcIngresoPaquetesMes(m, y) + calcIngresoEntrenamientoMes(m, y) + eventosTotal;
 }
 
 function calcIngresoPaquetesMes(m, y) {
   return _getPkAsignados()
     .filter(p => { if (!p.fechaCompra) return false; const [py,pm] = p.fechaCompra.split('-'); return +pm===m && +py===y; })
     .reduce((s,p) => s + parsePrecio(p.precio), 0);
+}
+
+function calcIngresoEntrenamientoMes(m, y) {
+  return Number(global.PanelFunctionalTraining?.getMonthlyRevenue?.(m, y) || 0);
 }
 
 function renderEgresosList() {

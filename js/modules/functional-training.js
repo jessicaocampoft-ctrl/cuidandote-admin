@@ -223,6 +223,15 @@
     return { collected: data.payments.filter(p => String(p.date).startsWith(month)).reduce((sum,p) => sum + Number(p.amount || 0), 0), activeMrr: data.members.filter(m => m.plan !== 'courtesy' && isBookable(m, data)).reduce((sum,m) => sum + planFor(m).price, 0), members:activeMembers(data).length };
   }
 
+  function getMonthlyRevenue(month, year) {
+    const data = read();
+    const key = `${year}-${String(month).padStart(2, '0')}`;
+    const currentKey = todayKey().slice(0, 7);
+    return data.payments
+      .filter(payment => String(payment.date || '').startsWith(key) && (key !== currentKey || String(payment.date) <= todayKey()))
+      .reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
+  }
+
   function renderFinanceCard() {
     const finance = byId('vFinanzas');
     if (!finance) return;
@@ -243,5 +252,5 @@
   global.renderEntrenamientoFuncional = render;
   global.guardarMiembroEntrenamiento = saveMember;
   global.reservarClaseEntrenamiento = reserveClass;
-  global.PanelFunctionalTraining = Object.freeze({ render, focusNewMember, updateEnrollmentPreview, setSlot, changeBooking, renew, toggleMember, getFinanceSummary, renderFinanceCard });
+  global.PanelFunctionalTraining = Object.freeze({ render, focusNewMember, updateEnrollmentPreview, setSlot, changeBooking, renew, toggleMember, getFinanceSummary, getMonthlyRevenue, renderFinanceCard });
 })(typeof window !== 'undefined' ? window : globalThis);
