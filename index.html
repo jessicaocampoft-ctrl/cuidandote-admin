@@ -1839,6 +1839,11 @@ button:disabled{cursor:not-allowed;opacity:.58}
       Paquetes
     </button>
 
+    <button class="sb-link" id="sb-entrenamiento" data-tooltip="Entrenamiento funcional" onclick="showView('entrenamiento')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6v12M18 6v12M3 9v6M21 9v6M6 12h12"/><path d="M9 8v8M15 8v8"/></svg>
+      Entrenamiento funcional
+    </button>
+
     <button class="sb-link" id="sb-finanzas" data-tooltip="Finanzas" onclick="showView('finanzas')">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
       Finanzas
@@ -3537,6 +3542,62 @@ Primero evaluamos cómo está el cuerpo ahora, luego tratamos, luego te enseñam
           <input type="text" id="pkSearch" placeholder="Buscar paciente..." oninput="renderPaquetes()" style="background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:.85rem;outline:none;color:var(--text);width:220px" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'">
         </div>
         <div id="pkLista"></div>
+      </div>
+    </section>
+
+    <!-- ── ENTRENAMIENTO FUNCIONAL ── -->
+    <section id="vEntrenamiento" style="display:none">
+      <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px">
+        <div>
+          <h1 class="page-title">🏋️ <em>Entrenamiento</em> funcional</h1>
+          <p class="page-sub">Clases grupales de lunes a viernes, 5:00 a. m.–9:00 a. m. · máximo 4 personas por hora</p>
+        </div>
+        <button class="btn btn-teal" onclick="PanelFunctionalTraining.focusNewMember()">+ Inscribir persona</button>
+      </div>
+
+      <div class="stats-grid" style="margin-bottom:20px">
+        <div class="stat-card"><div class="stat-label">Miembros activos</div><div class="stat-val" id="ftActiveMembers">—</div><div class="stat-desc">con plan o cortesía disponible</div></div>
+        <div class="stat-card"><div class="stat-label">Cortesías disponibles</div><div class="stat-val" id="ftCourtesyLeft">—</div><div class="stat-desc">clases de bienvenida</div></div>
+        <div class="stat-card"><div class="stat-label">Cupos esta semana</div><div class="stat-val" id="ftWeekBooked">—</div><div class="stat-desc">de 80 cupos posibles</div></div>
+        <div class="stat-card"><div class="stat-label">Ingresos recibidos este mes</div><div class="stat-val" id="ftMonthRevenue" style="font-size:1.3rem">—</div><div class="stat-desc">membresías registradas</div></div>
+      </div>
+
+      <div class="card" style="margin-bottom:20px;border-color:rgba(20,184,166,.3)">
+        <div class="card-title">Planes de entrenamiento</div>
+        <div id="ftPlansSummary" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px"></div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:minmax(280px,.8fr) minmax(360px,1.2fr);gap:20px;align-items:start">
+        <div class="card" id="ftNewMemberCard">
+          <div class="card-title">Nueva inscripción</div>
+          <p style="font-size:.82rem;color:var(--muted);margin:-7px 0 16px">La cortesía da 3 clases. Las membresías se renuevan cada 30 días desde el pago.</p>
+          <div class="field"><label>Nombre completo *</label><input id="ftMemberName" type="text" placeholder="Nombre del participante"></div>
+          <div class="field"><label>WhatsApp</label><input id="ftMemberPhone" type="tel" placeholder="Ej. 300 000 0000"></div>
+          <div class="field"><label>Tipo de ingreso *</label><select id="ftMemberPlan" onchange="PanelFunctionalTraining.updateEnrollmentPreview()"><option value="courtesy">3 clases de cortesía · sin costo</option><option value="plan3">Plan 3X · 3 días/semana · $185.000</option><option value="plan4">Plan 4X · 4 días/semana · $215.000</option><option value="plan5">Plan 5X · 5 días/semana · $240.000</option></select></div>
+          <div class="field"><label>Fecha de pago / inicio</label><input id="ftMemberStart" type="date"></div>
+          <div id="ftEnrollmentPreview" style="padding:10px 12px;background:rgba(20,184,166,.08);border-radius:9px;font-size:.82rem;color:#0f766e;margin:4px 0 14px"></div>
+          <button class="btn btn-teal" onclick="guardarMiembroEntrenamiento()">Guardar inscripción</button>
+        </div>
+
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px"><div><div class="card-title" style="margin-bottom:2px">Reservar clase</div><div style="font-size:.78rem;color:var(--muted)">Cada hora acepta hasta 4 personas.</div></div><input id="ftWeekStart" type="date" onchange="renderEntrenamientoFuncional()" style="max-width:170px"></div>
+          <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:10px;margin-bottom:12px">
+            <div class="field" style="margin:0"><label>Participante</label><select id="ftBookingMember"></select></div>
+            <div class="field" style="margin:0"><label>Hora</label><select id="ftBookingTime"><option value="05:00">5:00–6:00 a. m.</option><option value="06:00">6:00–7:00 a. m.</option><option value="07:00">7:00–8:00 a. m.</option><option value="08:00">8:00–9:00 a. m.</option></select></div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:end;flex-wrap:wrap;margin-bottom:14px"><div class="field" style="margin:0;min-width:160px;flex:1"><label>Fecha</label><input id="ftBookingDate" type="date"></div><button class="btn btn-teal" onclick="reservarClaseEntrenamiento()">+ Reservar</button></div>
+          <div id="ftScheduleGrid"></div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:20px">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px"><div><div class="card-title" style="margin-bottom:2px">Asistencia de la semana</div><div style="font-size:.78rem;color:var(--muted)">Marca asistencia o cancela para liberar el cupo.</div></div><button class="btn btn-ghost btn-sm" onclick="renderEntrenamientoFuncional()">Actualizar</button></div>
+        <div id="ftBookingsList" style="margin-top:14px"></div>
+      </div>
+
+      <div class="card" style="margin-top:20px">
+        <div class="card-title">Membresías y renovaciones</div>
+        <div id="ftMembersList"></div>
       </div>
     </section>
 
@@ -13104,6 +13165,7 @@ document.addEventListener('DOMContentLoaded', () => {
 <script src="admin-copy-tools.js"></script>
   <script src="js/modules/shared-utils.js"></script>
 <script src="js/modules/shared-storage.js"></script>
+<script src="js/modules/functional-training.js?v=20261030-initial"></script>
 <script src="js/modules/payments.js?v=20260929-payment-custom-plan"></script>
   <script src="js/modules/passport.js"></script>
   <script src="js/modules/agenda.js?v=20261007-cancelled-section"></script>

@@ -14,7 +14,8 @@ const files = [
   'js/modules/appointment-edit.js',
   'js/modules/packages.js',
   'js/modules/waitlist.js',
-  'js/modules/daily-control.js'
+  'js/modules/daily-control.js',
+  'js/modules/functional-training.js'
 ];
 
 function fail(message) {
@@ -39,6 +40,7 @@ const messages = fs.readFileSync(`${root}/js/modules/message-library.js`, 'utf8'
 const packages = fs.readFileSync(`${root}/js/modules/packages.js`, 'utf8');
 const waitlist = fs.readFileSync(`${root}/js/modules/waitlist.js`, 'utf8');
 const dailyControl = fs.readFileSync(`${root}/js/modules/daily-control.js`, 'utf8');
+const functionalTraining = fs.readFileSync(`${root}/js/modules/functional-training.js`, 'utf8');
 
 if (!config.includes('APPS_SCRIPT_URL')) fail('falta la conexión principal del servidor');
 if (!config.includes('ADMIN_DATA_FALLBACK_URL')) fail('falta la ruta de respaldo de lectura');
@@ -61,5 +63,8 @@ if (!fs.readFileSync(`${root}/js/modules/agenda.js`, 'utf8').includes('Citas can
 if (!html.includes('packages.js?v=20261008-explicit-package-link') || !html.includes('appointment-create.js?v=20261020-package-price-option')) fail('falta la versión de caché para vincular paquetes');
 if (!html.includes('waitlist.js?v=20261010-pending-scheduling') || !waitlist.includes('Pendientes por agendar')) fail('falta la lista de pendientes por agendar');
 if (!dailyControl.includes("showView('espera')")) fail('falta el acceso rápido a pendientes por agendar');
+if (!functionalTraining.includes('CAPACITY = 4') || !functionalTraining.includes("'05:00'")) fail('falta la capacidad u horario del entrenamiento funcional');
+if (!functionalTraining.includes('plan3') || !functionalTraining.includes('185000') || !functionalTraining.includes('215000') || !functionalTraining.includes('240000')) fail('faltan los planes de entrenamiento funcional');
+if (!html.includes('vEntrenamiento') || !html.includes('functional-training.js?v=20261030-initial')) fail('falta el módulo de entrenamiento funcional en el panel');
 
 console.log(`VALIDACIÓN APROBADA: ${files.length} archivos críticos, acceso, agenda, pagos, planes y colaboradores presentes.`);

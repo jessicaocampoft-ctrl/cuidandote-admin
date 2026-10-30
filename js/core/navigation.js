@@ -9,7 +9,7 @@
   function showView(v) {
     const viewAliases = { citas: 'agenda' };
       v = viewAliases[v] || v;
-      ['dashboard','acciones','espera','automatizaciones','tareas','tareasConfig','agenda','nueva','calendario','bloquear','pacientes','equipo','basedatos','codigos','paquetes','recordatorios','finanzas','pagos','guiakpis','presupuesto','seguimiento','mensajes','empresas','pasaporte','comisiones','guioneswa','recuperacion'].forEach(id => {
+      ['dashboard','acciones','espera','automatizaciones','tareas','tareasConfig','agenda','nueva','calendario','bloquear','pacientes','equipo','basedatos','codigos','paquetes','entrenamiento','recordatorios','finanzas','pagos','guiakpis','presupuesto','seguimiento','mensajes','empresas','pasaporte','comisiones','guioneswa','recuperacion'].forEach(id => {
         const sec = document.getElementById('v' + id.charAt(0).toUpperCase() + id.slice(1));
         const sb  = document.getElementById('sb-' + id);
         if (sec) sec.style.display = 'none';
@@ -68,12 +68,13 @@
       if (v === 'calendario')     renderCalendar();
       if (v === 'recordatorios')  cargarRecordatorios();
       if (v === 'basedatos')      { renderBasedatos(); initFormDB(); renderChangeLog(); renderReactivacion(); }
-      if (v === 'finanzas')       { renderFinanzas(); actualizarContadorLeads(); _renderEncuestaStatsUI(getEncuestaStats()); }
+      if (v === 'finanzas')       { renderFinanzas(); actualizarContadorLeads(); _renderEncuestaStatsUI(getEncuestaStats()); window.PanelFunctionalTraining?.renderFinanceCard(); }
       if (v === 'pagos')          { loadOperationsData().then(renderPagos); }
       if (v === 'seguimiento')    renderSeguimiento();
       if (v === 'tareas')         renderTareas();
       if (v === 'tareasConfig')   initTareasConfig();
       if (v === 'paquetes')       renderPaquetes();
+      if (v === 'entrenamiento')  renderEntrenamientoFuncional();
       if (v === 'mensajes')       renderMensajes();
       if (v === 'empresas')       renderEmpresas();
       if (v === 'codigos')        renderCodigos();

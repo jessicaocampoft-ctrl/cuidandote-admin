@@ -16,7 +16,7 @@
     { id:'operations', label:'Agenda y disponibilidad', items:['sb-bloquear','sb-horariospublicos','sb-espera'] },
     { id:'followup', label:'Seguimiento y comunicación', items:['sb-guioneswa','sb-recuperacion'] },
     { id:'finance', label:'Finanzas y resultados', items:['sb-finanzas','sb-guiakpis','sb-presupuesto','sb-comisiones'] },
-    { id:'commercial', label:'Comercial', items:['sb-paquetes','sb-empresas','sb-codigos'] },
+    { id:'commercial', label:'Comercial', items:['sb-paquetes','sb-entrenamiento','sb-empresas','sb-codigos'] },
     { id:'advanced', label:'Administración avanzada', items:['sb-basedatos','sb-automatizaciones'] },
     { id:'tools', label:'Herramientas clínicas', items:['sb-pasaporte','sb-evaluacion','sb-evalexpress'] }
   ];
