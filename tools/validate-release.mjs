@@ -69,6 +69,6 @@ if (!functionalTraining.includes('CAPACITY = 4') || !functionalTraining.includes
 if (!functionalTraining.includes('plan3') || !functionalTraining.includes('185000') || !functionalTraining.includes('215000') || !functionalTraining.includes('240000')) fail('faltan los planes de entrenamiento funcional');
 if (!html.includes('vEntrenamiento') || !html.includes('functional-training.js?v=20261030-initial')) fail('falta el módulo de entrenamiento funcional en el panel');
 if (!adminProfile.includes('sidebar-management.js?v=20261030-functional-training-primary')) fail('el menú puede conservar una versión anterior en caché');
-if (!functionalTraining.includes('getMonthlyRevenue') || !finance.includes('calcIngresoEntrenamientoMes') || !finance.includes('Entrenamiento funcional')) fail('los ingresos de entrenamiento no están integrados a gestión financiera');
+if (!functionalTraining.includes('getMonthlyRevenue') || !functionalTraining.includes('functional_training_v1_backup') || !finance.includes('calcIngresoEntrenamientoMes') || !finance.includes('Entrenamiento funcional')) fail('los ingresos de entrenamiento no están integrados o respaldados correctamente');
 
 console.log(`VALIDACIÓN APROBADA: ${files.length} archivos críticos, acceso, agenda, pagos, planes y colaboradores presentes.`);

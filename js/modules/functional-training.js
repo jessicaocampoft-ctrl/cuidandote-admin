@@ -3,6 +3,9 @@
   'use strict';
 
   const KEY = 'functional_training_v1';
+  // Respaldo local independiente: evita que una lectura lenta de la base
+  // sustituya una inscripción recién creada antes de que termine la sincronización.
+  const BACKUP_KEY = 'functional_training_v1_backup';
   const CAPACITY = 4;
   const TIMES = ['05:00', '06:00', '07:00', '08:00'];
   const WEEKDAYS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie'];
@@ -36,22 +39,45 @@
   const shortDate = value => new Date(`${value}T12:00:00`).toLocaleDateString('es-CO', { day:'numeric', month:'short' });
   const uid = prefix => `${prefix}_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`;
 
+  function normalizeState(value) {
+    const parsed = value && typeof value === 'object' ? value : {};
+    return {
+      members: Array.isArray(parsed.members) ? parsed.members : [],
+      bookings: Array.isArray(parsed.bookings) ? parsed.bookings : [],
+      payments: Array.isArray(parsed.payments) ? parsed.payments : [],
+      updatedAt: String(parsed.updatedAt || '')
+    };
+  }
+
+  function stateScore(state) {
+    const timestamp = Date.parse(state.updatedAt || '') || 0;
+    // Para datos antiguos sin sello de tiempo, conservar la versión que
+    // contenga más registros antes que reemplazarla por una respuesta vacía.
+    const records = state.members.length * 1000 + state.bookings.length * 10 + state.payments.length;
+    return timestamp ? timestamp + records / 1000000 : records;
+  }
+
+  function parseState(raw) {
+    try { return normalizeState(JSON.parse(raw || '{}')); } catch (error) { return normalizeState({}); }
+  }
+
   function read() {
-    try {
-      const raw = typeof global.kvGet === 'function' ? global.kvGet(KEY) : localStorage.getItem(KEY);
-      const parsed = JSON.parse(raw || '{}');
-      return {
-        members: Array.isArray(parsed.members) ? parsed.members : [],
-        bookings: Array.isArray(parsed.bookings) ? parsed.bookings : [],
-        payments: Array.isArray(parsed.payments) ? parsed.payments : []
-      };
-    } catch (error) { return { members: [], bookings: [], payments: [] }; }
+    const primary = parseState(typeof global.kvGet === 'function' ? global.kvGet(KEY) : localStorage.getItem(KEY));
+    const backup = parseState(localStorage.getItem(BACKUP_KEY));
+    return stateScore(backup) > stateScore(primary) ? backup : primary;
   }
 
   function write(data) {
-    const serialized = JSON.stringify(data);
-    if (typeof global.kvSet === 'function') global.kvSet(KEY, serialized);
-    else localStorage.setItem(KEY, serialized);
+    const next = normalizeState({ ...data, updatedAt:new Date().toISOString() });
+    const serialized = JSON.stringify(next);
+    // Se guarda primero en el respaldo local, de modo que el registro siga
+    // disponible incluso si el servidor tarda o se cierra el navegador.
+    localStorage.setItem(BACKUP_KEY, serialized);
+    if (typeof global.kvSet === 'function') {
+      global.kvSet(KEY, serialized);
+      // También se solicita la sincronización inmediata con la base.
+      global.PanelStorage?._flushKV?.().catch(() => null);
+    } else localStorage.setItem(KEY, serialized);
   }
 
   function planFor(member) { return PLANS[member.plan] || PLANS.courtesy; }
