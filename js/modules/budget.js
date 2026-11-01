@@ -8,7 +8,7 @@ const COSTOS_DEFAULTS = {
   modelo_version:       COSTOS_MODELO_VERSION,
   // Costos Fijos
   honorarios_fisio:   4000000,
-  seguridad_social:    500000,
+  seguridad_social:    515000,
   asistente_fisio:    1500000,
   auxiliar_admin:      500000,
   // Costos Operativos

@@ -7,7 +7,7 @@ const ESTRUCTURA_COSTOS_REFERENCIA = Object.freeze([
     categoria: 'Costos Fijos', titulo: 'Costos fijos', color: '#ef4444',
     items: [
       ['Honorarios Jessica', 4000000],
-      ['Seguridad Social', 500000],
+      ['Seguridad Social', 515000],
       ['Fisioterapeuta de apoyo', 1500000],
       ['Auxiliar Administrativa', 500000]
     ]
