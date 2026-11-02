@@ -204,6 +204,7 @@ function verDetalle(id) {
         ${row('Email', esc(c.email||'—'))} ${row('Servicio', esc(c.servicio))}
         ${row('Fecha', esc(fmtDate(c.fecha) + ' · ' + c.hora))} ${row('Modalidad', esc(c.modalidad))}
         ${row('Valor', esc(c.precio))} ${row('Estado', chipState(c.estado))}
+        ${global.PanelAppointmentProvider?.get?.(c) ? row('Atendido por', esc(global.PanelAppointmentProvider.get(c))) : ''}
         ${c.direccion ? row('Dirección', esc(c.direccion)) : ''}
         ${c.notas ? row('Notas del paciente', esc(c.notas), true) : ''}
         ${row('ID cita', esc(c.id))}
@@ -309,6 +310,7 @@ async function confirmarCancelacion() {
       if (cita) { cita.estado = 'Cancelada'; cita.motivoCancelacion = motivo; }
       if (cita && global.PanelPackages?.releaseReservedSessionForAppointment) global.PanelPackages.releaseReservedSessionForAppointment(cita);
       saveCancelMotivo(id, motivo);
+      saveCancelRecoveryMeta(id);
       if (cita) logChange('Cita cancelada', `${cita.nombre} · ${cita.fecha} ${cita.hora} · ${motivo}`);
       toast(esCancelExcluida(motivo) ? `🧪 Cita cancelada (${motivo} — no afecta KPIs)` : `Cita cancelada: ${motivo}`, 'ok');
       document.getElementById('modalCancelar').style.display = 'none';
@@ -330,6 +332,13 @@ function saveCancelMotivo(id, motivo) {
   const map = getCancelMotivos();
   map[id] = motivo;
   kvSet('cancelMotivos', JSON.stringify(map));
+}
+
+function saveCancelRecoveryMeta(id) {
+  let map = {};
+  try { map = JSON.parse(kvGet('cancelRecoveryMeta') || '{}'); } catch (_) {}
+  map[id] = new Date().toISOString();
+  kvSet('cancelRecoveryMeta', JSON.stringify(map));
 }
 
 function getCancelMotivo(id) {
@@ -361,6 +370,7 @@ function editarCita(id) {
     document.getElementById('editFecha').value  = normDate(c.fecha);
     document.getElementById('editPrecio').value = c.precio || '';
     document.getElementById('editNotas').value  = c.notas  || '';
+    document.getElementById('editAtendidoPor').value = global.PanelAppointmentProvider?.get?.(c) || '';
 
     // Servicio — buscar por texto (opciones con y sin optgroup)
     const ss = document.getElementById('editServicio');
@@ -445,6 +455,7 @@ async function guardarEdicion() {
   const hora     = document.getElementById('editHora').value;
   const precio   = getPrecioFinalEdit();
   const notas    = document.getElementById('editNotas').value.trim();
+  const atendidoPor = document.getElementById('editAtendidoPor').value;
   if (!fecha) { toast('Selecciona una fecha', 'err'); return; }
   if (!validateNoMidnight(hora, 'guardar la cita')) return;
   const btn = document.getElementById('editSaveBtn');
@@ -452,10 +463,11 @@ async function guardarEdicion() {
   try {
     const data = encodeURIComponent(JSON.stringify({id, servicio, modalidad, fecha, hora, precio, notas}));
     await saveEditWithRetry(`${APPS_SCRIPT_URL}?action=editBooking&token=${encodeURIComponent(TOKEN)}&data=${data}`);
+    global.PanelAppointmentProvider?.set?.(id, atendidoPor);
     if (anterior) logChange('Cita editada', `${anterior.nombre} · ${anterior.fecha} ${anterior.hora} → ${fecha} ${hora} · ${servicio}`);
     // Reflejar la confirmación inmediatamente. La recarga completa queda en
     // segundo plano para no mantener el modal bloqueado por Sheets/Calendar.
-    if (anterior) Object.assign(anterior, {servicio, modalidad, fecha, hora, precio, notas});
+    if (anterior) Object.assign(anterior, {servicio, modalidad, fecha, hora, precio, notas, atendidoPor});
     closeModal('modalEditar');
     renderAgenda();
     renderCitasResumen();

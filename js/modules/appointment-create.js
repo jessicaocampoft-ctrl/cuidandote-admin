@@ -57,7 +57,8 @@ function _addOptimisticAppointment(data, result) {
     notaAdmin: data.notaAdmin || '',
     estado: 'Confirmada',
     pago: '',
-    packageId: data.packageId || ''
+    packageId: data.packageId || '',
+    atendidoPor: data.atendidoPor || ''
   });
 }
 
@@ -193,6 +194,7 @@ async function submitAdminBookingMulti() {
     notaAdmin: (() => { const p=(document.getElementById('ncParaQuien').value||'').trim(); const ab=getAbonoNota(); return [p?'[PARA: '+p+']':'',ab].filter(Boolean).join(' '); })(),
     canal:     document.getElementById('nuevaCitaCanal').value || 'Directo',
     packageId: document.getElementById('ncPackageLink')?.value || '',
+    atendidoPor: document.getElementById('ncAtendidoPor')?.value || '',
     ...gimnasioData
   };
 
@@ -220,6 +222,7 @@ async function submitAdminBookingMulti() {
       notes:     document.getElementById('ncNotes').value.trim(),
       notaAdmin: '[PAREJA DE ' + name + ']',
       canal:     document.getElementById('nuevaCitaCanal').value || 'Directo',
+      atendidoPor: document.getElementById('ncAtendidoPor')?.value || '',
     };
   }
 
@@ -234,6 +237,7 @@ async function submitAdminBookingMulti() {
       if (d.ok) {
         creadas++;
         _addOptimisticAppointment(data, d);
+        if (data.atendidoPor) global.PanelAppointmentProvider?.set?.(d.id, data.atendidoPor);
         const creada = (allData.citas || []).find(c => String(c.id) === String(d.id));
         if (data.packageId && creada) global.PanelPackages?.reserveSessionForAppointment?.(creada);
       } else {
@@ -256,6 +260,7 @@ async function submitAdminBookingMulti() {
         if (d2.ok) {
           creadas++;
           _addOptimisticAppointment(data2, d2);
+          if (data2.atendidoPor) global.PanelAppointmentProvider?.set?.(d2.id, data2.atendidoPor);
         } else {
           errores++;
           erroresDetalle.push(d2.error || 'El servidor rechazó la cita de la segunda persona.');
@@ -619,6 +624,8 @@ function clearNuevaCita() {
   if (packageLink) packageLink.value = '';
   if (packageChoices) packageChoices.innerHTML = '';
   document.getElementById('ncMod').value='Presencial';
+  const atendidoPor = document.getElementById('ncAtendidoPor');
+  if (atendidoPor) atendidoPor.value = '';
   _cobrarDesplazamiento = true;
   const _dWrap = document.getElementById('ncDesplazamientoWrap');
   if (_dWrap) _dWrap.style.display = 'none';

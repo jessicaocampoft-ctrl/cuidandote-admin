@@ -194,6 +194,8 @@ function renderFinanzas() {
       </div>`;
   }
 
+  renderRecuperacionCancelaciones(m, y);
+
   renderCobrosPendientesMes(citas, m, y);
 
   // ── Alerta semana floja ──
@@ -862,6 +864,71 @@ async function downloadAnalysisExport() {
   }
 }
 
+function renderRecuperacionCancelaciones(mes, anio) {
+  const target = document.getElementById('finRecuperacionCancelaciones');
+  if (!target) return;
+  const normalizar = value => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('es-CO').replace(/\s+/g, ' ').trim();
+  const patientKey = cita => {
+    const tel = String(cita?.telefono || '').replace(/\D/g, '');
+    return tel.length >= 7 ? `tel:${tel}` : `nom:${normalizar(cita?.nombre)}`;
+  };
+  const fechaHora = cita => `${normDate(cita?.fecha)}T${String(cita?.hora || '00:00').slice(0, 5) || '00:00'}`;
+  const fechaRegistro = value => {
+    const text = String(value || '').trim();
+    const iso = new Date(text);
+    if (!Number.isNaN(iso.getTime())) return iso;
+    const match = text.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})[^\d]*(\d{1,2}):(\d{2})(?::\d{2})?\s*([ap])?\.?\s*m?\.?/i);
+    if (!match) return null;
+    let hour = Number(match[4]);
+    if (match[6]?.toLowerCase() === 'p' && hour < 12) hour += 12;
+    if (match[6]?.toLowerCase() === 'a' && hour === 12) hour = 0;
+    return new Date(Number(match[3]), Number(match[2]) - 1, Number(match[1]), hour, Number(match[5]));
+  };
+  const esCancelada = cita => /^cancel/i.test(String(cita?.estado || '').trim());
+  const esValida = cita => !esCancelada(cita) && !esRegistroServ(cita?.servicio);
+  const todas = Array.isArray(allData?.citas) ? allData.citas : [];
+  const canceladas = todas.filter(cita => {
+    const [y, m] = normDate(cita?.fecha).split('-').map(Number);
+    return y === anio && m === mes && esCancelada(cita) && !esRegistroServ(cita?.servicio);
+  }).sort((a, b) => fechaHora(a).localeCompare(fechaHora(b)));
+  const vigentes = todas.filter(esValida).sort((a, b) => fechaHora(a).localeCompare(fechaHora(b)));
+  let cancelMeta = {};
+  try { cancelMeta = JSON.parse(kvGet('cancelRecoveryMeta') || '{}'); } catch (_) {}
+  const usados = new Set();
+  let rapidas = 0, posteriores = 0, sinNueva = 0, valorRecuperado = 0, valorRecuperable = 0;
+  canceladas.forEach(cancelada => {
+    const inicio = new Date(`${normDate(cancelada.fecha)}T00:00:00`);
+    const canceladaEn = fechaRegistro(cancelMeta[cancelada.id]);
+    const nueva = vigentes.find(cita => {
+      if (usados.has(String(cita.id)) || patientKey(cita) !== patientKey(cancelada)) return false;
+      const creadaEn = fechaRegistro(cita.fechaReg);
+      // En las cancelaciones nuevas comprobamos que la nueva cita se haya
+      // creado después de cancelar; para el historial antiguo se usa fecha/hora.
+      return canceladaEn && creadaEn ? creadaEn > canceladaEn : fechaHora(cita) > fechaHora(cancelada);
+    });
+    const valor = parsePrecio(cancelada.precio) || parsePrecio(nueva?.precio);
+    if (!nueva) {
+      sinNueva++;
+      valorRecuperable += valor;
+      return;
+    }
+    usados.add(String(nueva.id));
+    const nuevaFecha = new Date(`${normDate(nueva.fecha)}T00:00:00`);
+    const dias = Math.max(0, Math.round((nuevaFecha - inicio) / 86400000));
+    if (dias <= 7) rapidas++; else posteriores++;
+    valorRecuperado += valor;
+  });
+  const item = (label, value, tone = 'var(--text)', detail = '') => `<div style="padding:12px 14px;border:1px solid var(--border);border-radius:10px;background:var(--s2)"><div style="font-size:.72rem;color:var(--muted);margin-bottom:5px">${label}</div><div style="font-family:var(--font-h);font-size:1.15rem;font-weight:700;color:${tone}">${value}</div>${detail ? `<div style="font-size:.7rem;color:var(--muted);margin-top:4px">${detail}</div>` : ''}</div>`;
+  target.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:10px">
+    ${item('Cancelaciones', canceladas.length, 'var(--err)')}
+    ${item('Reprogramadas ≤ 7 días', rapidas, 'var(--ok)', 'Recuperación rápida')}
+    ${item('Reprogramadas posteriormente', posteriores, 'var(--info)', 'Más de 7 días')}
+    ${item('Sin nueva cita', sinNueva, sinNueva ? 'var(--warn)' : 'var(--ok)', 'Pendiente de recuperar')}
+    ${item('Valor recuperado', '$' + valorRecuperado.toLocaleString('es-CO'), 'var(--ok)')}
+    ${item('Valor todavía recuperable', '$' + valorRecuperable.toLocaleString('es-CO'), valorRecuperable ? 'var(--warn)' : 'var(--ok)')}
+  </div>`;
+}
+
 function resRow(label, val, style='') {
   return `<div style="display:flex;justify-content:space-between;align-items:center;font-size:.85rem;padding:3px 0">
     <span style="color:var(--muted)">${label}</span>
@@ -888,6 +955,7 @@ function resRow(label, val, style='') {
     closeChatGPTStrategy,
     buildChatGPTStrategyPrompt,
     copyChatGPTStrategy,
-    resRow
+    resRow,
+    renderRecuperacionCancelaciones
   });
 })(window);

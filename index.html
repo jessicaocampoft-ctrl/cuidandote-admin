@@ -3002,6 +3002,14 @@ Primero evaluamos cómo está el cuerpo ahora, luego tratamos, luego te enseñam
               ⚠️ Este servicio solo está disponible de forma presencial (en consultorio).
             </div>
           </div>
+          <div class="field">
+            <label>Atendido por <span style="color:var(--muted);font-weight:400">(opcional)</span></label>
+            <select id="ncAtendidoPor">
+              <option value="">Sin asignar todavía</option>
+              <option value="Jessica">Jessica</option>
+              <option value="Natalia">Natalia</option>
+            </select>
+          </div>
           <!-- ── SELECTOR DE MODO DE AGENDAMIENTO ── -->
           <div style="grid-column:1/-1">
             <label style="font-size:.8rem;color:var(--muted);font-family:var(--font-m);margin-bottom:8px;display:block">Tipo de agendamiento</label>
@@ -3862,6 +3870,12 @@ Primero evaluamos cómo está el cuerpo ahora, luego tratamos, luego te enseñam
           <div class="card-title">📋 Resumen del mes</div>
           <div id="finResumenMes"></div>
         </div>
+      </div>
+
+      <div class="card" style="margin-top:20px">
+        <div class="card-title">↻ Recuperación de cancelaciones</div>
+        <div style="font-size:.76rem;color:var(--muted);margin:4px 0 14px">Una cancelación con una nueva cita no se toma como venta perdida.</div>
+        <div id="finRecuperacionCancelaciones"></div>
       </div>
 
       <!-- Métricas inteligentes -->
@@ -6387,6 +6401,14 @@ Acción: enviar mensaje de reenganche a los 14 pacientes que solo vinieron una v
       <div>
         <label style="font-size:.78rem;color:var(--muted);display:block;margin-bottom:4px">Hora</label>
         <input type="time" id="editHora" style="width:100%;background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font-b);font-size:.9rem;padding:10px 12px;outline:none">
+      </div>
+      <div>
+        <label style="font-size:.78rem;color:var(--muted);display:block;margin-bottom:4px">Atendido por <span style="font-weight:400">(opcional)</span></label>
+        <select id="editAtendidoPor" style="width:100%;background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font-b);font-size:.9rem;padding:10px 12px;outline:none">
+          <option value="">Sin asignar todavía</option>
+          <option value="Jessica">Jessica</option>
+          <option value="Natalia">Natalia</option>
+        </select>
       </div>
       <div>
         <label style="font-size:.78rem;color:var(--muted);display:block;margin-bottom:4px">Valor</label>
@@ -13177,13 +13199,14 @@ document.addEventListener('DOMContentLoaded', () => {
 <script src="js/modules/payments.js?v=20260929-payment-custom-plan"></script>
   <script src="js/modules/passport.js"></script>
   <script src="js/modules/agenda.js?v=20261007-cancelled-section"></script>
+  <script src="js/modules/appointment-provider.js?v=20261101-provider-optional"></script>
   <script src="js/modules/appointment-create.js?v=20261020-package-price-option"></script>
-  <script src="js/modules/appointment-edit.js?v=20261019-appointment-reminders"></script>
+  <script src="js/modules/appointment-edit.js?v=20261101-provider-optional"></script>
 <script src="js/modules/team.js?v=20261015-work-hours-card"></script>
   <script src="js/modules/database.js?v=20261026-cancelled-omit"></script>
   <script src="js/modules/referrals.js"></script>
 <script src="js/modules/packages.js?v=20261008-explicit-package-link"></script>
-  <script src="js/modules/finance.js?v=20261101-social-security-515"></script>
+  <script src="js/modules/finance.js?v=20261101-cancellation-recovery"></script>
   <script src="js/modules/kpi.js?v=20261018-reference-costs"></script>
   <script src="js/modules/budget.js?v=20261101-social-security-515"></script>
   <script src="js/modules/monthly-report.js?v=20261018-reference-costs"></script>
