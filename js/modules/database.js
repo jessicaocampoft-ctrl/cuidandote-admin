@@ -332,8 +332,7 @@ async function agregarPacienteDB() {
   const referidoPor = esReferido ? (document.getElementById('dbReferidoPor').value.trim()) : '';
 
   try {
-    const r = await fetch(`${APPS_SCRIPT_URL}?action=adminBook&token=${encodeURIComponent(TOKEN)}&data=${encodeURIComponent(JSON.stringify(data))}`);
-    const d = await r.json();
+    const d = await global.PanelAppointmentCreate?.createAdminBooking?.(data);
     if (d.ok) {
       logChange('Paciente agregado', nombre + (telefono ? ` · ${telefono}` : ''));
       await reload();

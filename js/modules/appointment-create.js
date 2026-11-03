@@ -125,6 +125,23 @@ function _refreshPanelAfterBooking() {
   }, 1800);
 }
 
+// Todas las altas administrativas pasan por esta única ruta. A diferencia de
+// fetch directo, PanelApi reintenta y utiliza el despliegue de respaldo si Apps
+// Script está despertando o responde con un 404 temporal.
+async function createAdminBooking(data) {
+  if (!global.PanelApi?.fetchJsonWithTimeout) {
+    throw new Error('La conexión segura para guardar citas no está disponible. Actualiza la página e inténtalo de nuevo.');
+  }
+  const url = `${APPS_SCRIPT_URL}?action=adminBook&token=${encodeURIComponent(TOKEN)}&data=${encodeURIComponent(JSON.stringify(data))}`;
+  const result = await global.PanelApi.fetchJsonWithTimeout(url, {}, 70000, true);
+  if (!result?.ok) {
+    const error = new Error(result?.error || 'El servidor no confirmó la cita.');
+    error.sessionExpired = /sin permiso|sesión vencida/i.test(error.message);
+    throw error;
+  }
+  return result;
+}
+
 async function submitAdminBookingMulti() {
   if (_submittingBooking) return;
 
@@ -232,18 +249,12 @@ async function submitAdminBookingMulti() {
     document.getElementById('ncSubmitLabel').textContent = `Creando ${i+1}/${fechas.length}...`;
     const data = { ...baseData, date: fechas[i].date, time: fechas[i].time };
     try {
-      const r = await fetch(`${APPS_SCRIPT_URL}?action=adminBook&token=${encodeURIComponent(TOKEN)}&data=${encodeURIComponent(JSON.stringify(data))}`);
-      const d = await r.json();
-      if (d.ok) {
-        creadas++;
-        _addOptimisticAppointment(data, d);
-        if (data.atendidoPor) global.PanelAppointmentProvider?.set?.(d.id, data.atendidoPor);
-        const creada = (allData.citas || []).find(c => String(c.id) === String(d.id));
-        if (data.packageId && creada) global.PanelPackages?.reserveSessionForAppointment?.(creada);
-      } else {
-        errores++;
-        erroresDetalle.push(d.error || 'El servidor rechazó la cita.');
-      }
+      const d = await createAdminBooking(data);
+      creadas++;
+      _addOptimisticAppointment(data, d);
+      if (data.atendidoPor) global.PanelAppointmentProvider?.set?.(d.id, data.atendidoPor);
+      const creada = (allData.citas || []).find(c => String(c.id) === String(d.id));
+      if (data.packageId && creada) global.PanelPackages?.reserveSessionForAppointment?.(creada);
     } catch(e) {
       errores++;
       erroresDetalle.push(e && e.message ? e.message : 'Error de conexión con el servidor.');
@@ -255,16 +266,10 @@ async function submitAdminBookingMulti() {
       const data2  = { ...duoData, date: fechas[i].date, time: time2 };
       document.getElementById('ncSubmitLabel').textContent = `Creando turno 2/${fechas.length}...`;
       try {
-        const r2 = await fetch(`${APPS_SCRIPT_URL}?action=adminBook&token=${encodeURIComponent(TOKEN)}&data=${encodeURIComponent(JSON.stringify(data2))}`);
-        const d2 = await r2.json();
-        if (d2.ok) {
-          creadas++;
-          _addOptimisticAppointment(data2, d2);
-          if (data2.atendidoPor) global.PanelAppointmentProvider?.set?.(d2.id, data2.atendidoPor);
-        } else {
-          errores++;
-          erroresDetalle.push(d2.error || 'El servidor rechazó la cita de la segunda persona.');
-        }
+        const d2 = await createAdminBooking(data2);
+        creadas++;
+        _addOptimisticAppointment(data2, d2);
+        if (data2.atendidoPor) global.PanelAppointmentProvider?.set?.(d2.id, data2.atendidoPor);
       } catch(e) {
         errores++;
         erroresDetalle.push(e && e.message ? e.message : 'Error de conexión con el servidor.');
@@ -522,9 +527,7 @@ async function submitAdminBooking() {
   const scheduledSlots = [{date, time}];
 
   try {
-    const r = await fetch(`${APPS_SCRIPT_URL}?action=adminBook&token=${encodeURIComponent(TOKEN)}&data=${encodeURIComponent(JSON.stringify(data))}`);
-    const d = await r.json();
-    if (!d.ok) { toast('Error: ' + (d.error||''), 'err'); return; }
+    const d = await createAdminBooking(data);
 
     // Crear sesiones adicionales si es recurrente
     if (isRecurring && totalSessions > 1) {
@@ -537,9 +540,8 @@ async function submitAdminBooking() {
         const nextData = { ...data, date: toDateStr(baseDate) };
         scheduledSlots.push({date: nextData.date, time});
         try {
-          const rr = await fetch(`${APPS_SCRIPT_URL}?action=adminBook&token=${encodeURIComponent(TOKEN)}&data=${encodeURIComponent(JSON.stringify(nextData))}`);
-          const dd = await rr.json();
-          if (dd.ok) created++; else errors++;
+          await createAdminBooking(nextData);
+          created++;
         } catch(ex) { errors++; }
       }
       if (errors > 0) toast(`${created} de ${totalSessions} sesiones creadas (${errors} fallaron)`, 'warn');
@@ -575,7 +577,11 @@ async function submitAdminBooking() {
     document.getElementById('fService').selectedIndex = 0;
     sessionStorage.removeItem('agendaFilters');
     showView('agenda');
-  } catch(e) { toast('Error de conexión','err'); }
+  } catch(e) {
+    toast(e?.sessionExpired
+      ? 'No se creó la cita porque tu sesión venció. Vuelve a ingresar y tus datos seguirán en el formulario.'
+      : 'No se creó la cita: ' + (e?.message || 'Error de conexión.'), 'err');
+  }
   finally {
     _submittingBooking = false;
     btn.textContent = 'Crear cita'; btn.disabled = false;
@@ -734,6 +740,7 @@ function agendarDesdeSeg(encNombre, encTel, encEmail) {
     agendarHoy,
     calcAbono,
     validateNoMidnight,
+    createAdminBooking,
     submitAdminBookingMulti,
     agendarDesdePaciente,
     toggleNcAddress,

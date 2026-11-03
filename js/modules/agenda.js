@@ -354,9 +354,8 @@ function openCalendarDuplicate(event, encodedId) {
         descuentoCliente: cita.descuentoCliente || '', comisionGym: cita.comisionGym || '',
         ingresoReal: cita.ingresoReal || '', margenPct: cita.margenPct || ''
       };
-      const response = await fetch(`${APPS_SCRIPT_URL}?action=adminBook&token=${encodeURIComponent(TOKEN)}&data=${encodeURIComponent(JSON.stringify(data))}`);
-      const result = await response.json();
-      if (!response.ok || !result.ok) throw new Error(result?.error || 'El servidor no pudo crear la copia.');
+      const result = await global.PanelAppointmentCreate?.createAdminBooking?.(data);
+      if (!result?.ok) throw new Error('El servidor no pudo crear la copia.');
 
       if (typeof global._addOptimisticAppointment === 'function') global._addOptimisticAppointment(data, result);
       else if (Array.isArray(allData.citas) && result.id) allData.citas.unshift({
