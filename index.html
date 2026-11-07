@@ -2947,6 +2947,11 @@ Primero evaluamos cómo está el cuerpo ahora, luego tratamos, luego te enseñam
               <option value="Descarga Muscular Completa">Descarga Muscular Completa</option>
               <option value="Valoración Funcional">Valoración fisioterapéutica inicial</option>
               <option value="Readaptación Funcional">Rehabilitación y readaptación funcional</option>
+              <optgroup label="── Masajes relajantes ──">
+                <option value="Pausa Cuidándote" disabled>Pausa Cuidándote — próximamente</option>
+                <option value="Ritual Cuidándote">Ritual Cuidándote (50 min)</option>
+                <option value="Cuidándote Profundo Premium" disabled>Cuidándote Profundo Premium — próximamente</option>
+              </optgroup>
               <option value="__planes__">Planes ▶</option>
             </select>
             <!-- Selector de planes (visible solo al elegir "Planes ▶") -->
@@ -3264,6 +3269,11 @@ Primero evaluamos cómo está el cuerpo ahora, luego tratamos, luego te enseñam
                 <option value="Descarga Muscular Completa">Descarga Muscular Completa</option>
                 <option value="Valoración Funcional">Valoración fisioterapéutica inicial</option>
                 <option value="Readaptación Funcional">Rehabilitación y readaptación funcional</option>
+                <optgroup label="── Masajes relajantes ──">
+                  <option value="Pausa Cuidándote" disabled>Pausa Cuidándote — próximamente</option>
+                  <option value="Ritual Cuidándote">Ritual Cuidándote (50 min)</option>
+                  <option value="Cuidándote Profundo Premium" disabled>Cuidándote Profundo Premium — próximamente</option>
+                </optgroup>
                 <optgroup label="── Combos ──">
                   <option value="Combo Diagnóstico Pro">Combo Diagnóstico Pro</option>
                   <option value="Combo Bienvenida">Combo Bienvenida (Referidos)</option>
@@ -6204,6 +6214,7 @@ Acción: enviar mensaje de reenganche a los 14 pacientes que solo vinieron una v
             <option value="Descarga Muscular Completa">Descarga Completa</option>
             <option value="Valoración Funcional">Valoración fisioterapéutica inicial</option>
             <option value="Readaptación Funcional">Rehabilitación y readaptación funcional</option>
+            <option value="Ritual Cuidándote">Ritual Cuidándote (50 min)</option>
           </select>
         </div>
       </div>
@@ -6397,6 +6408,9 @@ Acción: enviar mensaje de reenganche a los 14 pacientes que solo vinieron una v
             <option>Descarga Muscular Completa</option>
             <option value="Valoración Funcional">Valoración fisioterapéutica inicial</option>
             <option value="Readaptación Funcional">Rehabilitación y readaptación funcional</option>
+            <option value="Ritual Cuidándote">Ritual Cuidándote</option>
+            <option value="Pausa Cuidándote" disabled>Pausa Cuidándote — próximamente</option>
+            <option value="Cuidándote Profundo Premium" disabled>Cuidándote Profundo Premium — próximamente</option>
             <option>Sesiones en Gimnasio</option>
             <option>Jornada Empresarial</option>
           </optgroup>
@@ -9284,6 +9298,9 @@ function _getServiceDurationJS(service) {
   const s = service.toLowerCase()
     .replace(/[áàâ]/g,'a').replace(/[éèê]/g,'e')
     .replace(/[íìî]/g,'i').replace(/[óòô]/g,'o').replace(/[úùû]/g,'u');
+  if (s.includes('pausa cuidandote')) return 40;
+  if (s.includes('ritual cuidandote')) return 50;
+  if (s.includes('profundo premium')) return 90;
   if (s.includes('mini'))           return 20;
   if (s.includes('completa'))       return 80;
   if (s.includes('full'))           return 80;
@@ -9372,7 +9389,7 @@ const sesionesPorPaquete = {
 };
 
 // ── SERVICIOS SOLO PRESENCIAL ──
-const soloPresencial = ['Combo Bienvenida', 'Paquete Recuperación Full'];
+const soloPresencial = ['Combo Bienvenida', 'Paquete Recuperación Full', 'Pausa Cuidándote', 'Ritual Cuidándote', 'Cuidándote Profundo Premium'];
 
 function checkDomicilioWarn(...args) {
   const module = window.PanelAppointmentCreate;
@@ -9498,6 +9515,9 @@ const _precios = {
   'Descarga Muscular Completa':           { Presencial: 110000, Domicilio: 125000 },
   'Valoración Funcional':                 { Presencial: 80000,  Domicilio: 95000 },
   'Readaptación Funcional':               { Presencial: 70000,  Domicilio: 85000 },
+  'Pausa Cuidándote':                     { Presencial: 85000 },
+  'Ritual Cuidándote':                    { Presencial: 125000 },
+  'Cuidándote Profundo Premium':          { Presencial: 175000 },
   'Combo Diagnóstico Pro':                { Presencial: 160000, Domicilio: 185000 },
   'Combo Bienvenida':                     { Presencial: 120000, Domicilio: 120000 },
   'Mini-sesión Familiar 20 min':          { Presencial: 40000,  Domicilio: 40000 },
