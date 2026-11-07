@@ -5353,7 +5353,10 @@ Acción: enviar mensaje de reenganche a los 14 pacientes que solo vinieron una v
           <div class="field"><label>Último contacto</label><input type="date" id="empUltimoContacto"></div>
           <div class="field"><label>Próxima acción</label><input type="text" id="empProxAccion" placeholder="Enviar propuesta..."></div>
           <div class="field"><label>Fecha próxima acción</label><input type="date" id="empFechaAccion"></div>
+          <div class="field"><label>Gestionado por</label><input type="text" id="empGestionadoPor" placeholder="Nombre de quien consiguió el convenio"></div>
+          <div class="field"><label>Fecha de activación</label><input type="date" id="empFechaActivacion"></div>
         </div>
+        <label style="display:flex;gap:7px;align-items:center;font-size:.8rem;margin-top:10px"><input type="checkbox" id="empAprobadoDireccion"> Convenio aprobado por Jessica / dirección</label>
         <div class="field" style="margin-top:8px"><label>Notas</label><textarea id="empNotas" rows="3" style="width:100%;background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font-b);font-size:.9rem;padding:10px 12px;outline:none;resize:vertical" placeholder="Historial de conversaciones..."></textarea></div>
         <div style="display:flex;gap:10px;margin-top:18px">
           <button class="btn btn-teal" onclick="guardarEmpresa()">Guardar</button>
@@ -5749,6 +5752,9 @@ Acción: enviar mensaje de reenganche a los 14 pacientes que solo vinieron una v
 
       <!-- Todo el Equipo -->
       <div id="coEquipoWrap" style="margin-top:14px"></div>
+
+      <!-- Incentivos comerciales: cálculo en modo de prueba, independiente de las comisiones históricas. -->
+      <div id="commercialIncentivesPanel" style="margin-top:18px"></div>
 
     </section>
 
@@ -12102,8 +12108,12 @@ function renderEmpresas() {
 function abrirModalEmpresa(idx) {
   document.getElementById('empEditIdx').value = idx !== undefined ? idx : -1;
   document.getElementById('modalEmpresaTitle').textContent = idx !== undefined ? 'Editar empresa' : 'Nueva empresa';
-  const ids = ['empNombre','empSector','empContacto','empTelefono','empEmail','empEstado','empValor','empUltimoContacto','empProxAccion','empFechaAccion','empNotas'];
+  const ids = ['empNombre','empSector','empContacto','empTelefono','empEmail','empEstado','empValor','empUltimoContacto','empProxAccion','empFechaAccion','empGestionadoPor','empFechaActivacion','empNotas'];
   ids.forEach(id => { const el = document.getElementById(id); if (el) el.value = id==='empEstado'?'Prospecto':''; });
+  document.getElementById('empAprobadoDireccion').checked = false;
+  const _empRole = typeof currentAdminRoleKey === 'function' ? currentAdminRoleKey() : '';
+  const _empDirector = /superadministradora|direccion|administradora/.test(_empRole) || /jessica/i.test(currentAdminUser?.nombre || '');
+  document.getElementById('empAprobadoDireccion').disabled = !_empDirector;
   if (idx !== undefined) {
     const e = _getEmpresas()[idx];
     if (e) {
@@ -12121,6 +12131,9 @@ function abrirModalEmpresa(idx) {
       document.getElementById('empUltimoContacto').value = e.ultimoContacto||'';
       document.getElementById('empProxAccion').value = e.proxAccion||'';
       document.getElementById('empFechaAccion').value = e.fechaAccion||'';
+      document.getElementById('empGestionadoPor').value = e.gestionadoPor||'';
+      document.getElementById('empFechaActivacion').value = e.fechaActivacion||'';
+      document.getElementById('empAprobadoDireccion').checked = !!e.aprobadoDireccion;
       document.getElementById('empNotas').value = e.notas||'';
     }
   } else {
@@ -12132,7 +12145,11 @@ function cerrarModalEmpresa() { document.getElementById('modalEmpresa').style.di
 function editarEmpresa(idx) { abrirModalEmpresa(idx); }
 function guardarEmpresa() {
   const idx = parseInt(document.getElementById('empEditIdx').value, 10);
+  const previousEmp = idx >= 0 ? (_getEmpresas()[idx] || {}) : {};
+  const _empRole = typeof currentAdminRoleKey === 'function' ? currentAdminRoleKey() : '';
+  const _empDirector = /superadministradora|direccion|administradora/.test(_empRole) || /jessica/i.test(currentAdminUser?.nombre || '');
   const emp = {
+    ...previousEmp,
     nombre: (document.getElementById('empNombre').value||'').trim(),
     sector: (document.getElementById('empSector').value||'').trim(),
     contacto: (document.getElementById('empContacto').value||'').trim(),
@@ -12143,6 +12160,9 @@ function guardarEmpresa() {
     ultimoContacto: document.getElementById('empUltimoContacto').value,
     proxAccion: (document.getElementById('empProxAccion').value||'').trim(),
     fechaAccion: document.getElementById('empFechaAccion').value,
+    gestionadoPor: (document.getElementById('empGestionadoPor').value||'').trim(),
+    fechaActivacion: document.getElementById('empFechaActivacion').value,
+    aprobadoDireccion: _empDirector ? !!document.getElementById('empAprobadoDireccion').checked : !!previousEmp.aprobadoDireccion,
     notas: (document.getElementById('empNotas').value||'').trim()
   };
   if (!emp.nombre) { toast('El nombre es obligatorio','err'); return; }
@@ -13279,6 +13299,7 @@ document.addEventListener('DOMContentLoaded', () => {
 <script src="js/modules/schedule-operations.js?v=20260922-quick-block-tab"></script>
 <script src="js/modules/events-agreements.js?v=20260922-quick-block-tab"></script>
 <script src="js/modules/commissions.js"></script>
+<script src="js/modules/commercial-incentives.js?v=20261107-trial-incentives"></script>
 <script src="js/modules/patient-search.js"></script>
 <script src="js/modules/patient-records.js"></script>
 <script src="js/modules/admin-profile-accessibility.js?v=20261026-cancelled-omit"></script>

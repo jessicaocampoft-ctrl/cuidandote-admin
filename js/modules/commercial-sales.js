@@ -9,7 +9,7 @@
   const AUDIT_KEY = 'commercial_opportunity_audit_v1';
   const MAX_AUDIT = 1500;
   const STATUSES = ['Nuevo', 'Contactado', 'Interesado', 'Pendiente de pago', 'Venta cerrada', 'Perdido'];
-  const ORIGINS = ['WhatsApp', 'Instagram', 'Google', 'Página web', 'Referido', 'Alianza', 'Llamada', 'Otro'];
+  const ORIGINS = ['WhatsApp', 'Instagram', 'Google', 'Página web', 'Referido', 'Alianza', 'Llamada', 'Gestión comercial propia', 'Otro'];
   let opportunities = [];
   let auditRows = [];
 
@@ -141,6 +141,8 @@
       field('Fecha primer contacto *', input('comFirstContact', item.firstContact || today(), 'date')),
       field('Canal de origen *', select('comOrigin', optionList(ORIGINS, item.origin, 'Seleccionar canal'))),
       field('Servicio de interés', input('comService', item.service)),
+      field('Servicio inicialmente solicitado', input('comInitialService', item.initialService)),
+      field('Valor inicial verificable', input('comInitialValue', item.initialValue, 'number', 'min="0" step="1000"')),
       field('Captó al paciente', select('comCapturedBy', peopleOptions(item.capturedBy)), 'span 1'),
       field('Atendió la conversación', select('comAttendedBy', peopleOptions(item.attendedBy))),
       field('Cerró la venta', select('comClosedBy', peopleOptions(item.closedBy))),
@@ -148,6 +150,7 @@
       field('Valor de la venta', input('comSaleValue', item.saleValue, 'number', `min="0" ${canChangeMoney() ? '' : 'readonly'} step="1000"`)),
       field('Próximo seguimiento', input('comNextFollowUp', item.nextFollowUp, 'date')),
       field('Alianza o campaña de origen', input('comAllianceCampaign', item.allianceCampaign), 'span 2'),
+      field('Evidencia de captación propia', `<textarea id="comDirectEvidence" rows="2" placeholder="Ej.: contacto directo iniciado por la líder, fecha y soporte verificable" style="display:block;box-sizing:border-box;width:100%;margin-top:5px;padding:9px 10px;border:1px solid var(--border);border-radius:8px;background:var(--s2);color:var(--text);resize:vertical">${e(item.directEvidence)}</textarea>`, 'span 2'),
       field('Cita vinculada (para validar pago)', select('comAppointmentId', appointmentOptions(item.appointmentId), 'onchange="PanelCommercialSales.refreshPaymentInfo()"'), 'span 2')
     ].join('');
   }
@@ -179,7 +182,7 @@
   }
   function readForm() {
     return {
-      id: clean($('comId').value), patientName: clean($('comPatientName').value), phone: clean($('comPhone').value), email: clean($('comEmail').value), firstContact: clean($('comFirstContact').value), origin: clean($('comOrigin').value), capturedBy: clean($('comCapturedBy').value), attendedBy: clean($('comAttendedBy').value), closedBy: clean($('comClosedBy').value), service: clean($('comService').value), status: clean($('comStatus').value), saleValue: Number($('comSaleValue').value || 0), nextFollowUp: clean($('comNextFollowUp').value), allianceCampaign: clean($('comAllianceCampaign').value), appointmentId: clean($('comAppointmentId').value)
+      id: clean($('comId').value), patientName: clean($('comPatientName').value), phone: clean($('comPhone').value), email: clean($('comEmail').value), firstContact: clean($('comFirstContact').value), origin: clean($('comOrigin').value), capturedBy: clean($('comCapturedBy').value), attendedBy: clean($('comAttendedBy').value), closedBy: clean($('comClosedBy').value), service: clean($('comService').value), initialService: clean($('comInitialService').value), initialValue: Number($('comInitialValue').value || 0), status: clean($('comStatus').value), saleValue: Number($('comSaleValue').value || 0), nextFollowUp: clean($('comNextFollowUp').value), allianceCampaign: clean($('comAllianceCampaign').value), directEvidence: clean($('comDirectEvidence').value), appointmentId: clean($('comAppointmentId').value)
     };
   }
   function save() {
@@ -212,5 +215,5 @@
   function edit(id) { hydrate(); const item = opportunities.find(x => x.id === id); if (item) open(item); }
   function openNew() { open(null); }
 
-  global.PanelCommercialSales = Object.freeze({ render, renderList, openNew, edit, close, save, refreshPaymentInfo, _test: { identity, verifiedTotal } });
+  global.PanelCommercialSales = Object.freeze({ render, renderList, openNew, edit, close, save, refreshPaymentInfo, getOpportunities: () => { hydrate(); return opportunities.map(x => ({...x})); }, getApprovedPayments: approvedPayments, getVerifiedTotal: verifiedTotal, _test: { identity, verifiedTotal } });
 })(window);
