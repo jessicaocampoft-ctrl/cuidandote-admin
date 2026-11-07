@@ -71,7 +71,7 @@
       if (v === 'finanzas')       { renderFinanzas(); actualizarContadorLeads(); _renderEncuestaStatsUI(getEncuestaStats()); window.PanelFunctionalTraining?.renderFinanceCard(); }
       if (v === 'pagos')          { loadOperationsData().then(renderPagos); }
       if (v === 'seguimiento')    renderSeguimiento();
-      if (v === 'comercial')       global.PanelCommercialSales?.render();
+      if (v === 'comercial')       window.PanelCommercialSales?.render();
       if (v === 'tareas')         renderTareas();
       if (v === 'tareasConfig')   initTareasConfig();
       if (v === 'paquetes')       renderPaquetes();
