@@ -1885,6 +1885,11 @@ button:disabled{cursor:not-allowed;opacity:.58}
       <span id="badgeSeguimiento" style="display:none;background:#7c3aed;color:#fff;border-radius:99px;font-size:.68rem;font-weight:700;padding:1px 7px;line-height:1.6">0</span>
     </button>
 
+    <button class="sb-link" id="sb-comercial" data-tooltip="Gestión comercial" onclick="showView('comercial')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="m7 15 4-4 3 3 6-7"/><path d="M17 7h3v3"/></svg>
+      Gestión comercial
+    </button>
+
     <button class="sb-link" id="sb-mensajes" data-tooltip="Mensajes" onclick="showView('mensajes')">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
       Mensajes
@@ -5263,6 +5268,36 @@ Acción: enviar mensaje de reenganche a los 14 pacientes que solo vinieron una v
         <button class="btn btn-ghost" style="width:100%;margin-top:10px" onclick="cerrarModalPago()">Cancelar</button>
       </div>
     </div>
+
+    <!-- ── GESTIÓN COMERCIAL ── -->
+    <section id="vComercial" style="display:none">
+      <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px">
+        <div>
+          <h1 class="page-title">📈 <em>Gestión comercial</em></h1>
+          <p class="page-sub">Capta, atiende y cierra oportunidades sin modificar la historia clínica.</p>
+        </div>
+        <button class="btn btn-teal" onclick="PanelCommercialSales.openNew()">+ Registrar oportunidad</button>
+      </div>
+      <div id="commercialPermissionNotice" style="display:none;margin-bottom:14px"></div>
+      <div id="commercialStats" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px"></div>
+      <div style="background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:13px;margin-bottom:14px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+        <input id="commercialSearch" placeholder="Buscar por nombre, teléfono o servicio" oninput="PanelCommercialSales.renderList()" style="min-width:230px;flex:1;padding:9px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text)">
+        <select id="commercialStatusFilter" onchange="PanelCommercialSales.renderList()" style="padding:9px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text)">
+          <option value="">Todos los estados</option><option>Nuevo</option><option>Contactado</option><option>Interesado</option><option>Pendiente de pago</option><option>Venta cerrada</option><option>Perdido</option>
+        </select>
+      </div>
+      <div id="commercialList"></div>
+      <div id="commercialModal" style="display:none;position:fixed;z-index:1005;inset:0;background:rgba(15,23,42,.54);padding:20px;overflow:auto" onclick="if(event.target===this)PanelCommercialSales.close()">
+        <div style="max-width:850px;margin:30px auto;background:var(--bg);border:1px solid var(--border);border-radius:16px;padding:22px;box-shadow:0 24px 70px rgba(0,0,0,.28)">
+          <div style="display:flex;justify-content:space-between;gap:12px;align-items:start"><div><h2 id="commercialModalTitle" style="margin:0">Nueva oportunidad</h2><p style="color:var(--muted);font-size:.82rem;margin:5px 0 16px">Los datos comerciales no incluyen notas clínicas.</p></div><button class="btn btn-ghost" onclick="PanelCommercialSales.close()">Cerrar</button></div>
+          <input type="hidden" id="comId">
+          <div id="commercialForm" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px"></div>
+          <div id="commercialPaymentInfo" style="margin-top:14px"></div>
+          <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:18px"><button class="btn btn-ghost" onclick="PanelCommercialSales.close()">Cancelar</button><button class="btn btn-teal" id="commercialSaveButton" onclick="PanelCommercialSales.save()">Guardar oportunidad</button></div>
+          <div id="commercialAudit" style="margin-top:20px"></div>
+        </div>
+      </div>
+    </section>
 
     <!-- ── EMPRESAS CRM ── -->
     <section id="vEmpresas" style="display:none">
@@ -13197,6 +13232,7 @@ document.addEventListener('DOMContentLoaded', () => {
 <script src="js/modules/shared-storage.js"></script>
 <script src="js/modules/functional-training.js?v=20261030-initial"></script>
 <script src="js/modules/payments.js?v=20260929-payment-custom-plan"></script>
+<script src="js/modules/commercial-sales.js?v=20261106-capture-sales"></script>
   <script src="js/modules/passport.js"></script>
   <script src="js/modules/agenda.js?v=20261103-resilient-booking"></script>
   <script src="js/modules/appointment-provider.js?v=20261101-provider-optional"></script>
