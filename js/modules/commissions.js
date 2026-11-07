@@ -181,6 +181,21 @@ function _comisSetManualReact(year, month, list) {
   kvSet('comis_react_'+year+'-'+String(month).padStart(2,'0'), JSON.stringify(list));
 }
 
+// Un retorno después de inactividad no es automáticamente una reactivación.
+// La fuente queda marcada por persona y mes para que la decisión sea auditable.
+function _comisReactOrigins(year, month) {
+  try { return JSON.parse(kvGet('comis_react_origen_'+year+'-'+String(month).padStart(2,'0')) || '{}'); } catch(e) { return {}; }
+}
+function setReactivationOrigin(nombre, origen) {
+  const [year, month] = _comisMesVal().split('-').map(Number);
+  const origins = _comisReactOrigins(year, month);
+  const key = String(nombre || '').toLowerCase().trim();
+  if (!key) return;
+  origins[key] = { origen, at: new Date().toISOString() };
+  kvSet('comis_react_origen_'+year+'-'+String(month).padStart(2,'0'), JSON.stringify(origins));
+  renderComisiones();
+}
+
 function addManualReactivacion() {
   const inp = document.getElementById('coManualReactInp');
   if (!inp || !inp.value.trim()) return;
@@ -229,13 +244,17 @@ function renderComisiones() {
 
   // ── REACTIVACIONES ──
   const reactAuto  = _comisReactivaciones(citas, year, month);
+  const reactOrigins = _comisReactOrigins(year, month);
+  const reactConfirmadas = reactAuto.filter(r => reactOrigins[String(r.nombre).toLowerCase().trim()]?.origen === 'gestion');
+  const reactEspontaneas = reactAuto.filter(r => reactOrigins[String(r.nombre).toLowerCase().trim()]?.origen === 'espontaneo');
+  const reactPendientes = reactAuto.filter(r => !reactOrigins[String(r.nombre).toLowerCase().trim()]?.origen);
   const reactMan   = _comisManualReact(year, month);
   const reactManN  = reactMan.filter(n => !reactAuto.find(r => r.nombre.toLowerCase() === n.toLowerCase()));
-  const totalReact = reactAuto.length + reactManN.length;
+  const totalReact = reactConfirmadas.length + reactManN.length;
   const calcBonoReactItem = (precio) => cfg.bono_react_tipo === 'pct'
     ? Math.round((parseInt((precio||'0').toString().replace(/\D/g,''),10)||0) * cfg.bono_react / 100)
     : cfg.bono_react;
-  const bonoReact = reactAuto.reduce((s,r) => s + calcBonoReactItem(r.precio), 0)
+  const bonoReact = reactConfirmadas.reduce((s,r) => s + calcBonoReactItem(r.precio), 0)
     + reactManN.length * (cfg.bono_react_tipo === 'fijo' ? cfg.bono_react : 0);
   const labelBonoReact = cfg.bono_react_tipo === 'pct' ? cfg.bono_react + '% del servicio' : fmtPeso(cfg.bono_react);
 
@@ -290,7 +309,18 @@ function renderComisiones() {
   const semanasH = semanas.map(s => `<div class="co-week"><div class="co-wdot ${s.llena?'ok':'no'}"></div><span>${fmtRng(s.start,s.end)}</span><span style="font-family:var(--font-m);color:${s.llena?'var(--ok)':'var(--muted)'}">${s.sesiones} ses.</span><span style="font-size:.72rem;color:${s.llena?'var(--ok)':'#ef4444'}">${s.llena?'✓ llena':'falta'}</span></div>`).join('');
 
   const reactH = [
-    ...reactAuto.map(r => { const b = calcBonoReactItem(r.precio); return `<div class="co-bd-item"><span>${r.nombre} <span style="font-size:.72rem;color:var(--muted)">(${r.dias}d inactivo)</span></span><span style="font-family:var(--font-m);font-size:.78rem;color:var(--ok)">${fmtPeso(b)}${cfg.bono_react_tipo==='pct'?` <span style="color:var(--muted)">(${cfg.bono_react}%)</span>`:''}</span></div>`; }),
+    ...reactAuto.map(r => {
+      const key = String(r.nombre).toLowerCase().trim();
+      const origin = reactOrigins[key]?.origen || '';
+      const b = origin === 'gestion' ? calcBonoReactItem(r.precio) : 0;
+      const state = origin === 'gestion'
+        ? '<span style="color:var(--ok);font-weight:700">✓ Reactivada por gestión</span>'
+        : origin === 'espontaneo'
+          ? '<span style="color:#64748b;font-weight:700">↩ Escribió sola/o · sin bono</span>'
+          : '<span style="color:#b45309;font-weight:700">? Confirmar origen</span>';
+      const safe = r.nombre.replace(/'/g,"\\'");
+      return `<div class="co-bd-item" style="flex-wrap:wrap;gap:7px"><span>${r.nombre} <span style="font-size:.72rem;color:var(--muted)">(${r.dias}d inactivo)</span><br><span style="font-size:.72rem">${state}</span></span><span style="display:flex;gap:5px;align-items:center;flex-wrap:wrap"><button onclick="PanelCommissions.setReactivationOrigin('${safe}','gestion')" style="padding:4px 7px;border:1px solid #86efac;background:#f0fdf4;color:#15803d;border-radius:6px;cursor:pointer;font-size:.7rem">✓ Fue reactivada</button><button onclick="PanelCommissions.setReactivationOrigin('${safe}','espontaneo')" style="padding:4px 7px;border:1px solid #cbd5e1;background:#f8fafc;color:#475569;border-radius:6px;cursor:pointer;font-size:.7rem">↩ Escribió sola/o</button><strong style="font-family:var(--font-m);font-size:.78rem;color:${b?'var(--ok)':'var(--muted)'}">${b?fmtPeso(b):'$0'}</strong></span></div>`;
+    }),
     ...reactManN.map(n  => { const b = cfg.bono_react_tipo === 'fijo' ? cfg.bono_react : 0; return `<div class="co-bd-item"><span>${n} <span style="font-size:.72rem;color:var(--primary)">(manual)</span></span><button onclick="removeManualReactivacion('${n.replace(/'/g,"\\'")}')" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:.85rem;padding:0 4px">✕</button><span style="font-family:var(--font-m);font-size:.78rem;color:var(--ok)">${b ? fmtPeso(b) : '—'}</span></div>`; })
   ].join('') || '<div class="co-empty">No se detectaron reactivaciones este mes</div>';
 
@@ -307,7 +337,7 @@ function renderComisiones() {
       <div class="co-bono-row"><span class="co-bono-label">${sLlenas} de ${sTotal} semanas ≥${cfg.ses_llena} ses. · ${totalSes} sesiones totales</span><span class="co-bono-amount">${fmtPeso(bonoAg)}</span></div>
       <div class="co-breakdown">${semanasH}</div></div>
     <div class="co-bono"><div class="co-bono-title">🔁 Bono Recuperación de Pacientes</div>
-      <div class="co-bono-row"><span class="co-bono-label">${totalReact} reactivado${totalReact!==1?'s':''} × ${labelBonoReact}</span><span class="co-bono-amount">${fmtPeso(bonoReact)}</span></div>
+      <div class="co-bono-row"><span class="co-bono-label">${totalReact} reactivado${totalReact!==1?'s':''} por gestión × ${labelBonoReact}<br><span style="font-size:.7rem;color:var(--muted)">${reactPendientes.length} por confirmar · ${reactEspontaneas.length} retorno${reactEspontaneas.length!==1?'s':''} espontáneo${reactEspontaneas.length!==1?'s':''} sin bono</span></span><span class="co-bono-amount">${fmtPeso(bonoReact)}</span></div>
       <div class="co-breakdown">${reactH}</div>
       <div class="co-manual-row"><input class="co-manual-inp" id="coManualReactInp" type="text" placeholder="Agregar reactivación manual..." onkeydown="if(event.key==='Enter')addManualReactivacion()"><button onclick="addManualReactivacion()" style="padding:7px 14px;background:var(--primary);color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:var(--font-b);font-size:.8rem;white-space:nowrap">+ Agregar</button></div></div>
     ${bonoCruzAux > 0 ? `<div class="co-bono"><div class="co-bono-title">➕ Bono Venta Cruzada asignada</div>
@@ -434,6 +464,8 @@ global.PanelCommissions = Object.freeze({
     setCruzadaAsign,
     _comisManualReact,
     _comisSetManualReact,
+    _comisReactOrigins,
+    setReactivationOrigin,
     addManualReactivacion,
     removeManualReactivacion,
     marcarComisionPagada,
