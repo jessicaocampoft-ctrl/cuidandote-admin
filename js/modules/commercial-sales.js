@@ -90,7 +90,7 @@
   function select(id, inner, extra) { return `<select id="${id}" ${extra || ''} style="display:block;box-sizing:border-box;width:100%;margin-top:5px;padding:9px 10px;border:1px solid var(--border);border-radius:8px;background:var(--s2);color:var(--text)">${inner}</select>`; }
 
   async function refreshPayments() {
-    try { await global.loadOperationsData?.(); } catch (_) {}
+    try { await global.PanelPayments?.loadOperationsData?.(); } catch (_) {}
   }
   function render() {
     hydrate();
