@@ -11,7 +11,12 @@ function _getPkAsignados()  { try { return JSON.parse(kvGet('pk_asignados') ||'[
 function _getPkPlantillas() { try { return JSON.parse(kvGet('pk_plantillas')||'[]'); } catch(e){ return []; } }
 
 function _queuePackageDatabaseSync(records, deletedIds) {
-  _packageSyncPending = records.map(record => ({...record, consumoCitas: Array.isArray(record.consumoCitas) ? [...record.consumoCitas] : []}));
+  _packageSyncPending = records.map(record => ({
+    ...record,
+    consumoCitas: Array.isArray(record.consumoCitas) ? [...record.consumoCitas] : [],
+    reservasCitas: Array.isArray(record.reservasCitas) ? [...record.reservasCitas] : [],
+    cuotas: Array.isArray(record.cuotas) ? record.cuotas.map(cuota => ({...cuota})) : []
+  }));
   (deletedIds || []).forEach(id => { if (id) _packageDeletedIds.add(String(id)); });
   clearTimeout(_packageSyncTimer);
   _packageSyncTimer = setTimeout(_syncPackagesToDatabase, 350);
@@ -68,6 +73,19 @@ function _savePkAsignados(a, deletedIds)  {
 
 function _savePkPlantillas(a) { kvSet('pk_plantillas', JSON.stringify(a)); }
 
+// Una reserva bloquea un cupo al agendar, pero solo se vuelve consumida cuando
+// la cita se marca atendida. Las reservas antiguas que ya fueron consumidas se
+// ignoran para mantener compatibilidad con los paquetes existentes.
+function getPackageSessionCounts(p) {
+  const consumos = Array.isArray(p?.consumoCitas) ? p.consumoCitas : [];
+  const reservas = Array.isArray(p?.reservasCitas) ? p.reservasCitas : [];
+  const consumedIds = new Set(consumos.map(item => String(item.id)));
+  const reserved = reservas.filter(item => !consumedIds.has(String(item.id)));
+  const used = Math.max(Number(p?.consumidas || 0), consumos.length);
+  const total = Math.max(0, Number(p?.sesiones || 0));
+  return { total, used, reserved: reserved.length, available: Math.max(0, total - used - reserved.length) };
+}
+
 function abrirModalPaquete(plIdxPre) {
   const plantillas = _getPkPlantillas();
   const sel = document.getElementById('pkPlantillaSel');
@@ -86,6 +104,7 @@ function abrirModalPaquete(plIdxPre) {
   const valor = document.getElementById('pkValorTotal'); if (valor) valor.value = '';
   const abono = document.getElementById('pkAbonoInicial'); if (abono) abono.value = '';
   const modalidadPago = document.getElementById('pkModalidadPago'); if (modalidadPago) modalidadPago.value = 'PAQUETE_COMPLETO';
+  const planCuotas = document.getElementById('pkPlanCuotas'); if (planCuotas) planCuotas.value = 'DOS_CUOTAS';
   const valorPorSesion = document.getElementById('pkValorPorSesion'); if (valorPorSesion) valorPorSesion.value = '';
   if (typeof global.actualizarModalidadPagoPaquete === 'function') global.actualizarModalidadPagoPaquete();
   if (plIdxPre !== undefined) autocompletarPaqueteDesdePlantilla();
@@ -103,6 +122,7 @@ function autocompletarPaqueteDesdePlantilla() {
   if (nombre) nombre.value = pl.nombre || '';
   if (sesiones) sesiones.value = Number(pl.sesiones) || '';
   if (valor) valor.value = pl.precio || '';
+  if (typeof global.actualizarPlanCuotasPaquete === 'function') global.actualizarPlanCuotasPaquete();
 }
 
 function abrirModalPlantillaPaquete() { const m = document.getElementById('modalPlantillaPaquete'); if (m) m.style.display='flex'; }
@@ -138,10 +158,10 @@ function renderPaquetes() {
   const plantillas = _getPkPlantillas();
   const asignados  = _getPkAsignados();
   const hoy = today();
-  const activos   = asignados.filter(p => p.vencimiento >= hoy && (p.sesiones - (p.consumidas||0)) > 0);
-  const agotados  = asignados.filter(p => (p.sesiones - (p.consumidas||0)) <= 0);
+  const activos   = asignados.filter(p => p.vencimiento >= hoy && getPackageSessionCounts(p).available > 0);
+  const agotados  = asignados.filter(p => getPackageSessionCounts(p).available <= 0);
   const porVencer = asignados.filter(p => {
-    if ((p.sesiones-(p.consumidas||0)) <= 0) return false;
+    if (getPackageSessionCounts(p).available <= 0) return false;
     const diff = Math.round((new Date(p.vencimiento+'T12:00:00') - new Date(hoy+'T12:00:00'))/86400000);
     return diff >= 0 && diff <= 7;
   });
@@ -175,8 +195,9 @@ function renderPaquetes() {
     return;
   }
   pkListaEl.innerHTML = lista.map((p, i) => {
-    const rest = (p.sesiones||0) - (p.consumidas||0);
-    const pct  = p.sesiones > 0 ? Math.round((p.consumidas||0)/p.sesiones*100) : 0;
+    const sessionCounts = getPackageSessionCounts(p);
+    const rest = sessionCounts.available;
+    const pct  = sessionCounts.total > 0 ? Math.round(sessionCounts.used/sessionCounts.total*100) : 0;
     const agotado   = rest <= 0;
     const penultimo = rest === 1;
     const vencido   = p.vencimiento && p.vencimiento < hoy;
@@ -189,6 +210,8 @@ function renderPaquetes() {
     const saldo = Math.max(0, valorPaquete - abonado);
     const pagoPorSesion = p.modalidadPago === 'PAGO_POR_SESION';
     const pagoColor = saldo > 0 ? '#d97706' : '#059669';
+    const cuotas = Array.isArray(p.cuotas) ? p.cuotas : [];
+    const cuotasHtml = !pagoPorSesion && cuotas.length ? `<div style="margin-top:8px;padding:8px 10px;border-radius:8px;background:rgba(20,184,166,.06);font-size:.75rem;line-height:1.55">${cuotas.map(c => `<div><strong>${esc(c.concepto || ('Cuota ' + c.numero))}:</strong> ${fmtPeso(c.valor || 0)} · <span style="color:${c.estado === 'PAGADA' ? '#059669' : '#d97706'};font-weight:700">${c.estado === 'PAGADA' ? 'Pagada' : 'Pendiente'}</span></div>`).join('')}</div>` : '';
     const _pkWa    = (msg) => pkTel.length >= 7 ? `https://wa.me/57${pkTel.slice(-10)}?text=${encodeURIComponent(msg)}` : null;
     let alerta = '';
     if (agotado) {
@@ -217,18 +240,17 @@ function renderPaquetes() {
           <div style="font-size:.8rem;color:var(--muted)">${p.nombre||'—'} · Comprado: ${fmtDate(p.fechaCompra)} · Vence: ${p.vencimiento?fmtDate(p.vencimiento):'—'}</div>
         </div>
         <div style="text-align:right">
-          <div style="font-family:var(--font-m);font-size:.82rem;color:var(--primary)">Realizadas: ${p.consumidas||0} de ${p.sesiones||0}</div>
-          <div style="font-size:.75rem;color:var(--muted)">Restantes: <strong>${rest}</strong></div>
+          <div style="font-family:var(--font-m);font-size:.82rem;color:var(--primary)">Sesiones: ${sessionCounts.available} disponibles · ${sessionCounts.reserved} reservadas · ${sessionCounts.used} usadas</div>
           ${pagoPorSesion ? `<div style="font-size:.75rem;color:#0f766e;margin-top:4px">Pago por sesión: <strong>${fmtPeso(p.valorPorSesion || 0)}</strong> · sin saldo global</div>` : valorPaquete > 0 ? `<div style="font-size:.75rem;color:${pagoColor};margin-top:4px">Pagado: <strong>${fmtPeso(abonado)}</strong> · Debe: <strong>${fmtPeso(saldo)}</strong></div>` : ''}
         </div>
       </div>
       <div style="margin:10px 0 4px;background:var(--s2);border-radius:99px;height:8px;overflow:hidden"><div style="width:${pct}%;height:100%;background:${barC};border-radius:99px;transition:width .5s"></div></div>
+      ${cuotasHtml}
       ${alerta}
       <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
-        ${pagoPorSesion ? '<span class="btn btn-ghost btn-sm" style="pointer-events:none;opacity:.7">Se descuenta al marcar atendida</span>' : `<button class="btn btn-teal btn-sm" onclick="usarSesion(${i})" ${agotado?'disabled':''}>➕ Usar sesión</button>`}
-        ${!pagoPorSesion && valorPaquete > 0 && saldo > 0 ? `<button class="btn btn-ghost btn-sm" onclick="PanelPackages.registrarAbonoPaquete(${i})">💳 Registrar abono</button>` : ''}
-        <button class="btn btn-ghost btn-sm" onclick="ajustarSesiones(${i})">✏️ Ajustar sesiones</button>
-        <button class="btn btn-ghost btn-sm" onclick="borrarPaqueteAsignado(${i})">🗑️ Eliminar</button>
+        <span class="btn btn-ghost btn-sm" style="pointer-events:none;opacity:.7">📅 Se reserva al agendar · se usa al atender</span>
+        ${!pagoPorSesion && valorPaquete > 0 && saldo > 0 ? `<button class="btn btn-teal btn-sm" onclick="PanelPackages.registrarAbonoPaquete(${i})">💳 Registrar cuota o abono</button>` : ''}
+        <details style="font-size:.78rem;color:var(--muted)"><summary style="cursor:pointer;padding:7px 4px">Corrección administrativa</summary><div style="display:flex;gap:6px;padding-top:7px"><button class="btn btn-ghost btn-sm" onclick="ajustarSesiones(${i})">Ajustar sesiones</button><button class="btn btn-ghost btn-sm" onclick="borrarPaqueteAsignado(${i})">Eliminar</button></div></details>
       </div>
     </div>`;
   }).join('');
@@ -254,6 +276,18 @@ function registrarAbonoPaquete(idx) {
   if (!abono || abono <= 0 || abono > saldo) { toast('Ingresa un abono válido que no supere el saldo','err'); return; }
   p.valorTotal = total;
   p.abonado = actual + abono;
+  if (Array.isArray(p.cuotas) && p.cuotas.length) {
+    let porAplicar = abono;
+    p.cuotas = p.cuotas.map(cuota => {
+      if (porAplicar <= 0 || cuota.estado === 'PAGADA') return cuota;
+      const valorCuota = Number(cuota.valor || 0);
+      const yaPagado = Number(cuota.pagado || 0);
+      const aplica = Math.min(Math.max(0, valorCuota - yaPagado), porAplicar);
+      porAplicar -= aplica;
+      const pagado = yaPagado + aplica;
+      return {...cuota, pagado, estado: pagado >= valorCuota ? 'PAGADA' : 'PENDIENTE'};
+    });
+  }
   _savePkAsignados(paquetes);
   renderPaquetes();
   toast(`Abono registrado. Saldo: ${fmtPeso(total - p.abonado)}`);
@@ -389,7 +423,7 @@ function getActivePackagesForPatient(cita) {
   return _getPkAsignados().filter(p => {
     const coincideTelefono = tel && _telefonoComparable(p.telefono) === tel;
     const coincideNombre = nombre && _normalizarPaciente(p.paciente) === nombre;
-    const activo = Number(p.sesiones || 0) > Number(p.consumidas || 0) && (!p.vencimiento || !hoy || p.vencimiento >= hoy);
+    const activo = getPackageSessionCounts(p).available > 0 && (!p.vencimiento || !hoy || p.vencimiento >= hoy);
     return activo && (coincideTelefono || coincideNombre);
   });
 }
@@ -412,6 +446,7 @@ function reserveSessionForAppointment(cita) {
   const found = explicit ? {p:explicit} : null;
   if (!found) return {ok:false};
   const {p} = found;
+  if (getPackageSessionCounts(p).available <= 0) return {ok:false, agotado:true, paquete:p};
   p.reservasCitas = Array.isArray(p.reservasCitas) ? p.reservasCitas : [];
   const usedNumbers = new Set([
     ...(p.consumoCitas || []),
@@ -450,8 +485,10 @@ function consumeSessionForAppointment(cita) {
   const existing = p.consumoCitas.find(item => String(item.id) === String(cita.id));
   if (existing) return {ok:true, already:true, paquete:p, sesion:Number(existing.sesion || p.consumidas)};
   const reservada = (p.reservasCitas || []).find(item => String(item.id) === String(cita.id));
+  if (!reservada && getPackageSessionCounts(p).available <= 0) return {ok:false, agotado:true, paquete:p};
   p.consumidas = Number(p.consumidas || 0) + 1;
   p.consumoCitas.push({id:String(cita.id), sesion:Number(reservada?.sesion || p.consumidas)});
+  p.reservasCitas = (p.reservasCitas || []).filter(item => String(item.id) !== String(cita.id));
   _savePkAsignados(paquetes);
   if (document.getElementById('pkLista')) renderPaquetes();
   return {ok:true, paquete:p, sesion:Number(reservada?.sesion || p.consumidas)};
@@ -517,6 +554,7 @@ function getAppointmentPackageBadge(cita) {
     appointmentPaymentWhatsAppUrl,
     getPaymentPerSessionPackage,
     getSpecialSessionPrice,
+    getPackageSessionCounts,
     getActivePackagesForPatient,
     getPackageById
   });

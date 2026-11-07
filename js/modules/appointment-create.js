@@ -71,11 +71,13 @@ function refreshPackageLinkForPatient() {
   const paquetes = global.PanelPackages?.getActivePackagesForPatient?.(paciente) || [];
   link.value = '';
   choices.innerHTML = paquetes.map(p => {
-    const restantes = Math.max(0, Number(p.sesiones || 0) - Number(p.consumidas || 0));
+    const conteo = global.PanelPackages?.getPackageSessionCounts?.(p) || {};
+    const restantes = Math.max(0, Number(conteo.available ?? (Number(p.sesiones || 0) - Number(p.consumidas || 0))));
+    const reservadas = Number(conteo.reserved || 0);
     const pago = p.modalidadPago === 'PAGO_POR_SESION' ? ` · ${fmtPeso(p.valorPorSesion || 0)} por sesión` : '';
     return `<button type="button" class="package-link-option" data-package-id="${esc(p.id)}" onclick="PanelAppointmentCreate.selectPackageForAppointment(this.dataset.packageId)" style="text-align:left;padding:10px 12px;border:1px solid rgba(27,191,176,.42);border-radius:9px;background:#f0faf9;color:var(--ink);cursor:pointer">
       <strong>📦 Tiene ${restantes} ${restantes === 1 ? 'sesión pendiente' : 'sesiones pendientes'}</strong>
-      <span>${esc(p.nombre || 'Paquete')}${pago} · Clic para usar este paquete</span>
+      <span>${esc(p.nombre || 'Paquete')}${pago} · ${reservadas} reservada${reservadas === 1 ? '' : 's'} · Clic para usar este paquete</span>
     </button>`;
   }).join('');
   wrap.style.display = paquetes.length ? 'block' : 'none';
@@ -88,11 +90,12 @@ function applySelectedPackage() {
   const help = document.getElementById('ncPackageHelp');
   const paquete = id ? global.PanelPackages?.getPackageById?.(id) : null;
   if (!paquete) { if (help) help.textContent = 'Elige el paquete que deseas usar para esta cita.'; return; }
-  const restantes = Math.max(0, Number(paquete.sesiones || 0) - Number(paquete.consumidas || 0));
+  const conteo = global.PanelPackages?.getPackageSessionCounts?.(paquete) || {};
+  const restantes = Math.max(0, Number(conteo.available ?? (Number(paquete.sesiones || 0) - Number(paquete.consumidas || 0))));
   if (paquete.modalidadPago === 'PAGO_POR_SESION' && Number(paquete.valorPorSesion || 0) > 0) {
     document.getElementById('ncPrice').value = '$' + Number(paquete.valorPorSesion).toLocaleString('es-CO');
   }
-  if (help) help.textContent = `Vinculada a ${paquete.nombre || 'paquete'} · ${restantes} sesiones disponibles${paquete.modalidadPago === 'PAGO_POR_SESION' ? ' · pago por sesión' : ''}.`;
+  if (help) help.textContent = `Vinculada a ${paquete.nombre || 'paquete'} · ${restantes} sesiones disponibles · esta cita queda reservada${paquete.modalidadPago === 'PAGO_POR_SESION' ? ' · pago por sesión' : ''}.`;
 }
 
 function aplicarPrecioPaquete() {

@@ -3632,18 +3632,19 @@ Primero evaluamos cómo está el cuerpo ahora, luego tratamos, luego te enseñam
         <div class="field"><label>Teléfono</label><input type="text" id="pkTelefono" placeholder="3136..."></div>
         <div class="field"><label>Plantilla (opcional)</label><select id="pkPlantillaSel" onchange="PanelPackages.autocompletarPaqueteDesdePlantilla()" style="width:100%;background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font-b);font-size:.9rem;padding:10px 12px;outline:none"><option value="">— Paquete personalizado —</option></select></div>
         <div class="field"><label>Nombre del paquete *</label><input type="text" id="pkNombrePaquete" placeholder="Ej: Pack 6 sesiones descarga"></div>
-        <div class="field"><label>¿Cómo paga el paquete? *</label><select id="pkModalidadPago" onchange="actualizarModalidadPagoPaquete()" style="width:100%;background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font-b);font-size:.9rem;padding:10px 12px;outline:none"><option value="PAQUETE_COMPLETO">Pago completo o por abonos del paquete</option><option value="PAGO_POR_SESION">Pago por sesión con precio especial</option></select></div>
+        <div class="field"><label>¿Cómo paga el paquete? *</label><select id="pkModalidadPago" onchange="actualizarModalidadPagoPaquete()" style="width:100%;background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font-b);font-size:.9rem;padding:10px 12px;outline:none"><option value="PAQUETE_COMPLETO">Pago del paquete</option><option value="PAGO_POR_SESION">Pago por sesión con precio especial</option></select></div>
         <div id="pkPagoSesionAyuda" style="display:none;margin:-2px 0 10px;padding:9px 11px;border-radius:8px;background:rgba(20,184,166,.08);border:1px solid rgba(20,184,166,.26);font-size:.76rem;color:#0f766e">Cada cita usará el valor especial. Se registra y cobra como una cita normal; no genera saldo global del paquete.</div>
         <div id="pkPagoCompletoFields" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
           <div class="field"><label>Total de sesiones *</label><input type="number" id="pkSesionesTotal" min="1" placeholder="6"></div>
           <div class="field"><label>Sesiones ya realizadas</label><input type="number" id="pkSesionesIniciales" min="0" value="0" placeholder="0"></div>
         </div>
         <div style="font-size:.76rem;color:var(--muted);margin:-4px 0 10px">Si el paciente ya había iniciado el paquete, registra aquí las sesiones que ya llevó. La siguiente aparecerá como la sesión correspondiente.</div>
+        <div class="field" id="pkPlanCuotasWrap"><label>Plan de pago</label><select id="pkPlanCuotas" onchange="actualizarPlanCuotasPaquete()" style="width:100%;background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font-b);font-size:.9rem;padding:10px 12px;outline:none"><option value="DOS_CUOTAS" selected>2 cuotas · mitad hoy y mitad a mitad del paquete</option><option value="PAGO_COMPLETO">Pago completo hoy</option></select></div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-          <div class="field"><label>Valor total del paquete</label><input type="text" id="pkValorTotal" placeholder="Ej: 420.000"></div>
-          <div class="field"><label>Abono recibido</label><input type="text" id="pkAbonoInicial" placeholder="Ej: 200.000"></div>
+          <div class="field"><label>Valor total del paquete</label><input type="text" id="pkValorTotal" oninput="actualizarPlanCuotasPaquete()" placeholder="Ej: 420.000"></div>
+          <div class="field"><label id="pkAbonoInicialLabel">Primera cuota recibida</label><input type="text" id="pkAbonoInicial" placeholder="Ej: 210.000"></div>
         </div>
-        <div id="pkPagoCompletoAyuda" style="font-size:.76rem;color:var(--muted);margin:-4px 0 10px">El saldo pendiente se calcula automáticamente: valor total menos abonos recibidos.</div>
+        <div id="pkPagoCompletoAyuda" style="font-size:.76rem;color:var(--muted);margin:-4px 0 10px">La segunda cuota se solicitará antes de la sesión que queda en la mitad del paquete.</div>
         <div id="pkPagoSesionFields" class="field" style="display:none"><label>Valor especial por sesión *</label><input type="text" id="pkValorPorSesion" placeholder="Ej: 60.000"></div>
         <div class="field"><label>Fecha de compra</label><input type="date" id="pkFechaCompra"></div>
         <div class="field"><label>Notas</label><input type="text" id="pkNotas" placeholder="Observaciones..."></div>
@@ -11973,8 +11974,21 @@ function abrirModalPaquete(...args) {
 }
 function actualizarModalidadPagoPaquete() {
   const porSesion = document.getElementById('pkModalidadPago')?.value === 'PAGO_POR_SESION';
-  ['pkPagoCompletoFields','pkPagoCompletoAyuda'].forEach(id => { const el = document.getElementById(id); if (el) el.style.display = porSesion ? 'none' : ''; });
+  ['pkPagoCompletoFields','pkPagoCompletoAyuda','pkPlanCuotasWrap'].forEach(id => { const el = document.getElementById(id); if (el) el.style.display = porSesion ? 'none' : ''; });
   ['pkPagoSesionFields','pkPagoSesionAyuda'].forEach(id => { const el = document.getElementById(id); if (el) el.style.display = porSesion ? '' : 'none'; });
+  actualizarPlanCuotasPaquete();
+}
+function actualizarPlanCuotasPaquete() {
+  const dosCuotas = document.getElementById('pkPlanCuotas')?.value === 'DOS_CUOTAS';
+  const total = parsePrecio((document.getElementById('pkValorTotal')?.value || '').trim());
+  const abono = document.getElementById('pkAbonoInicial');
+  const label = document.getElementById('pkAbonoInicialLabel');
+  const ayuda = document.getElementById('pkPagoCompletoAyuda');
+  if (label) label.textContent = dosCuotas ? 'Primera cuota recibida' : 'Pago recibido';
+  if (dosCuotas && abono && !parsePrecio(abono.value) && total > 0) abono.value = '$' + Math.round(total / 2).toLocaleString('es-CO');
+  if (ayuda) ayuda.textContent = dosCuotas
+    ? 'La segunda cuota se solicitará antes de la sesión que queda en la mitad del paquete.'
+    : 'El paquete queda pagado con este valor; el saldo se calcula automáticamente.';
 }
 function guardarPaqueteAsignado() {
   const paciente = (document.getElementById('pkPaciente').value||'').trim();
@@ -11988,6 +12002,7 @@ function guardarPaqueteAsignado() {
   const valorTotal = parsePrecio((document.getElementById('pkValorTotal').value||'').trim());
   const abonado = parsePrecio((document.getElementById('pkAbonoInicial').value||'').trim());
   const modalidadPago = document.getElementById('pkModalidadPago')?.value || 'PAQUETE_COMPLETO';
+  const planCuotas = document.getElementById('pkPlanCuotas')?.value || 'DOS_CUOTAS';
   const valorPorSesion = parsePrecio((document.getElementById('pkValorPorSesion')?.value||'').trim());
   const pl = plIdx === '' ? null : _getPkPlantillas()[+plIdx];
   if (!paciente || !nombre || !sesiones || sesiones < 1) { toast('Completa paciente, nombre y total de sesiones','err'); return; }
@@ -11997,8 +12012,16 @@ function guardarPaqueteAsignado() {
   if (plIdx !== '' && !pl) { toast('Plantilla no encontrada','err'); return; }
   const vigD = new Date(fechaC+'T12:00:00');
   vigD.setDate(vigD.getDate() + (+(pl?.vigencia)||60));
+  const saldoInicial = Math.max(0, valorTotal - abonado);
+  const sesionCobro = Math.min(sesiones, Math.floor(sesiones / 2) + 1);
+  const cuotas = modalidadPago === 'PAGO_POR_SESION' ? [] : (planCuotas === 'DOS_CUOTAS'
+    ? [
+      {numero:1, valor:abonado, pagado:abonado, estado:abonado > 0 ? 'PAGADA' : 'PENDIENTE', concepto:'Primera cuota'},
+      {numero:2, valor:saldoInicial, pagado:0, estado:saldoInicial > 0 ? 'PENDIENTE' : 'PAGADA', concepto:`Segunda cuota · antes de sesión ${sesionCobro}`, cobrarAntesSesion:sesionCobro}
+    ]
+    : [{numero:1, valor:valorTotal, pagado:abonado, estado:saldoInicial > 0 ? 'PENDIENTE' : 'PAGADA', concepto:'Pago completo'}]);
   const asignados = _getPkAsignados();
-  asignados.push({ id:'pk_'+Date.now(), paciente, telefono:tel, nombre, sesiones, consumidas, sesionesIniciales:consumidas, consumoCitas:[], reservasCitas:[], precio:pl?.precio||'', valorTotal: modalidadPago === 'PAGO_POR_SESION' ? valorPorSesion * sesiones : valorTotal, abonado: modalidadPago === 'PAGO_POR_SESION' ? 0 : abonado, modalidadPago, valorPorSesion, fechaCompra:fechaC, vencimiento:vigD.toLocalDateStr(), notas });
+  asignados.push({ id:'pk_'+Date.now(), paciente, telefono:tel, nombre, sesiones, consumidas, sesionesIniciales:consumidas, consumoCitas:[], reservasCitas:[], precio:pl?.precio||'', valorTotal: modalidadPago === 'PAGO_POR_SESION' ? valorPorSesion * sesiones : valorTotal, abonado: modalidadPago === 'PAGO_POR_SESION' ? 0 : abonado, modalidadPago, planCuotas, cuotas, valorPorSesion, fechaCompra:fechaC, vencimiento:vigD.toLocalDateStr(), notas });
   _savePkAsignados(asignados);
   document.getElementById('modalPaquete').style.display='none';
   renderPaquetes(); toast('Paquete asignado ✓');
