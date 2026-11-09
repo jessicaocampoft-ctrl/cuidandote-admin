@@ -14,6 +14,15 @@ function waFechaES(fecha) {
   return DIAS[obj.getDay()] + ' ' + +dp[2] + ' de ' + MESES[+dp[1]-1] + ' de ' + dp[0];
 }
 
+// Formato exclusivo de la confirmación: más legible en WhatsApp y coherente
+// con el guion que usa recepción (día capitalizado y fecha de dos dígitos).
+function waFechaConfirmacion(fecha) {
+  const texto = waFechaES(fecha);
+  const match = texto.match(/^(.+) (\d{1,2}) de (.+)$/);
+  if (!match) return texto;
+  return match[1].charAt(0).toUpperCase() + match[1].slice(1) + ' ' + match[2].padStart(2, '0') + ' de ' + match[3];
+}
+
 function waAmPm(hora) {
   const [h, m] = hora.split(':').map(Number);
   const ampm = h < 12 ? 'AM' : 'PM';
@@ -55,7 +64,7 @@ function waLink(tel, nombre, fecha, hora, serv, precio, modalidad) {
     'Hola ' + waNombre(nombre) + '! Te escribo para confirmar tu cita ' + String.fromCodePoint(0x1F4CB),
     '',
     servLine,
-    '' + waFechaES(fecha) + ' · ' + waAmPm(hora),
+    '' + waFechaConfirmacion(fecha) + ' · ' + waAmPm(hora),
     // La dirección se comparte únicamente para citas en sede. En domicilio
     // se conserva la modalidad sin exponer una dirección que no corresponde.
     String.fromCodePoint(0x1F4CD) + ' ' + (esDomicilio ? 'A domicilio' : direccionSede),
@@ -590,6 +599,7 @@ function copiarMsgWA() {
   global.PanelWhatsAppTools = Object.freeze({
     waNombre,
     waFechaES,
+    waFechaConfirmacion,
     waAmPm,
     ordinalES,
     getInfoSesion,
