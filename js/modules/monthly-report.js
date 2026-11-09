@@ -395,6 +395,7 @@ function _buildReporteMes() {
           <div style="font-size:.7rem;font-family:var(--font-m);color:var(--primary);text-transform:uppercase;letter-spacing:.05em;margin:12px 0 8px;font-weight:700">Costos Operativos</div>
           ${filaC('Arriendo','arriendo',costos.arriendo)}
           ${filaC('Servicios públicos','servicios_publicos',costos.servicios_publicos)}
+          ${filaC('Datos celulares','datos_celulares',costos.datos_celulares)}
           ${filaC('Suscripción IA','suscripcion_ia',costos.suscripcion_ia)}
           ${filaC('CapCut','suscripcion_capcut',costos.suscripcion_capcut)}
           ${filaC('Asesorías AP','asesorias_ap',costos.asesorias_ap)}

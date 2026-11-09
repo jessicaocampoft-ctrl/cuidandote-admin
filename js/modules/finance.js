@@ -16,7 +16,8 @@ const ESTRUCTURA_COSTOS_REFERENCIA = Object.freeze([
     categoria: 'Costos Operativos', titulo: 'Costos operativos', color: '#f59e0b',
     items: [
       ['Arriendo', 600000],
-      ['Servicios públicos', 70000],
+      ['Servicios públicos', 120000],
+      ['Datos celulares', 46000],
       ['Suscripción de IA', 70000],
       ['CapCut', 12000],
       ['Asesorías AP', 450000]

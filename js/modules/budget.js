@@ -2,7 +2,7 @@
 (function (global) {
   'use strict';
 
-const COSTOS_MODELO_VERSION = 2;
+const COSTOS_MODELO_VERSION = 3;
 
 const COSTOS_DEFAULTS = {
   modelo_version:       COSTOS_MODELO_VERSION,
@@ -13,7 +13,8 @@ const COSTOS_DEFAULTS = {
   auxiliar_admin:      500000,
   // Costos Operativos
   arriendo:            600000,
-  servicios_publicos:   70000,
+  servicios_publicos:  120000,
+  datos_celulares:      46000,
   suscripcion_ia:       70000,
   suscripcion_capcut:   12000,
   asesorias_ap:        450000,
@@ -33,10 +34,10 @@ function getCostosEstructura() {
     const s = kvGet('costosEstructura');
     if (!s) return {...COSTOS_DEFAULTS};
     const stored = JSON.parse(s);
-    // Esta versión reemplaza la estructura anterior completa con la aprobada.
-    // Así no quedan montos viejos sincronizados desde AdminKV.
+    // Migra los valores solicitados sin borrar las demás personalizaciones.
     if (stored.modelo_version !== COSTOS_MODELO_VERSION) {
-      const actualizados = {...COSTOS_DEFAULTS};
+      const actualizados = {...COSTOS_DEFAULTS, ...stored, modelo_version: COSTOS_MODELO_VERSION,
+        servicios_publicos: 120000, datos_celulares: 46000};
       saveCostosEstructura(actualizados);
       return actualizados;
     }
@@ -55,6 +56,7 @@ function calcTotalCostos(c) {
     + (c.auxiliar_admin      || 0)
     + (c.arriendo            || 0)
     + (c.servicios_publicos  || 0)
+    + (c.datos_celulares     || 0)
     + (c.suscripcion_ia      || 0)
     + (c.suscripcion_capcut  || 0)
     + (c.asesorias_ap        || 0)
@@ -117,6 +119,7 @@ function renderPresupuestoMetas() {
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
             ${inp('arriendo',           'Arriendo',            costos.arriendo)}
             ${inp('servicios_publicos', 'Servicios públicos',  costos.servicios_publicos)}
+            ${inp('datos_celulares',    'Datos celulares',     costos.datos_celulares)}
             ${inp('suscripcion_ia',     'Suscripción IA',      costos.suscripcion_ia)}
             ${inp('suscripcion_capcut', 'CapCut',              costos.suscripcion_capcut)}
             ${inp('asesorias_ap',       'Asesorías AP',        costos.asesorias_ap)}
@@ -252,7 +255,7 @@ function pmRecalc() {
   const c = {
     honorarios_fisio: g('honorarios_fisio'), seguridad_social: g('seguridad_social'),
     asistente_fisio: g('asistente_fisio'),   auxiliar_admin: g('auxiliar_admin'),
-    arriendo: g('arriendo'),                 servicios_publicos: g('servicios_publicos'),
+    arriendo: g('arriendo'),                 servicios_publicos: g('servicios_publicos'), datos_celulares: g('datos_celulares'),
     suscripcion_ia: g('suscripcion_ia'),     suscripcion_capcut: g('suscripcion_capcut'),
     asesorias_ap: g('asesorias_ap'),         redes_contenido: g('redes_contenido'),
     activacion_eventos: g('activacion_eventos'), pautas_redes: g('pautas_redes'),
@@ -285,7 +288,7 @@ function pmGuardarCostos() {
     modelo_version: COSTOS_MODELO_VERSION,
     honorarios_fisio: g('honorarios_fisio'), seguridad_social: g('seguridad_social'),
     asistente_fisio: g('asistente_fisio'),   auxiliar_admin: g('auxiliar_admin'),
-    arriendo: g('arriendo'),                 servicios_publicos: g('servicios_publicos'),
+    arriendo: g('arriendo'),                 servicios_publicos: g('servicios_publicos'), datos_celulares: g('datos_celulares'),
     suscripcion_ia: g('suscripcion_ia'),     suscripcion_capcut: g('suscripcion_capcut'),
     asesorias_ap: g('asesorias_ap'),         redes_contenido: g('redes_contenido'),
     activacion_eventos: g('activacion_eventos'), pautas_redes: g('pautas_redes'),
