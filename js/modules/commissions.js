@@ -95,17 +95,15 @@ function _comisMesVal() {
 function _comisSemanasLlenas(citas, eventos, year, month, metaSes) {
   const toS = d => d.toLocalDateStr();
   const mS = new Date(year, month-1, 1), mE = new Date(year, month, 0);
-  let cur = new Date(mS);
-  const dow = cur.getDay();
-  cur.setDate(cur.getDate() - (dow === 0 ? 6 : dow - 1));
   const weeks = [];
-  while (cur <= mE) {
-    const ws = new Date(cur), we = new Date(cur);
-    we.setDate(cur.getDate() + 6);
+  // Las semanas de comisiones pertenecen por completo al mes evaluado:
+  // 1–7, 8–14, 15–21, 22–28 y 29–fin de mes. Nunca toma días del mes anterior.
+  for (let firstDay = 1; firstDay <= mE.getDate(); firstDay += 7) {
+    const ws = new Date(year, month - 1, firstDay);
+    const we = new Date(year, month - 1, Math.min(firstDay + 6, mE.getDate()));
     const sesC = citas.filter(c => { if ((c.estado||'').includes('Cancel') || c.estado==='No asistió') return false; const f=normDate(c.fecha); return f>=toS(ws)&&f<=toS(we); }).length;
     const sesE = (eventos||[]).filter(e => { const f=normDate(e.fecha); return f>=toS(ws)&&f<=toS(we); }).length;
     weeks.push({ start: toS(ws), end: toS(we), sesiones: sesC+sesE, llena: (sesC+sesE) >= metaSes });
-    cur.setDate(cur.getDate() + 7);
   }
   return weeks;
 }
