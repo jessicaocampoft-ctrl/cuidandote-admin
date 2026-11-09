@@ -5712,13 +5712,13 @@ Acción: enviar mensaje de reenganche a los 14 pacientes que solo vinieron una v
           <div><label class="co-inp-label">Bono agenda llena (mes completo)</label><input class="co-inp" id="cfg_bono_agenda" type="number" placeholder="80000"></div>
           <div><label class="co-inp-label">Semanas meta (de 4 o 5)</label><input class="co-inp" id="cfg_semanas_meta" type="number" placeholder="4"></div>
           <div><label class="co-inp-label">Sesiones/semana = "llena" <span style="color:var(--primary);font-size:.65rem">↳ tomado de Meta KPI</span></label><input class="co-inp" id="cfg_ses_llena" type="number" disabled style="opacity:.6;cursor:not-allowed" title="Se sincroniza automáticamente con la meta de sesiones del KPI. Cámbiala en Guía de KPIs → Editar valores de referencia."></div>
-          <div><label class="co-inp-label">Bono por reactivación (por paciente)</label><div style="display:flex;gap:6px;align-items:center"><input class="co-inp" id="cfg_bono_react" type="number" placeholder="15000" style="flex:1;min-width:0"><select class="co-inp" id="cfg_bono_react_tipo" style="width:110px;padding:6px 8px"><option value="fijo">$ Fijo</option><option value="pct">% servicio</option></select></div></div>
+          <div><label class="co-inp-label">Reactivación de pacientes</label><div class="co-inp" style="opacity:.72;cursor:default">Actividad medida · $0 de comisión individual desde el 8 nov 2026</div><input id="cfg_bono_react" type="hidden"><input id="cfg_bono_react_tipo" type="hidden" value="fijo"></div>
         </div>
 
         <div class="co-sep"></div>
         <div style="font-size:.72rem;font-family:var(--font-m);color:var(--primary);text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px">Fisioterapeuta de Apoyo</div>
         <div class="co-cfg-grid">
-          <div><label class="co-inp-label">Comisión reventa (%)</label><input class="co-inp" id="cfg_pct_reventa" type="number" placeholder="5"></div>
+          <div><label class="co-inp-label">Renovaciones / reventas</label><div class="co-inp" style="opacity:.72;cursor:default">Actividad medida · $0 de comisión individual desde el 8 nov 2026</div><input id="cfg_pct_reventa" type="hidden"></div>
           <div><label class="co-inp-label">Bono venta cruzada (por paciente)</label><input class="co-inp" id="cfg_bono_cruzada" type="number" placeholder="20000"></div>
           <div><label class="co-inp-label">Servicios de mantenimiento (separados por coma)</label><input class="co-inp" id="cfg_serv_mant" type="text" placeholder="Plan Activo,Plan Pro,Longevidad,Combo"></div>
           <div><label class="co-inp-label">Palabra clave descarga muscular</label><input class="co-inp" id="cfg_serv_descarga" type="text" placeholder="Descarga"></div>
@@ -13295,7 +13295,7 @@ document.addEventListener('DOMContentLoaded', () => {
 <script src="js/modules/shared-storage.js"></script>
 <script src="js/modules/functional-training.js?v=20261030-initial"></script>
 <script src="js/modules/payments.js?v=20260929-payment-custom-plan"></script>
-<script src="js/modules/commercial-sales.js?v=20261106-capture-sales"></script>
+<script src="js/modules/commercial-sales.js?v=20261108-commission-proof"></script>
   <script src="js/modules/passport.js"></script>
   <script src="js/modules/agenda.js?v=20261103-resilient-booking"></script>
   <script src="js/modules/appointment-provider.js?v=20261101-provider-optional"></script>
@@ -13321,8 +13321,8 @@ document.addEventListener('DOMContentLoaded', () => {
 <script src="js/modules/waitlist.js?v=20261010-pending-scheduling"></script>
 <script src="js/modules/schedule-operations.js?v=20260922-quick-block-tab"></script>
 <script src="js/modules/events-agreements.js?v=20260922-quick-block-tab"></script>
-<script src="js/modules/commissions.js"></script>
-<script src="js/modules/commercial-incentives.js?v=20261107-trial-incentives"></script>
+<script src="js/modules/commissions.js?v=20261108-policy-zero"></script>
+<script src="js/modules/commercial-incentives.js?v=20261108-final-rules"></script>
 <script src="js/modules/patient-search.js"></script>
 <script src="js/modules/patient-records.js"></script>
 <script src="js/modules/admin-profile-accessibility.js?v=20261026-cancelled-omit"></script>

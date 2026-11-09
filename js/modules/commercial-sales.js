@@ -143,11 +143,13 @@
       field('Servicio de interés', input('comService', item.service)),
       field('Servicio inicialmente solicitado', input('comInitialService', item.initialService)),
       field('Valor inicial verificable', input('comInitialValue', item.initialValue, 'number', 'min="0" step="1000"')),
+      field('Soporte del aumento de ticket', `<textarea id="comTicketEvidence" rows="2" placeholder="Ej.: solicitó un servicio de mayor valor; anota fecha, motivo y soporte" style="display:block;box-sizing:border-box;width:100%;margin-top:5px;padding:9px 10px;border:1px solid var(--border);border-radius:8px;background:var(--s2);color:var(--text);resize:vertical">${e(item.ticketEvidence)}</textarea>`, 'span 2'),
       field('Captó al paciente', select('comCapturedBy', peopleOptions(item.capturedBy)), 'span 1'),
       field('Atendió la conversación', select('comAttendedBy', peopleOptions(item.attendedBy))),
       field('Cerró la venta', select('comClosedBy', peopleOptions(item.closedBy))),
       field('Estado comercial *', select('comStatus', optionList(STATUSES, item.status || 'Nuevo'))),
       field('Valor de la venta', input('comSaleValue', item.saleValue, 'number', `min="0" ${canChangeMoney() ? '' : 'readonly'} step="1000"`)),
+      field('Bonos de regalo vendidos', input('comGiftVoucherUnits', item.giftVoucherUnits, 'number', 'min="0" step="1"'), 'span 1'),
       field('Próximo seguimiento', input('comNextFollowUp', item.nextFollowUp, 'date')),
       field('Alianza o campaña de origen', input('comAllianceCampaign', item.allianceCampaign), 'span 2'),
       field('Evidencia de captación propia', `<textarea id="comDirectEvidence" rows="2" placeholder="Ej.: contacto directo iniciado por la líder, fecha y soporte verificable" style="display:block;box-sizing:border-box;width:100%;margin-top:5px;padding:9px 10px;border:1px solid var(--border);border-radius:8px;background:var(--s2);color:var(--text);resize:vertical">${e(item.directEvidence)}</textarea>`, 'span 2'),
@@ -182,7 +184,7 @@
   }
   function readForm() {
     return {
-      id: clean($('comId').value), patientName: clean($('comPatientName').value), phone: clean($('comPhone').value), email: clean($('comEmail').value), firstContact: clean($('comFirstContact').value), origin: clean($('comOrigin').value), capturedBy: clean($('comCapturedBy').value), attendedBy: clean($('comAttendedBy').value), closedBy: clean($('comClosedBy').value), service: clean($('comService').value), initialService: clean($('comInitialService').value), initialValue: Number($('comInitialValue').value || 0), status: clean($('comStatus').value), saleValue: Number($('comSaleValue').value || 0), nextFollowUp: clean($('comNextFollowUp').value), allianceCampaign: clean($('comAllianceCampaign').value), directEvidence: clean($('comDirectEvidence').value), appointmentId: clean($('comAppointmentId').value)
+      id: clean($('comId').value), patientName: clean($('comPatientName').value), phone: clean($('comPhone').value), email: clean($('comEmail').value), firstContact: clean($('comFirstContact').value), origin: clean($('comOrigin').value), capturedBy: clean($('comCapturedBy').value), attendedBy: clean($('comAttendedBy').value), closedBy: clean($('comClosedBy').value), service: clean($('comService').value), initialService: clean($('comInitialService').value), initialValue: Number($('comInitialValue').value || 0), ticketEvidence: clean($('comTicketEvidence').value), status: clean($('comStatus').value), saleValue: Number($('comSaleValue').value || 0), giftVoucherUnits: Number($('comGiftVoucherUnits').value || 0), nextFollowUp: clean($('comNextFollowUp').value), allianceCampaign: clean($('comAllianceCampaign').value), directEvidence: clean($('comDirectEvidence').value), appointmentId: clean($('comAppointmentId').value)
     };
   }
   function save() {

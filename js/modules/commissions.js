@@ -8,9 +8,12 @@ function _comisGetConfig() {
     bono_agenda:           parseInt(cfg.bono_agenda           || '80000', 10),
     semanas_meta:          parseInt(cfg.semanas_meta          || '4',     10),
     ses_llena:             META_SESIONES_SEMANA, // siempre igual a la meta KPI — fuente única de verdad
+    // Se conservan los valores históricos en KV, pero desde esta fecha no se
+    // liquidan reactivaciones ni renovaciones como comisión individual.
     bono_react:            parseInt(cfg.bono_react            || '15000', 10),
     bono_react_tipo:       cfg.bono_react_tipo || 'fijo',
     pct_reventa:           parseInt(cfg.pct_reventa           || '5',     10),
+    politica_comercial_desde: cfg.politica_comercial_desde || '2026-11-08',
     bono_cruzada:          parseInt(cfg.bono_cruzada          || '20000', 10),
     serv_mant:             (cfg.serv_mant     || 'plan activo,plan pro,longevidad,combo bienvenida,combo').split(',').map(s => s.trim().toLowerCase()).filter(Boolean),
     serv_descarga:         (cfg.serv_descarga || 'descarga').toLowerCase().trim(),
@@ -24,13 +27,17 @@ function _comisGetConfig() {
 
 function saveComisConfig() {
   const g = id => (document.getElementById(id)||{}).value || '';
+  // No se sobreescriben los importes anteriores: quedan como trazabilidad de
+  // liquidaciones pasadas. Las reglas nuevas se aplican por periodo.
+  const previous = (() => { try { return JSON.parse(kvGet('comisiones_config') || '{}'); } catch (_) { return {}; } })();
   kvSet('comisiones_config', JSON.stringify({
     bono_agenda:          g('cfg_bono_agenda'),
     semanas_meta:         g('cfg_semanas_meta'),
     ses_llena:            g('cfg_ses_llena'),
-    bono_react:           g('cfg_bono_react'),
-    bono_react_tipo:      g('cfg_bono_react_tipo') || 'fijo',
-    pct_reventa:          g('cfg_pct_reventa'),
+    bono_react:           previous.bono_react || '15000',
+    bono_react_tipo:      previous.bono_react_tipo || 'fijo',
+    pct_reventa:          previous.pct_reventa || '5',
+    politica_comercial_desde: previous.politica_comercial_desde || '2026-11-08',
     bono_cruzada:         g('cfg_bono_cruzada'),
     serv_mant:            g('cfg_serv_mant'),
     serv_descarga:        g('cfg_serv_descarga'),
@@ -56,9 +63,6 @@ function toggleComisConfig() {
   set('cfg_bono_agenda',          cfg.bono_agenda);
   set('cfg_semanas_meta',         cfg.semanas_meta);
   set('cfg_ses_llena',            META_SESIONES_SEMANA);
-  set('cfg_bono_react',           cfg.bono_react);
-  set('cfg_bono_react_tipo',      cfg.bono_react_tipo);
-  set('cfg_pct_reventa',          cfg.pct_reventa);
   set('cfg_bono_cruzada',         cfg.bono_cruzada);
   set('cfg_serv_mant',            cfg.serv_mant.join(', '));
   set('cfg_serv_descarga',        cfg.serv_descarga);
@@ -251,16 +255,20 @@ function renderComisiones() {
   const reactMan   = _comisManualReact(year, month);
   const reactManN  = reactMan.filter(n => !reactAuto.find(r => r.nombre.toLowerCase() === n.toLowerCase()));
   const totalReact = reactConfirmadas.length + reactManN.length;
+  const policyMonth = `${year}-${String(month).padStart(2,'0')}`;
+  const legacyIndividualAllowed = policyMonth < String(cfg.politica_comercial_desde).slice(0,7);
   const calcBonoReactItem = (precio) => cfg.bono_react_tipo === 'pct'
     ? Math.round((parseInt((precio||'0').toString().replace(/\D/g,''),10)||0) * cfg.bono_react / 100)
     : cfg.bono_react;
-  const bonoReact = reactConfirmadas.reduce((s,r) => s + calcBonoReactItem(r.precio), 0)
+  const bonoReactHistorico = reactConfirmadas.reduce((s,r) => s + calcBonoReactItem(r.precio), 0)
     + reactManN.length * (cfg.bono_react_tipo === 'fijo' ? cfg.bono_react : 0);
+  const bonoReact = legacyIndividualAllowed ? bonoReactHistorico : 0;
   const labelBonoReact = cfg.bono_react_tipo === 'pct' ? cfg.bono_react + '% del servicio' : fmtPeso(cfg.bono_react);
 
   // ── REVENTAS ──
   const reventas = _comisReventas(citas, year, month, cfg.serv_mant, cfg.pct_reventa);
-  const bonoRev  = reventas.reduce((s,r) => s+r.comision, 0);
+  const bonoRevHistorico  = reventas.reduce((s,r) => s+r.comision, 0);
+  const bonoRev = legacyIndividualAllowed ? bonoRevHistorico : 0;
 
   // ── VENTA CRUZADA ──
   const cruzadas = _comisVentasCruzadas(citas, year, month, cfg.serv_descarga).map(c => ({
@@ -312,7 +320,7 @@ function renderComisiones() {
     ...reactAuto.map(r => {
       const key = String(r.nombre).toLowerCase().trim();
       const origin = reactOrigins[key]?.origen || '';
-      const b = origin === 'gestion' ? calcBonoReactItem(r.precio) : 0;
+      const b = legacyIndividualAllowed && origin === 'gestion' ? calcBonoReactItem(r.precio) : 0;
       const state = origin === 'gestion'
         ? '<span style="color:var(--ok);font-weight:700">✓ Reactivada por gestión</span>'
         : origin === 'espontaneo'
@@ -321,7 +329,7 @@ function renderComisiones() {
       const safe = r.nombre.replace(/'/g,"\\'");
       return `<div class="co-bd-item" style="flex-wrap:wrap;gap:7px"><span>${r.nombre} <span style="font-size:.72rem;color:var(--muted)">(${r.dias}d inactivo)</span><br><span style="font-size:.72rem">${state}</span></span><span style="display:flex;gap:5px;align-items:center;flex-wrap:wrap"><button onclick="PanelCommissions.setReactivationOrigin('${safe}','gestion')" style="padding:4px 7px;border:1px solid #86efac;background:#f0fdf4;color:#15803d;border-radius:6px;cursor:pointer;font-size:.7rem">✓ Fue reactivada</button><button onclick="PanelCommissions.setReactivationOrigin('${safe}','espontaneo')" style="padding:4px 7px;border:1px solid #cbd5e1;background:#f8fafc;color:#475569;border-radius:6px;cursor:pointer;font-size:.7rem">↩ Escribió sola/o</button><strong style="font-family:var(--font-m);font-size:.78rem;color:${b?'var(--ok)':'var(--muted)'}">${b?fmtPeso(b):'$0'}</strong></span></div>`;
     }),
-    ...reactManN.map(n  => { const b = cfg.bono_react_tipo === 'fijo' ? cfg.bono_react : 0; return `<div class="co-bd-item"><span>${n} <span style="font-size:.72rem;color:var(--primary)">(manual)</span></span><button onclick="removeManualReactivacion('${n.replace(/'/g,"\\'")}')" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:.85rem;padding:0 4px">✕</button><span style="font-family:var(--font-m);font-size:.78rem;color:var(--ok)">${b ? fmtPeso(b) : '—'}</span></div>`; })
+    ...reactManN.map(n  => { const b = legacyIndividualAllowed && cfg.bono_react_tipo === 'fijo' ? cfg.bono_react : 0; return `<div class="co-bd-item"><span>${n} <span style="font-size:.72rem;color:var(--primary)">(manual)</span></span><button onclick="removeManualReactivacion('${n.replace(/'/g,"\\'")}')" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:.85rem;padding:0 4px">✕</button><span style="font-family:var(--font-m);font-size:.78rem;color:var(--ok)">${b ? fmtPeso(b) : '$0'}</span></div>`; })
   ].join('') || '<div class="co-empty">No se detectaron reactivaciones este mes</div>';
 
   const btnAux = pagoAux
@@ -336,8 +344,8 @@ function renderComisiones() {
     <div class="co-bono"><div class="co-bono-title">📅 Bono Agenda Llena · ${pctOcupReal}% ocupación</div>
       <div class="co-bono-row"><span class="co-bono-label">${sLlenas} de ${sTotal} semanas ≥${cfg.ses_llena} ses. · ${totalSes} sesiones totales</span><span class="co-bono-amount">${fmtPeso(bonoAg)}</span></div>
       <div class="co-breakdown">${semanasH}</div></div>
-    <div class="co-bono"><div class="co-bono-title">🔁 Bono Recuperación de Pacientes</div>
-      <div class="co-bono-row"><span class="co-bono-label">${totalReact} reactivado${totalReact!==1?'s':''} por gestión × ${labelBonoReact}<br><span style="font-size:.7rem;color:var(--muted)">${reactPendientes.length} por confirmar · ${reactEspontaneas.length} retorno${reactEspontaneas.length!==1?'s':''} espontáneo${reactEspontaneas.length!==1?'s':''} sin bono</span></span><span class="co-bono-amount">${fmtPeso(bonoReact)}</span></div>
+    <div class="co-bono"><div class="co-bono-title">🔁 Seguimiento de pacientes reactivados</div>
+      <div class="co-bono-row"><span class="co-bono-label">${totalReact} reactivado${totalReact!==1?'s':''} por gestión · actividad medida${legacyIndividualAllowed ? ` · regla histórica ${labelBonoReact}` : '<br><span style="font-size:.7rem;color:var(--muted)">Desde el 8 nov 2026 no genera comisión individual.</span>'}<br><span style="font-size:.7rem;color:var(--muted)">${reactPendientes.length} por confirmar · ${reactEspontaneas.length} retorno${reactEspontaneas.length!==1?'s':''} espontáneo${reactEspontaneas.length!==1?'s':''} sin bono</span></span><span class="co-bono-amount">${fmtPeso(bonoReact)}</span></div>
       <div class="co-breakdown">${reactH}</div>
       <div class="co-manual-row"><input class="co-manual-inp" id="coManualReactInp" type="text" placeholder="Agregar reactivación manual..." onkeydown="if(event.key==='Enter')addManualReactivacion()"><button onclick="addManualReactivacion()" style="padding:7px 14px;background:var(--primary);color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:var(--font-b);font-size:.8rem;white-space:nowrap">+ Agregar</button></div></div>
     ${bonoCruzAux > 0 ? `<div class="co-bono"><div class="co-bono-title">➕ Bono Venta Cruzada asignada</div>
@@ -369,8 +377,8 @@ function renderComisiones() {
       <div><div class="co-card-title">Fisioterapeuta de Apoyo</div><div class="co-card-role">Upselling · Venta cruzada</div></div>
       <div class="co-total">${fmtPeso(totalFisio)}</div>
     </div>
-    <div class="co-bono"><div class="co-bono-title">🔄 Bono Reventa — ${cfg.pct_reventa}% sobre las ventas</div>
-      <div class="co-bono-row"><span class="co-bono-label">${reventas.length} venta${reventas.length!==1?'s':''} · Total vendido: ${fmtPeso(reventas.reduce((s,r)=>s+r.precio,0))}</span><span class="co-bono-amount">${fmtPeso(bonoRev)}</span></div>
+    <div class="co-bono"><div class="co-bono-title">🔄 Renovaciones y reventas</div>
+      <div class="co-bono-row"><span class="co-bono-label">${reventas.length} venta${reventas.length!==1?'s':''} registrada${reventas.length!==1?'s':''} · actividad medida${legacyIndividualAllowed ? ` · regla histórica ${cfg.pct_reventa}%` : '<br><span style="font-size:.7rem;color:var(--muted)">Desde el 8 nov 2026 no genera comisión individual.</span>'}</span><span class="co-bono-amount">${fmtPeso(bonoRev)}</span></div>
       <div class="co-breakdown">${revH}<div style="font-size:.7rem;color:var(--muted);margin-top:8px;border-top:1px solid var(--border);padding-top:6px">Servicios: ${cfg.serv_mant.map(s=>`<em>${s}</em>`).join(', ')}</div></div></div>
     <div class="co-bono"><div class="co-bono-title">➕ Bono Venta Cruzada</div>
       <div class="co-bono-row"><span class="co-bono-label">${cruzadas.filter(c=>c.asign==='fisio').length} asignada${cruzadas.filter(c=>c.asign==='fisio').length!==1?'s':''} a Fisio × ${fmtPeso(cfg.bono_cruzada)}</span><span class="co-bono-amount">${fmtPeso(bonoCruzFisio)}</span></div>
