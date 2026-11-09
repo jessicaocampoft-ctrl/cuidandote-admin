@@ -32,8 +32,16 @@ const ESTRUCTURA_COSTOS_REFERENCIA = Object.freeze([
   }
 ]);
 
+// Estos gastos se registran solo cuando ocurren. Por eso no hacen parte del
+// costo mensual base ni cambian la meta fija de facturación.
+const GASTOS_OCASIONALES_REFERENCIA = Object.freeze([
+  ['Eventos y activaciones', 300000],
+  ['Pauta publicitaria', 100000]
+]);
+
 const CONCEPTOS_EGRESO = Object.freeze({
   ...Object.fromEntries(ESTRUCTURA_COSTOS_REFERENCIA.map(({categoria, items}) => [categoria, items.map(([concepto]) => concepto)])),
+  'Gastos ocasionales': GASTOS_OCASIONALES_REFERENCIA.map(([concepto]) => concepto),
   'Otro': ['Otro']
 });
 
@@ -596,6 +604,10 @@ function renderEstructuraFinanciera() {
         <div style="font-size:1.1rem;font-weight:700;font-family:var(--font-h)">${SESIONES_META_REFERENCIA} sesiones/mes</div>
         <div style="font-size:.72rem;color:var(--muted)">~${SESIONES_SEMANA_REFERENCIA}/sem · Ticket prom. ${fmtPeso(TICKET_PROMEDIO_REFERENCIA)}</div>
       </div>
+    <div style="grid-column:1/-1;margin-top:14px;padding:12px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.3);border-radius:10px">
+      <div style="font-size:.72rem;font-family:var(--font-m);color:#b45309;text-transform:uppercase;letter-spacing:.04em;margin-bottom:7px">Gastos ocasionales · se registran cuando ocurren</div>
+      <div style="display:flex;gap:18px;flex-wrap:wrap;font-size:.82rem">${GASTOS_OCASIONALES_REFERENCIA.map(([concepto,valor]) => `<span><b>${concepto}:</b> ${fmtPeso(valor)}</span>`).join('')}<span style="color:var(--muted)">No se incluyen en el costo mensual base.</span></div>
+    </div>
     </div>
   </div>`;
 
