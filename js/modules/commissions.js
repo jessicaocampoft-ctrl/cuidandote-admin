@@ -108,6 +108,32 @@ function _comisSemanasLlenas(citas, eventos, year, month, metaSes) {
   return weeks;
 }
 
+// La liquidación de agenda es mensual. Esta función conserva el conteo de la
+// agenda y de los eventos externos, pero los compara con una sola meta del mes
+// para evitar anticipos o pagos proporcionales por semanas.
+function _comisResumenAgendaMensual(citas, eventos, year, month, metaSemana, semanasMeta) {
+  const toS = d => d.toLocalDateStr();
+  const inicio = toS(new Date(year, month - 1, 1));
+  const fin = toS(new Date(year, month, 0));
+  const estaEnMes = item => {
+    const fecha = normDate(item.fecha);
+    return fecha >= inicio && fecha <= fin;
+  };
+  const citasValidas = (citas || []).filter(c => {
+    if ((c.estado || '').includes('Cancel') || c.estado === 'No asistió') return false;
+    return estaEnMes(c);
+  }).length;
+  const eventosValidos = (eventos || []).filter(estaEnMes).length;
+  const totalSes = citasValidas + eventosValidos;
+  const metaMensual = Math.max(0, Number(metaSemana) || 0) * Math.max(1, Number(semanasMeta) || 4);
+  return {
+    totalSes,
+    metaMensual,
+    cumpleMeta: metaMensual > 0 && totalSes >= metaMensual,
+    ocupacion: metaMensual > 0 ? (totalSes / metaMensual * 100).toFixed(1) : '0'
+  };
+}
+
 function _comisReactivaciones(citas, year, month) {
   const toS = d => d.toLocalDateStr();
   const mS = new Date(year, month-1, 1);
@@ -232,17 +258,13 @@ function renderComisiones() {
   const [year, month] = mes.split('-').map(Number);
   const cfg   = _comisGetConfig();
   const citas = citasReales();
-  const mLabels = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
 
-  // ── SEMANAS LLENAS ──
-  const semanas  = _comisSemanasLlenas(citas, allData.eventos||[], year, month, cfg.ses_llena);
-  const sLlenas  = semanas.filter(s => s.llena).length;
-  const sTotal   = semanas.length;
-  const bonoAg   = sTotal > 0 ? (sLlenas >= sTotal ? cfg.bono_agenda : Math.round(cfg.bono_agenda * sLlenas / sTotal)) : 0;
-  const pctOcup  = sTotal > 0 ? Math.round((semanas.reduce((a,s)=>a+s.sesiones,0) / (sTotal * cfg.ses_llena * (cfg.ses_llena/cfg.ses_llena))) / sTotal * 100) : 0;
-  const totalSes = semanas.reduce((a,s)=>a+s.sesiones,0);
-  const capacidad = sTotal * cfg.ses_llena;
-  const pctOcupReal = capacidad > 0 ? (totalSes / capacidad * 100).toFixed(1) : '0';
+  // ── BONO DE AGENDA: LIQUIDACIÓN DEL MES COMPLETO ──
+  const agendaMes = _comisResumenAgendaMensual(
+    citas, allData.eventos || [], year, month, cfg.ses_llena, cfg.semanas_meta
+  );
+  const { totalSes, metaMensual, cumpleMeta, ocupacion: pctOcupReal } = agendaMes;
+  const bonoAg = cumpleMeta ? cfg.bono_agenda : 0;
 
   // ── REACTIVACIONES ──
   const reactAuto  = _comisReactivaciones(citas, year, month);
@@ -306,13 +328,11 @@ function renderComisiones() {
   setEl('coTotalAux',        fmtPeso(totalAux));
   setEl('coTotalFisio',      fmtPeso(totalFisio));
   setEl('coTotalVideo',      fmtPeso(totalVideo));
-  setEl('coSemanasRes',      sLlenas + '/' + sTotal);
+  setEl('coSemanasRes',      totalSes + '/' + metaMensual);
   setEl('coVideoPersonaLabel', cfg.contenido_persona);
 
-  const fmtRng = (s,e) => { const ds=new Date(s+'T12:00'),de=new Date(e+'T12:00'); return ds.getDate()+' '+mLabels[ds.getMonth()]+' – '+de.getDate()+' '+mLabels[de.getMonth()]; };
-
   // ── HTML AUXILIAR ──
-  const semanasH = semanas.map(s => `<div class="co-week"><div class="co-wdot ${s.llena?'ok':'no'}"></div><span>${fmtRng(s.start,s.end)}</span><span style="font-family:var(--font-m);color:${s.llena?'var(--ok)':'var(--muted)'}">${s.sesiones} ses.</span><span style="font-size:.72rem;color:${s.llena?'var(--ok)':'#ef4444'}">${s.llena?'✓ llena':'falta'}</span></div>`).join('');
+  const agendaMetaH = `<div class="co-week"><div class="co-wdot ${cumpleMeta?'ok':'no'}"></div><span>Mes completo</span><span style="font-family:var(--font-m);color:${cumpleMeta?'var(--ok)':'var(--muted)'}">${totalSes} / ${metaMensual} ses.</span><span style="font-size:.72rem;color:${cumpleMeta?'var(--ok)':'#ef4444'}">${cumpleMeta?'✓ meta cumplida':'faltan '+Math.max(0,metaMensual-totalSes)+' ses.'}</span></div>`;
 
   const reactH = [
     ...reactAuto.map(r => {
@@ -339,9 +359,9 @@ function renderComisiones() {
       <div><div class="co-card-title">Auxiliar Administrativa</div><div class="co-card-role">Agenda · Recuperación · Contenido (${cfg.contenido_split_aux}%)</div></div>
       <div class="co-total">${fmtPeso(totalAux)}</div>
     </div>
-    <div class="co-bono"><div class="co-bono-title">📅 Bono Agenda Llena · ${pctOcupReal}% ocupación</div>
-      <div class="co-bono-row"><span class="co-bono-label">${sLlenas} de ${sTotal} semanas ≥${cfg.ses_llena} ses. · ${totalSes} sesiones totales</span><span class="co-bono-amount">${fmtPeso(bonoAg)}</span></div>
-      <div class="co-breakdown">${semanasH}</div></div>
+    <div class="co-bono"><div class="co-bono-title">📅 Bono de agenda mensual · ${pctOcupReal}% de la meta</div>
+      <div class="co-bono-row"><span class="co-bono-label">Meta: ${metaMensual} sesiones (${cfg.semanas_meta} × ${cfg.ses_llena}) · se liquida al cierre del mes</span><span class="co-bono-amount">${fmtPeso(bonoAg)}</span></div>
+      <div class="co-breakdown">${agendaMetaH}</div></div>
     <div class="co-bono"><div class="co-bono-title">🔁 Seguimiento de pacientes reactivados</div>
       <div class="co-bono-row"><span class="co-bono-label">${totalReact} reactivado${totalReact!==1?'s':''} por gestión · actividad medida${legacyIndividualAllowed ? ` · regla histórica ${labelBonoReact}` : '<br><span style="font-size:.7rem;color:var(--muted)">Desde el 8 nov 2026 no genera comisión individual.</span>'}<br><span style="font-size:.7rem;color:var(--muted)">${reactPendientes.length} por confirmar · ${reactEspontaneas.length} retorno${reactEspontaneas.length!==1?'s':''} espontáneo${reactEspontaneas.length!==1?'s':''} sin bono</span></span><span class="co-bono-amount">${fmtPeso(bonoReact)}</span></div>
       <div class="co-breakdown">${reactH}</div>
@@ -463,6 +483,7 @@ global.PanelCommissions = Object.freeze({
     _initComisMesSel,
     _comisMesVal,
     _comisSemanasLlenas,
+    _comisResumenAgendaMensual,
     _comisReactivaciones,
     _comisReventas,
     _comisVentasCruzadas,
