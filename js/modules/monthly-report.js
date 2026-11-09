@@ -403,6 +403,8 @@ function _buildReporteMes() {
         <div>
           <div style="font-size:.7rem;font-family:var(--font-m);color:var(--primary);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;font-weight:700">Contenido e insumos</div>
           ${filaC('Contenido para redes sociales','redes_contenido',costos.redes_contenido)}
+          ${filaC('Eventos y activaciones','activacion_eventos',costos.activacion_eventos)}
+          ${filaC('Pauta publicitaria','pautas_redes',costos.pautas_redes)}
           ${filaC('Mantenimiento y compras','mantenimiento',costos.mantenimiento)}
           ${filaC('Insumos','insumos',costos.insumos)}
           <div style="font-size:.7rem;font-family:var(--font-m);color:var(--primary);text-transform:uppercase;letter-spacing:.05em;margin:12px 0 8px;font-weight:700">Porcentajes</div>

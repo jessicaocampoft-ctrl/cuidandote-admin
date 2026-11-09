@@ -2,7 +2,7 @@
 (function (global) {
   'use strict';
 
-const COSTOS_MODELO_VERSION = 3;
+const COSTOS_MODELO_VERSION = 4;
 
 const COSTOS_DEFAULTS = {
   modelo_version:       COSTOS_MODELO_VERSION,
@@ -20,8 +20,8 @@ const COSTOS_DEFAULTS = {
   asesorias_ap:        450000,
   // Costos Variables
   redes_contenido:     300000,
-  activacion_eventos:       0,
-  pautas_redes:             0,
+  activacion_eventos:  300000,
+  pautas_redes:       100000,
   mantenimiento:       200000,
   insumos:             100000,
   // Porcentajes adicionales
@@ -37,7 +37,7 @@ function getCostosEstructura() {
     // Migra los valores solicitados sin borrar las demás personalizaciones.
     if (stored.modelo_version !== COSTOS_MODELO_VERSION) {
       const actualizados = {...COSTOS_DEFAULTS, ...stored, modelo_version: COSTOS_MODELO_VERSION,
-        servicios_publicos: 120000, datos_celulares: 46000};
+        servicios_publicos: 120000, datos_celulares: 46000, activacion_eventos: 300000, pautas_redes: 100000};
       saveCostosEstructura(actualizados);
       return actualizados;
     }
@@ -127,9 +127,11 @@ function renderPresupuestoMetas() {
         </div>
 
         <div class="card">
-          <div class="card-title" style="margin-bottom:14px">📣 Contenido e insumos</div>
+          <div class="card-title" style="margin-bottom:14px">📣 Contenido, campañas e insumos</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
             ${inp('redes_contenido',    'Contenido para redes sociales', costos.redes_contenido)}
+            ${inp('activacion_eventos', 'Eventos y activaciones', costos.activacion_eventos)}
+            ${inp('pautas_redes',        'Pauta publicitaria', costos.pautas_redes)}
             ${inp('mantenimiento',      'Mantenimiento y compras',   costos.mantenimiento)}
             ${inp('insumos',            'Insumos',                   costos.insumos)}
           </div>
