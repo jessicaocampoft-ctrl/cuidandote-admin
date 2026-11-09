@@ -177,6 +177,29 @@ async function marcarPagoPendiente(id) {
   }
 }
 
+async function copiarRecordatorioCita(id, timing) {
+  const cita = allData.citas.find(c => String(c.id) === String(id));
+  if (!cita) { toast('No encontré la cita. Actualiza e inténtalo de nuevo.', 'err'); return; }
+  const texto = global.PanelWhatsAppTools?.waReminderText?.(
+    cita.nombre, cita.fecha, cita.hora, cita.servicio, timing
+  );
+  if (!texto) { toast('No se pudo preparar el recordatorio.', 'err'); return; }
+  try {
+    await navigator.clipboard.writeText(texto);
+  } catch (_) {
+    const area = document.createElement('textarea');
+    area.value = texto;
+    area.style.position = 'fixed';
+    area.style.opacity = '0';
+    document.body.appendChild(area);
+    area.select();
+    document.execCommand('copy');
+    area.remove();
+  }
+  if (typeof markWaSent === 'function') markWaSent(String(cita.id), 'reminder-' + timing);
+  toast(`Recordatorio de ${timing === 'today' ? 'hoy' : 'mañana'} copiado. Pégalo en WhatsApp.`, 'ok');
+}
+
 function verDetalle(id) {
   const c = allData.citas.find(x => x.id === id);
   if (!c) return;
@@ -193,6 +216,9 @@ function verDetalle(id) {
   const canConfirmAttendance = financialSummary?.kind !== 'started';
   const reminderTomorrowUrl = !esCancelada ? global.PanelWhatsAppTools?.waLinkReminder?.(c.telefono, c.nombre, c.fecha, c.hora, c.servicio, 'tomorrow') : null;
   const reminderTodayUrl = !esCancelada ? global.PanelWhatsAppTools?.waLinkReminder?.(c.telefono, c.nombre, c.fecha, c.hora, c.servicio, 'today') : null;
+  const reminderButton = (url, timing, icon, label, title) => url
+    ? `<a href="${url}" target="_blank" class="btn btn-ghost btn-sm" title="${title}" onclick="markWaSent('${esc(c.id)}','reminder-${timing}');this.style.opacity='.55'">${icon} ${label}</a>`
+    : `<button type="button" class="btn btn-ghost btn-sm" title="No hay teléfono: copia el mensaje para enviarlo manualmente" onclick="window.PanelAppointmentEdit.copiarRecordatorioCita('${esc(c.id)}','${timing}')">${icon} ${label}</button>`;
   // La asignación desde el calendario se habilita únicamente después de que
   // pagos haya verificado la cita. Conservamos el mismo modal y validaciones
   // de Colaboradores para no duplicar la lógica de asignación.
@@ -242,8 +268,8 @@ function verDetalle(id) {
       })()}
       <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
         ${canConfirmAttendance ? waBtn(c.telefono,c.nombre,c.fecha,c.hora,c.servicio,'WhatsApp confirmación',c.precio,c.modalidad) : '<span class="btn btn-ghost btn-sm" style="pointer-events:none;opacity:.65">No requiere confirmación</span>'}
-        ${reminderTomorrowUrl ? `<a href="${reminderTomorrowUrl}" target="_blank" class="btn btn-ghost btn-sm" title="Enviar el recordatorio del día anterior" onclick="markWaSent('${esc(c.id)}','reminder-tomorrow');this.style.opacity='.55'">📅 Recordatorio mañana</a>` : ''}
-        ${reminderTodayUrl ? `<a href="${reminderTodayUrl}" target="_blank" class="btn btn-ghost btn-sm" title="Enviar el recordatorio del mismo día" onclick="markWaSent('${esc(c.id)}','reminder-today');this.style.opacity='.55'">⏰ Recordatorio hoy</a>` : ''}
+        ${!esCancelada ? reminderButton(reminderTomorrowUrl, 'tomorrow', '📅', 'Recordatorio mañana', 'Enviar el recordatorio del día anterior') : ''}
+        ${!esCancelada ? reminderButton(reminderTodayUrl, 'today', '⏰', 'Recordatorio hoy', 'Enviar el recordatorio del mismo día') : ''}
         ${paymentUrl ? `<a href="${paymentUrl}" target="_blank" class="btn btn-ghost btn-sm">💳 ${financialSummary?.kind === 'package-balance' ? 'Cobrar saldo del paquete' : financialSummary?.kind === 'appointment-partial' ? 'Cobrar saldo de cita' : 'Solicitar pago de cita'}</a>` : paymentIsPending ? '<span class="btn btn-ghost btn-sm" style="pointer-events:none;opacity:.65">📵 Sin teléfono para cobrar</span>' : '<span class="btn btn-ghost btn-sm" style="pointer-events:none;opacity:.65">💳 Sin cobro pendiente</span>'}
         ${canMarkPaymentPending ? `<button type="button" class="btn btn-ghost btn-sm" onclick="window.PanelAppointmentEdit.marcarPagoPendiente('${esc(c.id)}')">⏳ Marcar pago pendiente</button>` : c.estado === 'Pendiente de pago' ? '<span class="btn btn-ghost btn-sm" style="pointer-events:none;opacity:.7">⏳ Pago pendiente</span>' : ''}
         <button class="btn btn-ghost btn-sm" onclick="(function(){ const p=(document.getElementById('notaParaQuienInput').value||'').trim(); const nota=p?'[PARA: '+p+']':''; seguimientoWA('${esc(c.telefono||'')}','${esc(c.nombre)}','${esc(c.servicio)}',nota); })()">💬 Seguimiento</button>
@@ -494,6 +520,7 @@ async function guardarEdicion() {
     guardarNotaAdmin,
     changeStatus,
     marcarPagoPendiente,
+  copiarRecordatorioCita,
     verDetalle,
     cancelarCita,
     confirmarCancelacion,
