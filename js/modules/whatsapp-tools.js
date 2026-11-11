@@ -57,9 +57,12 @@ function waLink(tel, nombre, fecha, hora, serv, precio, modalidad) {
   const esDomicilio = String(modalidad || '').trim().toLowerCase() === 'domicilio';
   const direccionSede = 'Cra. 19A, Av. Sta. Mónica #17-24, Dosquebradas, Risaralda';
   const infoSes  = getInfoSesion(nombre, serv, fecha);
+  const nombreServicio = String(serv || '').trim() === 'Ritual Cuidándote'
+    ? 'Masaje relajante — Ritual Cuidándote'
+    : serv;
   const servLine = infoSes
-    ? '*' + serv + '* — ' + ordinalES(infoSes.numero) + ' sesion de ' + infoSes.total
-    : '*' + serv + '*';
+    ? '*' + nombreServicio + '* — ' + ordinalES(infoSes.numero) + ' sesion de ' + infoSes.total
+    : '*' + nombreServicio + '*';
   const lines = [
     'Hola ' + waNombre(nombre) + '! Te escribo para confirmar tu cita ' + String.fromCodePoint(0x1F4CB),
     '',
