@@ -33,6 +33,48 @@ function calcAbono() {
   resumen.style.display = 'block';
 }
 
+function _isCourtesyBooking() {
+  return document.getElementById('ncCourtesy')?.checked === true;
+}
+
+function _buildAdminNote() {
+  const paraQuien = (document.getElementById('ncParaQuien')?.value || '').trim();
+  const abono = getAbonoNota();
+  return [
+    _isCourtesyBooking() ? '[CORTESÍA]' : '',
+    paraQuien ? '[PARA: ' + paraQuien + ']' : '',
+    abono
+  ].filter(Boolean).join(' ');
+}
+
+function toggleCourtesyBooking() {
+  const active = _isCourtesyBooking();
+  const price = document.getElementById('ncPrice');
+  const help = document.getElementById('ncCourtesyHelp');
+  const packageLink = document.getElementById('ncPackageLink');
+  if (price) {
+    if (active) {
+      if (!price.dataset.priceBeforeCourtesy) price.dataset.priceBeforeCourtesy = price.value;
+      price.value = '$0';
+      price.readOnly = true;
+      price.style.opacity = '.6';
+    } else {
+      price.readOnly = false;
+      price.style.opacity = '';
+      if (price.dataset.priceBeforeCourtesy) price.value = price.dataset.priceBeforeCourtesy;
+      delete price.dataset.priceBeforeCourtesy;
+    }
+  }
+  if (active && packageLink) {
+    packageLink.value = '';
+    document.querySelectorAll('#ncPackageChoices .package-link-option').forEach(button => button.classList.remove('selected'));
+  }
+  if (help) help.textContent = active
+    ? 'Cortesía: queda visible en agenda, sin cobro y fuera de los indicadores de citas.'
+    : 'Se agenda normalmente, pero no cuenta como cita ni genera cobro.';
+  calcDescuento();
+}
+
 function validateNoMidnight(time, contexto='la cita') {
   if (!isMidnightTime(time)) return true;
   toast(`Esa hora es de medianoche. Para ${contexto} al mediodía usa 12:00.`, 'err');
@@ -185,6 +227,7 @@ async function submitAdminBookingMulti() {
 
   // Datos base de la cita
   const phone = document.getElementById('ncPhone').value.trim();
+  const isCourtesy = _isCourtesyBooking();
   const gymSel = document.getElementById('ncConvenio').value;
   let gimnasioData = {};
   if (gymSel) {
@@ -207,13 +250,13 @@ async function submitAdminBookingMulti() {
     name, phone,
     email:     document.getElementById('ncEmail').value.trim(),
     service:   serv, modality: mod,
-    priceP:    getPrecioFinal() || 'A convenir',
-    priceD:    getPrecioFinal() || 'A convenir',
+    priceP:    isCourtesy ? '$0' : (getPrecioFinal() || 'A convenir'),
+    priceD:    isCourtesy ? '$0' : (getPrecioFinal() || 'A convenir'),
     address:   document.getElementById('ncAddress').value.trim(),
     notes:     document.getElementById('ncNotes').value.trim(),
-    notaAdmin: (() => { const p=(document.getElementById('ncParaQuien').value||'').trim(); const ab=getAbonoNota(); return [p?'[PARA: '+p+']':'',ab].filter(Boolean).join(' '); })(),
+    notaAdmin: _buildAdminNote(),
     canal:     document.getElementById('nuevaCitaCanal').value || 'Directo',
-    packageId: document.getElementById('ncPackageLink')?.value || '',
+    packageId: isCourtesy ? '' : (document.getElementById('ncPackageLink')?.value || ''),
     atendidoPor: document.getElementById('ncAtendidoPor')?.value || '',
     ...gimnasioData
   };
@@ -236,11 +279,11 @@ async function submitAdminBookingMulti() {
       email:     (document.getElementById('nc2Email').value||'').trim(),
       service:   serv2,
       modality:  mod,
-      priceP:    document.getElementById('nc2Price').value || 'A convenir',
-      priceD:    document.getElementById('nc2Price').value || 'A convenir',
+      priceP:    isCourtesy ? '$0' : (document.getElementById('nc2Price').value || 'A convenir'),
+      priceD:    isCourtesy ? '$0' : (document.getElementById('nc2Price').value || 'A convenir'),
       address:   document.getElementById('ncAddress').value.trim(),
       notes:     document.getElementById('ncNotes').value.trim(),
-      notaAdmin: '[PAREJA DE ' + name + ']',
+      notaAdmin: [isCourtesy ? '[CORTESÍA]' : '', '[PAREJA DE ' + name + ']'].filter(Boolean).join(' '),
       canal:     document.getElementById('nuevaCitaCanal').value || 'Directo',
       atendidoPor: document.getElementById('ncAtendidoPor')?.value || '',
     };
@@ -448,6 +491,13 @@ function autoFillPrice() {
   const servs = _selectedServices.length > 0 ? _selectedServices : [document.getElementById('ncService').value];
   if (!servs[0]) return;
 
+  if (_isCourtesyBooking()) {
+    document.getElementById('ncPrice').value = '$0';
+    checkDomicilioWarn();
+    updateSesionesInfo();
+    return;
+  }
+
   // Los paquetes se registran con el valor acordado por sesión. No deben
   // heredar el precio total del catálogo cuando se agregan al formulario.
   if (servs.length === 1 && /^paquete\b/i.test(String(servs[0]).trim())) {
@@ -480,8 +530,9 @@ async function submitAdminBooking() {
   const time  = document.getElementById('ncTime').value;
   if (!name||!serv||!date||!time) { toast('Completa los campos obligatorios (*)','err'); return; }
   if (!validateNoMidnight(time, 'agendar')) { updateTimeHelp('ncTime','ncTimeHelp'); return; }
+  const isCourtesy = _isCourtesyBooking();
   const packagePrice = global.PanelPackages?.getSpecialSessionPrice?.({nombre:name, telefono:phone}) || 0;
-  const appointmentPrice = packagePrice ? ('$' + packagePrice.toLocaleString('es-CO')) : (getPrecioFinal() || 'A convenir');
+  const appointmentPrice = isCourtesy ? '$0' : (packagePrice ? ('$' + packagePrice.toLocaleString('es-CO')) : (getPrecioFinal() || 'A convenir'));
 
   _submittingBooking = true;
   const btn = document.getElementById('ncSubmitBtn');
@@ -520,7 +571,7 @@ async function submitAdminBooking() {
     priceD: appointmentPrice,
     address: document.getElementById('ncAddress').value.trim(),
     notes:   document.getElementById('ncNotes').value.trim(),
-    notaAdmin: (() => { const partes = []; const p = (document.getElementById('ncParaQuien').value||'').trim(); if (p) partes.push('[PARA: ' + p + ']'); const ab = getAbonoNota(); if (ab) partes.push(ab); return partes.join(' '); })(),
+    notaAdmin: _buildAdminNote(),
     canal: document.getElementById('nuevaCitaCanal').value || 'Directo',
     ...gimnasioData
   };
@@ -613,6 +664,16 @@ function clearNuevaCita() {
     const el = document.getElementById(id); if(el) el.value='';
   });
   document.getElementById('ncPrice').value = '$50.000';
+  const courtesy = document.getElementById('ncCourtesy');
+  if (courtesy) courtesy.checked = false;
+  const courtesyPrice = document.getElementById('ncPrice');
+  if (courtesyPrice) {
+    courtesyPrice.readOnly = false;
+    courtesyPrice.style.opacity = '';
+    delete courtesyPrice.dataset.priceBeforeCourtesy;
+  }
+  const courtesyHelp = document.getElementById('ncCourtesyHelp');
+  if (courtesyHelp) courtesyHelp.textContent = 'Se agenda normalmente, pero no cuenta como cita ni genera cobro.';
   document.getElementById('ncService').value='';
   document.getElementById('ncServiceMain').selectedIndex=0;
   _selectedServices = [];
@@ -742,6 +803,7 @@ function agendarDesdeSeg(encNombre, encTel, encEmail) {
     bookWaitPatient,
     agendarHoy,
     calcAbono,
+    toggleCourtesyBooking,
     validateNoMidnight,
     createAdminBooking,
     submitAdminBookingMulti,

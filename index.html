@@ -3020,6 +3020,14 @@ Primero evaluamos cómo está el cuerpo ahora, luego tratamos, luego te enseñam
               <option value="Natalia">Natalia</option>
             </select>
           </div>
+          <div class="field">
+            <label>Tipo de cobro</label>
+            <label style="display:flex;align-items:center;gap:8px;padding:9px 11px;background:rgba(139,92,246,.06);border:1px solid rgba(139,92,246,.28);border-radius:8px;cursor:pointer;font-size:.86rem">
+              <input id="ncCourtesy" type="checkbox" onchange="PanelAppointmentCreate.toggleCourtesyBooking()">
+              <span>🎁 Registrar como cortesía</span>
+            </label>
+            <small id="ncCourtesyHelp" style="display:block;margin-top:5px;color:var(--muted)">Se agenda normalmente, pero no cuenta como cita ni genera cobro.</small>
+          </div>
           <!-- ── SELECTOR DE MODO DE AGENDAMIENTO ── -->
           <div style="grid-column:1/-1">
             <label style="font-size:.8rem;color:var(--muted);font-family:var(--font-m);margin-bottom:8px;display:block">Tipo de agendamiento</label>
@@ -8408,6 +8416,11 @@ const esRegistroServ = s => (s || '').toLowerCase().trim().startsWith('registro'
 const esSesionFull    = s => { const n = (s||'').toLowerCase(); return n.includes('full') || n.includes('completa'); };
 // Detecta sesiones tipo individual corta: Cuello/Piernas/Express/Readap/Valoración
 const esSesionIndiv   = s => { const n = (s||'').toLowerCase(); return n.includes('cuello') || n.includes('pierna') || n.includes('express') || n.includes('readap') || n.includes('valorac'); };
+// Las cortesías permanecen visibles en agenda para reservar el horario, pero
+// se excluyen de las métricas, finanzas, comisiones y conteos de citas.
+function esCortesia(cita) {
+  return Boolean(cita?.cortesia) || /\[CORTES[IÍ]A\]/i.test(String(cita?.notaAdmin || ''));
+}
 
 // esCobrada definida arriba junto a pagoBadge
 function esCobrada_UNUSED(c) {
@@ -8419,6 +8432,7 @@ function citasReales() {
   const seen = new Set();
   const result = allData.citas.filter(c => {
     if (c.estado === 'Cancelada' || c.estado === 'Registro' || esRegistroServ(c.servicio)) return false;
+    if (esCortesia(c)) return false;
     if (!c.hora || isMidnightTime(c.hora)) return false;
     const key = (c.nombre || '').toLowerCase().trim() + '|' + normDate(c.fecha) + '|' + (c.hora || '00:00');
     if (seen.has(key)) return false;
