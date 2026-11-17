@@ -5302,9 +5302,14 @@ Acción: enviar mensaje de reenganche a los 14 pacientes que solo vinieron una v
       <div style="background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:13px;margin-bottom:14px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">
         <input id="commercialSearch" placeholder="Buscar por nombre, teléfono o servicio" oninput="PanelCommercialSales.renderList()" style="min-width:230px;flex:1;padding:9px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text)">
         <select id="commercialStatusFilter" onchange="PanelCommercialSales.renderList()" style="padding:9px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text)">
-          <option value="">Todos los estados</option><option>Nuevo</option><option>Contactado</option><option>Interesado</option><option>Pendiente de pago</option><option>Venta cerrada</option><option>Perdido</option>
+          <option value="">Todos los estados</option><option>Nuevo interesado</option><option>Contactado</option><option>Interesado</option><option>Pendiente de agendar</option><option>Pendiente de pago</option><option>Venta cerrada</option><option>Paciente activo</option><option>Reactivación</option><option>Perdido</option><option>No contactar</option>
         </select>
+        <select id="commercialOwnerFilter" onchange="PanelCommercialSales.renderList()" style="padding:9px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text)"><option value="">Todos los responsables</option></select>
+        <select id="commercialOriginFilter" onchange="PanelCommercialSales.renderList()" style="padding:9px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text)"><option value="">Todos los canales</option></select>
+        <input id="commercialDateFilter" type="date" title="Primer contacto desde esta fecha" onchange="PanelCommercialSales.renderList()" style="padding:8px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text)">
       </div>
+      <div id="commercialToday" style="margin-bottom:14px"></div>
+      <div id="commercialFunnel" style="margin-bottom:14px"></div>
       <div id="commercialList"></div>
       <div id="commercialModal" style="display:none;position:fixed;z-index:1005;inset:0;background:rgba(15,23,42,.54);padding:20px;overflow:auto" onclick="if(event.target===this)PanelCommercialSales.close()">
         <div style="max-width:850px;margin:30px auto;background:var(--bg);border:1px solid var(--border);border-radius:16px;padding:22px;box-shadow:0 24px 70px rgba(0,0,0,.28)">
@@ -13312,7 +13317,7 @@ document.addEventListener('DOMContentLoaded', () => {
 <script src="js/modules/shared-storage.js"></script>
 <script src="js/modules/functional-training.js?v=20261030-initial"></script>
 <script src="js/modules/payments.js?v=20260929-payment-custom-plan"></script>
-<script src="js/modules/commercial-sales.js?v=20261108-commission-proof"></script>
+<script src="js/modules/commercial-sales.js?v=20261117-operational-crm"></script>
   <script src="js/modules/passport.js"></script>
   <script src="js/modules/agenda.js?v=20261103-resilient-booking"></script>
   <script src="js/modules/appointment-provider.js?v=20261101-provider-optional"></script>

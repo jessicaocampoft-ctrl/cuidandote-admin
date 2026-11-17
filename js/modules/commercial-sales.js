@@ -1,221 +1,32 @@
-/* Cuidándote Fisioterapia — captación y gestión comercial.
- * Conserva Citas, Pacientes, Pagos, Referidos y Empresas como fuentes existentes.
- * Las oportunidades y su bitácora viven por separado en AdminKV para no reescribir historia.
- */
+/* CRM comercial: oportunidades separadas de la historia clínica y vinculadas a datos ya existentes. */
 (function (global) {
   'use strict';
-
-  const STORE_KEY = 'commercial_opportunities_v1';
-  const AUDIT_KEY = 'commercial_opportunity_audit_v1';
-  const MAX_AUDIT = 1500;
-  const STATUSES = ['Nuevo', 'Contactado', 'Interesado', 'Pendiente de pago', 'Venta cerrada', 'Perdido'];
-  const ORIGINS = ['WhatsApp', 'Instagram', 'Google', 'Página web', 'Referido', 'Alianza', 'Llamada', 'Gestión comercial propia', 'Otro'];
-  let opportunities = [];
-  let auditRows = [];
-
-  const $ = (id) => document.getElementById(id);
-  const e = (value) => String(value ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c]);
-  const clean = (value) => String(value || '').trim();
-  const money = (value) => '$' + Math.round(Number(value) || 0).toLocaleString('es-CO');
-  const today = () => new Date().toISOString().slice(0, 10);
-  const dateText = (value) => value ? new Date(value + 'T12:00:00').toLocaleDateString('es-CO', { day:'numeric', month:'short', year:'numeric' }) : '—';
-  const currentUser = () => {
-    try { return typeof currentAdminUser !== 'undefined' ? (currentAdminUser || {}) : (global.currentAdminUser || {}); } catch (_) { return global.currentAdminUser || {}; }
-  };
-  const role = () => String(currentUser().rol || 'Superadministradora').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-  const actor = () => clean(currentUser().nombre || currentUser().name || 'Usuario administrador');
-  const canOpen = () => !/(fisioterapeuta|profesional)/.test(role());
-  const canEdit = () => canOpen();
-  const canChangeMoney = () => !/(auxiliar)/.test(role());
-  const canAudit = () => !/(auxiliar|fisioterapeuta|profesional)/.test(role());
-
-  function readJson(key, fallback) {
-    try { const raw = global.kvGet?.(key); return raw ? JSON.parse(raw) : fallback; } catch (_) { return fallback; }
-  }
-  function persist() {
-    global.kvSet?.(STORE_KEY, JSON.stringify(opportunities));
-    global.kvSet?.(AUDIT_KEY, JSON.stringify(auditRows.slice(-MAX_AUDIT)));
-    global.PanelStorage?._flushKV?.();
-  }
-  function hydrate() {
-    opportunities = readJson(STORE_KEY, []);
-    auditRows = readJson(AUDIT_KEY, []);
-    if (!Array.isArray(opportunities)) opportunities = [];
-    if (!Array.isArray(auditRows)) auditRows = [];
-  }
-  function normPhone(value) { return clean(value).replace(/\D/g, '').slice(-10); }
-  function identity(data) {
-    const phone = normPhone(data.phone);
-    const email = clean(data.email).toLowerCase();
-    const name = clean(data.patientName).toLowerCase().replace(/\s+/g, ' ');
-    return phone ? `p:${phone}` : email ? `e:${email}` : name ? `n:${name}` : '';
-  }
-  function logChange(id, action, detail) {
-    auditRows.push({ id: 'AUD-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6), opportunityId: id, at: new Date().toISOString(), actor: actor(), role: clean(currentUser().rol || 'Superadministradora'), action, detail });
-  }
-  function approvedPayments(citaId) {
-    if (!citaId) return [];
-    let payments = global.operationsData?.pagos || [];
-    try { if (typeof operationsData !== 'undefined') payments = operationsData?.pagos || payments; } catch (_) {}
-    return payments.filter(p => String(p.CitaID || p.CitaId || p.citaId || '') === String(citaId) && ['Aprobado', 'PAGO_APROBADO'].includes(clean(p.EstadoPago)));
-  }
-  function verifiedTotal(item) {
-    return approvedPayments(item.appointmentId).reduce((sum, p) => sum + Number(p.ValorRecibido ?? p.Valor ?? p.Monto ?? 0), 0);
-  }
-  function appointmentOptions(selected) {
-    let citas = global.allData?.citas || [];
-    try { if (typeof allData !== 'undefined') citas = allData?.citas || citas; } catch (_) {}
-    const current = citas.filter(c => !['Cancelada', 'No asistió'].includes(clean(c.estado || c.Estado))).slice(-400).reverse();
-    return `<option value="">Sin cita vinculada aún</option>` + current.map(c => {
-      const id = c.id || c.ID || '';
-      const label = `${c.nombre || c.Nombre || 'Sin nombre'} · ${c.fecha || c.FechaCita || ''} ${c.hora || c.Hora || ''} · ${c.servicio || c.Servicio || ''}`;
-      return `<option value="${e(id)}" ${String(id) === String(selected || '') ? 'selected' : ''}>${e(label)}</option>`;
-    }).join('');
-  }
-  function optionList(values, selected, blank) {
-    return (blank ? `<option value="">${e(blank)}</option>` : '') + values.map(v => `<option ${v === selected ? 'selected' : ''}>${e(v)}</option>`).join('');
-  }
-  function peopleOptions(selected) {
-    const current = currentUser().nombre || currentUser().name || '';
-    let team = global.teamData || {};
-    try { if (typeof teamData !== 'undefined') team = teamData || team; } catch (_) {}
-    const professionals = (team.professionals || team.profesionales || []).map(x => x.Nombre || x.nombre || x.name).filter(Boolean);
-    const entries = [...new Set([current, ...professionals].filter(Boolean))];
-    return optionList(entries, selected, 'Sin asignar');
-  }
-  function field(label, control, span) {
-    return `<label style="display:block;grid-column:${span || 'auto'};font-size:.78rem;font-weight:700;color:var(--muted)">${e(label)}${control}</label>`;
-  }
-  function input(id, value, type, extra) { return `<input id="${id}" type="${type || 'text'}" value="${e(value)}" ${extra || ''} style="display:block;box-sizing:border-box;width:100%;margin-top:5px;padding:9px 10px;border:1px solid var(--border);border-radius:8px;background:var(--s2);color:var(--text)">`; }
-  function select(id, inner, extra) { return `<select id="${id}" ${extra || ''} style="display:block;box-sizing:border-box;width:100%;margin-top:5px;padding:9px 10px;border:1px solid var(--border);border-radius:8px;background:var(--s2);color:var(--text)">${inner}</select>`; }
-
-  async function refreshPayments() {
-    try { await global.PanelPayments?.loadOperationsData?.(); } catch (_) {}
-  }
-  function render() {
-    hydrate();
-    if (!canOpen()) {
-      $('commercialPermissionNotice').style.display = 'block';
-      $('commercialPermissionNotice').innerHTML = '<div class="notice notice-warn">Este módulo contiene información comercial restringida. Tu cargo no tiene acceso.</div>';
-      $('commercialStats').innerHTML = '';
-      $('commercialList').innerHTML = '';
-      return;
-    }
-    $('commercialPermissionNotice').style.display = 'block';
-    $('commercialPermissionNotice').innerHTML = `<div style="font-size:.78rem;color:var(--muted);background:var(--s2);border:1px solid var(--border);padding:10px 12px;border-radius:9px">Datos comerciales separados de notas clínicas. ${canAudit() ? 'La dirección puede consultar la bitácora completa.' : 'Tu cargo registra y actualiza oportunidades dentro de sus permisos.'}</div>`;
-    refreshPayments().finally(() => { renderStats(); renderList(); });
-    renderStats(); renderList();
-  }
-  function renderStats() {
-    const active = opportunities.filter(x => !['Venta cerrada', 'Perdido'].includes(x.status));
-    const closed = opportunities.filter(x => x.status === 'Venta cerrada');
-    const verified = opportunities.reduce((sum, x) => sum + verifiedTotal(x), 0);
-    $('commercialStats').innerHTML = [
-      ['Oportunidades activas', active.length, '#0f766e'],
-      ['Ventas cerradas', closed.length, '#16a34a'],
-      ['Valor en venta', money(opportunities.reduce((s,x) => s + Number(x.saleValue || 0), 0)), '#2563eb'],
-      ['Pagado y verificado', money(verified), '#059669']
-    ].map(([label, value, color]) => `<div style="background:var(--s2);border:1px solid var(--border);border-left:3px solid ${color};border-radius:10px;padding:12px"><div style="font-size:.72rem;color:var(--muted)">${label}</div><div style="font-size:1.15rem;font-weight:800;color:${color};margin-top:4px">${value}</div></div>`).join('');
-  }
-  function renderList() {
-    const target = $('commercialList'); if (!target) return;
-    const q = clean($('commercialSearch')?.value).toLowerCase();
-    const state = clean($('commercialStatusFilter')?.value);
-    const list = opportunities.filter(x => !state || x.status === state).filter(x => !q || [x.patientName,x.phone,x.service,x.origin,x.allianceCampaign].join(' ').toLowerCase().includes(q)).sort((a,b) => String(a.nextFollowUp || '9999').localeCompare(String(b.nextFollowUp || '9999')) || String(b.updatedAt).localeCompare(String(a.updatedAt)));
-    if (!list.length) { target.innerHTML = '<div style="padding:28px;text-align:center;border:1px dashed var(--border);border-radius:12px;color:var(--muted)">Aún no hay oportunidades que mostrar.</div>'; return; }
-    target.innerHTML = list.map(x => {
-      const paid = verifiedTotal(x);
-      const due = x.nextFollowUp ? (x.nextFollowUp < today() ? 'color:#dc2626' : 'color:#b45309') : 'color:var(--muted)';
-      return `<article style="background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px;display:flex;gap:14px;justify-content:space-between;align-items:center;flex-wrap:wrap">
-        <div style="min-width:220px;flex:1"><div style="font-weight:800">${e(x.patientName || 'Interesado sin nombre')} <span style="font-size:.72rem;padding:3px 7px;border-radius:99px;background:rgba(20,184,166,.12);color:#0f766e">${e(x.status || 'Nuevo')}</span></div><div style="font-size:.78rem;color:var(--muted);margin-top:4px">${e(x.service || 'Servicio por definir')} · ${e(x.origin || 'Origen por definir')} · primer contacto: ${dateText(x.firstContact)}</div><div style="font-size:.75rem;margin-top:5px;${due}">Próximo seguimiento: ${dateText(x.nextFollowUp)} · Captó: ${e(x.capturedBy || 'No atribuido')}</div></div>
-        <div style="font-size:.8rem;min-width:160px"><div>Venta: <b>${money(x.saleValue)}</b></div><div style="color:#059669">Verificado: <b>${money(paid)}</b></div></div>
-        <button class="btn btn-ghost btn-sm" onclick="PanelCommercialSales.edit('${e(x.id)}')">Ver / editar</button>
-      </article>`;
-    }).join('');
-  }
-  function formHtml(item) {
-    return [
-      field('Paciente o interesado *', input('comPatientName', item.patientName, 'text', 'required')),
-      field('Teléfono', input('comPhone', item.phone, 'tel')),
-      field('Correo', input('comEmail', item.email, 'email')),
-      field('Fecha primer contacto *', input('comFirstContact', item.firstContact || today(), 'date')),
-      field('Canal de origen *', select('comOrigin', optionList(ORIGINS, item.origin, 'Seleccionar canal'))),
-      field('Servicio de interés', input('comService', item.service)),
-      field('Servicio inicialmente solicitado', input('comInitialService', item.initialService)),
-      field('Valor inicial verificable', input('comInitialValue', item.initialValue, 'number', 'min="0" step="1000"')),
-      field('Soporte del aumento de ticket', `<textarea id="comTicketEvidence" rows="2" placeholder="Ej.: solicitó un servicio de mayor valor; anota fecha, motivo y soporte" style="display:block;box-sizing:border-box;width:100%;margin-top:5px;padding:9px 10px;border:1px solid var(--border);border-radius:8px;background:var(--s2);color:var(--text);resize:vertical">${e(item.ticketEvidence)}</textarea>`, 'span 2'),
-      field('Captó al paciente', select('comCapturedBy', peopleOptions(item.capturedBy)), 'span 1'),
-      field('Atendió la conversación', select('comAttendedBy', peopleOptions(item.attendedBy))),
-      field('Cerró la venta', select('comClosedBy', peopleOptions(item.closedBy))),
-      field('Estado comercial *', select('comStatus', optionList(STATUSES, item.status || 'Nuevo'))),
-      field('Valor de la venta', input('comSaleValue', item.saleValue, 'number', `min="0" ${canChangeMoney() ? '' : 'readonly'} step="1000"`)),
-      field('Bonos de regalo vendidos', input('comGiftVoucherUnits', item.giftVoucherUnits, 'number', 'min="0" step="1"'), 'span 1'),
-      field('Próximo seguimiento', input('comNextFollowUp', item.nextFollowUp, 'date')),
-      field('Alianza o campaña de origen', input('comAllianceCampaign', item.allianceCampaign), 'span 2'),
-      field('Evidencia de captación propia', `<textarea id="comDirectEvidence" rows="2" placeholder="Ej.: contacto directo iniciado por la líder, fecha y soporte verificable" style="display:block;box-sizing:border-box;width:100%;margin-top:5px;padding:9px 10px;border:1px solid var(--border);border-radius:8px;background:var(--s2);color:var(--text);resize:vertical">${e(item.directEvidence)}</textarea>`, 'span 2'),
-      field('Cita vinculada (para validar pago)', select('comAppointmentId', appointmentOptions(item.appointmentId), 'onchange="PanelCommercialSales.refreshPaymentInfo()"'), 'span 2')
-    ].join('');
-  }
-  function paymentInfo(item) {
-    const paid = verifiedTotal(item);
-    const linked = item.appointmentId;
-    return `<div style="background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.28);border-radius:9px;padding:11px;font-size:.8rem"><b>Pago efectivamente verificado: ${money(paid)}</b><br><span style="color:var(--muted)">${linked ? 'Se calcula únicamente con pagos aprobados de la cita vinculada. No puede editarse manualmente.' : 'Vincula una cita para relacionar automáticamente los pagos aprobados.'}</span></div>`;
-  }
-  function open(item) {
-    if (!canEdit()) return;
-    const data = item || { status:'Nuevo', firstContact:today() };
-    $('comId').value = data.id || '';
-    $('commercialModalTitle').textContent = data.id ? 'Oportunidad comercial' : 'Nueva oportunidad';
-    $('commercialForm').innerHTML = formHtml(data);
-    $('commercialPaymentInfo').innerHTML = paymentInfo(data);
-    $('commercialSaveButton').style.display = canEdit() ? '' : 'none';
-    renderAudit(data.id);
-    $('commercialModal').style.display = 'block';
-  }
-  function renderAudit(id) {
-    const target = $('commercialAudit'); if (!target) return;
-    if (!id || !canAudit()) { target.innerHTML = ''; return; }
-    const rows = auditRows.filter(x => x.opportunityId === id).slice(-20).reverse();
-    target.innerHTML = `<h3 style="font-size:.92rem;margin:0 0 8px">Bitácora de cambios</h3>${rows.length ? rows.map(x => `<div style="font-size:.76rem;border-top:1px solid var(--border);padding:7px 0"><b>${e(x.action)}</b> · ${e(x.detail || '')}<br><span style="color:var(--muted)">${new Date(x.at).toLocaleString('es-CO')} · ${e(x.actor)} (${e(x.role)})</span></div>`).join('') : '<div style="font-size:.78rem;color:var(--muted)">Sin cambios anteriores.</div>'}`;
-  }
-  function refreshPaymentInfo() {
-    const item = { appointmentId: clean($('comAppointmentId')?.value) };
-    $('commercialPaymentInfo').innerHTML = paymentInfo(item);
-  }
-  function readForm() {
-    return {
-      id: clean($('comId').value), patientName: clean($('comPatientName').value), phone: clean($('comPhone').value), email: clean($('comEmail').value), firstContact: clean($('comFirstContact').value), origin: clean($('comOrigin').value), capturedBy: clean($('comCapturedBy').value), attendedBy: clean($('comAttendedBy').value), closedBy: clean($('comClosedBy').value), service: clean($('comService').value), initialService: clean($('comInitialService').value), initialValue: Number($('comInitialValue').value || 0), ticketEvidence: clean($('comTicketEvidence').value), status: clean($('comStatus').value), saleValue: Number($('comSaleValue').value || 0), giftVoucherUnits: Number($('comGiftVoucherUnits').value || 0), nextFollowUp: clean($('comNextFollowUp').value), allianceCampaign: clean($('comAllianceCampaign').value), directEvidence: clean($('comDirectEvidence').value), appointmentId: clean($('comAppointmentId').value)
-    };
-  }
-  function save() {
-    if (!canEdit()) return;
-    const data = readForm();
-    if (!data.patientName || !data.firstContact || !data.origin || !data.status) { alert('Completa paciente/interesado, fecha del primer contacto, canal de origen y estado comercial.'); return; }
-    const ownId = data.id;
-    const same = opportunities.find(x => x.id !== ownId && identity(x) && identity(x) === identity(data) && !['Perdido'].includes(x.status));
-    if (same) { alert(`Ya existe una oportunidad activa para esta persona (${same.patientName}). Ábrela y actualízala para evitar duplicados.`); return; }
-    if (data.appointmentId) {
-      const linked = opportunities.find(x => x.id !== ownId && String(x.appointmentId) === data.appointmentId);
-      if (linked) { alert(`La cita ya está vinculada a la oportunidad de ${linked.patientName}.`); return; }
-    }
-    const previous = ownId ? opportunities.find(x => x.id === ownId) : null;
-    if (previous && !canChangeMoney()) data.saleValue = Number(previous.saleValue || 0);
-    const stamp = new Date().toISOString();
-    if (previous) {
-      const changed = Object.keys(data).filter(k => k !== 'id' && String(previous[k] ?? '') !== String(data[k] ?? '')).map(k => k === 'saleValue' ? 'valor de venta' : k).join(', ');
-      Object.assign(previous, data, { updatedAt: stamp, updatedBy: actor() });
-      logChange(previous.id, 'Oportunidad actualizada', changed || 'Sin cambios materiales');
-    } else {
-      data.id = 'COM-' + Date.now().toString(36).toUpperCase();
-      data.createdAt = stamp; data.createdBy = actor(); data.updatedAt = stamp; data.updatedBy = actor();
-      opportunities.push(data);
-      logChange(data.id, 'Oportunidad creada', `Origen: ${data.origin}; estado: ${data.status}`);
-    }
-    persist(); close(); render();
-  }
-  function close() { $('commercialModal').style.display = 'none'; }
-  function edit(id) { hydrate(); const item = opportunities.find(x => x.id === id); if (item) open(item); }
-  function openNew() { open(null); }
-
-  global.PanelCommercialSales = Object.freeze({ render, renderList, openNew, edit, close, save, refreshPaymentInfo, getOpportunities: () => { hydrate(); return opportunities.map(x => ({...x})); }, getApprovedPayments: approvedPayments, getVerifiedTotal: verifiedTotal, _test: { identity, verifiedTotal } });
+  const KEY='commercial_opportunities_v1', AUDIT='commercial_opportunity_audit_v1', MAX=1500;
+  const STATUSES=['Nuevo interesado','Contactado','Interesado','Pendiente de agendar','Pendiente de pago','Venta cerrada','Paciente activo','Reactivación','Perdido','No contactar'];
+  const ORIGINS=['WhatsApp','Instagram','Google','Página web','Referido','Alianza','Llamada','Otro'];
+  const CLOSED=['Venta cerrada','Paciente activo'], INACTIVE=['Perdido','No contactar'];
+  let rows=[], audit=[];
+  const $=id=>document.getElementById(id), clean=v=>String(v||'').trim(), esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])), money=v=>'$'+Math.round(Number(v)||0).toLocaleString('es-CO'), today=()=>new Date().toISOString().slice(0,10), now=()=>new Date().toISOString();
+  function user(){try{return global.currentAdminUser||currentAdminUser||{}}catch(_){return global.currentAdminUser||{}}} function actor(){return clean(user().nombre||user().name||'Usuario administrador')} function role(){return clean(user().rol||'Superadministradora').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase()} function canOpen(){return !/(fisioterapeuta|profesional)/.test(role())} function canMoney(){return !/auxiliar/.test(role())} function canAudit(){return !/(auxiliar|fisioterapeuta|profesional)/.test(role())}
+  function get(k,d){try{const x=global.kvGet?.(k);return x?JSON.parse(x):d}catch(_){return d}} function hydrate(){rows=get(KEY,[]);audit=get(AUDIT,[]);if(!Array.isArray(rows))rows=[];if(!Array.isArray(audit))audit=[];rows.forEach(normalize)} function persist(){global.kvSet?.(KEY,JSON.stringify(rows));global.kvSet?.(AUDIT,JSON.stringify(audit.slice(-MAX)));global.PanelStorage?._flushKV?.()} function normalize(x){if(x.status==='Nuevo')x.status='Nuevo interesado';if(!x.nextAction)x.nextAction='Responder o continuar conversación';if(!x.followUpAt&&x.nextFollowUp)x.followUpAt=x.nextFollowUp+'T09:00';return x}
+  function phone(v){return clean(v).replace(/\D/g,'').slice(-10)} function identity(x){const p=phone(x.phone),em=clean(x.email).toLowerCase(),n=clean(x.patientName).toLowerCase().replace(/\s+/g,' ');return p?'p:'+p:em?'e:'+em:n?'n:'+n:''} function log(id,action,detail){audit.push({id:'AUD-'+Date.now()+Math.random().toString(36).slice(2,5),opportunityId:id,at:now(),actor:actor(),role:clean(user().rol||'Superadministradora'),action,detail})}
+  function citas(){try{return global.allData?.citas||allData?.citas||[]}catch(_){return global.allData?.citas||[]}} function pagos(){try{return global.operationsData?.pagos||operationsData?.pagos||[]}catch(_){return global.operationsData?.pagos||[]}} function cid(c){return String(c?.id||c?.ID||'')} function appointmentFor(x){if(x.appointmentId)return citas().find(c=>cid(c)===String(x.appointmentId));const p=phone(x.phone),n=clean(x.patientName).toLowerCase();return citas().filter(c=>(p&&phone(c.telefono)===p)||(!p&&n&&clean(c.nombre).toLowerCase()===n)).sort((a,b)=>String(b.fecha||'').localeCompare(String(a.fecha||'')))[0]} function approved(x){const c=appointmentFor(x);return c?pagos().filter(p=>String(p.CitaID||p.CitaId||p.citaId||'')===cid(c)&&['Aprobado','PAGO_APROBADO','Pago verificado'].includes(clean(p.EstadoPago))):[]} function verified(x){return approved(x).reduce((s,p)=>s+Number(p.ValorRecibido??p.Valor??p.Monto??0),0)} function linked(x){const c=appointmentFor(x);return c?cid(c):''}
+  function people(){let team={};try{team=global.teamData||teamData||{}}catch(_){}return [...new Set([actor(),...(team.professionals||team.profesionales||[]).map(x=>x.Nombre||x.nombre||x.name).filter(Boolean),'Jessica','Natalia'].filter(Boolean))]} function opts(a,val,blank){return (blank?`<option value="">${esc(blank)}</option>`:'')+a.map(x=>`<option value="${esc(x)}" ${x===val?'selected':''}>${esc(x)}</option>`).join('')} function apptOpts(selected,x){const auto=linked(x);return `<option value="">Vincular automáticamente por paciente</option>`+citas().filter(c=>!['Cancelada','No asistió'].includes(clean(c.estado||c.Estado))).slice(-500).reverse().map(c=>{const id=cid(c),l=`${c.nombre||'Sin nombre'} · ${c.fecha||''} ${c.hora||''} · ${c.servicio||''}`;return `<option value="${esc(id)}" ${String(selected||auto)===id?'selected':''}>${esc(l)}</option>`}).join('')}
+  function field(l,c,span){return `<label style="display:block;grid-column:${span||'auto'};font-size:.78rem;font-weight:700;color:var(--muted)">${esc(l)}${c}</label>`} function input(id,v,type='text',extra=''){return `<input id="${id}" type="${type}" value="${esc(v)}" ${extra} style="display:block;box-sizing:border-box;width:100%;margin-top:5px;padding:9px 10px;border:1px solid var(--border);border-radius:8px;background:var(--s2);color:var(--text)">`} function select(id,inside,extra=''){return `<select id="${id}" ${extra} style="display:block;box-sizing:border-box;width:100%;margin-top:5px;padding:9px 10px;border:1px solid var(--border);border-radius:8px;background:var(--s2);color:var(--text)">${inside}</select>`} function textarea(id,v,ph){return `<textarea id="${id}" rows="2" placeholder="${esc(ph||'')}" style="display:block;box-sizing:border-box;width:100%;margin-top:5px;padding:9px 10px;border:1px solid var(--border);border-radius:8px;background:var(--s2);color:var(--text);resize:vertical">${esc(v)}</textarea>`}
+  function filtered(){const q=clean($('commercialSearch')?.value).toLowerCase(),st=clean($('commercialStatusFilter')?.value),own=clean($('commercialOwnerFilter')?.value),origin=clean($('commercialOriginFilter')?.value),after=clean($('commercialDateFilter')?.value);return rows.filter(x=>(!st||x.status===st)&&(!own||x.responsible===own)&&(!origin||x.origin===origin)&&(!after||x.firstContact>=after)&&(!q||[x.patientName,x.phone,x.email,x.service,x.origin,x.allianceCampaign].join(' ').toLowerCase().includes(q)))}
+  function renderFilters(){const own=$('commercialOwnerFilter'),ori=$('commercialOriginFilter');if(own)own.innerHTML=opts(people(),own.value,'Todos los responsables');if(ori)ori.innerHTML=opts(ORIGINS,ori.value,'Todos los canales')} function stat(l,v,c){return `<div style="background:var(--s2);border:1px solid var(--border);border-left:3px solid ${c};border-radius:10px;padding:11px"><div style="font-size:.7rem;color:var(--muted)">${l}</div><div style="font-size:1.05rem;font-weight:800;color:${c};margin-top:4px">${v}</div></div>`}
+  function renderStats(){const month=today().slice(0,7),all=rows,total=all.length||1,newM=all.filter(x=>x.firstContact?.slice(0,7)===month).length,noAnswer=all.filter(x=>x.status==='Nuevo interesado').length,over=all.filter(x=>x.followUpAt&&x.followUpAt<now()&&!INACTIVE.includes(x.status)).length,pending=all.filter(x=>x.status==='Pendiente de pago').length,closed=all.filter(x=>CLOSED.includes(x.status)),withAppt=all.filter(x=>appointmentFor(x)).length,sold=all.reduce((s,x)=>s+Number(x.saleValue||0),0),paid=all.reduce((s,x)=>s+verified(x),0);$('commercialStats').innerHTML=[stat('Nuevos este mes',newM,'#2563eb'),stat('Sin respuesta',noAnswer,'#dc2626'),stat('Seguimientos vencidos',over,'#b45309'),stat('Pendientes de pago',pending,'#d97706'),stat('Ventas cerradas',closed.length,'#16a34a'),stat('Contacto → cita',Math.round(withAppt/total*100)+'%','#0f766e'),stat('Cita → pago',withAppt?Math.round(closed.length/withAppt*100)+'%':'0%','#7c3aed'),stat('Valor vendido',money(sold),'#2563eb'),stat('Cobrado verificado',money(paid),'#059669')].join('')}
+  function renderToday(){const r=$('commercialToday');if(!r)return;const groups=[['Nuevos sin responder',rows.filter(x=>x.status==='Nuevo interesado')],['Seguimientos vencidos',rows.filter(x=>x.followUpAt&&x.followUpAt<now()&&!INACTIVE.includes(x.status))],['Pendientes de pago',rows.filter(x=>x.status==='Pendiente de pago')],['Cita próxima por confirmar',rows.filter(x=>{const c=appointmentFor(x);return c&&String(c.fecha||'')>=today()&&!INACTIVE.includes(x.status)})],['Reactivaciones pendientes',rows.filter(x=>x.status==='Reactivación')]];r.innerHTML=`<div style="background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:13px"><b style="font-size:.88rem">Acciones de hoy</b><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(185px,1fr));gap:8px;margin-top:10px">${groups.map(([l,a])=>`<button class="btn btn-ghost btn-sm" style="text-align:left;justify-content:space-between" onclick="PanelCommercialSales.filterAction('${esc(l)}')">${esc(l)} <b>${a.length}</b></button>`).join('')}</div></div>`}
+  function renderFunnel(){const r=$('commercialFunnel');if(!r)return;r.innerHTML=`<div style="display:flex;gap:8px;overflow:auto;padding-bottom:4px">${STATUSES.map(s=>`<div style="min-width:145px;flex:1;background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:10px"><b style="font-size:.75rem">${esc(s)}</b><div style="font-size:1.3rem;color:var(--primary);font-weight:800;margin-top:6px">${filtered().filter(x=>x.status===s).length}</div></div>`).join('')}</div>`}
+  function renderList(){if(!canOpen())return;const target=$('commercialList');if(!target)return;const list=filtered().sort((a,b)=>String(a.followUpAt||'9999').localeCompare(String(b.followUpAt||'9999'))||String(b.updatedAt||'').localeCompare(String(a.updatedAt||'')));renderFunnel();if(!list.length){target.innerHTML='<div style="padding:28px;text-align:center;border:1px dashed var(--border);border-radius:12px;color:var(--muted)">No hay contactos con estos filtros.</div>';return}target.innerHTML=list.map(x=>{const p=verified(x),over=x.followUpAt&&x.followUpAt<now(),c=appointmentFor(x);return `<article style="background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px;display:flex;gap:14px;justify-content:space-between;align-items:center;flex-wrap:wrap"><div style="min-width:240px;flex:1"><div style="font-weight:800">${esc(x.patientName||'Interesado sin nombre')} <span style="font-size:.72rem;padding:3px 7px;border-radius:99px;background:rgba(20,184,166,.12);color:#0f766e">${esc(x.status)}</span></div><div style="font-size:.78rem;color:var(--muted);margin-top:4px">${esc(x.service||'Servicio por definir')} · ${esc(x.origin||'Origen por definir')} · responsable: ${esc(x.responsible||'Sin asignar')}</div><div style="font-size:.75rem;margin-top:5px;color:${over?'#dc2626':'var(--muted)'}">${esc(x.nextAction||'Sin próxima acción')} · ${x.followUpAt?new Date(x.followUpAt).toLocaleString('es-CO'):'Sin fecha'}${c?' · cita vinculada':''}</div></div><div style="font-size:.8rem;min-width:145px"><div>Venta: <b>${money(x.saleValue)}</b></div><div style="color:#059669">Verificado: <b>${money(p)}</b></div></div><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn btn-ghost btn-sm" onclick="PanelCommercialSales.message('${esc(x.id)}','followup')">💬 Seguir</button><button class="btn btn-ghost btn-sm" onclick="PanelCommercialSales.edit('${esc(x.id)}')">Ver / editar</button></div></article>`}).join('')}
+  function render(){hydrate();if(!canOpen()){$('commercialPermissionNotice').style.display='block';$('commercialPermissionNotice').innerHTML='<div class="notice notice-warn">Este módulo comercial está restringido para tu cargo.</div>';return}$('commercialPermissionNotice').style.display='block';$('commercialPermissionNotice').innerHTML='<div style="font-size:.78rem;color:var(--muted);background:var(--s2);border:1px solid var(--border);padding:10px 12px;border-radius:9px">CRM comercial: reutiliza pacientes, agenda y pagos existentes; solo guarda trazabilidad comercial, sin notas clínicas.</div>';try{global.PanelPayments?.loadOperationsData?.()}catch(_){}renderFilters();renderStats();renderToday();renderList()}
+  function formHtml(x){return [field('Paciente o interesado *',input('comPatientName',x.patientName,'text','required')),field('Teléfono',input('comPhone',x.phone,'tel')),field('Correo',input('comEmail',x.email,'email')),field('Fecha primer contacto *',input('comFirstContact',x.firstContact||today(),'date')),field('Canal de origen *',select('comOrigin',opts(ORIGINS,x.origin,'Seleccionar canal'))),field('Campaña o alianza de origen',input('comAllianceCampaign',x.allianceCampaign)),field('Servicio de interés',input('comService',x.service)),field('Consiguió el contacto',select('comCapturedBy',opts(people(),x.capturedBy,'No atribuir automáticamente'))),field('Atendió la conversación',select('comAttendedBy',opts(people(),x.attendedBy,'Sin asignar'))),field('Cerró la venta',select('comClosedBy',opts(people(),x.closedBy,'Sin asignar'))),field('Responsable comercial *',select('comResponsible',opts(people(),x.responsible,'Seleccionar responsable'))),field('Estado comercial *',select('comStatus',opts(STATUSES,x.status||'Nuevo interesado'))),field('Valor esperado de venta',input('comSaleValue',x.saleValue,'number',`min="0" step="1000" ${canMoney()?'':'readonly'}`)),field('Próxima acción *',input('comNextAction',x.nextAction,'text','placeholder="Ej.: enviar opciones de horario"')),field('Fecha y hora de seguimiento *',input('comFollowUpAt',x.followUpAt,'datetime-local')),field('Motivo de pérdida',input('comLossReason',x.lossReason,'text','placeholder="Obligatorio si se marca Perdido"')),field('Notas comerciales',textarea('comNotes',x.notes,'Solo contexto comercial; no registrar información clínica'),'span 2'),field('Cita vinculada',select('comAppointmentId',apptOpts(x.appointmentId,x),'onchange="PanelCommercialSales.refreshPaymentInfo()"'),'span 2')].join('')}
+  function paymentInfo(x){const p=verified(x),c=appointmentFor(x);return `<div style="background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.28);border-radius:9px;padding:11px;font-size:.8rem"><b>Pago efectivamente verificado: ${money(p)}</b><br><span style="color:var(--muted)">${c?'Proviene de pagos aprobados de la cita vinculada; no es editable manualmente.':'Al guardar, el CRM buscará una cita existente del mismo paciente; también puedes vincularla aquí.'}</span></div>`}
+  function open(x){if(!canOpen())return;const item=normalize(x||{status:'Nuevo interesado',firstContact:today(),nextAction:'Responder o continuar conversación',followUpAt:today()+'T09:00'});$('comId').value=item.id||'';$('commercialModalTitle').textContent=item.id?'Oportunidad comercial':'Nuevo contacto comercial';$('commercialForm').innerHTML=formHtml(item);$('commercialPaymentInfo').innerHTML=paymentInfo(item);renderAudit(item.id);$('commercialModal').style.display='block'} function renderAudit(id){const t=$('commercialAudit');if(!t)return;if(!id||!canAudit()){t.innerHTML='';return}const a=audit.filter(x=>x.opportunityId===id).slice(-20).reverse();t.innerHTML=`<h3 style="font-size:.92rem;margin:18px 0 8px">Bitácora de cambios</h3>${a.length?a.map(x=>`<div style="font-size:.76rem;border-top:1px solid var(--border);padding:7px 0"><b>${esc(x.action)}</b> · ${esc(x.detail||'')}<br><span style="color:var(--muted)">${new Date(x.at).toLocaleString('es-CO')} · ${esc(x.actor)} (${esc(x.role)})</span></div>`).join(''):'<div style="font-size:.78rem;color:var(--muted)">Sin cambios anteriores.</div>'}`}
+  function read(){return {id:clean($('comId').value),patientName:clean($('comPatientName').value),phone:clean($('comPhone').value),email:clean($('comEmail').value),firstContact:clean($('comFirstContact').value),origin:clean($('comOrigin').value),allianceCampaign:clean($('comAllianceCampaign').value),service:clean($('comService').value),capturedBy:clean($('comCapturedBy').value),attendedBy:clean($('comAttendedBy').value),closedBy:clean($('comClosedBy').value),responsible:clean($('comResponsible').value),status:clean($('comStatus').value),saleValue:Number($('comSaleValue').value||0),nextAction:clean($('comNextAction').value),followUpAt:clean($('comFollowUpAt').value),lossReason:clean($('comLossReason').value),notes:clean($('comNotes').value),appointmentId:clean($('comAppointmentId').value)}}
+  function save(){const x=read();if(!x.patientName||!x.firstContact||!x.origin||!x.status||!x.responsible||!x.nextAction||!x.followUpAt){alert('Completa el contacto, origen, responsable, próxima acción y fecha/hora de seguimiento.');return}if(x.status==='Perdido'&&!x.lossReason){alert('Para marcar una oportunidad como perdida debes registrar el motivo.');return}const old=x.id?rows.find(a=>a.id===x.id):null,dupe=rows.find(a=>a.id!==x.id&&identity(a)&&identity(a)===identity(x)&&!INACTIVE.includes(a.status));if(dupe){alert(`Ya existe una oportunidad activa para ${dupe.patientName}. Ábrela y actualízala para evitar duplicados.`);return}if(!x.appointmentId)x.appointmentId=linked(x);const has=!!x.appointmentId||!!appointmentFor(x),paid=verified(x);if(x.status==='Venta cerrada'&&!has&&!paid){alert('Para cerrar una venta vincula una cita existente o un pago verificado.');return}if(old&&!canMoney())x.saleValue=Number(old.saleValue||0);const stamp=now();if(old){const changed=Object.keys(x).filter(k=>k!=='id'&&String(old[k]??'')!==String(x[k]??'')).join(', ');Object.assign(old,x,{updatedAt:stamp,updatedBy:actor()});log(old.id,'Oportunidad actualizada',changed||'Sin cambios materiales')}else{x.id='COM-'+Date.now().toString(36).toUpperCase();Object.assign(x,{createdAt:stamp,createdBy:actor(),updatedAt:stamp,updatedBy:actor()});rows.push(x);log(x.id,'Oportunidad creada',`Origen: ${x.origin}; estado: ${x.status}`)}persist();close();render()}
+  function close(){$('commercialModal').style.display='none'} function edit(id){hydrate();const x=rows.find(x=>x.id===id);if(x)open(x)} function refreshPaymentInfo(){$('commercialPaymentInfo').innerHTML=paymentInfo({appointmentId:clean($('comAppointmentId')?.value)})}
+  function message(id,type){hydrate();const x=rows.find(a=>a.id===id);if(!x)return;const first=clean(x.patientName).split(' ')[0]||'',msg=type==='payment'?`Hola, ${first} 😊 Quedamos pendientes de confirmar el pago para dejar tu espacio reservado. Cuando lo realices, me envías el comprobante y lo verificamos`:x.status==='Nuevo interesado'?`Hola, ${first} 😊 Cuéntame qué estás sintiendo o qué te gustaría trabajar y te orientamos sobre cuál servicio te puede ayudar más`:`Hola, ${first} ¿cómo vas? Quedé pendiente por si todavía quieres que revisemos un horario que te sirva 😊`;navigator.clipboard?.writeText(msg);const n=phone(x.phone);if(n.length>=7)window.open(`https://wa.me/${n.length<=10?'57'+n:n}?text=${encodeURIComponent(msg)}`,'_blank','noopener');else alert('Mensaje copiado. Registra un teléfono para abrir WhatsApp.');log(id,'Mensaje comercial preparado',type||'seguimiento');persist()}
+  function filterAction(label){const map={'Nuevos sin responder':'Nuevo interesado','Pendientes de pago':'Pendiente de pago','Reactivaciones pendientes':'Reactivación'};$('commercialStatusFilter').value=map[label]||'';renderList()}
+  global.PanelCommercialSales=Object.freeze({render,renderList,openNew:()=>open(null),edit,close,save,refreshPaymentInfo,message,filterAction,getOpportunities:()=>{hydrate();return rows.map(x=>({...x}))},getApprovedPayments:approved,getVerifiedTotal:verified,_test:{identity,verified,appointmentFor}});
 })(window);
