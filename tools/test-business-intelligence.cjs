@@ -1,5 +1,5 @@
 const assert = require('node:assert/strict');
-const { compute, DEFAULTS } = require('../js/modules/business-intelligence.js');
+const { compute, answer, DEFAULTS } = require('../js/modules/business-intelligence.js');
 
 const input = {
   appointments: [
@@ -50,4 +50,7 @@ const capacityMetrics = compute(capacityInput, '2026-11', { settings: DEFAULTS }
 assert.equal(capacityMetrics.capacityMinutes, 570, 'jornada de sede por dos camillas menos bloqueo explícito');
 assert.equal(capacityMetrics.occupancy, 19, 'ocupación con duraciones observadas y capacidad real');
 assert.equal(metrics.comparison.month, '2026-10');
+assert.equal(metrics.weekly.current.cashReceived, 50000, 'el corte semanal usa pagos aprobados reales');
+assert.match(answer('¿Por qué bajaron las ventas esta semana?', metrics), /no prueba por sí solo su causa/);
+assert.match(answer('¿Cuántas citas necesitamos para cumplir la meta?', metrics), /Estimación, no hecho/);
 console.log('OK: cálculos de inteligencia empresarial verificados');

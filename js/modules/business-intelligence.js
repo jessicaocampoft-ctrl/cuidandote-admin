@@ -59,6 +59,10 @@
     const [year, number] = String(month).split('-').map(Number);
     return new Date(year, number, 0).getDate();
   };
+  const shiftDate = (iso, days) => {
+    const date = new Date(`${iso}T12:00:00`); date.setDate(date.getDate() + days);
+    return date.toISOString().slice(0, 10);
+  };
 
   function currentUser() { try { return global.currentAdminUser || {}; } catch (_) { return {}; } }
   function canAccess() {
@@ -162,6 +166,19 @@
     const isCurrent = month === currentMonth();
     const projectedCash = isCurrent ? Math.round(cashReceived / daysElapsed(current) * daysInMonth(current)) : cashReceived;
     const daysRemaining = isCurrent ? Math.max(0, daysInMonth(current) - daysElapsed(current)) : 0;
+    const periodEnd = isCurrent ? current.toISOString().slice(0, 10) : `${month}-${String(monthDays(month)).padStart(2, '0')}`;
+    const weekStart = shiftDate(periodEnd, -6);
+    const priorWeekEnd = shiftDate(weekStart, -1);
+    const priorWeekStart = shiftDate(periodEnd, -13);
+    const inWindow = (date, start, end) => date >= start && date <= end;
+    const weekly = (start, end) => ({
+      start, end,
+      cashReceived: uniquePayments(safeArray(input.payments).filter(row => isApprovedPayment(row) && inWindow(paymentDate(row), start, end))).reduce((sum, row) => sum + paymentValue(row), 0),
+      confirmedValue: safeArray(input.appointments).filter(row => !isInactiveAppointment(row) && inWindow(appointmentDate(row), start, end)).reduce((sum, row) => sum + appointmentValue(row), 0),
+      appointments: safeArray(input.appointments).filter(row => !isInactiveAppointment(row) && inWindow(appointmentDate(row), start, end)).length
+    });
+    const weeklyCurrent = weekly(weekStart, periodEnd);
+    const weeklyPrevious = weekly(priorWeekStart, priorWeekEnd);
     const alerts = buildAlerts({ setts, cashReceived, confirmedValue, accountsReceivable, cancelled, appointments, occupancy, ticket, overdueFollowUps, projectedCash, daysRemaining });
     const result = {
       month, setts, source: { appointments: appointments.length, payments: payments.length, opportunities: opportunities.length, expenseRows: safeArray(input.expenses).length },
@@ -172,7 +189,8 @@
       cancellationRate: appointments.length ? Math.round(cancelled.length / appointments.length * 100) : 0,
       occupiedMinutes, capacityMinutes: capacity, occupancy, projectedCash, daysRemaining,
       gapCash: Math.max(0, setts.revenueTarget - cashReceived), gapConfirmed: Math.max(0, setts.confirmedTarget - confirmedValue),
-      byService, byProfessional, byHour, opportunities, overdueFollowUps, michelleDirect, alerts
+      byService, byProfessional, byHour, opportunities, overdueFollowUps, michelleDirect, alerts,
+      weekly: { current: weeklyCurrent, previous: weeklyPrevious }
     };
     if (opts.withComparison !== false) {
       const prior = compute(input, previousMonth(month), { settings: setts, withComparison: false });
@@ -217,10 +235,26 @@
   function answer(question, metrics) {
     const q = cleanKey(question);
     if (!q) return 'Escribe una pregunta sobre ingresos, metas, agenda, servicios o Gestión Comercial.';
+    if (/(bajaron|bajado|ca[ií]da|semana)/.test(q) && /(venta|cobro|ingreso|confirm)/.test(q)) {
+      const current = metrics.weekly?.current; const previous = metrics.weekly?.previous;
+      if (!current || !previous) return 'No hay datos semanales suficientes para comparar.';
+      const cashDiff = current.cashReceived - previous.cashReceived;
+      const confirmedDiff = current.confirmedValue - previous.confirmedValue;
+      return `Hecho verificable: entre ${current.start} y ${current.end} se cobraron ${money(current.cashReceived)} y se confirmaron ${money(current.confirmedValue)}; frente a los siete días previos, la variación fue ${signedMoney(cashDiff)} en cobrado y ${signedMoney(confirmedDiff)} en confirmado. Esto muestra la variación, no prueba por sí solo su causa; revisa cancelaciones, cobros pendientes y seguimientos vencidos.`;
+    }
     if (/vend|cobrad|ingres/.test(q)) return `Hecho verificable: se han cobrado ${money(metrics.cashReceived)} este mes a partir de ${metrics.source.payments} pagos aprobados. Esto no equivale a servicios confirmados (${money(metrics.confirmedValue)}).`;
-    if (/falta|meta/.test(q)) return `Faltan ${money(metrics.gapCash)} para la meta de ingresos cobrados y ${money(metrics.gapConfirmed)} para la meta de servicios confirmados. Son indicadores distintos.`;
+    if (/(falta|meta)/.test(q) && !/(cita|sesion|sesión)/.test(q)) return `Faltan ${money(metrics.gapCash)} para la meta de ingresos cobrados y ${money(metrics.gapConfirmed)} para la meta de servicios confirmados. Son indicadores distintos.`;
+    if (/(cuanta|cuanto|cuánt|cuánto).*(cita|sesion)|cita.*necesit/.test(q)) {
+      const ticket = metrics.ticket > 0 ? metrics.ticket : metrics.setts.ticketTarget;
+      const appointments = ticket > 0 ? Math.ceil(metrics.gapCash / ticket) : null;
+      return appointments === null ? 'No puedo estimar citas necesarias porque no hay ticket promedio ni meta de ticket configurados.' : `Estimación, no hecho: al ticket de referencia de ${money(ticket)}, se requieren aproximadamente ${appointments} citas adicionales para cubrir ${money(metrics.gapCash)} de la meta de cobrado. La cifra cambia si varían pagos, precios o la mezcla de servicios.`;
+    }
     if (/servicio.*(mas|mayor)|mas.*servicio/.test(q)) { const top = Object.entries(metrics.byService).sort((a, b) => b[1].value - a[1].value)[0]; return top ? `Hecho verificable: ${top[0]} suma ${money(top[1].value)} confirmados en ${top[1].count} citas.` : 'No hay citas activas con servicio y valor suficientes para determinarlo.'; }
     if (/michelle|comercial|seguimiento/.test(q)) return `Gestión Comercial: ${metrics.opportunities.length} oportunidades del mes, ${metrics.overdueFollowUps.length} seguimientos vencidos y ${metrics.michelleDirect} captaciones cerradas atribuidas explícitamente a Michelle. No se atribuyen canales espontáneos automáticamente.`;
+    if (/(ma[nñ]ana|accion|acciones|recomienda)/.test(q)) {
+      const actions = metrics.alerts.slice(0, 3).map(item => item.action);
+      return actions.length ? `Acciones recomendadas basadas en evidencia: ${actions.join(' ')}` : 'No hay alertas con evidencia suficiente para proponer una acción prioritaria. Revisa que Agenda, Pagos y Gestión Comercial estén actualizados.';
+    }
     if (/natalia|equipo|profesional/.test(q)) return 'La productividad por profesional se muestra con citas y valores confirmados. Si falta el profesional asignado en la agenda, el sistema lo señalará como “Sin asignar” en lugar de inferirlo.';
     if (/horario|ocupaci|agenda/.test(q)) return metrics.occupancy === null ? 'No puedo calcular ocupación fiable: la configuración de horarios/capacidad no está disponible en los datos cargados. Sí puedo mostrar citas por hora y espacios de la agenda.' : `La ocupación calculada contra la capacidad configurada es ${metrics.occupancy}%.`;
     return 'No tengo evidencia suficiente para responderlo con seguridad. Prueba con ingresos cobrados, meta, servicio, agenda, Michelle o seguimientos.';
