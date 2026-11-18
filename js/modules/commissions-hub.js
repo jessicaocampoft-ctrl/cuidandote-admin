@@ -33,11 +33,15 @@
     }
     if (tab === 'referidos') {
       if (global.PanelReferrals && typeof global.PanelReferrals.renderCodigos === 'function') global.PanelReferrals.renderCodigos();
+      return;
+    }
+    if (tab === 'convenios') {
+      if (typeof global.renderConveniosReport === 'function') global.renderConveniosReport();
     }
   }
 
   function setTab(tab) {
-    if (!['comisiones', 'referidos', 'recuperaciones'].includes(tab)) tab = 'comisiones';
+    if (!['comisiones', 'referidos', 'convenios', 'recuperaciones'].includes(tab)) tab = 'comisiones';
     _activeTab = tab;
     document.querySelectorAll('[data-comm-hub-tab]').forEach(btn => {
       const active = btn.dataset.commHubTab === tab;
@@ -82,7 +86,7 @@
       const title = comHeader.querySelector('.page-title');
       const sub = comHeader.querySelector('.page-sub');
       if (title) title.innerHTML = '<em>Comisiones</em>';
-      if (sub) sub.textContent = 'Comisiones del equipo, referidos y recuperaciones en un solo lugar';
+      if (sub) sub.textContent = 'Comisiones del equipo, referidos, convenios y recuperaciones en un solo lugar';
     }
 
     const tabs = document.createElement('div');
@@ -92,6 +96,7 @@
     [
       ['comisiones', 'Comisiones del equipo'],
       ['referidos', 'Referidos'],
+      ['convenios', 'Convenios'],
       ['recuperaciones', 'Recuperaciones']
     ].forEach(([id, label]) => {
       const btn = document.createElement('button');
@@ -141,6 +146,18 @@
     }
     refChildren.forEach(el => refPanel.appendChild(el));
 
+    const agreementTitle = Array.from(document.querySelectorAll('.fin-section-title')).find(el => /comisiones por convenio/i.test(el.textContent || ''));
+    const agreementSection = agreementTitle?.parentElement || null;
+    const agreementPanel = document.createElement('div');
+    agreementPanel.className = 'comm-hub-panel';
+    agreementPanel.dataset.commHubPanel = 'convenios';
+    agreementPanel.setAttribute('role', 'tabpanel');
+    if (agreementSection) {
+      agreementPanel.appendChild(agreementSection);
+    } else {
+      agreementPanel.innerHTML = '<div class="empty" style="padding:24px">No hay comisiones por convenio registradas.</div>';
+    }
+
     const inactivePanel = document.getElementById('recInactivosPanel');
     if (inactivePanel && inactivePanel.parentElement) {
       inactivePanel.parentElement.style.display = 'none';
@@ -149,7 +166,7 @@
 
     if (comHeader) comHeader.insertAdjacentElement('afterend', tabs);
     else comisiones.prepend(tabs);
-    comisiones.append(comPanel, refPanel, recPanel);
+    comisiones.append(comPanel, refPanel, agreementPanel, recPanel);
 
     const oldSidebar = document.getElementById('sb-recuperacion');
     if (oldSidebar) {

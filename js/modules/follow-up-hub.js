@@ -184,7 +184,7 @@
     const existing = document.querySelector('script[data-panel-commissions-hub]');
     if (existing) { existing.addEventListener('load', start, { once:true }); return; }
     const script = document.createElement('script');
-    script.src = 'js/modules/commissions-hub.js?v=20261118-commercial-commissions';
+    script.src = 'js/modules/commissions-hub.js?v=20261118-commercial-commissions-v2';
     script.dataset.panelCommissionsHub = '1';
     script.addEventListener('load', start, { once:true });
     script.addEventListener('error', () => console.warn('No se pudo cargar Comisiones unificado'), { once:true });

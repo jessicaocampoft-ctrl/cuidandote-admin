@@ -78,6 +78,7 @@ if (!html.includes('vEntrenamiento') || !html.includes('functional-training.js?v
 if (!adminProfile.includes('sidebar-management.js?v=20261118-commercial-commissions')) fail('el menú de comisiones puede conservar una versión anterior en caché');
 if (!fs.readFileSync(`${root}/js/modules/sidebar-management.js`, 'utf8').includes("id:'commercial', label:'Comercial', items:['sb-comercial','sb-comisiones'")) fail('Comisiones no está agrupado dentro de Comercial');
 if (!fs.readFileSync(`${root}/js/modules/commissions-hub.js`, 'utf8').includes("['referidos', 'Referidos']")) fail('falta la pestaña de Referidos dentro de Comisiones');
+if (!fs.readFileSync(`${root}/js/modules/commissions-hub.js`, 'utf8').includes("['convenios', 'Convenios']")) fail('falta la pestaña de Convenios dentro de Comisiones');
 const financeHub = fs.readFileSync(`${root}/js/modules/finance-hub.js`, 'utf8');
 if (financeHub.includes("['comisiones', 'Comisiones']") || financeHub.includes("'sb-comisiones'")) fail('Finanzas aún contiene un acceso duplicado a Comisiones');
 if (!functionalTraining.includes('getMonthlyRevenue') || !functionalTraining.includes('functional_training_v1_backup') || !finance.includes('calcIngresoEntrenamientoMes') || !finance.includes('Entrenamiento funcional')) fail('los ingresos de entrenamiento no están integrados o respaldados correctamente');
