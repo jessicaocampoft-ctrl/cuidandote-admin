@@ -1900,6 +1900,9 @@ button:disabled{cursor:not-allowed;opacity:.58}
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="m7 15 4-4 3 3 6-7"/><path d="M17 7h3v3"/></svg>
       Gestión comercial
     </button>
+    <button class="sb-link" id="sb-redes" data-tooltip="Agente IA — Redes Sociales" onclick="showView('redes')">
+      <span style="font-size:1.05rem">🤖</span> Agente IA — Redes
+    </button>
 
     <button class="sb-link" id="sb-mensajes" data-tooltip="Mensajes" onclick="showView('mensajes')">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
@@ -5332,6 +5335,23 @@ Acción: enviar mensaje de reenganche a los 14 pacientes que solo vinieron una v
           <div id="commercialAudit" style="margin-top:20px"></div>
         </div>
       </div>
+    </section>
+
+    <!-- ── AGENTE IA — REDES SOCIALES ── -->
+    <section id="vRedes" style="display:none">
+      <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
+        <div><h1 class="page-title">🤖 <em>Agente IA — Redes Sociales</em></h1><p class="page-sub">Atención de comentarios de Facebook e Instagram con revisión segura y trazabilidad.</p></div>
+        <span style="font-size:.78rem;padding:7px 10px;border-radius:99px;background:#fff7ed;color:#9a3412;border:1px solid #fed7aa">Publicación real desactivada</span>
+      </div>
+      <div class="notice notice-warn" style="margin-bottom:14px">El agente está en modo de preparación y pruebas. No publica en Meta ni envía datos a OpenAI desde el navegador. La conexión real requiere el gateway HTTPS firmado, revisión de permisos de Meta y autorización expresa.</div>
+      <div id="socialStats" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:16px"></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px">
+        <section class="card"><div class="card-title">Simular comentario</div><p style="font-size:.8rem;color:var(--muted);margin-top:0">Prueba clasificación, escalamiento y respuestas antes de conectar cuentas.</p><select id="socialTestPlatform" style="width:100%;padding:9px;margin-bottom:9px"><option>Instagram</option><option>Facebook</option></select><textarea id="socialTestComment" rows="4" placeholder="Ej.: ¿Cuánto vale la descarga muscular completa?" style="width:100%;box-sizing:border-box;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--s2);color:var(--text)"></textarea><button class="btn btn-teal" style="margin-top:10px" onclick="PanelSocialAgent.simulate()">Procesar simulación</button></section>
+        <section class="card"><div class="card-title">Estado de conexión</div><div style="font-size:.84rem;line-height:1.7"><div>Facebook: <b>pendiente de app, permisos y webhook</b></div><div>Instagram: <b>pendiente de cuenta profesional y permisos</b></div><div>OpenAI: <b>pendiente de secreto en el gateway</b></div><div>Webhook: <b>pendiente de endpoint HTTPS con validación HMAC</b></div></div><p style="font-size:.77rem;color:var(--muted);margin-bottom:0">No almacenes tokens, contraseñas o claves API en este panel.</p></section>
+      </div>
+      <details class="card" open style="margin-top:16px"><summary style="cursor:pointer;font-weight:700">Configuración operativa</summary><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:14px"><label><input id="saEnabled" type="checkbox"> Activar agente (preparación)</label><label><input id="saFacebook" type="checkbox"> Facebook habilitado</label><label><input id="saInstagram" type="checkbox"> Instagram habilitado</label><label>Tono<select id="saTone" style="width:100%;padding:8px"><option>Cálido y profesional</option><option>Cercano y breve</option><option>Formal y claro</option></select></label><label>Longitud<select id="saLength" style="width:100%;padding:8px"><option>Breve</option><option>Media</option></select></label><label>Enlace oficial de WhatsApp<input id="saWhatsapp" type="url" style="width:100%;box-sizing:border-box;padding:8px" placeholder="https://wa.me/57..."></label></div><div style="margin-top:14px;font-size:.82rem;font-weight:700">Categorías permitidas para responder automáticamente en producción</div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:7px;margin-top:8px"><label><input id="saAllowed0" type="checkbox"> Información de servicios</label><label><input id="saAllowed1" type="checkbox"> Consulta de precios</label><label><input id="saAllowed2" type="checkbox"> Ubicación y horarios</label><label><input id="saAllowed3" type="checkbox"> Solicitud de agendamiento</label><label><input id="saAllowed4" type="checkbox"> Interés en entrenamiento funcional</label><label><input id="saAllowed5" type="checkbox"> Masajes y bienestar</label><label><input id="saAllowed6" type="checkbox"> Agradecimientos</label></div><button class="btn btn-teal" style="margin-top:14px" onclick="PanelSocialAgent.saveConfig()">Guardar configuración</button></details>
+      <details class="card" style="margin-top:16px"><summary style="cursor:pointer;font-weight:700">Base de conocimientos editable</summary><p style="font-size:.78rem;color:var(--muted)">Solo esta información confirmada se entrega al motor de IA. No se inventan disponibilidad, promociones ni recomendaciones clínicas.</p><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px"><label>Ubicación<input id="saLocation" style="width:100%;box-sizing:border-box;padding:8px"></label><label>Sitio web<input id="saWebsite" type="url" style="width:100%;box-sizing:border-box;padding:8px"></label></div><label style="display:block;margin-top:10px">Entrenamiento funcional<textarea id="saTraining" rows="3" style="width:100%;box-sizing:border-box;padding:8px"></textarea></label><label style="display:block;margin-top:10px">Servicios y tarifas (JSON)<textarea id="saServices" rows="9" style="width:100%;box-sizing:border-box;padding:8px;font-family:monospace"></textarea></label><label style="display:block;margin-top:10px">Preguntas frecuentes confirmadas (JSON)<textarea id="saFaqs" rows="4" style="width:100%;box-sizing:border-box;padding:8px;font-family:monospace" placeholder='[{"pregunta":"...","respuesta":"..."}]'></textarea></label><button class="btn btn-teal" style="margin-top:12px" onclick="PanelSocialAgent.saveKnowledge()">Guardar base de conocimientos</button></details>
+      <section class="card" style="margin-top:16px"><div class="card-title">Historial y revisión</div><div id="socialHistory"></div></section>
     </section>
 
     <!-- ── EMPRESAS CRM ── -->
@@ -13332,6 +13352,7 @@ document.addEventListener('DOMContentLoaded', () => {
 <script src="js/modules/functional-training.js?v=20261030-initial"></script>
 <script src="js/modules/payments.js?v=20260929-payment-custom-plan"></script>
 <script src="js/modules/commercial-sales.js?v=20261117-operational-crm"></script>
+<script src="js/modules/social-agent.js?v=20261118-social-agent-prep"></script>
   <script src="js/modules/passport.js"></script>
   <script src="js/modules/agenda.js?v=20261103-resilient-booking"></script>
   <script src="js/modules/appointment-provider.js?v=20261101-provider-optional"></script>

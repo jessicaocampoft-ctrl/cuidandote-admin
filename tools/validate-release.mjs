@@ -15,7 +15,8 @@ const files = [
   'js/modules/packages.js',
   'js/modules/waitlist.js',
   'js/modules/daily-control.js',
-  'js/modules/functional-training.js'
+  'js/modules/functional-training.js',
+  'js/modules/social-agent.js'
 ];
 
 function fail(message) {
@@ -43,6 +44,7 @@ const dailyControl = fs.readFileSync(`${root}/js/modules/daily-control.js`, 'utf
 const functionalTraining = fs.readFileSync(`${root}/js/modules/functional-training.js`, 'utf8');
 const adminProfile = fs.readFileSync(`${root}/js/modules/admin-profile-accessibility.js`, 'utf8');
 const finance = fs.readFileSync(`${root}/js/modules/finance.js`, 'utf8');
+const socialAgent = fs.readFileSync(`${root}/js/modules/social-agent.js`, 'utf8');
 
 if (!config.includes('APPS_SCRIPT_URL')) fail('falta la conexión principal del servidor');
 if (!config.includes('ADMIN_DATA_FALLBACK_URL')) fail('falta la ruta de respaldo de lectura');
@@ -70,5 +72,6 @@ if (!functionalTraining.includes('plan3') || !functionalTraining.includes('18500
 if (!html.includes('vEntrenamiento') || !html.includes('functional-training.js?v=20261030-initial')) fail('falta el módulo de entrenamiento funcional en el panel');
 if (!adminProfile.includes('sidebar-management.js?v=20261030-functional-training-primary')) fail('el menú puede conservar una versión anterior en caché');
 if (!functionalTraining.includes('getMonthlyRevenue') || !functionalTraining.includes('functional_training_v1_backup') || !finance.includes('calcIngresoEntrenamientoMes') || !finance.includes('Entrenamiento funcional')) fail('los ingresos de entrenamiento no están integrados o respaldados correctamente');
+if (!html.includes('vRedes') || !html.includes('social-agent.js') || !socialAgent.includes('safeCategories') || !socialAgent.includes('autoPublish = false')) fail('falta el módulo seguro del agente de redes sociales');
 
 console.log(`VALIDACIÓN APROBADA: ${files.length} archivos críticos, acceso, agenda, pagos, planes y colaboradores presentes.`);
