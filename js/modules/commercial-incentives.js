@@ -119,7 +119,7 @@
   }
   function attended(appointment) { return ['Atendida', 'Sesión atendida'].includes(clean(appointment?.estado || appointment?.Estado)); }
   function isSocialOrigin(opportunity) { return /(instagram|facebook|tiktok|redes)/i.test(clean(opportunity?.origin)); }
-  function isExternalNataliaOrigin(opportunity) { return /(google|publicidad|instagram|facebook|tiktok|redes|michelle)/i.test(clean(opportunity?.origin)); }
+  function isNataliaReferralOrigin(opportunity) { return /^referido$/i.test(clean(opportunity?.origin)); }
   function isFirstAppointment(opportunity, appointment) {
     const key = identity(opportunity, appointment);
     const date = clean(appointment?.fecha);
@@ -157,12 +157,10 @@
     return { leads, buyers, planned, published, calendarPct, level, calculated: eligible ? level.amount : 0, eligible, responsible: currentConfig.socialResponsible };
   }
   function nataliaData(month) {
-    const source = sources();
     const existingStates = get('commercial_incentives_status_v1', {});
     const unique = new Map();
-    opportunities().forEach(opportunity => {
+    opportunities().slice().sort((a, b) => clean(appointmentFor(a)?.fecha).localeCompare(clean(appointmentFor(b)?.fecha))).forEach(opportunity => {
       const appointment = appointmentFor(opportunity);
-      const meta = source[opportunity.id] || {};
       const appointmentMonth = dateMonth(appointment?.fecha);
       const capturedByNatalia = /natalia/.test(clean(opportunity.capturedBy).toLowerCase());
       const hasOtherCommission = ['Aprobado', 'Pagado'].includes(existingStates[`CAP-${opportunity.id}`]?.state) || ['Aprobado', 'Pagado'].includes(existingStates[`TIC-${opportunity.id}`]?.state);
@@ -170,13 +168,10 @@
       const conditions = {
         period: appointmentMonth === month,
         capturedByNatalia,
-        directCapture: meta.nataliaDirect === true,
         newClient: isFirstAppointment(opportunity, appointment),
-        wellness: meta.wellnessEligible === true,
-        minimumValue: Number(opportunity.saleValue || 0) >= 125000,
-        paid: paidVerified(appointment) >= 125000,
+        paid: paidVerified(appointment) > 0,
         attended: attended(appointment),
-        allowedOrigin: !isExternalNataliaOrigin(opportunity),
+        referralOrigin: isNataliaReferralOrigin(opportunity),
         saleTypeAllowed,
         noOtherCommission: !hasOtherCommission
       };
@@ -185,7 +180,7 @@
       if (key && ready && !unique.has(key)) unique.set(key, { opportunity, appointment, key, conditions });
     });
     const candidates = [...unique.values()];
-    return { candidates, potential: candidates.length * 10000, liquidable: 0, legalHold: true };
+    return { candidates, calculated: candidates.length * 10000 };
   }
   function statusFor(key) { return states()[key] || { state: 'Borrador' }; }
   function saveSocialStatus(month, state) {
@@ -209,6 +204,31 @@
     };
     put(STATUS_KEY, all);
     audit(`Bono redes ${state.toLowerCase()}`, `${month} · ${money(all[`social-${month}`].amount)} · responsable: ${data.responsible}`);
+    render();
+  }
+  function saveNataliaStatus(month, state) {
+    if (!isJessica()) return;
+    const data = nataliaData(month);
+    if (state === 'Aprobada' && !data.candidates.length) return;
+    const key = `natalia-${month}`;
+    const previous = statusFor(key);
+    if (state === 'Pagada manualmente' && previous.state !== 'Aprobada') return;
+    const all = states();
+    const now = new Date().toISOString();
+    all[key] = {
+      ...previous,
+      state,
+      amount: state === 'Aprobada' ? data.calculated : (previous.amount ?? data.calculated),
+      period: month,
+      responsible: 'Natalia Rodríguez',
+      approvedBy: state === 'Aprobada' ? actor() : previous.approvedBy,
+      approvedAt: state === 'Aprobada' ? now : previous.approvedAt,
+      paidBy: state === 'Pagada manualmente' ? actor() : previous.paidBy,
+      paidAt: state === 'Pagada manualmente' ? now : previous.paidAt,
+      at: now
+    };
+    put(STATUS_KEY, all);
+    audit(`Incentivo Natalia ${state.toLowerCase()}`, `${month} · ${data.candidates.length} paciente${data.candidates.length === 1 ? '' : 's'} nuevo${data.candidates.length === 1 ? '' : 's'} · ${money(all[key].amount)}`);
     render();
   }
   function saveCalendar(month) {
@@ -253,6 +273,7 @@
     const social = socialData(month);
     const natalia = nataliaData(month);
     const socialStatus = statusFor(`social-${month}`);
+    const nataliaStatus = statusFor(`natalia-${month}`);
     const selectedLevel = social.level ? `${social.level.leads} interesados / ${social.level.buyers} compradores` : 'Aún no alcanza un nivel';
     const socialState = social.eligible ? socialStatus.state : (social.calendarPct === null ? 'Falta registrar calendario' : social.calendarPct < 90 ? 'Calendario inferior al 90%' : 'Metas aún no cumplidas');
     const sourceHelp = `Solo se cuentan oportunidades de Instagram, Facebook, TikTok o redes que Jessica valide como <strong>Orgánico real</strong>; se deduplican por teléfono, correo o nombre.`;
@@ -267,6 +288,17 @@
             : socialStatus.state === 'Pagada manualmente'
               ? `<div style="font-size:.76rem;color:#15803d;margin-top:12px">Pago manual registrado por ${esc(socialStatus.paidBy || 'Jessica')}.</div>`
               : `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button data-social-state="En revisión" style="padding:7px 11px;border:1px solid var(--border);border-radius:7px;background:#fff;color:var(--text);cursor:pointer">Reabrir para revisión</button></div>`;
+    const nataliaControls = !isJessica()
+      ? `<div style="font-size:.76rem;color:#b45309;margin-top:12px">Liquidación: ${esc(nataliaStatus.state)} · solo Jessica puede gestionarla.</div>`
+      : nataliaStatus.state === 'Borrador'
+        ? `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button data-natalia-state="En revisión" style="padding:7px 11px;border:0;border-radius:7px;background:var(--primary);color:#fff;cursor:pointer">Enviar a revisión</button></div>`
+        : nataliaStatus.state === 'En revisión'
+          ? `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button data-natalia-state="Aprobada" ${natalia.candidates.length ? '' : 'disabled'} style="padding:7px 11px;border:0;border-radius:7px;background:${natalia.candidates.length ? 'var(--primary)' : '#cbd5e1'};color:#fff;cursor:${natalia.candidates.length ? 'pointer' : 'not-allowed'}">✓ Aprobar liquidación</button><button data-natalia-state="Rechazada" style="padding:7px 11px;border:1px solid #fecaca;border-radius:7px;background:#fff;color:#b91c1c;cursor:pointer">Rechazar</button><span style="font-size:.74rem;color:var(--muted);align-self:center">Solo Jessica aprueba o rechaza.</span></div>`
+          : nataliaStatus.state === 'Aprobada'
+            ? `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button data-natalia-state="Pagada manualmente" style="padding:7px 11px;border:0;border-radius:7px;background:var(--primary);color:#fff;cursor:pointer">Registrar pago manual</button><span style="font-size:.74rem;color:var(--muted);align-self:center">No se crea un pago automático.</span></div>`
+            : nataliaStatus.state === 'Pagada manualmente'
+              ? `<div style="font-size:.76rem;color:#15803d;margin-top:12px">Pago manual registrado por ${esc(nataliaStatus.paidBy || 'Jessica')}.</div>`
+              : `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button data-natalia-state="En revisión" style="padding:7px 11px;border:1px solid var(--border);border-radius:7px;background:#fff;color:var(--text);cursor:pointer">Reabrir para revisión</button></div>`;
     host.innerHTML = `
       <section style="margin-top:18px;background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:18px">
         <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap">
@@ -289,10 +321,11 @@
           <div style="font-size:.74rem;color:var(--muted);margin-top:9px">${sourceHelp}</div>${socialRows(month)}
         </div>
 
-        <div style="margin-top:14px;border:1px solid rgba(245,158,11,.45);border-radius:12px;padding:14px;background:rgba(245,158,11,.06)">
-          <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap"><div><b>⚖️ Incentivo por referidos — Natalia Rodríguez</b><div style="font-size:.75rem;color:var(--muted);margin-top:3px">Responsable: Natalia Rodríguez · periodo: ${esc(month)}</div></div>${badge('Bloqueado por validación jurídica', '#b45309')}</div>
-          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-top:12px"><div style="padding:10px;background:var(--s2);border-radius:9px"><small style="color:var(--muted)">Candidatos que cumplen datos</small><b style="display:block;font-size:1.15rem;color:var(--primary-h)">${natalia.candidates.length}</b></div><div style="padding:10px;background:var(--s2);border-radius:9px"><small style="color:var(--muted)">Valor potencial</small><b style="display:block;font-size:1.15rem;color:#b45309">${money(natalia.potential)}</b></div><div style="padding:10px;background:var(--s2);border-radius:9px"><small style="color:var(--muted)">Valor liquidable</small><b style="display:block;font-size:1.15rem;color:var(--muted)">${money(natalia.liquidable)}</b></div></div>
-          <p style="font-size:.76rem;line-height:1.45;color:#92400e;margin:11px 0 0"><strong>No se activa ni se puede aprobar/pagar.</strong> La Ley 528 de 1999, art. 34, prohíbe al fisioterapeuta otorgar participación económica por la remisión a su consultorio de personas que requieran sus servicios. Este control solo identifica casos que, por datos, serían candidatos de $10.000; exige concepto jurídico escrito antes de cualquier cambio de política. Excluye Google, publicidad, redes, Michelle, reactivaciones, renovaciones, fisioterapia, pagos no verificados, citas no atendidas y duplicados.</p>
+        <div style="margin-top:14px;border:1px solid rgba(37,99,235,.35);border-radius:12px;padding:14px;background:rgba(37,99,235,.04)">
+          <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap"><div><b>🤝 Incentivo de captación — Natalia Rodríguez</b><div style="font-size:.75rem;color:var(--muted);margin-top:3px">Responsable: Natalia Rodríguez · periodo: ${esc(month)}</div></div>${badge(nataliaStatus.state, nataliaStatus.state === 'Aprobada' || nataliaStatus.state === 'Pagada manualmente' ? '#15803d' : '#2563eb')}</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-top:12px"><div style="padding:10px;background:var(--s2);border-radius:9px"><small style="color:var(--muted)">Pacientes nuevos válidos</small><b style="display:block;font-size:1.15rem;color:var(--primary-h)">${natalia.candidates.length}</b></div><div style="padding:10px;background:var(--s2);border-radius:9px"><small style="color:var(--muted)">Valor por paciente</small><b style="display:block;font-size:1.15rem;color:var(--primary-h)">${money(10000)}</b></div><div style="padding:10px;background:var(--s2);border-radius:9px"><small style="color:var(--muted)">Bono calculado del mes</small><b style="display:block;font-size:1.15rem;color:#15803d">${money(nataliaStatus.state === 'Aprobada' || nataliaStatus.state === 'Pagada manualmente' ? nataliaStatus.amount : natalia.calculated)}</b></div></div>
+          <p style="font-size:.76rem;line-height:1.45;color:var(--muted);margin:11px 0 0">Se otorgan <strong>$10.000 una sola vez por cada paciente nuevo referido por Natalia</strong>, sin importar el servicio ni su valor. Debe tener origen <strong>Referido</strong>, figurar como captado por Natalia, ser su primera cita, tener pago verificado y aparecer como atendida. Se excluyen reactivaciones, renovaciones y casos que ya tengan otra comisión aprobada.</p>
+          ${nataliaControls}
         </div>
 
         <details style="margin-top:14px"><summary style="cursor:pointer;font-size:.8rem;font-weight:700">Historial y auditoría de incentivos especiales</summary><div style="display:grid;gap:6px;margin-top:9px">${get(AUDIT_KEY, []).slice(-20).reverse().map(row => `<div style="font-size:.74rem;border-top:1px solid var(--border);padding-top:7px"><b>${esc(row.action)}</b> · ${esc(row.detail)}<br><span style="color:var(--muted)">${new Date(row.at).toLocaleString('es-CO')} · ${esc(row.actor)}</span></div>`).join('') || '<div style="font-size:.75rem;color:var(--muted)">Aún no hay movimientos.</div>'}</div></details>
@@ -300,6 +333,7 @@
 
     host.querySelectorAll('[data-social-source]').forEach(select => select.addEventListener('change', event => setSocialSource(event.currentTarget.dataset.socialSource, event.currentTarget.value)));
     host.querySelectorAll('[data-social-state]').forEach(button => button.addEventListener('click', event => saveSocialStatus(month, event.currentTarget.dataset.socialState)));
+    host.querySelectorAll('[data-natalia-state]').forEach(button => button.addEventListener('click', event => saveNataliaStatus(month, event.currentTarget.dataset.nataliaState)));
     host.querySelector('#specialSaveCalendar')?.addEventListener('click', () => saveCalendar(month));
   }
 
@@ -311,6 +345,6 @@
       return result;
     };
   }
-  global.PanelSpecialIncentives = Object.freeze({ render, saveCalendar, saveSocialStatus, setSocialSource, _test: { socialData, nataliaData, bestLevel } });
+  global.PanelSpecialIncentives = Object.freeze({ render, saveCalendar, saveSocialStatus, saveNataliaStatus, setSocialSource, _test: { socialData, nataliaData, bestLevel } });
   setTimeout(render, 0);
 })(window);
