@@ -1839,9 +1839,9 @@ button:disabled{cursor:not-allowed;opacity:.58}
       Base de datos
     </button>
 
-    <button class="sb-link" id="sb-codigos" data-tooltip="Códigos REF" onclick="showView('codigos')" style="position:relative">
+    <button class="sb-link" id="sb-codigos" data-tooltip="Comisiones por referidos" onclick="showView('codigos')" style="position:relative">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-      <span style="flex:1;line-height:1.3">Códigos REF<br><span style="font-size:.78rem;opacity:.75">&amp; BONO</span></span>
+      <span style="flex:1;line-height:1.3">Referidos<br><span style="font-size:.78rem;opacity:.75">&amp; COMISIONES</span></span>
       <span id="badgeBonos" style="display:none;background:#d97706;color:#fff;border-radius:99px;font-size:.68rem;font-weight:700;padding:1px 7px;min-width:18px;text-align:center;line-height:1.6"></span>
     </button>
 
@@ -2045,7 +2045,7 @@ button:disabled{cursor:not-allowed;opacity:.58}
       <div id="bannerBonos" style="display:none;background:rgba(217,119,6,.08);border:1px solid rgba(217,119,6,.35);border-radius:10px;padding:12px 18px;margin-bottom:16px;align-items:flex-start;gap:12px;flex-wrap:wrap">
         <span style="font-size:1.2rem;margin-top:1px">🎁</span>
         <div style="flex:1">
-          <span style="font-size:.88rem;font-weight:700;color:#92400e;display:block;margin-bottom:4px">Bonos de referidos por generar</span>
+          <span style="font-size:.88rem;font-weight:700;color:#92400e;display:block;margin-bottom:4px">Comisiones de referidos por generar</span>
           <span style="font-size:.82rem;color:#78350f" id="bannerBonosTxt"></span>
         </div>
         <button class="btn btn-sm" style="background:#d97706;color:#fff;border:none;border-radius:8px;padding:6px 14px;font-family:var(--font-b);cursor:pointer;white-space:nowrap" onclick="showView('codigos')">Ver Códigos →</button>
@@ -5593,32 +5593,32 @@ Acción: enviar mensaje de reenganche a los 14 pacientes que solo vinieron una v
       </div>
     </section>
 
-    <!-- ── CÓDIGOS REF & BONO ── -->
+    <!-- ── COMISIONES POR REFERIDOS ── -->
     <section id="vCodigos" style="display:none">
       <div class="page-header">
-        <h1 class="page-title"><em>Códigos</em> REF &amp; BONO</h1>
-        <p class="page-sub">Registro de referidos y bonos generados. Cada código es único por mes.</p>
+        <h1 class="page-title"><em>Comisiones</em> por referidos</h1>
+        <p class="page-sub">Registro de referidos y comisiones generadas. Cada código REF es único por mes.</p>
       </div>
 
       <!-- Reglas del plan de referidos -->
       <div style="background:rgba(234,179,8,.07);border:1px solid rgba(234,179,8,.35);border-radius:12px;padding:16px 20px;margin-bottom:20px;display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start">
         <span style="font-size:1.4rem;flex-shrink:0">🎁</span>
         <div style="flex:1;min-width:200px">
-          <div style="font-weight:700;color:#92400e;margin-bottom:6px;font-size:.95rem">Plan de Referidos</div>
+          <div style="font-weight:700;color:#92400e;margin-bottom:6px;font-size:.95rem">Comisión por recomendación</div>
           <div style="font-size:.85rem;color:#78350f;line-height:1.7">
             Quien refiere a un nuevo paciente recibe un
-            <strong style="background:rgba(234,179,8,.2);padding:1px 7px;border-radius:6px">bono de $20.000</strong>
+            <strong style="background:rgba(234,179,8,.2);padding:1px 7px;border-radius:6px">comisión de $20.000</strong>
             para descontar en su próxima sesión.<br>
-            <span style="color:#92400e">⚠️ Máximo <strong>2 bonos acumulables por mes</strong> por persona.</span>
+            <span style="color:#92400e">⚠️ Máximo <strong>2 comisiones acumulables por mes</strong> por persona.</span>
           </div>
         </div>
       </div>
 
-      <!-- Banner bonos pendientes en vista Códigos -->
+      <!-- Banner de comisiones pendientes en vista Referidos -->
       <div id="bonoPendingBanner" style="display:none;background:rgba(217,119,6,.09);border:1px solid rgba(217,119,6,.4);border-radius:10px;padding:14px 20px;margin-bottom:18px">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
           <span style="font-size:1.1rem">🎁</span>
-          <strong style="font-size:.9rem;color:#92400e">Bonos pendientes de generar</strong>
+          <strong style="font-size:.9rem;color:#92400e">Comisiones pendientes de generar</strong>
         </div>
         <div id="bonoPendingLista" style="display:flex;flex-direction:column;gap:7px"></div>
       </div>
@@ -5632,7 +5632,7 @@ Acción: enviar mensaje de reenganche a los 14 pacientes que solo vinieron una v
             style="background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font-b);font-size:.85rem;padding:8px 12px;outline:none">
             <option value="">Todos los tipos</option>
             <option value="REF">Solo REF</option>
-            <option value="BONO">Solo BONO</option>
+            <option value="BONO">Solo comisiones</option>
           </select>
           <select id="codEstadoFilter" onchange="renderCodigos()"
             style="background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font-b);font-size:.85rem;padding:8px 12px;outline:none">

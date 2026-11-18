@@ -324,9 +324,9 @@ function _manualReminderCard(item) {
 function _renderManagement(data) {
   const cards = [];
   data.bonuses.forEach(c => cards.push(_taskCard({
-    level:'normal', icon:'🎁', title:`Bono pendiente · ${esc(c.referidoPor || 'Referidor')}`,
+    level:'normal', icon:'💸', title:`Comisión pendiente · ${esc(c.referidoPor || 'Referidor')}`,
     meta:`Refirió a ${esc(c.paciente || 'paciente')} · ${esc(c.codigo || '')}`,
-    action:'<button class="daily-btn" type="button" onclick="showView(\'codigos\')">Gestionar bono</button>'
+    action:'<button class="daily-btn" type="button" onclick="showView(\'codigos\')">Gestionar comisión</button>'
   })));
   data.companyActions.forEach(e => cards.push(_taskCard({
     level:e.fechaAccion < today() ? 'medium' : 'normal', icon:'🏢', title:`Empresa · ${esc(e.nombre || 'Contacto')}`,

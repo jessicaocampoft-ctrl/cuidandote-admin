@@ -1,4 +1,4 @@
-/* Cuidándote Fisioterapia — Códigos de referidos y bonos. */
+/* Cuidándote Fisioterapia — Referidos y comisiones. BONO se conserva como tipo técnico histórico. */
 (function (global) {
   'use strict';
 
@@ -51,14 +51,14 @@ function updateBonosBadge() {
           <span style="font-family:var(--font-m);font-size:.8rem;font-weight:700;color:#7c3aed;background:rgba(139,92,246,.1);padding:2px 8px;border-radius:6px;white-space:nowrap">${esc(c.codigo)}</span>
           <div style="flex:1;font-size:.85rem">
             <strong style="color:#92400e">${c.referidoPor || '—'}</strong>
-            <span style="color:var(--muted)"> tiene bono pendiente — refirió a <strong>${c.paciente || '?'}</strong></span>
+            <span style="color:var(--muted)"> tiene comisión pendiente — refirió a <strong>${c.paciente || '?'}</strong></span>
           </div>
           <span style="font-family:var(--font-m);font-size:.75rem;color:var(--muted)">${c.fecha || ''}</span>
           ${_bonosReferidorMes(c.referidoPor||'').length >= BONO_MAX_MES
             ? `<span style="font-size:.75rem;color:#92400e;opacity:.65;padding:3px 8px;border:1px solid rgba(234,179,8,.25);border-radius:6px;white-space:nowrap">🔒 Límite mensual</span>`
             : `<button class="btn btn-sm" onclick="generarBono('${c.codigo}','${(c.referidoPor||'').replace(/'/g,"\\'")}','${(c.telefono||'').replace(/'/g,"\\'")}' )"
                 style="background:rgba(234,179,8,.15);color:#92400e;border:1px solid rgba(234,179,8,.4);font-size:.75rem;white-space:nowrap">
-                🎁 Bono $${BONO_VALOR.toLocaleString('es-CO')}
+                💸 Comisión $${BONO_VALOR.toLocaleString('es-CO')}
               </button>`
           }
         </div>`).join('');
@@ -102,7 +102,7 @@ function renderCodigos() {
     const vinculo = c.tipo === 'BONO' && c.codigoRef
       ? `<span style="font-family:var(--font-m);font-size:.8rem;color:var(--muted)">← ${c.codigoRef}</span>`
       : (c.tipo === 'REF' && refConBono.has(c.codigo)
-          ? `<span style="font-family:var(--font-m);font-size:.8rem;color:#92400e">BONO-${c.codigo.slice(4)} ✓</span>`
+          ? `<span style="font-family:var(--font-m);font-size:.8rem;color:#92400e">COM-${c.codigo.slice(4)} ✓</span>`
           : '—');
     const _bonosMesRef = esREF ? _bonosReferidorMes(c.referidoPor || '') : [];
     const _topeMes     = _bonosMesRef.length >= BONO_MAX_MES;
@@ -111,7 +111,7 @@ function renderCodigos() {
           ? `<span style="font-size:.75rem;color:#92400e;opacity:.6;padding:3px 8px;border:1px solid rgba(234,179,8,.25);border-radius:6px;background:rgba(234,179,8,.07)">🔒 Límite mensual (${BONO_MAX_MES}/${BONO_MAX_MES})</span>`
           : `<button class="btn btn-sm" onclick="generarBono('${c.codigo}','${(c.referidoPor||'').replace(/'/g,"\\'")}','${(c.telefono||'').replace(/'/g,"\\'")}' )"
                style="background:rgba(234,179,8,.12);color:#92400e;border:1px solid rgba(234,179,8,.3);font-size:.75rem">
-               🎁 Generar Bono $${BONO_VALOR.toLocaleString('es-CO')} <span style="opacity:.65">(${_bonosMesRef.length}/${BONO_MAX_MES} mes)</span>
+               💸 Generar comisión $${BONO_VALOR.toLocaleString('es-CO')} <span style="opacity:.65">(${_bonosMesRef.length}/${BONO_MAX_MES} mes)</span>
              </button>`)
       : '';
     const btnMarcar = c.estado === 'Activo'
@@ -150,10 +150,10 @@ async function marcarUsado(codigo) {
 async function generarBono(codigoRef, referidoPor, telefonoRef) {
   const bonosMes = _bonosReferidorMes(referidoPor);
   if (bonosMes.length >= BONO_MAX_MES) {
-    toast(`${referidoPor || 'Este paciente'} ya tiene ${BONO_MAX_MES} bonos este mes — límite alcanzado`, 'err');
+    toast(`${referidoPor || 'Este paciente'} ya tiene ${BONO_MAX_MES} comisiones este mes — límite alcanzado`, 'err');
     return;
   }
-  if (!confirm(`¿Generar bono de $${BONO_VALOR.toLocaleString('es-CO')} para ${referidoPor || 'quien refirió'}?\nBonos este mes: ${bonosMes.length + 1}/${BONO_MAX_MES}\nSe descontará en su próxima sesión.`)) return;
+  if (!confirm(`¿Generar comisión de $${BONO_VALOR.toLocaleString('es-CO')} para ${referidoPor || 'quien refirió'}?\nComisiones este mes: ${bonosMes.length + 1}/${BONO_MAX_MES}\nSe descontará en su próxima sesión.`)) return;
   try {
     // Generar el número (mismo que el REF)
     const numRef  = codigoRef.split('-').pop(); // ej: "001"
@@ -171,7 +171,7 @@ async function generarBono(codigoRef, referidoPor, telefonoRef) {
     const r = await fetch(`${APPS_SCRIPT_URL}?action=registrarCodigo&token=${encodeURIComponent(TOKEN)}&data=${encodeURIComponent(JSON.stringify(codData))}`);
     const d = await r.json();
     if (!d.ok) { toast('Error al generar bono', 'err'); return; }
-    toast(`Bono ${codBono} generado para ${referidoPor || 'el referidor'} ✓`);
+    toast(`Comisión ${codBono.replace(/^BONO-/, 'COM-')} generada para ${referidoPor || 'el referidor'} ✓`);
     await reload();
     renderCodigos();
   } catch(e) { toast('Error de conexión', 'err'); }
