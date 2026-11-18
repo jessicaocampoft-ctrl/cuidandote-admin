@@ -29,11 +29,15 @@
     }
     if (tab === 'recuperaciones') {
       if (typeof global.renderRecuperaciones === 'function') global.renderRecuperaciones();
+      return;
+    }
+    if (tab === 'referidos') {
+      if (global.PanelReferrals && typeof global.PanelReferrals.renderCodigos === 'function') global.PanelReferrals.renderCodigos();
     }
   }
 
   function setTab(tab) {
-    if (!['comisiones', 'recuperaciones'].includes(tab)) tab = 'comisiones';
+    if (!['comisiones', 'referidos', 'recuperaciones'].includes(tab)) tab = 'comisiones';
     _activeTab = tab;
     document.querySelectorAll('[data-comm-hub-tab]').forEach(btn => {
       const active = btn.dataset.commHubTab === tab;
@@ -60,13 +64,16 @@
   function _buildHub() {
     const comisiones = document.getElementById('vComisiones');
     const recuperacion = document.getElementById('vRecuperacion');
-    if (!comisiones || !recuperacion) return false;
+    const referidos = document.getElementById('vCodigos');
+    if (!comisiones || !recuperacion || !referidos) return false;
     if (comisiones.dataset.commHubReady === '1') return true;
 
     const comHeader = comisiones.querySelector(':scope > .page-header');
     const recHeader = recuperacion.querySelector(':scope > .page-header');
+    const refHeader = referidos.querySelector(':scope > .page-header');
     const comChildren = Array.from(comisiones.children).filter(el => el !== comHeader);
     const recChildren = Array.from(recuperacion.children).filter(el => el !== recHeader);
+    const refChildren = Array.from(referidos.children).filter(el => el !== refHeader);
 
     comisiones.dataset.commHubReady = '1';
     _injectStyles();
@@ -75,7 +82,7 @@
       const title = comHeader.querySelector('.page-title');
       const sub = comHeader.querySelector('.page-sub');
       if (title) title.innerHTML = '<em>Comisiones</em>';
-      if (sub) sub.textContent = 'Comisiones del equipo y ventas recuperadas desde un solo lugar';
+      if (sub) sub.textContent = 'Comisiones del equipo, referidos y recuperaciones en un solo lugar';
     }
 
     const tabs = document.createElement('div');
@@ -83,7 +90,8 @@
     tabs.setAttribute('role', 'tablist');
     tabs.setAttribute('aria-label', 'Gestión de comisiones');
     [
-      ['comisiones', 'Comisiones'],
+      ['comisiones', 'Comisiones del equipo'],
+      ['referidos', 'Referidos'],
       ['recuperaciones', 'Recuperaciones']
     ].forEach(([id, label]) => {
       const btn = document.createElement('button');
@@ -120,6 +128,19 @@
 
     recChildren.forEach(el => recPanel.appendChild(el));
 
+    const refPanel = document.createElement('div');
+    refPanel.className = 'comm-hub-panel';
+    refPanel.dataset.commHubPanel = 'referidos';
+    refPanel.setAttribute('role', 'tabpanel');
+    if (refHeader) {
+      const title = refHeader.querySelector('.page-title');
+      const sub = refHeader.querySelector('.page-sub');
+      if (title) title.innerHTML = 'Comisiones por <em>referidos</em>';
+      if (sub) sub.textContent = 'Registro de recomendaciones y comisiones generadas.';
+      refPanel.appendChild(refHeader);
+    }
+    refChildren.forEach(el => refPanel.appendChild(el));
+
     const inactivePanel = document.getElementById('recInactivosPanel');
     if (inactivePanel && inactivePanel.parentElement) {
       inactivePanel.parentElement.style.display = 'none';
@@ -128,7 +149,7 @@
 
     if (comHeader) comHeader.insertAdjacentElement('afterend', tabs);
     else comisiones.prepend(tabs);
-    comisiones.append(comPanel, recPanel);
+    comisiones.append(comPanel, refPanel, recPanel);
 
     const oldSidebar = document.getElementById('sb-recuperacion');
     if (oldSidebar) {
@@ -138,6 +159,8 @@
     }
     recuperacion.style.display = 'none';
     recuperacion.setAttribute('aria-hidden', 'true');
+    referidos.style.display = 'none';
+    referidos.setAttribute('aria-hidden', 'true');
 
     setTab(_activeTab);
     return true;
@@ -153,6 +176,11 @@
       if (view === 'recuperacion') {
         const result = _originalShowView.call(this, 'comisiones', ...args);
         setTimeout(() => setTab('recuperaciones'), 0);
+        return result;
+      }
+      if (view === 'codigos') {
+        const result = _originalShowView.call(this, 'comisiones', ...args);
+        setTimeout(() => setTab('referidos'), 0);
         return result;
       }
       const result = _originalShowView.call(this, view, ...args);

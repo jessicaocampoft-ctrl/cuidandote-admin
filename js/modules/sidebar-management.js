@@ -9,14 +9,16 @@
     // Recordatorios ya vive dentro de Seguimiento. Centro de acciones es una
     // versión anterior del control diario y se conserva oculto para evitar
     // duplicar pendientes.
-    'sb-recordatorios','sb-acciones'
+    'sb-recordatorios','sb-acciones',
+    // Referidos se consulta como pestaña dentro de Comercial → Comisiones.
+    'sb-codigos'
   ];
   const GROUPS = [
     { id:'daily', label:'Operación diaria', items:['sb-seguimiento','sb-pagos','sb-pacientes','sb-nueva','sb-agenda','sb-tareas'] },
     { id:'operations', label:'Agenda y disponibilidad', items:['sb-bloquear','sb-horariospublicos','sb-espera'] },
     { id:'followup', label:'Seguimiento y comunicación', items:['sb-guioneswa','sb-recuperacion'] },
-    { id:'finance', label:'Finanzas y resultados', items:['sb-finanzas','sb-inteligencia','sb-guiakpis','sb-presupuesto','sb-comisiones'] },
-    { id:'commercial', label:'Comercial', items:['sb-comercial','sb-redes','sb-paquetes','sb-empresas','sb-codigos'] },
+    { id:'finance', label:'Finanzas y resultados', items:['sb-finanzas','sb-inteligencia','sb-guiakpis','sb-presupuesto'] },
+    { id:'commercial', label:'Comercial', items:['sb-comercial','sb-comisiones','sb-redes','sb-paquetes','sb-empresas'] },
     { id:'advanced', label:'Administración avanzada', items:['sb-basedatos','sb-automatizaciones'] },
     { id:'tools', label:'Herramientas clínicas', items:['sb-pasaporte','sb-evaluacion','sb-evalexpress'] }
   ];
@@ -200,7 +202,6 @@
       _setSimpleLabel('sb-finanzas','Gestión financiera');
       _setSimpleLabel('sb-bloquear','Horario de trabajo');
       _setSimpleLabel('sb-horariospublicos','Reservas públicas');
-      _setCodesLabel();
 
       GROUPS.forEach(def => {
         const body = document.querySelector(`[data-management-items="${def.id}"]`);

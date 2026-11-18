@@ -18,6 +18,8 @@ const files = [
   'js/modules/functional-training.js',
   'js/modules/social-agent.js',
   'js/modules/business-intelligence.js'
+  ,'js/modules/sidebar-management.js'
+  ,'js/modules/commissions-hub.js'
 ];
 
 function fail(message) {
@@ -72,7 +74,9 @@ if (!dailyControl.includes("showView('espera')")) fail('falta el acceso rápido 
 if (!functionalTraining.includes('CAPACITY = 4') || !functionalTraining.includes("'05:00'")) fail('falta la capacidad u horario del entrenamiento funcional');
 if (!functionalTraining.includes('plan3') || !functionalTraining.includes('185000') || !functionalTraining.includes('215000') || !functionalTraining.includes('240000')) fail('faltan los planes de entrenamiento funcional');
 if (!html.includes('vEntrenamiento') || !html.includes('functional-training.js?v=20261030-initial')) fail('falta el módulo de entrenamiento funcional en el panel');
-if (!adminProfile.includes('sidebar-management.js?v=20261030-functional-training-primary')) fail('el menú puede conservar una versión anterior en caché');
+if (!adminProfile.includes('sidebar-management.js?v=20261118-commercial-commissions')) fail('el menú de comisiones puede conservar una versión anterior en caché');
+if (!fs.readFileSync(`${root}/js/modules/sidebar-management.js`, 'utf8').includes("id:'commercial', label:'Comercial', items:['sb-comercial','sb-comisiones'")) fail('Comisiones no está agrupado dentro de Comercial');
+if (!fs.readFileSync(`${root}/js/modules/commissions-hub.js`, 'utf8').includes("['referidos', 'Referidos']")) fail('falta la pestaña de Referidos dentro de Comisiones');
 if (!functionalTraining.includes('getMonthlyRevenue') || !functionalTraining.includes('functional_training_v1_backup') || !finance.includes('calcIngresoEntrenamientoMes') || !finance.includes('Entrenamiento funcional')) fail('los ingresos de entrenamiento no están integrados o respaldados correctamente');
 if (!html.includes('vRedes') || !html.includes('social-agent.js') || !socialAgent.includes('safeCategories') || !socialAgent.includes('autoPublish = false')) fail('falta el módulo seguro del agente de redes sociales');
 if (!html.includes('vInteligencia') || !html.includes('business-intelligence.js') || !intelligence.includes('cashReceived') || !intelligence.includes('uniquePayments')) fail('falta el módulo de inteligencia empresarial o sus controles anti-duplicado');
