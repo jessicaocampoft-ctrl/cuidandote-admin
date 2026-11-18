@@ -187,15 +187,28 @@
     const candidates = [...unique.values()];
     return { candidates, potential: candidates.length * 10000, liquidable: 0, legalHold: true };
   }
-  function statusFor(key) { return states()[key] || { state: 'Pendiente de aprobación' }; }
+  function statusFor(key) { return states()[key] || { state: 'Borrador' }; }
   function saveSocialStatus(month, state) {
     if (!isJessica()) return;
     const data = socialData(month);
     if (state === 'Aprobada' && !data.eligible) return;
+    const previous = statusFor(`social-${month}`);
+    if (state === 'Pagada manualmente' && previous.state !== 'Aprobada') return;
     const all = states();
-    all[`social-${month}`] = { state, amount: data.calculated, period: month, approvedBy: actor(), at: new Date().toISOString() };
+    const now = new Date().toISOString();
+    all[`social-${month}`] = {
+      ...previous,
+      state,
+      amount: state === 'Aprobada' ? data.calculated : (previous.amount ?? data.calculated),
+      period: month,
+      approvedBy: state === 'Aprobada' ? actor() : previous.approvedBy,
+      approvedAt: state === 'Aprobada' ? now : previous.approvedAt,
+      paidBy: state === 'Pagada manualmente' ? actor() : previous.paidBy,
+      paidAt: state === 'Pagada manualmente' ? now : previous.paidAt,
+      at: now
+    };
     put(STATUS_KEY, all);
-    audit(`Bono redes ${state.toLowerCase()}`, `${month} · ${money(data.calculated)} · responsable: ${data.responsible}`);
+    audit(`Bono redes ${state.toLowerCase()}`, `${month} · ${money(all[`social-${month}`].amount)} · responsable: ${data.responsible}`);
     render();
   }
   function saveCalendar(month) {
@@ -243,6 +256,17 @@
     const selectedLevel = social.level ? `${social.level.leads} interesados / ${social.level.buyers} compradores` : 'Aún no alcanza un nivel';
     const socialState = social.eligible ? socialStatus.state : (social.calendarPct === null ? 'Falta registrar calendario' : social.calendarPct < 90 ? 'Calendario inferior al 90%' : 'Metas aún no cumplidas');
     const sourceHelp = `Solo se cuentan oportunidades de Instagram, Facebook, TikTok o redes que Jessica valide como <strong>Orgánico real</strong>; se deduplican por teléfono, correo o nombre.`;
+    const socialControls = !isJessica()
+      ? `<div style="font-size:.76rem;color:#b45309;margin-top:12px">Liquidación: ${esc(socialStatus.state)} · solo Jessica puede gestionarla.</div>`
+      : socialStatus.state === 'Borrador'
+        ? `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button data-social-state="En revisión" style="padding:7px 11px;border:0;border-radius:7px;background:var(--primary);color:#fff;cursor:pointer">Enviar a revisión</button></div>`
+        : socialStatus.state === 'En revisión'
+          ? `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button data-social-state="Aprobada" ${social.eligible ? '' : 'disabled'} style="padding:7px 11px;border:0;border-radius:7px;background:${social.eligible ? 'var(--primary)' : '#cbd5e1'};color:#fff;cursor:${social.eligible ? 'pointer' : 'not-allowed'}">✓ Aprobar liquidación</button><button data-social-state="Rechazada" style="padding:7px 11px;border:1px solid #fecaca;border-radius:7px;background:#fff;color:#b91c1c;cursor:pointer">Rechazar</button><span style="font-size:.74rem;color:var(--muted);align-self:center">Solo Jessica aprueba o rechaza.</span></div>`
+          : socialStatus.state === 'Aprobada'
+            ? `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button data-social-state="Pagada manualmente" style="padding:7px 11px;border:0;border-radius:7px;background:var(--primary);color:#fff;cursor:pointer">Registrar pago manual</button><span style="font-size:.74rem;color:var(--muted);align-self:center">El pago se registra; no se crea automáticamente.</span></div>`
+            : socialStatus.state === 'Pagada manualmente'
+              ? `<div style="font-size:.76rem;color:#15803d;margin-top:12px">Pago manual registrado por ${esc(socialStatus.paidBy || 'Jessica')}.</div>`
+              : `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button data-social-state="En revisión" style="padding:7px 11px;border:1px solid var(--border);border-radius:7px;background:#fff;color:var(--text);cursor:pointer">Reabrir para revisión</button></div>`;
     host.innerHTML = `
       <section style="margin-top:18px;background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:18px">
         <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap">
@@ -260,7 +284,7 @@
           </div>
           <div style="font-size:.76rem;color:var(--muted);margin-top:10px">Nivel más alto: <strong>${esc(selectedLevel)}</strong>. Deben cumplirse ambas metas y al menos 90% del calendario. No se acumulan niveles.</div>
           <div style="overflow:auto;margin-top:10px"><table style="width:100%;border-collapse:collapse;font-size:.75rem"><thead><tr style="text-align:left;color:var(--muted)"><th>Interesados</th><th>Compradores</th><th>Bono</th><th>Resultado</th></tr></thead><tbody>${LEVELS.map(level => `<tr style="border-top:1px solid var(--border)"><td>${level.leads}</td><td>${level.buyers}</td><td>${money(level.amount)}</td><td>${social.level?.amount === level.amount ? badge('Nivel mayor alcanzado', '#15803d') : '—'}</td></tr>`).join('')}</tbody></table></div>
-          ${isJessica() ? `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button data-social-state="Aprobada" ${social.eligible ? '' : 'disabled'} style="padding:7px 11px;border:0;border-radius:7px;background:${social.eligible ? 'var(--primary)' : '#cbd5e1'};color:#fff;cursor:${social.eligible ? 'pointer' : 'not-allowed'}">✓ Aprobar liquidación</button><button data-social-state="Rechazada" style="padding:7px 11px;border:1px solid #fecaca;border-radius:7px;background:#fff;color:#b91c1c;cursor:pointer">Rechazar</button><span style="font-size:.74rem;color:var(--muted);align-self:center">Solo Jessica aprueba o rechaza. Aprobar registra la liquidación; no realiza pago.</span></div>` : `<div style="font-size:.76rem;color:#b45309;margin-top:12px">Liquidación: ${esc(socialStatus.state)} · solo Jessica puede aprobar o rechazar.</div>`}
+          ${socialControls}
           ${isJessica() ? `<details style="margin-top:12px"><summary style="cursor:pointer;font-size:.8rem;font-weight:700">Configurar responsable y calendario</summary><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:9px"><label style="font-size:.75rem">Responsable<br><input id="specialSocialResponsible" value="${esc(social.responsible)}" style="margin-top:4px;padding:7px;border:1px solid var(--border);border-radius:7px;background:var(--s2);color:var(--text)"></label><label style="font-size:.75rem">Publicaciones planeadas<br><input id="specialCalendarPlanned" type="number" min="0" value="${social.planned || ''}" style="margin-top:4px;width:112px;padding:7px;border:1px solid var(--border);border-radius:7px;background:var(--s2);color:var(--text)"></label><label style="font-size:.75rem">Publicadas<br><input id="specialCalendarPublished" type="number" min="0" value="${social.published || ''}" style="margin-top:4px;width:112px;padding:7px;border:1px solid var(--border);border-radius:7px;background:var(--s2);color:var(--text)"></label><button id="specialSaveCalendar" style="align-self:end;padding:7px 11px;border:0;border-radius:7px;background:var(--primary);color:#fff;cursor:pointer">Guardar</button></div></details>` : ''}
           <div style="font-size:.74rem;color:var(--muted);margin-top:9px">${sourceHelp}</div>${socialRows(month)}
         </div>

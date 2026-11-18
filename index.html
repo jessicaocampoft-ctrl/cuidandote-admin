@@ -5798,6 +5798,9 @@ Acción: enviar mensaje de reenganche a los 14 pacientes que solo vinieron una v
       <!-- Todo el Equipo -->
       <div id="coEquipoWrap" style="margin-top:14px"></div>
 
+      <!-- Flujo y auditoría de liquidaciones de las comisiones existentes. -->
+      <div id="coLiquidationsWrap"></div>
+
       <!-- Incentivos comerciales: cálculo en modo de prueba, independiente de las comisiones históricas. -->
       <div id="commercialIncentivesPanel" style="margin-top:18px"></div>
 
@@ -12751,19 +12754,12 @@ function removeManualReactivacion(...args) {
   return module.removeManualReactivacion(...args);
 }
 
-function marcarComisionPagada(...args) {
+function setCommissionLifecycle(...args) {
   const module = window.PanelCommissions;
-  if (!module || typeof module.marcarComisionPagada !== 'function') {
-    throw new Error('El módulo Comisiones no está disponible: marcarComisionPagada');
+  if (!module || typeof module.setCommissionLifecycle !== 'function') {
+    throw new Error('El módulo Comisiones no está disponible: setCommissionLifecycle');
   }
-  return module.marcarComisionPagada(...args);
-}
-function desmarcarComisionPagada(...args) {
-  const module = window.PanelCommissions;
-  if (!module || typeof module.desmarcarComisionPagada !== 'function') {
-    throw new Error('El módulo Comisiones no está disponible: desmarcarComisionPagada');
-  }
-  return module.desmarcarComisionPagada(...args);
+  return module.setCommissionLifecycle(...args);
 }
 
 function renderComisiones(...args) {
@@ -13378,7 +13374,7 @@ document.addEventListener('DOMContentLoaded', () => {
 <script src="js/modules/waitlist.js?v=20261010-pending-scheduling"></script>
 <script src="js/modules/schedule-operations.js?v=20260922-quick-block-tab"></script>
 <script src="js/modules/events-agreements.js?v=20260922-quick-block-tab"></script>
-<script src="js/modules/commissions.js?v=20261108-month-weeks"></script>
+<script src="js/modules/commissions.js?v=20261118-lifecycle-jessica"></script>
 <script src="js/modules/commercial-incentives.js?v=20261117-redes-natalia-legal-hold"></script>
 <script src="js/modules/patient-search.js"></script>
 <script src="js/modules/patient-records.js"></script>
