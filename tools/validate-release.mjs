@@ -82,6 +82,7 @@ if (!fs.readFileSync(`${root}/js/modules/commissions-hub.js`, 'utf8').includes("
 const commissions = fs.readFileSync(`${root}/js/modules/commissions.js`, 'utf8');
 if (!commissions.includes("lider_nombre") || !commissions.includes('Líder Administrativa y Estratega Comercial')) fail('falta la identificación editable de Michelle como Líder Administrativa');
 if (!commissions.includes('Guardado en la base de datos')) fail('falta la confirmación de guardado de las reglas de comisión');
+if (!commissions.includes('COMMISSION_MANUAL_ENTRIES_KEY') || !commissions.includes('addManualCommission')) fail('faltan los ajustes manuales de comisión sincronizados');
 if (!fs.readFileSync(`${root}/js/modules/commercial-incentives.js`, 'utf8').includes("leaderName:'Michelle'")) fail('las comisiones comerciales no están atribuidas a Michelle por defecto');
 const financeHub = fs.readFileSync(`${root}/js/modules/finance-hub.js`, 'utf8');
 if (financeHub.includes("['comisiones', 'Comisiones']") || financeHub.includes("'sb-comisiones'")) fail('Finanzas aún contiene un acceso duplicado a Comisiones');

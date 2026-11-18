@@ -213,8 +213,16 @@ function _comisCruzadaAsign(mes, nombre) {
   return kvGet('comis_cruzada_' + mes + '_' + nombre.toLowerCase().trim()) || 'fisio';
 }
 
-function setCruzadaAsign(mes, nombre, persona) {
+async function _comisSync(message) {
+  const saved = await global.PanelStorage?._flushKV?.();
+  if (typeof toast === 'function') toast(saved ? message + ' · guardado en base de datos.' : 'Sin conexión: se reintentará guardar automáticamente.', saved ? 'ok' : 'err');
+  return saved;
+}
+
+async function setCruzadaAsign(mes, nombre, persona) {
+  if (!_comisJessica()) return;
   kvSet('comis_cruzada_' + mes + '_' + nombre.toLowerCase().trim(), persona);
+  await _comisSync('Asignación actualizada');
   renderComisiones();
 }
 
@@ -231,30 +239,79 @@ function _comisSetManualReact(year, month, list) {
 function _comisReactOrigins(year, month) {
   try { return JSON.parse(kvGet('comis_react_origen_'+year+'-'+String(month).padStart(2,'0')) || '{}'); } catch(e) { return {}; }
 }
-function setReactivationOrigin(nombre, origen) {
+async function setReactivationOrigin(nombre, origen) {
+  if (!_comisJessica()) return;
   const [year, month] = _comisMesVal().split('-').map(Number);
   const origins = _comisReactOrigins(year, month);
   const key = String(nombre || '').toLowerCase().trim();
   if (!key) return;
   origins[key] = { origen, at: new Date().toISOString() };
   kvSet('comis_react_origen_'+year+'-'+String(month).padStart(2,'0'), JSON.stringify(origins));
+  await _comisSync('Origen de reactivación actualizado');
   renderComisiones();
 }
 
-function addManualReactivacion() {
+async function addManualReactivacion() {
+  if (!_comisJessica()) return;
   const inp = document.getElementById('coManualReactInp');
   if (!inp || !inp.value.trim()) return;
   const nombre = inp.value.trim(); inp.value = '';
   const [y, m] = _comisMesVal().split('-').map(Number);
   const list = _comisManualReact(y, m);
-  if (!list.find(n => n.toLowerCase() === nombre.toLowerCase())) { list.push(nombre); _comisSetManualReact(y, m, list); }
+  if (!list.find(n => n.toLowerCase() === nombre.toLowerCase())) { list.push(nombre); _comisSetManualReact(y, m, list); await _comisSync('Reactivación registrada'); }
   renderComisiones();
 }
 
-function removeManualReactivacion(nombre) {
+async function removeManualReactivacion(nombre) {
+  if (!_comisJessica()) return;
   const [y, m] = _comisMesVal().split('-').map(Number);
   _comisSetManualReact(y, m, _comisManualReact(y,m).filter(n => n.toLowerCase() !== nombre.toLowerCase()));
+  await _comisSync('Reactivación eliminada');
   renderComisiones();
+}
+
+const COMMISSION_MANUAL_ENTRIES_KEY = 'commission_manual_entries_v1';
+function _comisManualEntries() { try { const rows = JSON.parse(kvGet(COMMISSION_MANUAL_ENTRIES_KEY) || '[]'); return Array.isArray(rows) ? rows : []; } catch (_) { return []; } }
+function _comisManualFor(persona, mes) { return _comisManualEntries().filter(row => row.persona === persona && row.periodo === mes && !row.deletedAt); }
+function _comisManualTotal(persona, mes) { return _comisManualFor(persona, mes).reduce((sum, row) => sum + Number(row.valor || 0), 0); }
+function _comisEsc(v) { return String(v || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function _comisCanEditManual(persona, mes) {
+  const state = _comisGetLifecycle(persona, mes)?.state;
+  return !['Aprobada','Pagada manualmente'].includes(state);
+}
+async function addManualCommission(persona) {
+  if (!_comisJessica()) return;
+  const mes = _comisMesVal();
+  if (!_comisCanEditManual(persona, mes)) { if (typeof toast === 'function') toast('Esta liquidación ya fue aprobada. Reábrela antes de modificarla.', 'err'); return; }
+  const subject = String(document.getElementById('coManualSubject_' + persona)?.value || '').trim();
+  const concept = String(document.getElementById('coManualConcept_' + persona)?.value || '').trim();
+  const valor = Math.round(Number(document.getElementById('coManualValue_' + persona)?.value || 0));
+  if (!concept || valor <= 0) { if (typeof toast === 'function') toast('Escribe un concepto y un valor mayor a cero.', 'err'); return; }
+  const rows = _comisManualEntries();
+  if (rows.some(row => row.persona === persona && row.periodo === mes && String(row.concepto).toLowerCase() === concept.toLowerCase() && String(row.referencia).toLowerCase() === subject.toLowerCase() && Number(row.valor) === valor && !row.deletedAt)) { if (typeof toast === 'function') toast('Ese ajuste ya está registrado para este período.', 'err'); return; }
+  rows.push({id:'MAN-'+Date.now().toString(36).toUpperCase(), persona, periodo:mes, referencia:subject, concepto:concept, valor, createdAt:new Date().toISOString(), createdBy:_comisActor()});
+  kvSet(COMMISSION_MANUAL_ENTRIES_KEY, JSON.stringify(rows));
+  await _comisSync('Comisión manual registrada');
+  renderComisiones();
+}
+async function removeManualCommission(id) {
+  if (!_comisJessica()) return;
+  const rows = _comisManualEntries(); const row = rows.find(item => item.id === id);
+  if (!row || !_comisCanEditManual(row.persona, row.periodo)) return;
+  row.deletedAt = new Date().toISOString(); row.deletedBy = _comisActor();
+  kvSet(COMMISSION_MANUAL_ENTRIES_KEY, JSON.stringify(rows));
+  await _comisSync('Comisión manual eliminada');
+  renderComisiones();
+}
+async function setCommissionVisits(mes, value) {
+  if (!_comisJessica()) return;
+  kvSet('comis_visitas_' + mes, String(Math.max(0, Number(value) || 0)));
+  await _comisSync('Alcance mensual actualizado');
+}
+function _comisManualPanel(persona, mes, title) {
+  const rows = _comisManualFor(persona, mes); const locked = !_comisCanEditManual(persona, mes);
+  const detail = rows.map(row => `<div class="co-bd-item"><span>${_comisEsc(row.referencia) ? _comisEsc(row.referencia) + ' — ' : ''}${_comisEsc(row.concepto)}</span><span style="display:flex;gap:7px;align-items:center"><strong style="color:var(--ok)">${fmtPeso(row.valor)}</strong>${locked ? '' : `<button onclick="PanelCommissions.removeManualCommission('${row.id}')" style="border:0;background:none;color:#ef4444;cursor:pointer">✕</button>`}</span></div>`).join('') || '<div class="co-empty">Sin ajustes manuales registrados.</div>';
+  return `<div class="co-bono"><div class="co-bono-title">➕ Ajustes manuales — base de datos</div><div class="co-breakdown">${detail}</div>${locked ? '<div style="font-size:.72rem;color:var(--muted);margin-top:8px">Liquidación congelada: no admite cambios.</div>' : `<div class="co-manual-row" style="margin-top:8px"><input class="co-manual-inp" id="coManualSubject_${persona}" placeholder="Paciente / referencia"><input class="co-manual-inp" id="coManualConcept_${persona}" placeholder="Concepto"><input class="co-manual-inp" id="coManualValue_${persona}" type="number" min="1" placeholder="Valor"><button onclick="PanelCommissions.addManualCommission('${persona}')" style="padding:7px 14px;background:var(--primary);color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:var(--font-b);font-size:.8rem;white-space:nowrap">+ Guardar</button></div>`}</div>`;
 }
 
 // ── CICLO ÚNICO DE LIQUIDACIÓN ────────────────────────────────────────────
@@ -427,14 +484,17 @@ function renderComisiones() {
   const equipoOk  = npsActual !== null && npsActual >= cfg.equipo_nps_meta;
 
   // ── TOTALES ──
-  const totalAux   = bonoAg + bonoReact + bonoContAux + bonoCruzAux;
-  const totalFisio = bonoRev + bonoCruzFisio;
-  const totalVideo = bonoContVideo;
+  const manualAux = _comisManualTotal('auxiliar', mes);
+  const manualFisio = _comisManualTotal('fisio', mes);
+  const manualVideo = _comisManualTotal('video', mes);
+  const totalAux   = bonoAg + bonoReact + bonoContAux + bonoCruzAux + manualAux;
+  const totalFisio = bonoRev + bonoCruzFisio + manualFisio;
+  const totalVideo = bonoContVideo + manualVideo;
   _commissionSnapshots = {
     // "auxiliar" se conserva solo como clave técnica para no romper el historial.
-    auxiliar: {responsable:`${cfg.lider_nombre} — Líder Administrativa y Estratega Comercial`, concepto:'Agenda, contenido y venta cruzada', periodo:mes, amount:totalAux},
-    fisio: {responsable:'Fisioterapeuta de Apoyo', concepto:'Renovaciones históricas y venta cruzada', periodo:mes, amount:totalFisio},
-    video: {responsable:cfg.contenido_persona || 'Creador de Contenido', concepto:'Bono de contenido', periodo:mes, amount:totalVideo}
+    auxiliar: {responsable:`${cfg.lider_nombre} — Líder Administrativa y Estratega Comercial`, concepto:'Agenda, contenido, venta cruzada y ajustes', periodo:mes, amount:totalAux},
+    fisio: {responsable:'Fisioterapeuta de Apoyo', concepto:'Renovaciones, venta cruzada y ajustes', periodo:mes, amount:totalFisio},
+    video: {responsable:cfg.contenido_persona || 'Creador de Contenido', concepto:'Contenido y ajustes', periodo:mes, amount:totalVideo}
   };
   ['auxiliar','fisio','video'].forEach(persona => _comisMigrateLegacyPaid(persona, mes));
   const totalAuxLiquidado = _comisDisplayAmount(_comisGetLifecycle('auxiliar', mes), totalAux);
@@ -488,6 +548,7 @@ function renderComisiones() {
       <div class="co-bono-row"><span class="co-bono-label">${cruzadas.filter(c=>c.asign==='auxiliar').length} venta${cruzadas.filter(c=>c.asign==='auxiliar').length!==1?'s':''} asignada${cruzadas.filter(c=>c.asign==='auxiliar').length!==1?'s':''} a Auxiliar × ${fmtPeso(cfg.bono_cruzada)}</span><span class="co-bono-amount">${fmtPeso(bonoCruzAux)}</span></div></div>` : ''}
     ${bonoContAux > 0 ? `<div class="co-bono"><div class="co-bono-title">🎬 Parte del Bono Contenido (${cfg.contenido_split_aux}%)</div>
       <div class="co-bono-row"><span class="co-bono-label">${cfg.contenido_split_aux}% de ${fmtPeso(cfg.bono_contenido)} por meta de leads cumplida</span><span class="co-bono-amount">${fmtPeso(bonoContAux)}</span></div></div>` : ''}
+    ${_comisManualPanel('auxiliar', mes, cfg.lider_nombre)}
     <div class="co-footer">${btnAux}<span style="font-size:.75rem;color:var(--muted)">Calculado: ${fmtPeso(totalAux)}</span></div>
   </div>`;
 
@@ -517,6 +578,7 @@ function renderComisiones() {
     <div class="co-bono"><div class="co-bono-title">➕ Bono Venta Cruzada</div>
       <div class="co-bono-row"><span class="co-bono-label">${cruzadas.filter(c=>c.asign==='fisio').length} asignada${cruzadas.filter(c=>c.asign==='fisio').length!==1?'s':''} a Fisio × ${fmtPeso(cfg.bono_cruzada)}</span><span class="co-bono-amount">${fmtPeso(bonoCruzFisio)}</span></div>
       <div class="co-breakdown">${cruzH}<div style="font-size:.7rem;color:var(--muted);margin-top:8px;border-top:1px solid var(--border);padding-top:6px">Elige a quién se le acredita cada venta cruzada con el selector.</div></div></div>
+    ${_comisManualPanel('fisio', mes, 'Fisioterapeuta de Apoyo')}
     <div class="co-footer">${btnFisio}<span style="font-size:.75rem;color:var(--muted)">Calculado: ${fmtPeso(totalFisio)}</span></div>
   </div>`;
 
@@ -552,7 +614,7 @@ function renderComisiones() {
           <span style="display:flex;align-items:center;gap:8px">
             <input type="number" value="${visitasGuardadas}" min="0" placeholder="0"
               style="width:90px;background:var(--s2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--font-m);font-size:.82rem;padding:4px 8px;outline:none;text-align:right"
-              onchange="kvSet('comis_visitas_${mes}',this.value)" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'">
+              onchange="PanelCommissions.setCommissionVisits('${mes}',this.value)" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'">
             <span style="font-size:.7rem;color:var(--muted)">manual</span>
           </span>
         </div>
@@ -563,6 +625,7 @@ function renderComisiones() {
         <div class="co-bono-row"><span class="co-bono-label">${cfg.contenido_persona} (${splitVideoP}%)</span><span class="co-bono-amount">${fmtPeso(bonoContVideo)}</span></div>
       </div>
     </div>
+    ${_comisManualPanel('video', mes, cfg.contenido_persona)}
     <div class="co-footer">
       ${btnVideo}
       <span style="font-size:.75rem;color:var(--muted)">Calculado: ${fmtPeso(bonoCont)}</span>
@@ -610,9 +673,13 @@ global.PanelCommissions = Object.freeze({
     setReactivationOrigin,
     addManualReactivacion,
     removeManualReactivacion,
+    addManualCommission,
+    removeManualCommission,
+    setCommissionVisits,
     setCommissionLifecycle,
     _comisLifecycleData,
     _comisDuplicateAlerts,
+    _comisManualEntries,
     renderComisiones
   });
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -52,4 +52,13 @@ if (records['2026-11:auxiliar'].state !== 'Pagada manualmente') {
   throw new Error('El pago manual no respetó el flujo de aprobación.');
 }
 
-console.log('PRUEBA APROBADA: borrador → revisión → aprobación congelada → pago manual.');
+element('coManualSubject_fisio').value = 'Referencia de prueba';
+element('coManualConcept_fisio').value = 'Venta validada';
+element('coManualValue_fisio').value = '10000';
+await window.PanelCommissions.addManualCommission('fisio');
+const manual = JSON.parse(kv.commission_manual_entries_v1 || '[]');
+if (manual.length !== 1 || manual[0].persona !== 'fisio' || manual[0].valor !== 10000) {
+  throw new Error('El ajuste manual del fisioterapeuta no quedó persistido por persona y período.');
+}
+
+console.log('PRUEBA APROBADA: ciclo de liquidación y ajuste manual persistido por persona y período.');
