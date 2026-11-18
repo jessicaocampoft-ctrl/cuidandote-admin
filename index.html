@@ -4067,7 +4067,7 @@ Primero evaluamos cómo está el cuerpo ahora, luego tratamos, luego te enseñam
                 <option>Honorarios Jessica</option>
                 <option>Seguridad Social</option>
                 <option>Fisioterapeuta de apoyo</option>
-                <option>Auxiliar Administrativa</option>
+                <option>Líder Administrativa</option>
               </select>
             </div>
             <div class="field" style="margin:0">
@@ -5763,7 +5763,7 @@ Acción: enviar mensaje de reenganche a los 14 pacientes que solo vinieron una v
       <!-- Resumen -->
       <div class="co-resumen">
         <div class="co-res-item"><div class="co-res-label">Total a pagar</div><div class="co-res-val" id="coTotalGeneral">—</div></div>
-        <div class="co-res-item"><div class="co-res-label">Auxiliar administrativa</div><div class="co-res-val" id="coTotalAux">—</div></div>
+        <div class="co-res-item"><div class="co-res-label">Líder administrativa</div><div class="co-res-val" id="coTotalAux">—</div></div>
         <div class="co-res-item"><div class="co-res-label">Fisio de apoyo</div><div class="co-res-val" id="coTotalFisio">—</div></div>
         <div class="co-res-item"><div class="co-res-label" id="coVideoPersonaLabel">Persona del video</div><div class="co-res-val" id="coTotalVideo">—</div></div>
         <div class="co-res-item"><div class="co-res-label">Sesiones / meta mensual</div><div class="co-res-val" id="coSemanasRes">—</div></div>
@@ -5775,10 +5775,11 @@ Acción: enviar mensaje de reenganche a los 14 pacientes que solo vinieron una v
       </div>
       <div class="co-cfg-panel" id="coConfigPanel" style="display:none">
         <div style="font-family:var(--font-h);font-size:1.05rem;font-weight:600;margin-bottom:4px">Configuración de comisiones</div>
-        <p style="font-size:.82rem;color:var(--muted);margin-bottom:14px">Se guarda en todos los dispositivos automáticamente.</p>
+        <p style="font-size:.82rem;color:var(--muted);margin-bottom:14px">Los cambios se guardan en la base de datos y se sincronizan en todos los dispositivos. Solo Jessica puede modificarlos.</p>
 
-        <div style="font-size:.72rem;font-family:var(--font-m);color:var(--primary);text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px">Auxiliar Administrativa</div>
+        <div style="font-size:.72rem;font-family:var(--font-m);color:var(--primary);text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px">Líder Administrativa y Estratega Comercial</div>
         <div class="co-cfg-grid">
+          <div><label class="co-inp-label">Nombre de la líder</label><input class="co-inp" id="cfg_lider_nombre" type="text" placeholder="Michelle"></div>
           <div><label class="co-inp-label">Comisión agenda llena (mes completo)</label><input class="co-inp" id="cfg_bono_agenda" type="number" placeholder="80000"></div>
           <div><label class="co-inp-label">Semanas meta (de 4 o 5)</label><input class="co-inp" id="cfg_semanas_meta" type="number" placeholder="4"></div>
           <div><label class="co-inp-label">Sesiones/semana = "llena" <span style="color:var(--primary);font-size:.65rem">↳ tomado de Meta KPI</span></label><input class="co-inp" id="cfg_ses_llena" type="number" disabled style="opacity:.6;cursor:not-allowed" title="Se sincroniza automáticamente con la meta de sesiones del KPI. Cámbiala en Guía de KPIs → Editar valores de referencia."></div>
@@ -5798,7 +5799,7 @@ Acción: enviar mensaje de reenganche a los 14 pacientes que solo vinieron una v
         <div style="font-size:.72rem;font-family:var(--font-m);color:var(--primary);text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px">Creador de Contenido</div>
         <div class="co-cfg-grid">
           <div><label class="co-inp-label">Comisión total de contenido (si cumple meta)</label><input class="co-inp" id="cfg_bono_contenido" type="number" placeholder="50000"></div>
-          <div><label class="co-inp-label">% de la comisión que va a la Auxiliar</label><input class="co-inp" id="cfg_contenido_split_aux" type="number" placeholder="50"></div>
+          <div><label class="co-inp-label">% de la comisión que va a la Líder</label><input class="co-inp" id="cfg_contenido_split_aux" type="number" placeholder="50"></div>
           <div><label class="co-inp-label">Nombre de la persona del video</label><input class="co-inp" id="cfg_contenido_persona" type="text" placeholder="Nombre"></div>
           <div><label class="co-inp-label">Meta mínima de leads para ganar la comisión</label><input class="co-inp" id="cfg_contenido_leads_meta" type="number" placeholder="5"></div>
         </div>
@@ -5810,7 +5811,7 @@ Acción: enviar mensaje de reenganche a los 14 pacientes que solo vinieron una v
         </div>
 
         <button onclick="saveComisConfig()" style="padding:8px 20px;background:var(--primary);color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:var(--font-b);font-size:.83rem">Guardar configuración</button>
-        <span id="coConfigMsg" style="font-size:.75rem;color:var(--ok);margin-left:10px;display:none">✓ Guardado</span>
+        <span id="coConfigMsg" style="font-size:.75rem;color:var(--ok);margin-left:10px;display:none"></span>
       </div>
 
       <!-- Tarjetas principales (2-columnas) -->
@@ -11362,7 +11363,7 @@ function copiarBriefClaude() {
   row('  Honorarios Jessica', fmtPeso(costos.honorarios_fisio));
   row('  Seguridad Social', fmtPeso(costos.seguridad_social));
   row('  Fisioterapeuta de apoyo', fmtPeso(costos.asistente_fisio));
-  row('  Auxiliar Administrativa', fmtPeso(costos.auxiliar_admin));
+  row('  Líder Administrativa', fmtPeso(costos.auxiliar_admin));
   row('  Arriendo', fmtPeso(costos.arriendo));
   row('  Servicios públicos', fmtPeso(costos.servicios_publicos));
   row('  Datos celulares', fmtPeso(costos.datos_celulares));
@@ -13401,7 +13402,7 @@ document.addEventListener('DOMContentLoaded', () => {
 <script src="js/modules/waitlist.js?v=20261010-pending-scheduling"></script>
 <script src="js/modules/schedule-operations.js?v=20260922-quick-block-tab"></script>
 <script src="js/modules/events-agreements.js?v=20260922-quick-block-tab"></script>
-<script src="js/modules/commissions.js?v=20261118-lifecycle-jessica"></script>
+<script src="js/modules/commissions.js?v=20261118-michelle-leader-db"></script>
 <script src="js/modules/commercial-incentives.js?v=20261118-commercial-commissions-labels"></script>
 <script src="js/modules/patient-search.js"></script>
 <script src="js/modules/patient-records.js"></script>

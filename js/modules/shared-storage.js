@@ -44,16 +44,18 @@ function kvRemove(key) {
 
 async function _flushKV() {
   _kvFlushTimer = null;
-  if (!Object.keys(_kvDirty).length) return;
+  if (!Object.keys(_kvDirty).length) return true;
   const batch = { ..._kvDirty };
   _kvDirty = {};
   try {
     const response = await fetch(`${APPS_SCRIPT_URL}?action=setAdminKV&token=${encodeURIComponent(TOKEN)}&data=${encodeURIComponent(JSON.stringify(batch))}`);
     const result = await response.json().catch(() => null);
     if (!response.ok || result?.ok === false) throw new Error(result?.error || 'No se pudo sincronizar el cambio');
+    return true;
   } catch(e) {
     Object.assign(_kvDirty, batch);
     _kvFlushTimer = setTimeout(_flushKV, 5000);
+    return false;
   }
 }
 

@@ -22,10 +22,15 @@ function _comisGetConfig() {
     contenido_persona:     cfg.contenido_persona || 'Persona del video',
     contenido_leads_meta:  parseInt(cfg.contenido_leads_meta  || '5',     10),
     equipo_nps_meta:       parseInt(cfg.equipo_nps_meta       || '90',    10),
+    lider_nombre:          cfg.lider_nombre || 'Michelle',
   };
 }
 
-function saveComisConfig() {
+async function saveComisConfig() {
+  if (!_comisJessica()) {
+    if (typeof toast === 'function') toast('Solo Jessica puede modificar las reglas de comisión.', 'err');
+    return;
+  }
   const g = id => (document.getElementById(id)||{}).value || '';
   // No se sobreescriben los importes anteriores: quedan como trazabilidad de
   // liquidaciones pasadas. Las reglas nuevas se aplican por periodo.
@@ -46,13 +51,24 @@ function saveComisConfig() {
     contenido_persona:    g('cfg_contenido_persona'),
     contenido_leads_meta: g('cfg_contenido_leads_meta'),
     equipo_nps_meta:      g('cfg_equipo_nps_meta'),
+    lider_nombre:         g('cfg_lider_nombre') || previous.lider_nombre || 'Michelle',
   }));
+  const saved = await global.PanelStorage?._flushKV?.();
   const msg = document.getElementById('coConfigMsg');
-  if (msg) { msg.style.display='inline'; setTimeout(()=>msg.style.display='none',2000); }
+  if (msg) {
+    msg.textContent = saved ? '✓ Guardado en la base de datos' : '⚠ Sin conexión: se reintentará automáticamente';
+    msg.style.color = saved ? 'var(--ok)' : '#b45309';
+    msg.style.display='inline';
+    setTimeout(()=>msg.style.display='none',3500);
+  }
   renderComisiones();
 }
 
 function toggleComisConfig() {
+  if (!_comisJessica()) {
+    if (typeof toast === 'function') toast('Solo Jessica puede editar las reglas de comisión.', 'err');
+    return;
+  }
   const p = document.getElementById('coConfigPanel');
   if (!p) return;
   const open = p.style.display === 'none';
@@ -71,6 +87,7 @@ function toggleComisConfig() {
   set('cfg_contenido_persona',    cfg.contenido_persona);
   set('cfg_contenido_leads_meta', cfg.contenido_leads_meta);
   set('cfg_equipo_nps_meta',      cfg.equipo_nps_meta);
+  set('cfg_lider_nombre',         cfg.lider_nombre);
 }
 
 function _initComisMesSel() {
@@ -414,7 +431,8 @@ function renderComisiones() {
   const totalFisio = bonoRev + bonoCruzFisio;
   const totalVideo = bonoContVideo;
   _commissionSnapshots = {
-    auxiliar: {responsable:'Auxiliar Administrativa', concepto:'Agenda, contenido y venta cruzada', periodo:mes, amount:totalAux},
+    // "auxiliar" se conserva solo como clave técnica para no romper el historial.
+    auxiliar: {responsable:`${cfg.lider_nombre} — Líder Administrativa y Estratega Comercial`, concepto:'Agenda, contenido y venta cruzada', periodo:mes, amount:totalAux},
     fisio: {responsable:'Fisioterapeuta de Apoyo', concepto:'Renovaciones históricas y venta cruzada', periodo:mes, amount:totalFisio},
     video: {responsable:cfg.contenido_persona || 'Creador de Contenido', concepto:'Bono de contenido', periodo:mes, amount:totalVideo}
   };
@@ -456,7 +474,7 @@ function renderComisiones() {
 
   const htmlAux = `<div class="co-card">
     <div class="co-card-hdr">
-      <div><div class="co-card-title">Auxiliar Administrativa</div><div class="co-card-role">Agenda · Recuperación · Contenido (${cfg.contenido_split_aux}%)</div></div>
+      <div><div class="co-card-title">${cfg.lider_nombre} — Líder Administrativa y Estratega Comercial</div><div class="co-card-role">Agenda · Recuperación · Contenido (${cfg.contenido_split_aux}%)</div></div>
       <div class="co-total">${fmtPeso(totalAuxLiquidado)}</div>
     </div>
     <div class="co-bono"><div class="co-bono-title">📅 Bono de agenda mensual · ${pctOcupReal}% de la meta</div>
@@ -481,7 +499,7 @@ function renderComisiones() {
       <span>${c.nombre} — <em style="font-size:.78rem">${c.servicio}</em></span>
       <select style="${selStyle}" onchange="setCruzadaAsign('${mes}','${c.nombre.replace(/'/g,"\\'")}',this.value)">
         <option value="fisio"    ${c.asign==='fisio'    ?'selected':''}>Fisio de Apoyo</option>
-        <option value="auxiliar" ${c.asign==='auxiliar' ?'selected':''}>Auxiliar</option>
+        <option value="auxiliar" ${c.asign==='auxiliar' ?'selected':''}>Líder Administrativa</option>
       </select>
       <span style="font-family:var(--font-m);font-size:.78rem;color:var(--ok)">${fmtPeso(cfg.bono_cruzada)}</span>
     </div>`).join('') || '<div class="co-empty">No se detectaron ventas cruzadas este mes</div>';
@@ -518,7 +536,7 @@ function renderComisiones() {
     <div class="co-card-hdr">
       <div>
         <div class="co-card-title">🎬 Creador de Contenido</div>
-        <div class="co-card-role">Compartido: Auxiliar (${cfg.contenido_split_aux}%) + ${cfg.contenido_persona} (${splitVideoP}%)</div>
+        <div class="co-card-role">Compartido: ${cfg.lider_nombre} (${cfg.contenido_split_aux}%) + ${cfg.contenido_persona} (${splitVideoP}%)</div>
       </div>
       <div style="text-align:right">
         <div class="co-total">${fmtPeso(totalVideoLiquidado)}</div>
@@ -541,7 +559,7 @@ function renderComisiones() {
       </div>
       <div>
         <div style="font-size:.7rem;font-family:var(--font-m);color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px">División del bono</div>
-        <div class="co-bono-row" style="margin-bottom:8px"><span class="co-bono-label">Auxiliar Administrativa (${cfg.contenido_split_aux}%)</span><span class="co-bono-amount">${fmtPeso(bonoContAux)}</span></div>
+        <div class="co-bono-row" style="margin-bottom:8px"><span class="co-bono-label">${cfg.lider_nombre} (${cfg.contenido_split_aux}%)</span><span class="co-bono-amount">${fmtPeso(bonoContAux)}</span></div>
         <div class="co-bono-row"><span class="co-bono-label">${cfg.contenido_persona} (${splitVideoP}%)</span><span class="co-bono-amount">${fmtPeso(bonoContVideo)}</span></div>
       </div>
     </div>
