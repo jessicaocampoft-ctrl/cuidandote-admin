@@ -48,7 +48,9 @@ async function _flushKV() {
   const batch = { ..._kvDirty };
   _kvDirty = {};
   try {
-    await fetch(`${APPS_SCRIPT_URL}?action=setAdminKV&token=${encodeURIComponent(TOKEN)}&data=${encodeURIComponent(JSON.stringify(batch))}`);
+    const response = await fetch(`${APPS_SCRIPT_URL}?action=setAdminKV&token=${encodeURIComponent(TOKEN)}&data=${encodeURIComponent(JSON.stringify(batch))}`);
+    const result = await response.json().catch(() => null);
+    if (!response.ok || result?.ok === false) throw new Error(result?.error || 'No se pudo sincronizar el cambio');
   } catch(e) {
     Object.assign(_kvDirty, batch);
     _kvFlushTimer = setTimeout(_flushKV, 5000);
