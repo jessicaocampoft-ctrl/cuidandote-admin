@@ -176,7 +176,7 @@
     const existing = document.querySelector('script[data-panel-finance-hub]');
     if (existing) { existing.addEventListener('load', start, { once:true }); return; }
     const script = document.createElement('script');
-    script.src = 'js/modules/finance-hub.js';
+    script.src = 'js/modules/finance-hub.js?v=20261118-commercial-commissions';
     script.dataset.panelFinanceHub = '1';
     script.addEventListener('load', start, { once:true });
     script.addEventListener('error', () => console.warn('No se pudo cargar Gestión financiera unificada'), { once:true });

@@ -8,8 +8,7 @@
   const VIEW_BY_TAB = {
     resumen: 'finanzas',
     metas: 'presupuesto',
-    indicadores: 'guiakpis',
-    comisiones: 'comisiones'
+    indicadores: 'guiakpis'
   };
 
   function _injectStyles() {
@@ -56,7 +55,7 @@
   }
 
   function setTab(tab, options = {}) {
-    if (!['resumen','metas','indicadores','comisiones','reportes'].includes(tab)) tab = 'resumen';
+    if (!['resumen','metas','indicadores','reportes'].includes(tab)) tab = 'resumen';
     if (options.prime !== false) _primeOriginalView(tab);
     _showPanels(tab);
   }
@@ -87,19 +86,16 @@
     const finanzas = document.getElementById('vFinanzas');
     const presupuesto = document.getElementById('vPresupuesto');
     const indicadores = document.getElementById('vGuiakpis');
-    const comisiones = document.getElementById('vComisiones');
-    if (!finanzas || !presupuesto || !indicadores || !comisiones) return false;
+    if (!finanzas || !presupuesto || !indicadores) return false;
     if (finanzas.dataset.financeHubReady === '1') return true;
 
     const finHeader = finanzas.querySelector(':scope > .page-header');
     const preHeader = presupuesto.querySelector(':scope > .page-header');
     const indHeader = indicadores.querySelector(':scope > .page-header');
-    const comHeader = comisiones.querySelector(':scope > .page-header');
 
     const finChildren = Array.from(finanzas.children).filter(el => el !== finHeader);
     const preChildren = Array.from(presupuesto.children).filter(el => el !== preHeader);
     const indChildren = Array.from(indicadores.children).filter(el => el !== indHeader);
-    const comChildren = Array.from(comisiones.children).filter(el => el !== comHeader);
 
     finanzas.dataset.financeHubReady = '1';
     _injectStyles();
@@ -108,7 +104,7 @@
       const title = finHeader.querySelector('.page-title');
       const sub = finHeader.querySelector('.page-sub');
       if (title) title.innerHTML = '<em>Gestión financiera</em>';
-      if (sub) sub.textContent = 'Resumen, metas, indicadores, comisiones y reportes en un solo lugar';
+      if (sub) sub.textContent = 'Resumen, metas, indicadores y reportes en un solo lugar';
     }
 
     const tabs = document.createElement('div');
@@ -119,7 +115,6 @@
       ['resumen', 'Resumen'],
       ['metas', 'Metas y presupuesto'],
       ['indicadores', 'Indicadores'],
-      ['comisiones', 'Comisiones'],
       ['reportes', 'Reportes']
     ].forEach(([id, label]) => {
       const btn = document.createElement('button');
@@ -144,14 +139,13 @@
     const summaryPanel = makePanel('resumen', finChildren);
     const budgetPanel = makePanel('metas', preChildren);
     const indicatorsPanel = makePanel('indicadores', indChildren);
-    const commissionsPanel = makePanel('comisiones', comChildren);
     const reportsPanel = _buildReportsPanel();
 
     if (finHeader) finHeader.insertAdjacentElement('afterend', tabs);
     else finanzas.prepend(tabs);
-    finanzas.append(summaryPanel, budgetPanel, indicatorsPanel, commissionsPanel, reportsPanel);
+    finanzas.append(summaryPanel, budgetPanel, indicatorsPanel, reportsPanel);
 
-    ['sb-guiakpis','sb-presupuesto','sb-comisiones'].forEach(id => {
+    ['sb-guiakpis','sb-presupuesto'].forEach(id => {
       const el = document.getElementById(id);
       if (!el) return;
       el.style.display = 'none';
@@ -161,7 +155,7 @@
     const finSide = document.getElementById('sb-finanzas');
     if (finSide) finSide.setAttribute('data-tooltip', 'Gestión financiera');
 
-    [presupuesto, indicadores, comisiones].forEach(view => {
+    [presupuesto, indicadores].forEach(view => {
       view.style.display = 'none';
       view.setAttribute('aria-hidden', 'true');
     });
@@ -180,9 +174,7 @@
       const map = {
         finanzas: 'resumen',
         presupuesto: 'metas',
-        guiakpis: 'indicadores',
-        comisiones: 'comisiones',
-        recuperacion: 'comisiones'
+        guiakpis: 'indicadores'
       };
       const tab = map[view];
       if (tab) {
@@ -190,13 +182,6 @@
         const result = _originalShowView.call(this, 'finanzas', ...args);
         setTimeout(() => {
           _showPanels(tab);
-          if (view === 'recuperacion') {
-            const hub = global.PanelCommissionsHub;
-            if (hub && typeof hub.setTab === 'function') hub.setTab('recuperaciones');
-          } else if (view === 'comisiones') {
-            const hub = global.PanelCommissionsHub;
-            if (hub && typeof hub.setTab === 'function') hub.setTab('comisiones');
-          }
         }, 0);
         return result;
       }
