@@ -4,6 +4,13 @@
 
 El panel incorpora un módulo de preparación y pruebas. La publicación real está bloqueada: no se han conectado cuentas de Meta ni se han almacenado secretos en el navegador.
 
+### Punto de reanudación — 18 nov. 2026
+
+- El gateway seguro está desplegado en Cloud Run como `cuidandote-social-agent-gateway` (región `europe-west1`) y permanece en `DRY_RUN=true`.
+- La URL de callback preparada es `https://cuidandote-social-agent-gateway-517507254404.europe-west1.run.app/webhooks/meta`.
+- La cuenta de Meta for Developers inició su registro, pero Meta exige un celular con acceso disponible para terminar su verificación. No se creó la aplicación de Meta, no se configuraron tokens y no se publicó ningún comentario.
+- Para retomar: completar la verificación de Meta for Developers, crear la app de negocio, configurar los secretos únicamente en el gestor de secretos, registrar el callback y ejecutar pruebas controladas antes de cualquier activación.
+
 ## Arquitectura detectada
 
 - **Frontend:** `cuidandote-admin/index.html`, JavaScript sin framework y módulos bajo `js/`.
