@@ -116,12 +116,23 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-b);min-height
 .pro-summary-card{padding:15px 16px;border-radius:14px;background:var(--s1);border:1px solid var(--border)}
 .pro-summary-card strong{display:block;color:var(--primary-h);font:600 1.65rem var(--font-m);line-height:1.1}
 .pro-summary-card span{display:block;margin-top:5px;color:var(--muted);font-size:.84rem}
+.pro-hours-panel{grid-column:1/-1;padding:16px;border:1px solid var(--border);border-radius:14px;background:linear-gradient(135deg,rgba(27,191,176,.11),var(--s1))}
+.pro-hours-heading{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:13px}
+.pro-hours-heading strong{display:block;font:600 1.12rem var(--font-h);color:var(--text)}
+.pro-hours-heading span:not(.team-pill){display:block;margin-top:3px;color:var(--muted);font-size:.82rem}
+.pro-hours-grid{display:grid;grid-template-columns:repeat(5,minmax(110px,1fr));gap:8px}
+.pro-hours-grid>div{padding:10px;border-radius:10px;background:rgba(255,255,255,.65);border:1px solid var(--border)}
+.pro-hours-grid span{display:block;color:var(--muted);font-size:.74rem;line-height:1.25}
+.pro-hours-grid strong{display:block;margin-top:4px;font:600 1rem var(--font-m);color:var(--primary-h)}
+.pro-hours-grid strong.is-negative{color:var(--err)}.pro-hours-grid strong.is-positive{color:var(--ok)}
+.pro-hours-note{margin:11px 0 0;color:var(--muted);font-size:.78rem;line-height:1.45}
 .pro-help{margin-bottom:16px;padding:12px 15px;border:1px solid var(--border);border-radius:12px;background:var(--s1);color:var(--muted);font-size:.88rem;line-height:1.45}
 .pro-appointment{padding:16px;border-left:4px solid var(--primary)}
 .pro-appointment h3{font-family:var(--font-h);font-size:1.35rem;margin-bottom:8px}
 .pro-meta{display:grid;gap:6px;color:var(--muted);font-size:.88rem;line-height:1.45}
 .pro-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
-@media(max-width:560px){.pro-summary{grid-template-columns:1fr}.pro-card{padding:20px}.pro-header{align-items:flex-start}.pro-brand h1{font-size:1.65rem}}
+@media(max-width:720px){.pro-hours-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:560px){.pro-summary{grid-template-columns:1fr}.pro-hours-grid{grid-template-columns:1fr}.pro-card{padding:20px}.pro-header{align-items:flex-start}.pro-brand h1{font-size:1.65rem}}
 .team-hero{
   display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:center;
   margin-bottom:18px;padding:20px;border-radius:18px;
@@ -1746,7 +1757,7 @@ button:disabled{cursor:not-allowed;opacity:.58}
       <button class="btn btn-ghost" onclick="loadProfessionalAgenda()">Actualizar</button>
     </div>
     <div id="proSummary" class="pro-summary" aria-live="polite"></div>
-    <div class="pro-help">Aquí verás solo tu agenda asignada. Marca una sesión como atendida al terminarla, o usa <strong>Reportar novedad</strong> si necesitas que administración intervenga.</div>
+    <div class="pro-help">Aquí verás tu agenda asignada y tus horas de la semana. Marca una sesión como atendida al terminarla, o usa <strong>Reportar novedad</strong> si necesitas que administración intervenga.</div>
     <div id="proAgendaList" class="pro-grid"></div>
   </div>
 </div>
@@ -6569,6 +6580,7 @@ let teamData = {profesionales: [], asignaciones: [], novedades: [], auditoria: [
 let PROFESSIONAL_TOKEN = sessionStorage.getItem('professionalToken') || '';
 let professionalSession = null;
 let professionalAgenda = [];
+let professionalWorkSchedule = null;
 let professionalMode = 'hoy';
  // {m, y} o null = mes actual
 
@@ -6665,6 +6677,8 @@ function _sessionBridge() {
     getProfessionalSession: () => professionalSession,
     setProfessionalSession: value => { professionalSession = value; },
     setProfessionalAgenda: value => { professionalAgenda = value || []; },
+    getProfessionalWorkSchedule: () => professionalWorkSchedule,
+    setProfessionalWorkSchedule: value => { professionalWorkSchedule = value || null; },
     getProfessionalUser: () => document.getElementById('proUser')?.value || '',
     getProfessionalPassword: () => document.getElementById('proPass')?.value || '',
     getProfessionalNewPassword: () => document.getElementById('proNewPass')?.value || '',

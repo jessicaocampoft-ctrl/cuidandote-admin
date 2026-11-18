@@ -333,6 +333,7 @@
         ctx.setProfessionalToken('');
         ctx.setProfessionalSession(null);
         ctx.setProfessionalAgenda([]);
+        ctx.setProfessionalWorkSchedule(null);
         ctx.toast(data.error || 'Sesión vencida', 'err');
         openProfessionalLoginMode(ctx);
         return data;
@@ -346,6 +347,7 @@
           : 'Mi espacio de trabajo';
       }
       ctx.setProfessionalAgenda(data.citas || []);
+      ctx.setProfessionalWorkSchedule(data.workSchedule || null);
       ctx.renderProfessionalAgenda();
       return data;
     } catch (error) {
@@ -359,6 +361,7 @@
     ctx.setProfessionalToken('');
     ctx.setProfessionalSession(null);
     ctx.setProfessionalAgenda([]);
+    ctx.setProfessionalWorkSchedule(null);
     openProfessionalLoginMode(ctx);
   }
 

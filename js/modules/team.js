@@ -696,6 +696,41 @@ function setProfessionalMode(mode) {
   renderProfessionalAgenda();
 }
 
+function professionalHoursPanel(base) {
+  const schedule = professionalWorkSchedule || {};
+  const weekStart = schedule.semanaInicio || mondayForWorkHours(today());
+  const weekEnd = new Date(`${weekStart}T12:00:00`);
+  weekEnd.setDate(weekEnd.getDate() + 7);
+  const weekEndText = weekEnd.toISOString().slice(0, 10);
+  const days = WORK_WEEK_DAYS.map(([key, label]) => ({ key, label, text: schedule[key] || '' }));
+  const scheduled = days.reduce((sum, day) => sum + scheduledHoursForDay(day.text), 0);
+  const agreed = workHoursNumber(schedule.horasAcordadas);
+  const hasEnteredWorked = String(schedule.horasTrabajadas ?? '').trim() !== '';
+  const enteredWorked = workHoursNumber(schedule.horasTrabajadas);
+  const worked = hasEnteredWorked ? enteredWorked : scheduled;
+  const attendedHours = base
+    .filter(c => c.fecha >= weekStart && c.fecha < weekEndText && ['Sesión atendida', 'Atendida'].includes(c.estado))
+    .reduce((sum, c) => sum + (Number(c.duracion) || 0), 0) / 60;
+  const difference = agreed === '' ? null : worked - agreed;
+  const scheduleText = days.filter(day => day.text).map(day => `${day.label}: ${day.text}`).join(' · ');
+  const recordedLabel = hasEnteredWorked ? 'Horas trabajadas' : 'Horas registradas*';
+  return `
+    <section class="pro-hours-panel" aria-label="Mis horas de la semana">
+      <div class="pro-hours-heading">
+        <div><strong>Mis horas de la semana</strong><span>Semana del ${esc(fmtDate(weekStart))}</span></div>
+        <span class="team-pill info">Solo lectura</span>
+      </div>
+      <div class="pro-hours-grid">
+        <div><span>Horas acordadas</span><strong>${agreed === '' ? 'Sin registrar' : formatWorkHours(agreed)}</strong></div>
+        <div><span>Horas programadas</span><strong>${formatWorkHours(scheduled)}</strong></div>
+        <div><span>${recordedLabel}</span><strong>${formatWorkHours(worked)}</strong></div>
+        <div><span>Sesiones atendidas</span><strong>${formatWorkHours(attendedHours)}</strong></div>
+        <div><span>Diferencia</span><strong class="${difference === null ? '' : difference < 0 ? 'is-negative' : difference > 0 ? 'is-positive' : ''}">${difference === null ? '—' : `${difference > 0 ? '+' : ''}${formatWorkHours(difference)}`}</strong></div>
+      </div>
+      <p class="pro-hours-note">${scheduleText ? esc(scheduleText) : 'Administración aún no ha registrado un horario para esta semana.'}${!hasEnteredWorked && scheduleText ? ' · *Mientras no se registre un ajuste, las horas registradas corresponden a las horas programadas.' : ''}</p>
+    </section>`;
+}
+
 function renderProfessionalAgenda() {
   const selected = document.getElementById('proDate').value || today();
   const base = professionalAgenda.slice().sort((a,b) => (`${a.fecha} ${a.hora}`).localeCompare(`${b.fecha} ${b.hora}`));
@@ -716,7 +751,8 @@ function renderProfessionalAgenda() {
     summary.innerHTML = `
       <div class="pro-summary-card"><strong>${todayAppointments.length}</strong><span>Citas asignadas hoy</span></div>
       <div class="pro-summary-card"><strong>${attendedToday}</strong><span>Sesiones atendidas hoy</span></div>
-      <div class="pro-summary-card"><strong>${pendingAuthorization}</strong><span>Pendientes de autorización</span></div>`;
+      <div class="pro-summary-card"><strong>${pendingAuthorization}</strong><span>Pendientes de autorización</span></div>
+      ${professionalHoursPanel(base)}`;
   }
   document.getElementById('proAgendaList').innerHTML = list.length ? list.map(c => {
     const badge = c.autorizada ? (c.estado || 'Autorizada') : (c.autorizacion || 'Asignada pendiente de autorización');
