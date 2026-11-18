@@ -23,6 +23,12 @@ for (let index = 1; index <= 15; index += 1) {
 opportunities.push({ id: 'N1', patientName: 'Paciente Natalia', phone: '3110000000', firstContact: '2026-11-03', origin: 'Referido', appointmentId: 'CN1', saleValue: 50000, capturedBy: 'Natalia Rodríguez' });
 appointments.push({ id: 'CN1', fecha: '2026-11-12', telefono: '3110000000', estado: 'Atendida' });
 payments.push({ CitaID: 'CN1', EstadoPago: 'Aprobado', ValorRecibido: 50000 });
+opportunities.push({ id: 'N2', patientName: 'Paciente Natalia', phone: '3110000000', firstContact: '2026-11-13', origin: 'Referido', appointmentId: 'CN2', saleValue: 90000, capturedBy: 'Natalia Rodríguez' });
+appointments.push({ id: 'CN2', fecha: '2026-11-15', telefono: '3110000000', estado: 'Atendida' });
+payments.push({ CitaID: 'CN2', EstadoPago: 'Aprobado', ValorRecibido: 90000 });
+opportunities.push({ id: 'N3', patientName: 'Contacto no referido', phone: '3120000000', firstContact: '2026-11-05', origin: 'WhatsApp', appointmentId: 'CN3', saleValue: 70000, capturedBy: 'Natalia Rodríguez' });
+appointments.push({ id: 'CN3', fecha: '2026-11-11', telefono: '3120000000', estado: 'Atendida' });
+payments.push({ CitaID: 'CN3', EstadoPago: 'Aprobado', ValorRecibido: 70000 });
 kv.special_incentives_sources_v1 = JSON.stringify(Object.fromEntries(opportunities.filter(item => item.origin === 'Instagram').map(item => [item.id, { social: 'organic' }])));
 
 const window = {
@@ -48,7 +54,7 @@ const test = window.PanelSpecialIncentives._test;
 const social = test.socialData('2026-11');
 const natalia = test.nataliaData('2026-11');
 if (social.leads.length !== 15 || social.buyers.length !== 5 || social.calculated !== 75000) throw new Error('El bono de redes no aplicó el nivel 15/5.');
-if (natalia.candidates.length !== 1 || natalia.calculated !== 10000) throw new Error('El incentivo por paciente nuevo de Natalia no se calculó una sola vez.');
+if (natalia.candidates.length !== 1 || natalia.calculated !== 10000) throw new Error('El incentivo por paciente nuevo de Natalia no excluyó duplicados u orígenes no referidos.');
 
 window.PanelSpecialIncentives.saveNataliaStatus('2026-11', 'En revisión');
 window.PanelSpecialIncentives.saveNataliaStatus('2026-11', 'Aprobada');
