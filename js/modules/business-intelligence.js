@@ -227,14 +227,15 @@
   }
 
   const $ = id => document.getElementById(id);
+  function selectedMonth() { return $('biMonth')?.value || currentMonth(); }
   const stat = (label, value, note, color = '#0f766e') => `<div style="background:var(--s2);border:1px solid var(--border);border-left:3px solid ${color};border-radius:12px;padding:13px"><div style="font-size:.72rem;color:var(--muted)">${esc(label)}</div><b style="display:block;font-size:1.15rem;color:${color};margin-top:3px">${esc(value)}</b><div style="font-size:.69rem;color:var(--muted);margin-top:4px">${esc(note || '')}</div></div>`;
   function tableRows(object, formatter) { const entries = Object.entries(object).sort((a, b) => b[1].value - a[1].value); return entries.length ? entries.slice(0, 8).map(formatter).join('') : '<div style="font-size:.82rem;color:var(--muted);padding:10px 0">Sin datos suficientes para este período.</div>'; }
-  async function render() {
+  async function render(month = selectedMonth()) {
     const root = $('businessIntelligenceContent'); if (!root) return;
     if (!canAccess()) { root.innerHTML = '<div class="notice notice-warn">Este módulo contiene información financiera y está restringido a administración y dirección.</div>'; return; }
     root.innerHTML = '<div class="notice">Actualizando datos operativos y comerciales…</div>';
     try { await global.PanelPayments?.loadOperationsData?.(); } catch (_) {}
-    const metrics = compute(); global.__businessIntelligenceMetrics = metrics;
+    const metrics = compute(undefined, month); global.__businessIntelligenceMetrics = metrics;
     const alerts = metrics.alerts.length ? metrics.alerts.map(item => `<article style="border-left:4px solid ${item.priority === 'Alta' ? '#dc2626' : '#d97706'};background:var(--s2);border-radius:9px;padding:11px 12px;margin-bottom:8px"><div style="display:flex;justify-content:space-between;gap:8px"><b>${esc(item.title)}</b><span style="font-size:.72rem;color:${item.priority === 'Alta' ? '#b91c1c' : '#b45309'}">${esc(item.priority)}</span></div><div style="font-size:.78rem;margin-top:5px">${esc(item.evidence)}</div><div style="font-size:.78rem;color:var(--muted);margin-top:4px"><b>Acción:</b> ${esc(item.action)}</div></article>`).join('') : '<div class="notice">No hay alertas con evidencia suficiente en este momento.</div>';
     root.innerHTML = `
       <div style="font-size:.78rem;color:var(--muted);margin-bottom:13px">Período: ${esc(metrics.month)} · datos agregados de Agenda, Pagos, Finanzas y Gestión Comercial. Los pagos aprobados son la única fuente de “cobrado”.</div>
@@ -265,7 +266,7 @@
   function createReport(kind) { const metrics = global.__businessIntelligenceMetrics || compute(); const item = report(kind, metrics); const reports = get(REPORTS, []); reports.unshift(item); set(REPORTS, reports.slice(0, 100)); audit('Informe generado', item.title); renderReports(); }
   function renderReports() { const el = $('biReports'); if (!el) return; const reports = get(REPORTS, []); el.innerHTML = reports.length ? reports.slice(0, 12).map(item => `<article style="padding:10px;border-top:1px solid var(--border);font-size:.8rem"><b>${esc(item.title)}</b> · ${new Date(item.createdAt).toLocaleString('es-CO')}<div style="color:var(--muted);margin-top:4px">${esc(item.summary?.[0] || '')}</div></article>`).join('') : '<div style="font-size:.8rem;color:var(--muted)">Aún no hay informes generados. La entrega automática requiere una integración de notificaciones configurada.</div>'; }
   function ask() { const input = $('biQuestion'), output = $('biAnswer'); if (!input || !output) return; const metrics = global.__businessIntelligenceMetrics || compute(); const response = answer(input.value, metrics); output.innerHTML = `<b>Respuesta basada en datos:</b> ${esc(response)}`; audit('Consulta gerencial', String(input.value || '').slice(0, 300)); }
-  function init() { render(); }
+  function init() { const input = $('biMonth'); if (input && !input.value) input.value = currentMonth(); render(); }
 
   const api = Object.freeze({ init, render, compute, report, answer, saveSettings, openSettings, createReport, renderReports, ask, defaults: DEFAULTS });
   global.PanelBusinessIntelligence = api;
