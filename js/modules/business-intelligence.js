@@ -27,7 +27,10 @@
   const status = row => String(row?.estadoCita ?? row?.EstadoCita ?? row?.estado ?? row?.Estado ?? '').trim().toLowerCase();
   const paymentDate = row => dateOnly(row?.FechaPago ?? row?.fechaPago ?? row?.fecha ?? row?.Fecha ?? row?.CreatedAt);
   const paymentValue = row => num(row?.ValorRecibido ?? row?.valorRecibido ?? row?.Valor ?? row?.valor ?? row?.Monto ?? row?.monto);
-  const isCancelled = row => /(cancel|no asist|reprogram|anulad|vencid)/i.test(status(row));
+  const isRescheduled = row => /reprogram/i.test(status(row));
+  const isNoShow = row => /no asist/i.test(status(row));
+  const isCancelled = row => /(cancel|anulad|vencid)/i.test(status(row));
+  const isInactiveAppointment = row => isCancelled(row) || isNoShow(row) || isRescheduled(row);
   const isAttended = row => /(atendid|realizad|completad)/i.test(status(row));
   const isApprovedPayment = row => /(aprob|verific|confirm|pagado|pago_aprobado)/i.test(String(row?.EstadoPago ?? row?.estadoPago ?? row?.estado ?? row?.Estado ?? ''));
   const safeArray = value => Array.isArray(value) ? value : [];
@@ -43,6 +46,19 @@
   const daysElapsed = date => Math.max(1, date.getDate());
   const pct = (value, target) => target > 0 ? Math.round(value / target * 100) : null;
   const cleanKey = value => String(value || '').trim().toLowerCase();
+  const previousMonth = month => {
+    const [year, number] = String(month).split('-').map(Number);
+    const date = new Date(year, number - 2, 1);
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+  };
+  const minuteOfDay = value => {
+    const [hour, minute] = String(value || '').split(':').map(Number);
+    return Number.isFinite(hour) && Number.isFinite(minute) ? hour * 60 + minute : null;
+  };
+  const monthDays = month => {
+    const [year, number] = String(month).split('-').map(Number);
+    return new Date(year, number, 0).getDate();
+  };
 
   function currentUser() { try { return global.currentAdminUser || {}; } catch (_) { return {}; } }
   function canAccess() {
@@ -55,7 +71,10 @@
     return {
       appointments: safeArray(data.citas), payments: safeArray(ops.pagos), events: safeArray(data.eventos),
       opportunities: safeArray(global.PanelCommercialSales?.getOpportunities?.()),
-      expenses: safeArray(get('egresos', [])), team: global.teamData || {}
+      expenses: safeArray(get('egresos', [])), team: global.teamData || {}, blocks: safeArray(data.bloqueos),
+      // Esta es la configuración de sede realmente guardada. No usamos el horario
+      // sugerido del módulo cuando no hay una configuración persistida.
+      weeklySchedule: get('horarios_semanales_v1', null)
     };
   }
   function uniquePayments(rows) {
@@ -75,20 +94,39 @@
     if (/entrenamiento/.test(service)) return 60;
     return 50;
   }
-  function capacityMinutes(team, month) {
-    // Solo acepta configuración explícita. Sin ella, no se inventa un horario.
-    const schedules = safeArray(team?.schedules || team?.horarios || team?.workSchedules || team?.agendaLaboral);
-    if (!schedules.length) return null;
-    const days = daysInMonth(now());
-    const weekly = schedules.reduce((sum, item) => sum + num(item.minutesPerWeek ?? item.minutosSemana ?? item.weeklyMinutes), 0);
-    if (!weekly) return null;
-    return Math.round(weekly / 7 * days * 2); // dos camillas, sólo desde horario configurado.
+  function capacityMinutes(weeklySchedule, blocks, month) {
+    // La capacidad se mide desde la jornada guardada de la sede y dos camillas.
+    // No se deriva de horarios individuales porque podrían duplicarse o solaparse.
+    if (!Array.isArray(weeklySchedule) || weeklySchedule.length !== 7) return null;
+    let minutes = 0;
+    const [year, number] = String(month).split('-').map(Number);
+    for (let day = 1; day <= monthDays(month); day += 1) {
+      const date = new Date(year, number - 1, day);
+      const schedule = weeklySchedule[date.getDay()];
+      if (!schedule?.enabled) continue;
+      const daily = safeArray(schedule.ranges).reduce((total, range) => {
+        const start = minuteOfDay(range?.[0]); const end = minuteOfDay(range?.[1]);
+        return start !== null && end !== null && end > start ? total + end - start : total;
+      }, 0);
+      minutes += daily * 2;
+    }
+    // Los bloqueos se descuentan de las dos camillas; si un bloqueo se maneja por
+    // recurso individual, debe llevar "camillas" explícito para no sobre-restar.
+    const blocked = safeArray(blocks).filter(row => dateOnly(row?.fecha ?? row?.Fecha).slice(0, 7) === month)
+      .reduce((total, row) => {
+        const start = minuteOfDay(row?.inicio ?? row?.Inicio); const end = minuteOfDay(row?.fin ?? row?.Fin);
+        const rooms = Math.max(1, Math.min(2, num(row?.camillas ?? row?.Camillas) || 2));
+        return start !== null && end !== null && end > start ? total + (end - start) * rooms : total;
+      }, 0);
+    return Math.max(0, minutes - blocked);
   }
   function compute(input = source(), month = currentMonth(), opts = {}) {
     const setts = { ...DEFAULTS, ...(opts.settings || settings()) };
     const appointments = safeArray(input.appointments).filter(row => monthKey(appointmentDate(row)) === month);
-    const activeAppointments = appointments.filter(row => !isCancelled(row));
+    const activeAppointments = appointments.filter(row => !isInactiveAppointment(row));
     const cancelled = appointments.filter(isCancelled);
+    const rescheduled = appointments.filter(isRescheduled);
+    const noShows = appointments.filter(isNoShow);
     const attended = activeAppointments.filter(isAttended);
     const payments = uniquePayments(safeArray(input.payments).filter(row => isApprovedPayment(row) && monthKey(paymentDate(row)) === month));
     const cashReceived = payments.reduce((sum, row) => sum + paymentValue(row), 0);
@@ -101,7 +139,7 @@
     const expenses = safeArray(input.expenses).filter(row => monthKey(row?.fecha ?? row?.Fecha) === month).reduce((sum, row) => sum + num(row?.monto ?? row?.Monto), 0);
     const operatingResult = cashReceived - expenses;
     const occupiedMinutes = activeAppointments.reduce((sum, row) => sum + durationMinutes(row), 0);
-    const capacity = capacityMinutes(input.team || {}, month);
+    const capacity = capacityMinutes(input.weeklySchedule, input.blocks, month);
     const occupancy = capacity ? Math.round(occupiedMinutes / capacity * 100) : null;
     const ticket = activeAppointments.length ? confirmedValue / activeAppointments.length : 0;
     const opportunities = safeArray(input.opportunities).filter(row => String(row?.firstContact || row?.createdAt || '').slice(0, 7) === month);
@@ -121,19 +159,32 @@
       [byService[service], byProfessional[professional]].forEach(item => { item.count += 1; item.value += appointmentValue(row); if (isAttended(row)) item.attended += 1; });
     });
     const current = now();
-    const projectedCash = Math.round(cashReceived / daysElapsed(current) * daysInMonth(current));
-    const alerts = buildAlerts({ setts, cashReceived, confirmedValue, accountsReceivable, cancelled, appointments, occupancy, ticket, overdueFollowUps, projectedCash, current });
-    return {
+    const isCurrent = month === currentMonth();
+    const projectedCash = isCurrent ? Math.round(cashReceived / daysElapsed(current) * daysInMonth(current)) : cashReceived;
+    const daysRemaining = isCurrent ? Math.max(0, daysInMonth(current) - daysElapsed(current)) : 0;
+    const alerts = buildAlerts({ setts, cashReceived, confirmedValue, accountsReceivable, cancelled, appointments, occupancy, ticket, overdueFollowUps, projectedCash, daysRemaining });
+    const result = {
       month, setts, source: { appointments: appointments.length, payments: payments.length, opportunities: opportunities.length, expenseRows: safeArray(input.expenses).length },
       cashReceived, confirmedValue, commercialValue, accountsReceivable, expenses, operatingResult,
       operatingMargin: cashReceived ? Math.round(operatingResult / cashReceived * 100) : null,
       ticket, appointments: appointments.length, confirmedAppointments: activeAppointments.length,
-      attendedAppointments: attended.length, cancelledAppointments: cancelled.length,
+      attendedAppointments: attended.length, cancelledAppointments: cancelled.length, rescheduledAppointments: rescheduled.length, noShowAppointments: noShows.length,
       cancellationRate: appointments.length ? Math.round(cancelled.length / appointments.length * 100) : 0,
-      occupiedMinutes, capacityMinutes: capacity, occupancy, projectedCash, daysRemaining: Math.max(0, daysInMonth(current) - daysElapsed(current)),
+      occupiedMinutes, capacityMinutes: capacity, occupancy, projectedCash, daysRemaining,
       gapCash: Math.max(0, setts.revenueTarget - cashReceived), gapConfirmed: Math.max(0, setts.confirmedTarget - confirmedValue),
       byService, byProfessional, byHour, opportunities, overdueFollowUps, michelleDirect, alerts
     };
+    if (opts.withComparison !== false) {
+      const prior = compute(input, previousMonth(month), { settings: setts, withComparison: false });
+      result.comparison = {
+        month: prior.month,
+        cashReceived: cashReceived - prior.cashReceived,
+        confirmedValue: confirmedValue - prior.confirmedValue,
+        appointments: activeAppointments.length - prior.confirmedAppointments,
+        ticket: ticket - prior.ticket
+      };
+    }
+    return result;
   }
   function buildAlerts(data) {
     const alerts = [];
@@ -153,13 +204,15 @@
       `Cobrado: ${money(metrics.cashReceived)} (pagos aprobados, ${metrics.source.payments} registros).`,
       `Servicios confirmados: ${money(metrics.confirmedValue)} en ${metrics.confirmedAppointments} citas activas.`,
       `Cuentas por cobrar estimadas: ${money(metrics.accountsReceivable)}; requiere conciliación con Pagos.`,
-      `Cancelaciones: ${metrics.cancelledAppointments} (${metrics.cancellationRate}%).`,
+      `Cancelaciones: ${metrics.cancelledAppointments} (${metrics.cancellationRate}%); reprogramaciones: ${metrics.rescheduledAppointments}; ausencias: ${metrics.noShowAppointments}.`,
+      metrics.comparison ? `Vs. ${metrics.comparison.month}: cobrado ${signedMoney(metrics.comparison.cashReceived)} y confirmado ${signedMoney(metrics.comparison.confirmedValue)}.` : '',
       topService ? `Servicio de mayor valor confirmado: ${topService[0]} (${money(topService[1].value)}).` : 'No hay servicios confirmados suficientes para ranking.'
     ];
     const recommendations = metrics.alerts.slice(0, 3).map(alert => `${alert.priority}: ${alert.action}`);
     const title = kind === 'daily' ? 'Informe diario' : kind === 'weekly' ? 'Informe semanal' : 'Informe mensual';
     return { id: 'BI-' + Date.now().toString(36).toUpperCase(), kind, title, month: metrics.month, createdAt: new Date().toISOString(), summary: common, recommendations };
   }
+  function signedMoney(value) { return (value >= 0 ? '+' : '−') + money(Math.abs(value)); }
   function audit(action, detail) { const rows = get(AUDIT, []); rows.unshift({ at: new Date().toISOString(), action, detail }); set(AUDIT, rows.slice(0, 300)); }
   function answer(question, metrics) {
     const q = cleanKey(question);
@@ -191,10 +244,10 @@
         ${stat('Cuentas por cobrar', money(metrics.accountsReceivable), 'solo citas con valor explícito', '#b45309')}
         ${stat('Resultado operativo', money(metrics.operatingResult), `gastos registrados: ${money(metrics.expenses)}`, metrics.operatingResult >= 0 ? '#047857' : '#b91c1c')}
         ${stat('Ticket promedio', money(metrics.ticket), `meta: ${money(metrics.setts.ticketTarget)}`, '#7c3aed')}
-        ${stat('Cancelaciones', metrics.cancelledAppointments + ' (' + metrics.cancellationRate + '%)', `${metrics.appointments} citas registradas`, metrics.cancellationRate >= 12 ? '#b91c1c' : '#047857')}
+        ${stat('Cancelaciones', metrics.cancelledAppointments + ' (' + metrics.cancellationRate + '%)', `${metrics.appointments} citas · reprogramadas: ${metrics.rescheduledAppointments} · ausencias: ${metrics.noShowAppointments}`, metrics.cancellationRate >= 12 ? '#b91c1c' : '#047857')}
       </div>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:14px;margin-top:16px">
-        <section class="card"><div class="card-title">🎯 Metas y proyección</div><div style="font-size:.85rem;line-height:1.9"><div>Cobrado: <b>${money(metrics.cashReceived)}</b> / ${money(metrics.setts.revenueTarget)} (${pct(metrics.cashReceived, metrics.setts.revenueTarget)}%)</div><div>Confirmado: <b>${money(metrics.confirmedValue)}</b> / ${money(metrics.setts.confirmedTarget)} (${pct(metrics.confirmedValue, metrics.setts.confirmedTarget)}%)</div><div>Proyección de cobro: <b>${money(metrics.projectedCash)}</b> <span style="color:var(--muted)">(ritmo diario actual; estimación)</span></div><div>Ocupación: <b>${metrics.occupancy === null ? 'No calculable' : metrics.occupancy + '%'}</b> <span style="color:var(--muted)">${metrics.occupancy === null ? 'falta configuración horaria' : 'capacidad de dos camillas desde horario configurado'}</span></div></div></section>
+        <section class="card"><div class="card-title">🎯 Metas y proyección</div><div style="font-size:.85rem;line-height:1.9"><div>Cobrado: <b>${money(metrics.cashReceived)}</b> / ${money(metrics.setts.revenueTarget)} (${pct(metrics.cashReceived, metrics.setts.revenueTarget)}%)</div><div>Confirmado: <b>${money(metrics.confirmedValue)}</b> / ${money(metrics.setts.confirmedTarget)} (${pct(metrics.confirmedValue, metrics.setts.confirmedTarget)}%)</div><div>Proyección de cobro: <b>${money(metrics.projectedCash)}</b> <span style="color:var(--muted)">${metrics.daysRemaining ? '(ritmo diario actual; estimación)' : '(período cerrado o sin días restantes)'}</span></div><div>Ocupación: <b>${metrics.occupancy === null ? 'No calculable' : metrics.occupancy + '%'}</b> <span style="color:var(--muted)">${metrics.occupancy === null ? 'falta jornada semanal guardada' : 'capacidad de sede: jornada configurada × dos camillas'}</span></div>${metrics.comparison ? `<div style="border-top:1px solid var(--border);margin-top:8px;padding-top:8px">Vs. ${esc(metrics.comparison.month)}: cobrado <b>${signedMoney(metrics.comparison.cashReceived)}</b> · confirmado <b>${signedMoney(metrics.comparison.confirmedValue)}</b> · citas <b>${metrics.comparison.appointments >= 0 ? '+' : ''}${metrics.comparison.appointments}</b></div>` : ''}</div></section>
         <section class="card"><div class="card-title">⚠️ Alertas inteligentes</div>${alerts}</section>
       </div>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:14px;margin-top:16px">

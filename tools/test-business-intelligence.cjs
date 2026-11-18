@@ -5,7 +5,10 @@ const input = {
   appointments: [
     { id: 'A1', fecha: '2026-11-10', estado: 'Atendida', precio: 100000, servicio: 'Readaptación', profesional: 'Jessica', hora: '09:00' },
     { id: 'A2', fecha: '2026-11-11', estado: 'Cancelada', precio: 90000, servicio: 'Descarga', profesional: 'Natalia', hora: '10:00' },
-    { id: 'A3', fecha: '2026-11-12', estado: 'Confirmada', precio: 150000, servicio: 'Valoración', profesional: 'Jessica', hora: '15:00' }
+    { id: 'A3', fecha: '2026-11-12', estado: 'Confirmada', precio: 150000, servicio: 'Valoración', profesional: 'Jessica', hora: '15:00' },
+    { id: 'A4', fecha: '2026-11-13', estado: 'Reprogramada', precio: 110000, servicio: 'Readaptación', profesional: 'Jessica', hora: '16:00' },
+    { id: 'A5', fecha: '2026-11-13', estado: 'No asistió', precio: 110000, servicio: 'Readaptación', profesional: 'Jessica', hora: '17:00' },
+    { id: 'O1', fecha: '2026-10-10', estado: 'Confirmada', precio: 80000, servicio: 'Valoración', profesional: 'Jessica', hora: '09:00' }
   ],
   payments: [
     { ID: 'P1', CitaID: 'A1', FechaPago: '2026-11-10', EstadoPago: 'PAGO_APROBADO', ValorRecibido: 100000 },
@@ -29,6 +32,22 @@ assert.equal(metrics.operatingResult, 120000);
 assert.equal(metrics.commercialValue, 250000, 'ventas CRM no se mezclan con efectivo cobrado');
 assert.equal(metrics.occupancy, null, 'sin horario real configurado no se inventa ocupación');
 assert.equal(metrics.cancelledAppointments, 1);
+assert.equal(metrics.rescheduledAppointments, 1, 'reprogramada no se cuenta como cancelación');
+assert.equal(metrics.noShowAppointments, 1, 'ausencia se reporta de forma independiente');
 assert.equal(metrics.byProfessional.Jessica.count, 2);
 assert.ok(metrics.alerts.some(item => item.title.includes('Cobros pendientes')));
+
+const capacityInput = {
+  ...input,
+  weeklySchedule: [
+    { enabled:false, ranges:[] }, { enabled:true, ranges:[['08:00','09:00']] },
+    { enabled:false, ranges:[] }, { enabled:false, ranges:[] }, { enabled:false, ranges:[] },
+    { enabled:false, ranges:[] }, { enabled:false, ranges:[] }
+  ],
+  blocks: [{ fecha:'2026-11-02', inicio:'08:30', fin:'09:00', camillas:1 }]
+};
+const capacityMetrics = compute(capacityInput, '2026-11', { settings: DEFAULTS });
+assert.equal(capacityMetrics.capacityMinutes, 570, 'jornada de sede por dos camillas menos bloqueo explícito');
+assert.equal(capacityMetrics.occupancy, 19, 'ocupación con duraciones observadas y capacidad real');
+assert.equal(metrics.comparison.month, '2026-10');
 console.log('OK: cálculos de inteligencia empresarial verificados');
