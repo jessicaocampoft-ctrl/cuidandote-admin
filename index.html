@@ -1860,6 +1860,10 @@ button:disabled{cursor:not-allowed;opacity:.58}
       Finanzas
     </button>
 
+    <button class="sb-link" id="sb-inteligencia" data-tooltip="Inteligencia Empresarial" onclick="showView('inteligencia')">
+      <span style="font-size:1.05rem">🧠</span> Inteligencia Empresarial
+    </button>
+
     <button class="sb-link" id="sb-pagos" data-tooltip="Pagos" onclick="showView('pagos')">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/><path d="M6 15h4"/></svg>
       Pagos
@@ -5352,6 +5356,27 @@ Acción: enviar mensaje de reenganche a los 14 pacientes que solo vinieron una v
       <details class="card" open style="margin-top:16px"><summary style="cursor:pointer;font-weight:700">Configuración operativa</summary><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:14px"><label><input id="saEnabled" type="checkbox"> Activar agente (preparación)</label><label><input id="saFacebook" type="checkbox"> Facebook habilitado</label><label><input id="saInstagram" type="checkbox"> Instagram habilitado</label><label>Tono<select id="saTone" style="width:100%;padding:8px"><option>Cálido y profesional</option><option>Cercano y breve</option><option>Formal y claro</option></select></label><label>Longitud<select id="saLength" style="width:100%;padding:8px"><option>Breve</option><option>Media</option></select></label><label>Enlace oficial de WhatsApp<input id="saWhatsapp" type="url" style="width:100%;box-sizing:border-box;padding:8px" placeholder="https://wa.me/57..."></label></div><div style="margin-top:14px;font-size:.82rem;font-weight:700">Categorías permitidas para responder automáticamente en producción</div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:7px;margin-top:8px"><label><input id="saAllowed0" type="checkbox"> Información de servicios</label><label><input id="saAllowed1" type="checkbox"> Consulta de precios</label><label><input id="saAllowed2" type="checkbox"> Ubicación y horarios</label><label><input id="saAllowed3" type="checkbox"> Solicitud de agendamiento</label><label><input id="saAllowed4" type="checkbox"> Interés en entrenamiento funcional</label><label><input id="saAllowed5" type="checkbox"> Masajes y bienestar</label><label><input id="saAllowed6" type="checkbox"> Agradecimientos</label></div><button class="btn btn-teal" style="margin-top:14px" onclick="PanelSocialAgent.saveConfig()">Guardar configuración</button></details>
       <details class="card" style="margin-top:16px"><summary style="cursor:pointer;font-weight:700">Base de conocimientos editable</summary><p style="font-size:.78rem;color:var(--muted)">Solo esta información confirmada se entrega al motor de IA. No se inventan disponibilidad, promociones ni recomendaciones clínicas.</p><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px"><label>Ubicación<input id="saLocation" style="width:100%;box-sizing:border-box;padding:8px"></label><label>Sitio web<input id="saWebsite" type="url" style="width:100%;box-sizing:border-box;padding:8px"></label></div><label style="display:block;margin-top:10px">Entrenamiento funcional<textarea id="saTraining" rows="3" style="width:100%;box-sizing:border-box;padding:8px"></textarea></label><label style="display:block;margin-top:10px">Servicios y tarifas (JSON)<textarea id="saServices" rows="9" style="width:100%;box-sizing:border-box;padding:8px;font-family:monospace"></textarea></label><label style="display:block;margin-top:10px">Preguntas frecuentes confirmadas (JSON)<textarea id="saFaqs" rows="4" style="width:100%;box-sizing:border-box;padding:8px;font-family:monospace" placeholder='[{"pregunta":"...","respuesta":"..."}]'></textarea></label><button class="btn btn-teal" style="margin-top:12px" onclick="PanelSocialAgent.saveKnowledge()">Guardar base de conocimientos</button></details>
       <section class="card" style="margin-top:16px"><div class="card-title">Historial y revisión</div><div id="socialHistory"></div></section>
+    </section>
+
+    <!-- ── INTELIGENCIA EMPRESARIAL ── -->
+    <section id="vInteligencia" style="display:none">
+      <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
+        <div>
+          <h1 class="page-title">🧠 <em>Inteligencia</em> Empresarial</h1>
+          <p class="page-sub">Decisiones basadas en agenda, pagos, finanzas y Gestión Comercial; sin datos clínicos ni cifras inventadas.</p>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-ghost btn-sm" onclick="PanelBusinessIntelligence.openSettings()">⚙ Metas</button>
+          <button class="btn btn-ghost btn-sm" onclick="PanelBusinessIntelligence.render()">↻ Actualizar</button>
+        </div>
+      </div>
+      <div class="notice" style="margin-bottom:14px">Los cálculos separan pago aprobado, servicio confirmado, saldo por cobrar y prestación. Las recomendaciones son interpretaciones; no modifican registros.</div>
+      <div id="businessIntelligenceContent"></div>
+      <div id="biSettings" style="display:none"></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;margin-top:16px">
+        <section class="card"><div class="card-title">💬 Asistente gerencial</div><p style="font-size:.78rem;color:var(--muted);margin-top:0">Responde desde cifras agregadas verificables. No consulta ni muestra notas clínicas.</p><textarea id="biQuestion" rows="3" placeholder="Ej.: ¿Cuánto falta para llegar a la meta este mes?" style="width:100%;box-sizing:border-box;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--s2);color:var(--text)"></textarea><button class="btn btn-teal" style="margin-top:9px" onclick="PanelBusinessIntelligence.ask()">Preguntar</button><div id="biAnswer" style="font-size:.84rem;line-height:1.55;margin-top:12px;padding:10px;background:var(--s2);border-radius:8px"></div></section>
+        <section class="card"><div class="card-title">📝 Informes</div><p style="font-size:.78rem;color:var(--muted);margin-top:0">Genera el informe para revisión. No se envían notificaciones hasta configurar una integración de entrega.</p><div style="display:flex;gap:7px;flex-wrap:wrap"><button class="btn btn-ghost btn-sm" onclick="PanelBusinessIntelligence.createReport('daily')">Diario</button><button class="btn btn-ghost btn-sm" onclick="PanelBusinessIntelligence.createReport('weekly')">Semanal</button><button class="btn btn-ghost btn-sm" onclick="PanelBusinessIntelligence.createReport('monthly')">Mensual</button></div><div id="biReports" style="margin-top:10px"></div></section>
+      </div>
     </section>
 
     <!-- ── EMPRESAS CRM ── -->
@@ -13348,6 +13373,7 @@ document.addEventListener('DOMContentLoaded', () => {
 <script src="js/modules/functional-training.js?v=20261030-initial"></script>
 <script src="js/modules/payments.js?v=20260929-payment-custom-plan"></script>
 <script src="js/modules/commercial-sales.js?v=20261117-operational-crm"></script>
+<script src="js/modules/business-intelligence.js?v=20261118-intelligence-v1"></script>
 <script src="js/modules/social-agent.js?v=20261118-social-agent-prep"></script>
   <script src="js/modules/passport.js"></script>
   <script src="js/modules/agenda.js?v=20261103-resilient-booking"></script>

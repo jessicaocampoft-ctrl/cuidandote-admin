@@ -9,7 +9,7 @@
   function showView(v) {
     const viewAliases = { citas: 'agenda' };
       v = viewAliases[v] || v;
-      ['dashboard','acciones','espera','automatizaciones','tareas','tareasConfig','agenda','nueva','calendario','bloquear','pacientes','equipo','basedatos','codigos','paquetes','entrenamiento','recordatorios','finanzas','pagos','guiakpis','presupuesto','seguimiento','comercial','redes','mensajes','empresas','pasaporte','comisiones','guioneswa','recuperacion'].forEach(id => {
+      ['dashboard','acciones','espera','automatizaciones','tareas','tareasConfig','agenda','nueva','calendario','bloquear','pacientes','equipo','basedatos','codigos','paquetes','entrenamiento','recordatorios','finanzas','inteligencia','pagos','guiakpis','presupuesto','seguimiento','comercial','redes','mensajes','empresas','pasaporte','comisiones','guioneswa','recuperacion'].forEach(id => {
         const sec = document.getElementById('v' + id.charAt(0).toUpperCase() + id.slice(1));
         const sb  = document.getElementById('sb-' + id);
         if (sec) sec.style.display = 'none';
@@ -69,6 +69,7 @@
       if (v === 'recordatorios')  cargarRecordatorios();
       if (v === 'basedatos')      { renderBasedatos(); initFormDB(); renderChangeLog(); renderReactivacion(); }
       if (v === 'finanzas')       { renderFinanzas(); actualizarContadorLeads(); _renderEncuestaStatsUI(getEncuestaStats()); window.PanelFunctionalTraining?.renderFinanceCard(); }
+      if (v === 'inteligencia')   window.PanelBusinessIntelligence?.init();
       if (v === 'pagos')          { loadOperationsData().then(renderPagos); }
       if (v === 'seguimiento')    renderSeguimiento();
       if (v === 'comercial')       window.PanelCommercialSales?.render();

@@ -16,7 +16,8 @@ const files = [
   'js/modules/waitlist.js',
   'js/modules/daily-control.js',
   'js/modules/functional-training.js',
-  'js/modules/social-agent.js'
+  'js/modules/social-agent.js',
+  'js/modules/business-intelligence.js'
 ];
 
 function fail(message) {
@@ -45,6 +46,7 @@ const functionalTraining = fs.readFileSync(`${root}/js/modules/functional-traini
 const adminProfile = fs.readFileSync(`${root}/js/modules/admin-profile-accessibility.js`, 'utf8');
 const finance = fs.readFileSync(`${root}/js/modules/finance.js`, 'utf8');
 const socialAgent = fs.readFileSync(`${root}/js/modules/social-agent.js`, 'utf8');
+const intelligence = fs.readFileSync(`${root}/js/modules/business-intelligence.js`, 'utf8');
 
 if (!config.includes('APPS_SCRIPT_URL')) fail('falta la conexión principal del servidor');
 if (!config.includes('ADMIN_DATA_FALLBACK_URL')) fail('falta la ruta de respaldo de lectura');
@@ -73,5 +75,8 @@ if (!html.includes('vEntrenamiento') || !html.includes('functional-training.js?v
 if (!adminProfile.includes('sidebar-management.js?v=20261030-functional-training-primary')) fail('el menú puede conservar una versión anterior en caché');
 if (!functionalTraining.includes('getMonthlyRevenue') || !functionalTraining.includes('functional_training_v1_backup') || !finance.includes('calcIngresoEntrenamientoMes') || !finance.includes('Entrenamiento funcional')) fail('los ingresos de entrenamiento no están integrados o respaldados correctamente');
 if (!html.includes('vRedes') || !html.includes('social-agent.js') || !socialAgent.includes('safeCategories') || !socialAgent.includes('autoPublish = false')) fail('falta el módulo seguro del agente de redes sociales');
+if (!html.includes('vInteligencia') || !html.includes('business-intelligence.js') || !intelligence.includes('cashReceived') || !intelligence.includes('uniquePayments')) fail('falta el módulo de inteligencia empresarial o sus controles anti-duplicado');
+const intelligenceTest = spawnSync(process.execPath, ['tools/test-business-intelligence.cjs'], { cwd: root, encoding: 'utf8' });
+if (intelligenceTest.status !== 0) fail(`fallaron las pruebas de inteligencia empresarial: ${intelligenceTest.stderr.trim() || intelligenceTest.stdout.trim()}`);
 
-console.log(`VALIDACIÓN APROBADA: ${files.length} archivos críticos, acceso, agenda, pagos, planes y colaboradores presentes.`);
+console.log(`VALIDACIÓN APROBADA: ${files.length} archivos críticos, acceso, agenda, pagos, planes, colaboradores e inteligencia empresarial presentes.`);
