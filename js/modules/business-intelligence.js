@@ -13,13 +13,27 @@
     confirmedGoal: 165, occupancyMin: 85, occupancyGoal: 95,
     michelleNewPatients: 6, ticketTarget: 100000, ticketExcellent: 150000
   });
-  const money = value => '$' + Math.round(Number(value) || 0).toLocaleString('es-CO');
+  const money = value => value === null || value === undefined ? 'No disponible' : '$' + Math.round(Number(value) || 0).toLocaleString('es-CO');
   const esc = value => String(value ?? '').replace(/[&<>'"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char]));
   const dateOnly = value => String(value || '').slice(0, 10);
   const monthKey = value => dateOnly(value).slice(0, 7);
   const now = () => new Date();
   const currentMonth = () => now().toISOString().slice(0, 7);
-  const num = value => Number(String(value ?? 0).replace(/[^0-9.-]/g, '')) || 0;
+  // No convierte miles colombianos (p. ej. "$80.000") en decimales. Los
+  // textos ambiguos y los campos vacíos permanecen en cero, sin inferencias.
+  const num = value => {
+    if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
+    const raw = String(value ?? '').trim();
+    if (!raw || !/^-?\s*(?:(?:COP|\$)\s*)?\d[\d.,\s]*$/i.test(raw)) return 0;
+    let text = raw.replace(/\s/g, '').replace(/^COP/i, '').replace(/^\$/, '');
+    if (/^-?\d{1,3}(\.\d{3})+,\d{1,2}$/.test(text)) text = text.replace(/\./g, '').replace(',', '.');
+    else if (/^-?\d{1,3}(,\d{3})+\.\d{1,2}$/.test(text)) text = text.replace(/,/g, '');
+    else if (/^-?\d{1,3}(\.\d{3})+$/.test(text)) text = text.replace(/\./g, '');
+    else if (/^-?\d{1,3}(,\d{3})+$/.test(text)) text = text.replace(/,/g, '');
+    else if (!/^-?\d+(?:[.,]\d{1,2})?$/.test(text)) return 0;
+    else text = text.replace(',', '.');
+    return Number(text) || 0;
+  };
   const idOf = row => String(row?.ID ?? row?.id ?? row?.PagoID ?? row?.paymentId ?? '').trim();
   const appointmentId = row => String(row?.CitaID ?? row?.CitaId ?? row?.citaId ?? row?.appointmentId ?? '').trim();
   const appointmentDate = row => dateOnly(row?.fecha ?? row?.Fecha ?? row?.date);
@@ -69,13 +83,26 @@
     const role = String(currentUser().rol || currentUser().role || 'Superadministradora').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
     return !/(auxiliar|fisioterapeuta|profesional)/.test(role);
   }
+  function runtimeCollection(key) {
+    if (global[key] !== undefined && global[key] !== null) return global[key];
+    // index.html declara estas variables con `let`; no quedan en window.
+    try {
+      if (key === 'allData') return typeof allData !== 'undefined' ? allData : undefined;
+      if (key === 'operationsData') return typeof operationsData !== 'undefined' ? operationsData : undefined;
+      if (key === 'teamData') return typeof teamData !== 'undefined' ? teamData : undefined;
+    } catch (_) {}
+    return undefined;
+  }
   function source() {
-    const data = global.allData || {};
-    const ops = global.operationsData || {};
+    const rawData = runtimeCollection('allData');
+    const rawOps = runtimeCollection('operationsData');
+    const data = rawData && typeof rawData === 'object' ? rawData : {};
+    const ops = rawOps && typeof rawOps === 'object' ? rawOps : {};
     return {
       appointments: safeArray(data.citas), payments: safeArray(ops.pagos), events: safeArray(data.eventos),
       opportunities: safeArray(global.PanelCommercialSales?.getOpportunities?.()),
-      expenses: safeArray(get('egresos', [])), team: global.teamData || {}, blocks: safeArray(data.bloqueos),
+      expenses: safeArray(get('egresos', [])), team: runtimeCollection('teamData') || {}, blocks: safeArray(data.bloqueos),
+      load: { appointments: Array.isArray(data.citas), payments: Array.isArray(ops.pagos) },
       // Esta es la configuración de sede realmente guardada. No usamos el horario
       // sugerido del módulo cuando no hay una configuración persistida.
       weeklySchedule: get('horarios_semanales_v1', null)
@@ -126,22 +153,23 @@
   }
   function compute(input = source(), month = currentMonth(), opts = {}) {
     const setts = { ...DEFAULTS, ...(opts.settings || settings()) };
+    const load = input.load || { appointments: true, payments: true };
     const appointments = safeArray(input.appointments).filter(row => monthKey(appointmentDate(row)) === month);
     const activeAppointments = appointments.filter(row => !isInactiveAppointment(row));
     const cancelled = appointments.filter(isCancelled);
     const rescheduled = appointments.filter(isRescheduled);
     const noShows = appointments.filter(isNoShow);
     const attended = activeAppointments.filter(isAttended);
-    const payments = uniquePayments(safeArray(input.payments).filter(row => isApprovedPayment(row) && monthKey(paymentDate(row)) === month));
-    const cashReceived = payments.reduce((sum, row) => sum + paymentValue(row), 0);
+    const payments = load.payments ? uniquePayments(safeArray(input.payments).filter(row => isApprovedPayment(row) && monthKey(paymentDate(row)) === month)) : [];
+    const cashReceived = load.payments ? payments.reduce((sum, row) => sum + paymentValue(row), 0) : null;
     const confirmedValue = activeAppointments.reduce((sum, row) => sum + appointmentValue(row), 0);
     const paidByAppointment = new Map();
     payments.forEach(row => { const id = appointmentId(row); if (id) paidByAppointment.set(id, (paidByAppointment.get(id) || 0) + paymentValue(row)); });
-    const accountsReceivable = activeAppointments.reduce((sum, row) => {
+    const accountsReceivable = load.payments ? activeAppointments.reduce((sum, row) => {
       const id = idOf(row); return sum + Math.max(0, appointmentValue(row) - (paidByAppointment.get(id) || 0));
-    }, 0);
+    }, 0) : null;
     const expenses = safeArray(input.expenses).filter(row => monthKey(row?.fecha ?? row?.Fecha) === month).reduce((sum, row) => sum + num(row?.monto ?? row?.Monto), 0);
-    const operatingResult = cashReceived - expenses;
+    const operatingResult = cashReceived === null ? null : cashReceived - expenses;
     const occupiedMinutes = activeAppointments.reduce((sum, row) => sum + durationMinutes(row), 0);
     const capacity = capacityMinutes(input.weeklySchedule, input.blocks, month);
     const occupancy = capacity ? Math.round(occupiedMinutes / capacity * 100) : null;
@@ -164,7 +192,7 @@
     });
     const current = now();
     const isCurrent = month === currentMonth();
-    const projectedCash = isCurrent ? Math.round(cashReceived / daysElapsed(current) * daysInMonth(current)) : cashReceived;
+    const projectedCash = cashReceived === null ? null : (isCurrent ? Math.round(cashReceived / daysElapsed(current) * daysInMonth(current)) : cashReceived);
     const daysRemaining = isCurrent ? Math.max(0, daysInMonth(current) - daysElapsed(current)) : 0;
     const periodEnd = isCurrent ? current.toISOString().slice(0, 10) : `${month}-${String(monthDays(month)).padStart(2, '0')}`;
     const weekStart = shiftDate(periodEnd, -6);
@@ -173,7 +201,7 @@
     const inWindow = (date, start, end) => date >= start && date <= end;
     const weekly = (start, end) => ({
       start, end,
-      cashReceived: uniquePayments(safeArray(input.payments).filter(row => isApprovedPayment(row) && inWindow(paymentDate(row), start, end))).reduce((sum, row) => sum + paymentValue(row), 0),
+      cashReceived: load.payments ? uniquePayments(safeArray(input.payments).filter(row => isApprovedPayment(row) && inWindow(paymentDate(row), start, end))).reduce((sum, row) => sum + paymentValue(row), 0) : null,
       confirmedValue: safeArray(input.appointments).filter(row => !isInactiveAppointment(row) && inWindow(appointmentDate(row), start, end)).reduce((sum, row) => sum + appointmentValue(row), 0),
       appointments: safeArray(input.appointments).filter(row => !isInactiveAppointment(row) && inWindow(appointmentDate(row), start, end)).length
     });
@@ -182,13 +210,14 @@
     const alerts = buildAlerts({ setts, cashReceived, confirmedValue, accountsReceivable, cancelled, appointments, occupancy, ticket, overdueFollowUps, projectedCash, daysRemaining });
     const result = {
       month, setts, source: { appointments: appointments.length, payments: payments.length, opportunities: opportunities.length, expenseRows: safeArray(input.expenses).length },
+      dataStatus: { appointments: load.appointments ? 'loaded' : 'unavailable', payments: load.payments ? 'loaded' : 'unavailable' },
       cashReceived, confirmedValue, commercialValue, accountsReceivable, expenses, operatingResult,
       operatingMargin: cashReceived ? Math.round(operatingResult / cashReceived * 100) : null,
       ticket, appointments: appointments.length, confirmedAppointments: activeAppointments.length,
       attendedAppointments: attended.length, cancelledAppointments: cancelled.length, rescheduledAppointments: rescheduled.length, noShowAppointments: noShows.length,
       cancellationRate: appointments.length ? Math.round(cancelled.length / appointments.length * 100) : 0,
       occupiedMinutes, capacityMinutes: capacity, occupancy, projectedCash, daysRemaining,
-      gapCash: Math.max(0, setts.revenueTarget - cashReceived), gapConfirmed: Math.max(0, setts.confirmedTarget - confirmedValue),
+      gapCash: cashReceived === null ? null : Math.max(0, setts.revenueTarget - cashReceived), gapConfirmed: Math.max(0, setts.confirmedTarget - confirmedValue),
       byService, byProfessional, byHour, opportunities, overdueFollowUps, michelleDirect, alerts,
       weekly: { current: weeklyCurrent, previous: weeklyPrevious }
     };
